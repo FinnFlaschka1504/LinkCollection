@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "83944291826",
+    "firebase_url": "https://linkcollection-c497c.firebaseio.com",
+    "project_id": "linkcollection-c497c",
+    "storage_bucket": "linkcollection-c497c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:83944291826:android:ac0a28147c1eddb6",
+        "android_client_info": {
+          "package_name": "com.maxMustermannGeheim.linkcollection"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "83944291826-fkhkcgmhs3bi8pap95u02b728j9jca5o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.maxMustermannGeheim.linkcollection",
+            "certificate_hash": "640fcd170c3ae9af6d8e27522b67fce1c1122605"
+          }
+        },
+        {
+          "client_id": "83944291826-cbjdq55s18f7odlhpujtjhuv42nq9o5l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB5VmvLC2Cr0xxiSw1MVp5riv-yPESvwqs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "83944291826-cbjdq55s18f7odlhpujtjhuv42nq9o5l.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

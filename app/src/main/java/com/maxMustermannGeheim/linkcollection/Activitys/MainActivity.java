@@ -5,11 +5,13 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.maxMustermannGeheim.linkcollection.R;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
@@ -25,16 +27,47 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         mySPR_daten = getSharedPreferences("LinkCollection_Daten", 0);
 //        mySPR_daten.edit().clear().commit();
+        loadDatabase(false);
+    }
 
-        Database.getInstance(mySPR_daten, database1 -> {
-            if (false/*database1.isLoaded()*/)
-                database1.generateData();
-            database = database1;
+    void loadDatabase(boolean createNew) {
+        Database.OnInstanceFinishedLoading onInstanceFinishedLoading = database_neu -> {
+            Toast.makeText(this, "Datenbank:\n" + Database.databaseCode, Toast.LENGTH_SHORT).show();
+
+            if (false/*database_neu.isLoaded()*/)
+                database_neu.generateData();
+            database = database_neu;
             ((TextView) findViewById(R.id.main_videoCount)).setText(String.valueOf(database.videoMap.size()));
             ((TextView) findViewById(R.id.main_darstellerCount)).setText(String.valueOf(database.darstellerMap.size()));
             ((TextView) findViewById(R.id.main_genreCount)).setText(String.valueOf(database.genreMap.size()));
             ((TextView) findViewById(R.id.main_studioCount)).setText(String.valueOf(database.studioMap.size()));
-        });
+        };
+
+        if (Database.getInstance(mySPR_daten, onInstanceFinishedLoading, createNew) == null) {
+            getDatabaseCode(databaseCode -> {
+                        mySPR_daten.edit()
+                                .putString(Database.DATABASE_CODE, databaseCode).commit();
+                        loadDatabase(true);
+                    }
+            );
+        }
+    }
+
+    interface OnDatabaseCodeFinish {
+        void runOndatabaseCodeFinish(String databaseCode);
+    }
+
+    public void getDatabaseCode(OnDatabaseCodeFinish onFinish) {
+        int buttonId = View.generateViewId();
+        CustomDialog.Builder(MainActivity.this)
+                .setTitle("DatenBank-Code Eingeben")
+                .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
+                .addButton(CustomDialog.OK_BUTTON, dialog ->
+                        onFinish.runOndatabaseCodeFinish(CustomDialog.getEditText(dialog)), buttonId)
+                .setEdit(new CustomDialog.EditBuilder()
+                        .setFireButtonOnOK(true, buttonId))
+                .show();
+
     }
 
     public void openVideoActivity(View view) {
@@ -56,6 +89,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         Utility.saveDatabase(mySPR_daten);
+        if (Utility.isOnline())
+            database.writeAllToFirebase();
         super.onDestroy();
     }
 }

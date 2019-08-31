@@ -1,25 +1,24 @@
 package com.maxMustermannGeheim.linkcollection.Daten;
 
-import androidx.annotation.NonNull;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class Video {
-    private UUID uuid = UUID.randomUUID();
+    private String uuid = "video_" + UUID.randomUUID().toString();
 
     private String titel;
     private String url;
-    private Studio studio;
-    private List<UUID> darstellerList = new ArrayList<>();
+    private List<String> studioList = new ArrayList<>();
+    private List<String> darstellerList = new ArrayList<>();
     private Float rating = -1f;
     private List<Date> dateList = new ArrayList<>();
-    private List<Genre> genreList = new ArrayList<>();
+    private List<String> genreList = new ArrayList<>();
 
     public Video(String titel) {
         this.titel = titel;
@@ -29,7 +28,7 @@ public class Video {
     public Video() {
     }
 
-    public UUID getUuid() {
+    public String getUuid() {
         return uuid;
     }
 
@@ -51,11 +50,11 @@ public class Video {
         return this;
     }
 
-    public List<UUID> getDarstellerList() {
+    public List<String> getDarstellerList() {
         return darstellerList;
     }
 
-    public Video setDarstellerList(List<UUID> darstellerList) {
+    public Video setDarstellerList(List<String> darstellerList) {
         this.darstellerList = darstellerList;
         return this;
     }
@@ -67,11 +66,20 @@ public class Video {
         return this;
     }
 
-    public List<Genre> getGenreList() {
+    public List<String> getStudioList() {
+        return studioList;
+    }
+
+    public Video setStudioList(List<String> studioList) {
+        this.studioList = studioList;
+        return this;
+    }
+
+    public List<String> getGenreList() {
         return genreList;
     }
 
-    public Video setGenreList(List<Genre> genreList) {
+    public Video setGenreList(List<String> genreList) {
         this.genreList = genreList;
         return this;
     }
@@ -104,7 +112,7 @@ public class Video {
         video.darstellerList = new ArrayList<>(this.darstellerList);
         video.rating = this.rating;
         video.genreList = new ArrayList<>(this.genreList);
-        video.studio = this.studio;
+        video.studioList = this.studioList;
         video.url = this.url;
         return video;
     }
@@ -117,7 +125,7 @@ public class Video {
         return Objects.equals(uuid, video.uuid) &&
                 Objects.equals(titel, video.titel) &&
                 Objects.equals(url, video.url) &&
-                Objects.equals(studio, video.studio) &&
+                Objects.equals(studioList, video.studioList) &&
                 Objects.equals(darstellerList, video.darstellerList) &&
                 Objects.equals(rating, video.rating) &&
                 Objects.equals(dateList, video.dateList) &&
@@ -126,6 +134,6 @@ public class Video {
 
     @Override
     public int hashCode() {
-        return Objects.hash(uuid, titel, url, studio, darstellerList, rating, dateList, genreList);
+        return Objects.hash(uuid, titel, url, studioList, darstellerList, rating, dateList, genreList);
     }
 }

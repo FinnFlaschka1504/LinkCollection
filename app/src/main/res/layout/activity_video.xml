@@ -6,14 +6,36 @@
     android:layout_height="match_parent"
     tools:context=".Activitys.VideoActivity">
 
+    <SearchView
+        android:id="@+id/videos_search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:focusable="auto"
+        android:iconifiedByDefault="false"
+        android:queryBackground="@android:color/transparent"
+        android:queryHint="Video-, oder Darsteller-Namen ('|': Divider)"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+    </SearchView>
+
+    <View
+        android:id="@+id/videos_divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_weight="1"
+        android:background="?android:attr/listDivider"
+        app:layout_constraintTop_toBottomOf="@id/videos_search" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/videos_recycler"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/videos_divider" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/videos_confirmDelete"

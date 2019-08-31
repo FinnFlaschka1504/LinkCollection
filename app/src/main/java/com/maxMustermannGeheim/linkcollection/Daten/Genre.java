@@ -3,15 +3,18 @@ package com.maxMustermannGeheim.linkcollection.Daten;
 import java.util.UUID;
 
 public class Genre {
-    private UUID uuid = UUID.randomUUID();
+    private String uuid = "genre_" + UUID.randomUUID().toString();
 
     public Genre(String name) {
         this.name = name;
     }
 
+    public Genre() {
+    }
+
     private String name;
 
-    public UUID getUuid() {
+    public String getUuid() {
         return uuid;
     }
 

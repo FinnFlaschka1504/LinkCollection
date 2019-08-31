@@ -11,8 +11,10 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Activitys.MainActivity;
+import com.maxMustermannGeheim.linkcollection.Daten.Video;
 
 import java.io.IOException;
+import java.util.List;
 
 public class Utility {
 
@@ -68,4 +70,23 @@ public class Utility {
                 .putString(Database.GENRE_MAP, gson.toJson(database.genreMap))
                 .apply();
     }
+
+    public static boolean containedInVideo(String query, Video video) {
+        return contains(video.getTitel(), query) || containedInActors(query, video.getDarstellerList());
+    }
+
+    private static boolean contains(String all, String sub) {
+        return all.toLowerCase().contains(sub.toLowerCase());
+    }
+
+    private static boolean  containedInActors(String query, List<String> actorUuids) {
+        Database database = Database.getInstance();
+        for (String actorUUid : actorUuids) {
+            if (contains(database.darstellerMap.get(actorUUid).getName(), query))
+                return true;
+        }
+        return false;
+
+    }
+
 }

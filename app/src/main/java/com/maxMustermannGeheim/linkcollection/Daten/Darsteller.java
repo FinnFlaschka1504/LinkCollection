@@ -3,7 +3,7 @@ package com.maxMustermannGeheim.linkcollection.Daten;
 import java.util.UUID;
 
 public class Darsteller {
-    private UUID uuid = UUID.randomUUID();
+    private String uuid = "darsteller_" + UUID.randomUUID().toString();
 
     private String name;
 
@@ -11,7 +11,10 @@ public class Darsteller {
         this.name = name;
     }
 
-    public UUID getUuid() {
+    public Darsteller() {
+    }
+
+    public String getUuid() {
         return uuid;
     }
 

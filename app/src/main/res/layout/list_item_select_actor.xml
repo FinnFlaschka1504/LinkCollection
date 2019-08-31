@@ -18,7 +18,7 @@
             android:orientation="vertical">
 
             <TextView
-                android:id="@+id/selectUserList_name"
+                android:id="@+id/selectList_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Finn Flaschka" />
@@ -37,7 +37,7 @@
             android:orientation="horizontal">
 
             <CheckBox
-                android:id="@+id/selectUserList_selected"
+                android:id="@+id/selectList_selected"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:clickable="false"

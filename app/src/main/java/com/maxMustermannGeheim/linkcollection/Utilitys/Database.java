@@ -23,37 +23,39 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public class Database {
-//    public static final String SUCCSESS = "SUCCSESS";
-//    public static final String FAILED = "FAILED";
-//    public static final String GROUPS = "Groups";
-//    public static final String TRIPS = "Trips";
-//    public static final String USERS = "Users";
-//    public static final String CARS = "Cars";
+    public static final String SUCCSESS = "SUCCSESS";
+    public static final String FAILED = "FAILED";
 
     public static final String VIDEO_MAP = "VIDEO_MAP";
     public static final String STUDIO_MAP = "STUDIO_MAP";
     public static final String DARSTELLER_MAP = "DARSTELLER_MAP";
     public static final String GENRE_MAP = "GENRE_MAP";
+    public static final String DATABASE_CODE = "DATABASE_CODE";
 
     private static Database database;
     private static DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
     private OnInstanceFinishedLoading onInstanceFinishedLoading;
     private boolean loaded = false;
+    private int loadingCount = 0;
+    public static String databaseCode = "";
 
-    public Map<UUID, Video> videoMap = new HashMap<>();
-    public Map<UUID, Darsteller> darstellerMap = new HashMap<>();
-    public Map<UUID, Studio> studioMap = new HashMap<>();
-    public Map<UUID, Genre> genreMap = new HashMap<>();
+    public Map<String, Video> videoMap = new HashMap<>();
+    public Map<String, Darsteller> darstellerMap = new HashMap<>();
+    public Map<String, Studio> studioMap = new HashMap<>();
+    public Map<String, Genre> genreMap = new HashMap<>();
 
     public static final Database getInstance() {
         return database;
     }
 
-    public static final Database getInstance(SharedPreferences mySPR_daten, OnInstanceFinishedLoading onInstanceFinishedLoading) {
-        if (false /*Utility.isOnline()*/) {
+    public static final Database getInstance(SharedPreferences mySPR_daten, OnInstanceFinishedLoading onInstanceFinishedLoading, boolean createNew) {
+        databaseCode = mySPR_daten.getString(DATABASE_CODE, "");
+        if (databaseCode.equals(""))
+            return null;
+
+        if (Utility.isOnline()) {
             return new Database(onInstanceFinishedLoading);
         } else {
             Gson gson = new Gson();
@@ -63,41 +65,53 @@ public class Database {
             String videoMap_string = mySPR_daten.getString(VIDEO_MAP, "--Leer--");
             if (!videoMap_string.equals("--Leer--")) {
                 database.videoMap = gson.fromJson(
-                        videoMap_string, new TypeToken<HashMap<UUID, Video>>() {
+                        videoMap_string, new TypeToken<HashMap<String, Video>>() {
                         }.getType()
                 );
             } else {
-                return null;
+                if (createNew)
+                    return new Database();
+                else
+                    return null;
             }
 
             String darstellerMap_string = mySPR_daten.getString(DARSTELLER_MAP, "--Leer--");
             if (!darstellerMap_string.equals("--Leer--")) {
                 database.darstellerMap = gson.fromJson(
-                        darstellerMap_string, new TypeToken<HashMap<UUID, Darsteller>>() {
+                        darstellerMap_string, new TypeToken<HashMap<String, Darsteller>>() {
                         }.getType()
                 );
             } else {
-                return null;
+                if (createNew)
+                    return new Database();
+                else
+                    return null;
             }
 
             String studioMap_string = mySPR_daten.getString(STUDIO_MAP, "--Leer--");
             if (!studioMap_string.equals("--Leer--")) {
                 database.studioMap = gson.fromJson(
-                        studioMap_string, new TypeToken<HashMap<UUID, Studio>>() {
+                        studioMap_string, new TypeToken<HashMap<String, Studio>>() {
                         }.getType()
                 );
             } else {
-                return null;
+                if (createNew)
+                    return new Database();
+                else
+                    return null;
             }
 
             String genreMap_string = mySPR_daten.getString(GENRE_MAP, "--Leer--");
             if (!genreMap_string.equals("--Leer--")) {
                 database.genreMap = gson.fromJson(
-                        genreMap_string, new TypeToken<Map<String, Map<UUID, Genre>>>() {
+                        genreMap_string, new TypeToken<HashMap<String, Genre>>(){
                         }.getType()
                 );
             } else {
-                return null;
+                if (createNew)
+                    return new Database();
+                else
+                    return null;
             }
             database.loaded = true;
             onInstanceFinishedLoading.onFinishedLoading(database);
@@ -107,11 +121,22 @@ public class Database {
 
     }
 
+    public void writeAllToFirebase() {
+        databaseReference.child(databaseCode).child(VIDEO_MAP).setValue(videoMap);
+        databaseReference.child(databaseCode).child(DARSTELLER_MAP).setValue(darstellerMap);
+        databaseReference.child(databaseCode).child(STUDIO_MAP).setValue(studioMap);
+        databaseReference.child(databaseCode).child(GENRE_MAP).setValue(genreMap);
+    }
+
     private Database(OnInstanceFinishedLoading onInstanceFinishedLoading) {
         Database.database = Database.this;
         this.onInstanceFinishedLoading = onInstanceFinishedLoading;
-        this.onInstanceFinishedLoading.onFinishedLoading(Database.this);
-//        reloadLoggedInUser();
+//        this.onInstanceFinishedLoading.onFinishedLoading(Database.this);
+//        writeAllToFirebase();
+        loadVideosFromFirebase();
+        loadActorFromFirebase();
+        loadStudioFromFirebase();
+        loadGenreFromFirebase();
     }
     private Database() {
         Database.database = Database.this;
@@ -163,15 +188,71 @@ public class Database {
         void onFinishedLoading(Database database);
     }
 
-//    private void reloadLoggedInUser() {
-//        Database.databaseCall_read(Arrays.asList(Database.USERS, loggedInUser_Id), dataSnapshot -> {
-//            if (dataSnapshot.getValue() == null)
-//                return;
-//            loggedInUser = Database.getFromData_user(dataSnapshot);
-//            getGroupsfromUser();
-//        });
-//    }
-//
+    private void loadVideosFromFirebase() {
+        loadingCount++;
+        Database.databaseCall_read(dataSnapshot -> {
+            loadingCount--;
+            if (dataSnapshot.getValue() == null)
+                return;
+            HashMap<String, Video> newMap = new HashMap<>();
+            for (DataSnapshot snapshot :  dataSnapshot.getChildren()){
+                Video video = snapshot.getValue(Video.class);
+                newMap.put(video.getUuid(), video);
+            }
+            videoMap = newMap;
+            if (loadingCount == 0)
+                onInstanceFinishedLoading.onFinishedLoading(database);
+        }, databaseCode, Database.VIDEO_MAP);
+    }
+    private void loadActorFromFirebase() {
+        loadingCount++;
+        Database.databaseCall_read(dataSnapshot -> {
+            loadingCount--;
+            if (dataSnapshot.getValue() == null)
+                return;
+            HashMap<String, Darsteller> newMap = new HashMap<>();
+            for (DataSnapshot snapshot :  dataSnapshot.getChildren()){
+                Darsteller darsteller = snapshot.getValue(Darsteller.class);
+                newMap.put(darsteller.getUuid(), darsteller);
+            }
+            darstellerMap = newMap;
+            if (loadingCount == 0)
+                onInstanceFinishedLoading.onFinishedLoading(database);
+        }, databaseCode, Database.DARSTELLER_MAP);
+    }
+    private void loadStudioFromFirebase() {
+        loadingCount++;
+        Database.databaseCall_read(dataSnapshot -> {
+            loadingCount--;
+            if (dataSnapshot.getValue() == null)
+                return;
+            HashMap<String, Studio> newMap = new HashMap<>();
+            for (DataSnapshot snapshot :  dataSnapshot.getChildren()){
+                Studio studio = snapshot.getValue(Studio.class);
+                newMap.put(studio.getUuid(), studio);
+            }
+            studioMap = newMap;
+            if (loadingCount == 0)
+                onInstanceFinishedLoading.onFinishedLoading(database);
+        }, databaseCode, Database.STUDIO_MAP);
+    }
+    private void loadGenreFromFirebase() {
+        loadingCount++;
+        Database.databaseCall_read(dataSnapshot -> {
+            loadingCount--;
+            if (dataSnapshot.getValue() == null)
+                return;
+            HashMap<String, Genre> newMap = new HashMap<>();
+            for (DataSnapshot snapshot :  dataSnapshot.getChildren()){
+                Genre genre = snapshot.getValue(Genre.class);
+                newMap.put(genre.getUuid(), genre);
+            }
+            genreMap = newMap;
+            if (loadingCount == 0)
+                onInstanceFinishedLoading.onFinishedLoading(database);
+        }, databaseCode, Database.GENRE_MAP);
+    }
+
 //    private void getGroupsfromUser() {
 //        List<String> loggedInUser_groupsIdList = loggedInUser.getGroupIdList();
 //        if (loggedInUser_groupsIdList.size() == 0) {
@@ -269,8 +350,8 @@ public class Database {
         void onFailed(DatabaseError databaseError);
     }
 
-    public static void databaseCall_read(List<String> stepList, OnDatabaseCallFinished onDatabaseCallFinished){
-        accessChilds(databaseReference, stepList).addListenerForSingleValueEvent(new ValueEventListener() {
+    public static void databaseCall_read(OnDatabaseCallFinished onDatabaseCallFinished, String... stepList){
+        accessChilds(databaseReference, Arrays.asList(stepList)).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 onDatabaseCallFinished.onFinished(dataSnapshot);

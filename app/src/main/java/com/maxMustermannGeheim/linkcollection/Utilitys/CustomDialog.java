@@ -179,7 +179,7 @@ public class CustomDialog {
         private boolean showKeyboard = true;
         private boolean selectAll = true;
         private boolean disableWhenEmpty = true;
-        private boolean fireButtonOnOK = true;
+        private boolean fireButtonOnOK = false;
         private int buttonId;
         private String regEx = ".*";
         private int inputType = InputType.TYPE_TEXT_VARIATION_PERSON_NAME;

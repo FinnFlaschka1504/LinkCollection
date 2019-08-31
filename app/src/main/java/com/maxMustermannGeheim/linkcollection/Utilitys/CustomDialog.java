@@ -172,7 +172,7 @@ public class CustomDialog {
         return this;
     }
 
-    static class EditBuilder {
+    public static class EditBuilder {
         // ToDo: trigger button mit ok
         private String text;
         private String hint;
@@ -220,7 +220,8 @@ public class CustomDialog {
             return this;
         }
 
-        public EditBuilder setFireButtonOnOK(boolean fireButtonOnOK) {
+        public EditBuilder setFireButtonOnOK(boolean fireButtonOnOK, int buttonId) {
+            this.buttonId = buttonId;
             this.fireButtonOnOK = fireButtonOnOK;
             return this;
         }
@@ -420,7 +421,7 @@ public class CustomDialog {
         this.showKeyboard = editBuilder.showKeyboard;
         Button button = dialog.findViewById(editBuilder.buttonId);
         if (button != null) {
-            if (editBuilder.disableWhenEmpty && editBuilder.text != null)
+            if (editBuilder.disableWhenEmpty)
                 button.setEnabled(false);
             editText.addTextChangedListener(new TextWatcher() {
                 @Override

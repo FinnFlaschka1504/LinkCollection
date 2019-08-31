@@ -5,9 +5,11 @@ import android.app.Dialog;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.view.WindowManager;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Activitys.MainActivity;
 
 import java.io.IOException;
@@ -53,5 +55,17 @@ public class Utility {
             dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
     }
 
-    // ToDo: datenbankabfrage methode schreiben
+    public static void saveDatabase(SharedPreferences mySPR_daten) {
+        Gson gson = new Gson();
+        Database database = Database.getInstance();
+        if (database == null)
+            return;
+
+        mySPR_daten.edit()
+                .putString(Database.VIDEO_MAP, gson.toJson(database.videoMap))
+                .putString(Database.DARSTELLER_MAP, gson.toJson(database.darstellerMap))
+                .putString(Database.STUDIO_MAP, gson.toJson(database.studioMap))
+                .putString(Database.GENRE_MAP, gson.toJson(database.genreMap))
+                .apply();
+    }
 }

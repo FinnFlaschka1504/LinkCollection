@@ -3,13 +3,18 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-        android:id="@+id/add"
+        android:id="@+id/taskBar_add"
         android:icon="@drawable/ic_add"
         android:title="Hinzufügen"
         app:showAsAction="ifRoom" />
     <item
-        android:id="@+id/random"
+        android:id="@+id/taskBar_random"
         android:icon="@drawable/ic_random"
         android:title="Zufall"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/taskBar_delete"
+        android:icon="@drawable/ic_delete"
+        android:title="Löschen"
         app:showAsAction="ifRoom" />
 </menu>

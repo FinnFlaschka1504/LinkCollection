@@ -21,10 +21,10 @@ import java.util.Map;
 
 public class CustomRecycler {
 
-    enum ORIENTATION {
+    public enum ORIENTATION {
         VERTICAL, HORIZONTAL
     }
-    enum SELECTION_MODE {
+    public enum SELECTION_MODE {
         SINGLE_SELECTION, MULTI_SELECTION
     }
 

@@ -12,6 +12,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.maxMustermannGeheim.linkcollection.Daten.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Video;
@@ -25,12 +26,17 @@ import java.util.Map;
 import java.util.UUID;
 
 public class Database {
-    public static final String SUCCSESS = "SUCCSESS";
-    public static final String FAILED = "FAILED";
-    public static final String GROUPS = "Groups";
-    public static final String TRIPS = "Trips";
-    public static final String USERS = "Users";
-    public static final String CARS = "Cars";
+//    public static final String SUCCSESS = "SUCCSESS";
+//    public static final String FAILED = "FAILED";
+//    public static final String GROUPS = "Groups";
+//    public static final String TRIPS = "Trips";
+//    public static final String USERS = "Users";
+//    public static final String CARS = "Cars";
+
+    public static final String VIDEO_MAP = "VIDEO_MAP";
+    public static final String STUDIO_MAP = "STUDIO_MAP";
+    public static final String DARSTELLER_MAP = "DARSTELLER_MAP";
+    public static final String GENRE_MAP = "GENRE_MAP";
 
     private static Database database;
     private static DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
@@ -38,8 +44,8 @@ public class Database {
     private boolean loaded = false;
 
     public Map<UUID, Video> videoMap = new HashMap<>();
-    public Map<UUID, Studio> studioMap = new HashMap<>();
     public Map<UUID, Darsteller> darstellerMap = new HashMap<>();
+    public Map<UUID, Studio> studioMap = new HashMap<>();
     public Map<UUID, Genre> genreMap = new HashMap<>();
 
     public static final Database getInstance() {
@@ -47,53 +53,52 @@ public class Database {
     }
 
     public static final Database getInstance(SharedPreferences mySPR_daten, OnInstanceFinishedLoading onInstanceFinishedLoading) {
-        if (Utility.isOnline()) {
+        if (false /*Utility.isOnline()*/) {
             return new Database(onInstanceFinishedLoading);
         } else {
             Gson gson = new Gson();
 
-//            database = new Database(mySPR_daten.getString("loggedInUserId", "--Leer--"));
-//
-//            String loggedInUser_string = mySPR_daten.getString("loggedInUser", "--Leer--");
-//            if (!loggedInUser_string.equals("--Leer--")) {
-//                database.loggedInUser = gson.fromJson(loggedInUser_string, User.class);
-//            } else {
-////                    Toast.makeText(this, "Fehler beim Laden der Offline Daten", Toast.LENGTH_SHORT).show();
-//                return null;
-//            }
-//
-//            String loggedInUser_groupsMap_string = mySPR_daten.getString("groupsMap", "--Leer--");
-//            if (!loggedInUser_groupsMap_string.equals("--Leer--")) {
-//                database.groupsMap = gson.fromJson(
-//                        loggedInUser_groupsMap_string, new TypeToken<HashMap<String, Group>>() {
-//                        }.getType()
-//                );
-//            } else {
-////                    Toast.makeText(this, "Fehler beim Laden der Offline Daten", Toast.LENGTH_SHORT).show();
-//                return null;
-//            }
-//
-//            String loggedInUser_groupPassengerMap_string = mySPR_daten.getString("groupPassengerMap", "--Leer--");
-//            if (!loggedInUser_groupPassengerMap_string.equals("--Leer--")) {
-//                database.groupPassengerMap = gson.fromJson(
-//                        loggedInUser_groupPassengerMap_string, new TypeToken<HashMap<String, User>>() {
-//                        }.getType()
-//                );
-//            } else {
-////                    Toast.makeText(this, "Fehler beim Laden der Offline Daten", Toast.LENGTH_SHORT).show();
-//                return null;
-//            }
-//
-//            String loggedInUser_groupTripMap_string = mySPR_daten.getString("groupTripMap", "--Leer--");
-//            if (!loggedInUser_groupTripMap_string.equals("--Leer--")) {
-//                database.groupTripMap = gson.fromJson(
-//                        loggedInUser_groupTripMap_string, new TypeToken<Map<String, Map<String, Trip>>>() {
-//                        }.getType()
-//                );
-//            } else {
-////                    Toast.makeText(this, "Fehler beim Laden der Offline Daten", Toast.LENGTH_SHORT).show();
-//                return null;
-//            }
+            database = new Database();
+
+            String videoMap_string = mySPR_daten.getString(VIDEO_MAP, "--Leer--");
+            if (!videoMap_string.equals("--Leer--")) {
+                database.videoMap = gson.fromJson(
+                        videoMap_string, new TypeToken<HashMap<UUID, Video>>() {
+                        }.getType()
+                );
+            } else {
+                return null;
+            }
+
+            String darstellerMap_string = mySPR_daten.getString(DARSTELLER_MAP, "--Leer--");
+            if (!darstellerMap_string.equals("--Leer--")) {
+                database.darstellerMap = gson.fromJson(
+                        darstellerMap_string, new TypeToken<HashMap<UUID, Darsteller>>() {
+                        }.getType()
+                );
+            } else {
+                return null;
+            }
+
+            String studioMap_string = mySPR_daten.getString(STUDIO_MAP, "--Leer--");
+            if (!studioMap_string.equals("--Leer--")) {
+                database.studioMap = gson.fromJson(
+                        studioMap_string, new TypeToken<HashMap<UUID, Studio>>() {
+                        }.getType()
+                );
+            } else {
+                return null;
+            }
+
+            String genreMap_string = mySPR_daten.getString(GENRE_MAP, "--Leer--");
+            if (!genreMap_string.equals("--Leer--")) {
+                database.genreMap = gson.fromJson(
+                        genreMap_string, new TypeToken<Map<String, Map<UUID, Genre>>>() {
+                        }.getType()
+                );
+            } else {
+                return null;
+            }
             database.loaded = true;
             onInstanceFinishedLoading.onFinishedLoading(database);
             return database;
@@ -108,7 +113,7 @@ public class Database {
         this.onInstanceFinishedLoading.onFinishedLoading(Database.this);
 //        reloadLoggedInUser();
     }
-    private Database(String loggedInUser_Id) {
+    private Database() {
         Database.database = Database.this;
 //        this.loggedInUser_Id = loggedInUser_Id;
     }
@@ -118,6 +123,11 @@ public class Database {
     }
 
     public void generateData() {
+        videoMap.clear();
+        darstellerMap.clear();
+        studioMap.clear();
+        genreMap.clear();
+
         Darsteller darsteller1 = new Darsteller("Darsteller1");
         Darsteller darsteller2 = new Darsteller("Darsteller2");
         Darsteller darsteller3 = new Darsteller("Darsteller3");
@@ -129,13 +139,21 @@ public class Database {
         darstellerMap.put(darsteller4.getUuid(), darsteller4);
 
         List<Video> videoList = Arrays.asList(
-                new Video("Film 7").addDarsteller(darsteller1, darsteller2),
-                new Video("Film 1").addDarsteller(darsteller2),
-                new Video("Film 2"),
-                new Video("Film 3").addDarsteller(darsteller3, darsteller1),
+                new Video("Film 7")
+                        .setUrl("http://google.de")
+                        .addDarsteller(darsteller1, darsteller2),
+                new Video("Film 1")
+                        .setUrl("http://youtube.com")
+                        .addDarsteller(darsteller2),
+                new Video("Film 2")
+                        .setUrl("facebook.com"),
+                new Video("Film 3")
+                        .addDarsteller(darsteller3, darsteller1),
                 new Video("Film 4"),
-                new Video("Film 5").addDarsteller(darsteller1, darsteller2, darsteller3, darsteller4),
-                new Video("Film 6").addDarsteller(darsteller4)
+                new Video("Film 5")
+                        .addDarsteller(darsteller1, darsteller2, darsteller3, darsteller4),
+                new Video("Film 6")
+                        .addDarsteller(darsteller4)
         );
         videoList.forEach(video -> videoMap.put(video.getUuid(), video));
     }

@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -28,6 +29,7 @@ public class CustomRecycler {
         SINGLE_SELECTION, MULTI_SELECTION
     }
 
+    private int rowOrColumnCount = 1;
     private long multipleClickDelay = 300;
     private long lastClickTime = System.currentTimeMillis();
     private boolean isMultiClickEnabled = false;
@@ -89,7 +91,7 @@ public class CustomRecycler {
         return recycler;
     }
 
-    public CustomRecycler setItemView(int layoutId) {
+    public CustomRecycler setItemLayout(int layoutId) {
         this.itemView = layoutId;
         return this;
     }
@@ -150,6 +152,11 @@ public class CustomRecycler {
 
     public CustomRecycler addSubOnClickListener(int viewId, OnClickListener onClickListener) {
         idSubOnClickListenerMap.put(viewId, new Pair<>(onClickListener, true));
+        return this;
+    }
+
+    public CustomRecycler setRowOrColumnCount(int rowOrColumnCount) {
+        this.rowOrColumnCount = rowOrColumnCount;
         return this;
     }
 
@@ -304,7 +311,11 @@ public class CustomRecycler {
         if (this.recycler == null)
             recycler = new RecyclerView(context);
 
-        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(context, orientation, false);
+        RecyclerView.LayoutManager layoutManager;
+        if (rowOrColumnCount > 1)
+            layoutManager = new GridLayoutManager(context, rowOrColumnCount,orientation, false);
+        else
+            layoutManager = new LinearLayoutManager(context, orientation, false);
         recycler.setLayoutManager(layoutManager);
 
         RecyclerView.Adapter mAdapter = new MyAdapter(objectList);

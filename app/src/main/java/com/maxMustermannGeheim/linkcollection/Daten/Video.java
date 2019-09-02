@@ -3,16 +3,15 @@ package com.maxMustermannGeheim.linkcollection.Daten;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class Video {
-    private String uuid = "video_" + UUID.randomUUID().toString();
-
-    private String titel;
+public class Video extends DatenObjekt{
+//    private String uuid = "video_" + UUID.randomUUID().toString();
+//
+//    private String name;
     private String url;
     private List<String> studioList = new ArrayList<>();
     private List<String> darstellerList = new ArrayList<>();
@@ -20,26 +19,27 @@ public class Video {
     private List<Date> dateList = new ArrayList<>();
     private List<String> genreList = new ArrayList<>();
 
-    public Video(String titel) {
-        this.titel = titel;
+    public Video(String name) {
+        uuid = "video_" + UUID.randomUUID().toString();
+        this.name = name;
         dateList.add(new Date());
     }
 
     public Video() {
     }
 
-    public String getUuid() {
-        return uuid;
-    }
-
-    public String getTitel() {
-        return titel;
-    }
-
-    public Video setTitel(String titel) {
-        this.titel = titel;
-        return this;
-    }
+//    public String getUuid() {
+//        return uuid;
+//    }
+//
+//    public String getName() {
+//        return name;
+//    }
+//
+//    public Video setName(String name) {
+//        this.name = name;
+//        return this;
+//    }
 
     public String getUrl() {
         return url;
@@ -106,7 +106,7 @@ public class Video {
 
     public Video cloneVideo() {
         Video video = new Video();
-        video.titel = this.titel;
+        video.name = this.name;
         video.uuid = this.uuid;
         video.dateList = new ArrayList<>(this.dateList);
         video.darstellerList = new ArrayList<>(this.darstellerList);
@@ -123,7 +123,7 @@ public class Video {
         if (o == null || getClass() != o.getClass()) return false;
         Video video = (Video) o;
         return Objects.equals(uuid, video.uuid) &&
-                Objects.equals(titel, video.titel) &&
+                Objects.equals(name, video.name) &&
                 Objects.equals(url, video.url) &&
                 Objects.equals(studioList, video.studioList) &&
                 Objects.equals(darstellerList, video.darstellerList) &&
@@ -134,6 +134,6 @@ public class Video {
 
     @Override
     public int hashCode() {
-        return Objects.hash(uuid, titel, url, studioList, darstellerList, rating, dateList, genreList);
+        return Objects.hash(uuid, name, url, studioList, darstellerList, rating, dateList, genreList);
     }
 }

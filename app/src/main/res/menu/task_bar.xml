@@ -6,28 +6,54 @@
         android:id="@+id/taskBar_add"
         android:icon="@drawable/ic_add"
         android:title="Hinzufügen"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always" />
     <item
         android:id="@+id/taskBar_random"
         android:icon="@drawable/ic_random"
         android:title="Zufall"
-        app:showAsAction="ifRoom" />
+        app:showAsAction="always" />
     <item
         android:id="@+id/taskBar_sort"
-        android:icon="@android:drawable/ic_menu_sort_by_size"
+        android:icon="@drawable/ic_sort"
         android:title="Sortieren"
-        app:showAsAction="ifRoom">
+        app:showAsAction="always">
         <menu>
-
+            <group android:checkableBehavior="single">
+                <item
+                    android:id="@+id/taskBar_sortByName"
+                    android:checked="true"
+                    android:title="Nach Name" />
+                <item
+                    android:id="@+id/taskBar_sortByViews"
+                    android:title="Nach Ansichten" />
+                <item
+                    android:id="@+id/taskBar_sortByRating"
+                    android:title="Nach Bewertung" />
+            </group>
+        </menu>
+    </item>
+    <item
+        android:id="@+id/taskBar_filter"
+        android:icon="@drawable/ic_filter"
+        android:title="Filtern"
+        app:showAsAction="always">
+        <menu>
             <item
-                android:id="@+id/taskBar_sortByName"
+                android:id="@+id/taskBar_filterByName"
                 android:checkable="true"
-                android:checked="true"
                 android:title="Nach Name" />
             <item
-                android:id="@+id/taskBar_sortByViews"
+                android:id="@+id/taskBar_filterByDarsteller"
                 android:checkable="true"
-                android:title="Nach Ansichten" />
+                android:title="Nach Darsteller" />
+            <item
+                android:id="@+id/taskBar_filterByGenre"
+                android:checkable="true"
+                android:title="Nach Genre" />
+            <item
+                android:id="@+id/taskBar_filterByStudio"
+                android:checkable="true"
+                android:title="Nach Studio" />
         </menu>
     </item>
     <item

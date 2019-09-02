@@ -71,7 +71,7 @@
                             android:id="@+id/main_videoCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="-" />
+                            android:text="–" />
                     </LinearLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -86,6 +86,7 @@
                 android:clickable="true"
                 android:foreground="@drawable/ripple"
                 android:gravity="center"
+                android:onClick="openActorActivity"
                 android:orientation="vertical">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
@@ -128,7 +129,7 @@
                             android:id="@+id/main_darstellerCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="-" />
+                            android:text="–" />
 
                     </LinearLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>
@@ -151,6 +152,7 @@
                 android:clickable="true"
                 android:foreground="@drawable/ripple"
                 android:gravity="center"
+                android:onClick="openStudioActivity"
                 android:orientation="vertical">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
@@ -193,7 +195,7 @@
                             android:id="@+id/main_studioCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="-" />
+                            android:text="–" />
                     </LinearLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -208,6 +210,7 @@
                 android:clickable="true"
                 android:foreground="@drawable/ripple"
                 android:gravity="center"
+                android:onClick="openGenreActivity"
                 android:orientation="vertical">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
@@ -250,7 +253,7 @@
                             android:id="@+id/main_genreCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="-" />
+                            android:text="–" />
                     </LinearLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -313,7 +316,7 @@
                             android:id="@+id/main_daysCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="-" />
+                            android:text="–" />
                     </LinearLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -371,7 +374,7 @@
                             android:id="@+id/main_Count"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="-" />
+                            android:text="–" />
                     </LinearLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>
 

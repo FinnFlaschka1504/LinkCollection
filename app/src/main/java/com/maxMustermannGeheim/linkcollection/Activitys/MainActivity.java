@@ -19,7 +19,16 @@ public class MainActivity extends AppCompatActivity {
     Database database;
     SharedPreferences mySPR_daten;
 
+    enum CATIGORYS{
+        Darsteller, Studios, Genre
+
+    }
+
+    public static final String EXTRA_CATIGORY = "EXTRA_CATIGORY";
     final int START_VIDEOS = 001;
+    final int START_ACTOR = 002;
+    final int START_STUDIO = 003;
+    final int START_GENRE = 004;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,9 +84,27 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(intent, START_VIDEOS);
     }
 
+    public void openActorActivity(View view) {
+        Intent intent = new Intent(this, CatigorysActivity.class);
+        intent.putExtra(EXTRA_CATIGORY, CATIGORYS.Darsteller.name());
+        startActivityForResult(intent, START_ACTOR);
+    }
+
+    public void openStudioActivity(View view) {
+        Intent intent = new Intent(this, CatigorysActivity.class);
+        intent.putExtra(EXTRA_CATIGORY, CATIGORYS.Studios.name());
+        startActivityForResult(intent, START_STUDIO);
+    }
+
+    public void openGenreActivity(View view) {
+        Intent intent = new Intent(this, CatigorysActivity.class);
+        intent.putExtra(EXTRA_CATIGORY, CATIGORYS.Genre.name());
+        startActivityForResult(intent, START_GENRE);
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        if (resultCode == RESULT_OK && requestCode == START_VIDEOS) {
+        if (resultCode == RESULT_OK /*&& requestCode == START_VIDEOS*/) {
             ((TextView) findViewById(R.id.main_videoCount)).setText(String.valueOf(database.videoMap.size()));
             ((TextView) findViewById(R.id.main_darstellerCount)).setText(String.valueOf(database.darstellerMap.size()));
             ((TextView) findViewById(R.id.main_genreCount)).setText(String.valueOf(database.genreMap.size()));

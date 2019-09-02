@@ -2,10 +2,10 @@ package com.maxMustermannGeheim.linkcollection.Daten;
 
 import java.util.UUID;
 
-public class Studio {
-    private String uuid = "studio_" + UUID.randomUUID().toString();
-
-    private String name;
+public class Studio extends DatenObjekt{
+//    private String uuid = "studio_" + UUID.randomUUID().toString();
+//
+//    private String name;
 
     public Studio(String name) {
         this.name = name;
@@ -14,17 +14,17 @@ public class Studio {
     public Studio() {
     }
 
-    public String getUuid() {
-        return uuid;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public Studio setName(String name) {
-        this.name = name;
-        return this;
-    }
+//    public String getUuid() {
+//        return uuid;
+//    }
+//
+//    public String getName() {
+//        return name;
+//    }
+//
+//    public Studio setName(String name) {
+//        this.name = name;
+//        return this;
+//    }
 
 }

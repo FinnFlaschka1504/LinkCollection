@@ -11,9 +11,11 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Activitys.MainActivity;
+import com.maxMustermannGeheim.linkcollection.Activitys.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Video;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 
 public class Utility {
@@ -71,8 +73,24 @@ public class Utility {
                 .apply();
     }
 
-    public static boolean containedInVideo(String query, Video video) {
-        return contains(video.getTitel(), query) || containedInActors(query, video.getDarstellerList());
+    public static boolean containedInVideo(String query, Video video, HashSet<VideoActivity.FILTER_TYPE> filterTypeSet) {
+        if (filterTypeSet.contains(VideoActivity.FILTER_TYPE.NAME)) {
+            if (contains(video.getName(), query))
+                return true;
+        }
+        if (filterTypeSet.contains(VideoActivity.FILTER_TYPE.ACTOR)) {
+            if (containedInActors(query, video.getDarstellerList()))
+                return true;
+        }
+        if (filterTypeSet.contains(VideoActivity.FILTER_TYPE.GENRE)) {
+            if (containedInGenre(query, video.getGenreList()))
+                return true;
+        }
+        if (filterTypeSet.contains(VideoActivity.FILTER_TYPE.STUDIO)) {
+            if (containedInStudio(query, video.getStudioList()))
+                return true;
+        }
+        return false;
     }
 
     private static boolean contains(String all, String sub) {
@@ -86,7 +104,23 @@ public class Utility {
                 return true;
         }
         return false;
+    }
 
+    private static boolean  containedInGenre(String query, List<String> genreUuids) {
+        Database database = Database.getInstance();
+        for (String genreUUid : genreUuids) {
+            if (contains(database.genreMap.get(genreUUid).getName(), query))
+                return true;
+        }
+        return false;
+    }
+    private static boolean  containedInStudio(String query, List<String> studioUuids) {
+        Database database = Database.getInstance();
+        for (String studioUUid : studioUuids) {
+            if (contains(database.studioMap.get(studioUUid).getName(), query))
+                return true;
+        }
+        return false;
     }
 
 }

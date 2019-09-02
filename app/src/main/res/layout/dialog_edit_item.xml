@@ -50,9 +50,16 @@
         android:layout_marginRight="16dp"
         android:focusable="auto"
         android:iconifiedByDefault="false"
+        android:queryBackground="@android:color/transparent"
         android:queryHint="Namen, oder E-Mail-Addresse">
 
     </SearchView>
+
+    <View
+        android:id="@+id/divider2"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?android:attr/listDivider" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/dialogAddPassenger_selectPassengers"

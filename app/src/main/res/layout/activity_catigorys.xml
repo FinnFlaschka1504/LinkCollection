@@ -7,13 +7,13 @@
     tools:context=".Activitys.VideoActivity">
 
     <SearchView
-        android:id="@+id/videos_search"
+        android:id="@+id/catigorys_search"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:focusable="auto"
         android:iconifiedByDefault="false"
         android:queryBackground="@android:color/transparent"
-        android:queryHint="Video-, oder Darsteller-Namen ('|': Divider)"
+        android:queryHint="ändern ******"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -21,25 +21,25 @@
     </SearchView>
 
     <View
-        android:id="@+id/videos_divider"
+        android:id="@+id/catigorys_divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_weight="1"
         android:background="?android:attr/listDivider"
-        app:layout_constraintTop_toBottomOf="@id/videos_search" />
+        app:layout_constraintTop_toBottomOf="@id/catigorys_search" />
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/videos_recycler"
+        android:id="@+id/catigorys_recycler"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:paddingHorizontal="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/videos_divider" />
+        app:layout_constraintTop_toBottomOf="@id/catigorys_divider" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/videos_confirmDelete"
+        android:id="@+id/catigorys_confirmDelete"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"

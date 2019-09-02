@@ -173,7 +173,6 @@ public class CustomDialog {
     }
 
     public static class EditBuilder {
-        // ToDo: trigger button mit ok
         private String text;
         private String hint;
         private boolean showKeyboard = true;
@@ -421,7 +420,7 @@ public class CustomDialog {
         this.showKeyboard = editBuilder.showKeyboard;
         Button button = dialog.findViewById(editBuilder.buttonId);
         if (button != null) {
-            if (editBuilder.disableWhenEmpty)
+            if (editBuilder.disableWhenEmpty && editBuilder.text == null)
                 button.setEnabled(false);
             editText.addTextChangedListener(new TextWatcher() {
                 @Override
@@ -560,7 +559,7 @@ public class CustomDialog {
         if (editText == null)
             return null;
         else
-            return editText.getText().toString();
+            return editText.getText().toString().trim();
     }
 
 }

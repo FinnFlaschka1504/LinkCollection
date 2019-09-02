@@ -197,6 +197,9 @@ public class Database {
             HashMap<String, Video> newMap = new HashMap<>();
             for (DataSnapshot snapshot :  dataSnapshot.getChildren()){
                 Video video = snapshot.getValue(Video.class);
+//                String name = ((HashMap<String ,String>)snapshot.getValue()).get("titel");
+//                if (name != null)
+//                    video.setName(name);
                 newMap.put(video.getUuid(), video);
             }
             videoMap = newMap;

@@ -274,6 +274,7 @@
                 android:clickable="true"
                 android:foreground="@drawable/ripple"
                 android:gravity="center"
+                android:onClick="showCalenderDialog"
                 android:orientation="vertical">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
@@ -331,8 +332,8 @@
                 android:clickable="true"
                 android:foreground="@drawable/ripple"
                 android:gravity="center"
-                android:orientation="vertical"
-                android:visibility="invisible">
+                android:onClick="showWatchLater"
+                android:orientation="vertical">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
@@ -342,7 +343,7 @@
                         android:layout_width="0dp"
                         android:layout_height="0dp"
                         android:alpha="0.3"
-                        android:src="@drawable/ic_genre"
+                        android:src="@drawable/ic_time"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
@@ -366,12 +367,12 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="8dp"
-                            android:text="Genre"
+                            android:text="Später"
                             android:textSize="24sp"
                             android:textStyle="bold" />
 
                         <TextView
-                            android:id="@+id/main_Count"
+                            android:id="@+id/main_watchLaterCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="–" />

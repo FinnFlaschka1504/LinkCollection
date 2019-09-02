@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -131,6 +132,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <TextView
@@ -148,25 +150,42 @@
                 android:layout_weight="1"
                 android:text="1" />
 
-            <Button
-                android:id="@+id/dialog_video_addView"
-                style="@style/Widget.AppCompat.Button.Borderless.Colored"
+            <ImageView
+                android:id="@+id/dialog_video_editViews"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:text="+"
-                android:textSize="20sp" />
+                android:clickable="true"
+                android:foreground="@drawable/ripple"
+                android:padding="5dp"
+                app:srcCompat="@android:drawable/ic_menu_edit" />
 
-            <Button
-                android:id="@+id/dialog_video_removeView"
-                style="@style/Widget.AppCompat.Button.Borderless.Colored"
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:text="–"
-                android:textSize="20sp" />
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:id="@+id/dialog_video_watchLater_background"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:foreground="@drawable/ripple"
+                    android:orientation="vertical"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"></LinearLayout>
+
+                <ImageView
+                    android:id="@+id/dialog_video_watchLater"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:clickable="true"
+                    android:padding="5dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:srcCompat="@android:drawable/ic_menu_recent_history" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
         </LinearLayout>
 

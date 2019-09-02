@@ -1,5 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Daten;
 
+import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -22,7 +24,6 @@ public class Video extends DatenObjekt{
     public Video(String name) {
         uuid = "video_" + UUID.randomUUID().toString();
         this.name = name;
-        dateList.add(new Date());
     }
 
     public Video() {
@@ -93,6 +94,10 @@ public class Video extends DatenObjekt{
 
     public List<Date> getDateList() {
         return dateList;
+    }
+
+    public void addDate(Date date) {
+        this.dateList.add(Utility.removeTime(date));
     }
 
     public Float getRating() {

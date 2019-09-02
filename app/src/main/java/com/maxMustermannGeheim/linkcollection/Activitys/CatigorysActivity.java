@@ -3,6 +3,7 @@ package com.maxMustermannGeheim.linkcollection.Activitys;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.SearchView;
 import android.widget.TextView;
@@ -11,16 +12,22 @@ import android.widget.Toast;
 import com.maxMustermannGeheim.linkcollection.Daten.DatenObjekt;
 import com.maxMustermannGeheim.linkcollection.Daten.Video;
 import com.maxMustermannGeheim.linkcollection.R;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
+import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.maxMustermannGeheim.linkcollection.Activitys.MainActivity.SHARED_PREFERENCES_NAME;
+
 public class CatigorysActivity extends AppCompatActivity {
     private String catigoryName;
-    private MainActivity.CATIGORYS catigorys;
+    private MainActivity.CATIGORYS catigory;
     private Database database = Database.getInstance();
+    SharedPreferences mySPR_daten;
+
     private CustomRecycler customRecycler;
     private SearchView catigorys_search;
     private SearchView.OnQueryTextListener textListener;
@@ -33,17 +40,18 @@ public class CatigorysActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_catigorys);
+        mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_NAME, 0);
 
         catigoryName = getIntent().getStringExtra(MainActivity.EXTRA_CATIGORY);
         setTitle(catigoryName);
         if (catigoryName.equals(MainActivity.CATIGORYS.Darsteller.name()))
-            catigorys = MainActivity.CATIGORYS.Darsteller;
+            catigory = MainActivity.CATIGORYS.Darsteller;
         else if (catigoryName.equals(MainActivity.CATIGORYS.Genre.name()))
-            catigorys = MainActivity.CATIGORYS.Genre;
+            catigory = MainActivity.CATIGORYS.Genre;
         else if (catigoryName.equals(MainActivity.CATIGORYS.Studios.name()))
-            catigorys = MainActivity.CATIGORYS.Studios;
+            catigory = MainActivity.CATIGORYS.Studios;
 
-        switch (catigorys) {
+        switch (catigory) {
             case Genre:
                 allDatenObjektList = new ArrayList<>(database.genreMap.values());
                 break;
@@ -55,7 +63,7 @@ public class CatigorysActivity extends AppCompatActivity {
                 break;
         }
         allDatenObjektList.sort((objekt1, objekt2) -> objekt1.getName().compareTo(objekt2.getName()));
-
+        filterdDatenObjektList = new ArrayList<>(allDatenObjektList);
         loadRecycler();
 
         catigorys_search = findViewById(R.id.catigorys_search);
@@ -68,12 +76,12 @@ public class CatigorysActivity extends AppCompatActivity {
 
             @Override
             public boolean onQueryTextChange(String s) {
-                filterdDatenObjektList = new ArrayList<>();
+                filterdDatenObjektList = new ArrayList<>(allDatenObjektList);
                 s = s.trim();
                 if (!s.equals("")) {
                     for (DatenObjekt datenObjekt : allDatenObjektList) {
-                            if (datenObjekt.getName().toLowerCase().contains(s.toLowerCase()))
-                                filterdDatenObjektList.add(datenObjekt);
+                            if (!datenObjekt.getName().toLowerCase().contains(s.toLowerCase()))
+                                filterdDatenObjektList.remove(datenObjekt);
                         }
                 }
                 reLoadRecycler();
@@ -100,7 +108,7 @@ public class CatigorysActivity extends AppCompatActivity {
 
                     int count = 0;
                     for (Video video : database.videoMap.values()) {
-                        switch (catigorys) {
+                        switch (catigory) {
                             case Genre:
                                 if (video.getGenreList().contains(datenObjekt.getUuid()))
                                     count++;
@@ -125,10 +133,54 @@ public class CatigorysActivity extends AppCompatActivity {
                         .putExtra(VideoActivity.EXTRA_SEARCH_CATIGORY, catigoryName));
                 })
                 .setUseCustomRipple(true)
-                .setOnLongClickListener((recycler, view, object, index) ->
-                        Toast.makeText(this, "Löschen für '" + ((DatenObjekt) object).getName() + "' implementieren", Toast.LENGTH_SHORT).show())
+                .setOnLongClickListener((recycler, view, object, index) -> {
+                    if (!Utility.isOnline(this))
+                        return;
+                    DatenObjekt datenObjekt = (DatenObjekt) object;
+                    CustomDialog.Builder(this)
+                            .setTitle(catigoryName + " Umbenennen, oder Löschen")
+                            .setEdit(new CustomDialog.EditBuilder()
+                                    .setText(datenObjekt.getName())
+                                    .setHint("Name"))
+                            .setButtonType(CustomDialog.ButtonType.CUSTOM)
+                            .addButton("Löschen", dialog -> {
+                                CustomDialog.Builder(this)
+                                        .setTitle("Löschen")
+                                        .setText("Wirklich '" + ((DatenObjekt) object).getName() + "' löschen?")
+                                        .setButtonType(CustomDialog.ButtonType.YES_NO)
+                                        .addButton(CustomDialog.YES_BUTTON, dialog1 -> {
+                                            dialog.dismiss();
+                                            removeCatigory((DatenObjekt) object);
+                                        })
+                                        .show();
+                            }, false)
+                            .addButton("Abbrechen", dialog -> {})
+                            .addButton("OK", dialog -> {
+                                if (!Utility.isOnline(this))
+                                    return;
+                                ((DatenObjekt) object).setName(CustomDialog.getEditText(dialog));
+                                reLoadRecycler();
+                                Utility.saveAll(mySPR_daten, database);
+                            })
+                            .show();
+                })
                 .generateCustomRecycler();
 
+    }
+
+    private void removeCatigory(DatenObjekt datenObjekt) {
+        allDatenObjektList.remove(datenObjekt);
+        filterdDatenObjektList.remove(datenObjekt);
+        switch (catigory) {
+            case Genre:
+                database.genreMap.remove(datenObjekt.getUuid());
+                for (Video video : database.videoMap.values()) {
+                    if (video.getGenreList().contains(datenObjekt.getUuid()))
+                        video.getGenreList().remove(datenObjekt.getUuid());
+                }
+        }
+        setResult(RESULT_OK);
+        reLoadRecycler();
     }
 
     private void reLoadRecycler() {

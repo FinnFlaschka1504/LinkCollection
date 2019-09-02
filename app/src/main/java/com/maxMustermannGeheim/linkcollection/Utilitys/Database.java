@@ -20,6 +20,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Studio;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,7 @@ public class Database {
     public static final String STUDIO_MAP = "STUDIO_MAP";
     public static final String DARSTELLER_MAP = "DARSTELLER_MAP";
     public static final String GENRE_MAP = "GENRE_MAP";
+    public static final String WATCH_LATER_LIST = "WATCH_LATER_LIST";
     public static final String DATABASE_CODE = "DATABASE_CODE";
 
     private static Database database;
@@ -45,6 +47,7 @@ public class Database {
     public Map<String, Darsteller> darstellerMap = new HashMap<>();
     public Map<String, Studio> studioMap = new HashMap<>();
     public Map<String, Genre> genreMap = new HashMap<>();
+    public List<String> watchLaterList = new ArrayList<>();
 
     public static final Database getInstance() {
         return database;
@@ -113,6 +116,19 @@ public class Database {
                 else
                     return null;
             }
+
+            String watchLaterList_string = mySPR_daten.getString(WATCH_LATER_LIST, "--Leer--");
+            if (!watchLaterList_string.equals("--Leer--")) {
+                database.genreMap = gson.fromJson(
+                        watchLaterList_string, new TypeToken<List<String>>(){
+                        }.getType()
+                );
+            } else {
+                if (createNew)
+                    return new Database();
+                else
+                    return null;
+            }
             database.loaded = true;
             onInstanceFinishedLoading.onFinishedLoading(database);
             return database;
@@ -126,6 +142,7 @@ public class Database {
         databaseReference.child(databaseCode).child(DARSTELLER_MAP).setValue(darstellerMap);
         databaseReference.child(databaseCode).child(STUDIO_MAP).setValue(studioMap);
         databaseReference.child(databaseCode).child(GENRE_MAP).setValue(genreMap);
+        databaseReference.child(databaseCode).child(WATCH_LATER_LIST).setValue(watchLaterList);
     }
 
     private Database(OnInstanceFinishedLoading onInstanceFinishedLoading) {
@@ -137,6 +154,7 @@ public class Database {
         loadActorFromFirebase();
         loadStudioFromFirebase();
         loadGenreFromFirebase();
+        loadWatchLaterFromFirebase();
     }
     private Database() {
         Database.database = Database.this;
@@ -197,14 +215,21 @@ public class Database {
             HashMap<String, Video> newMap = new HashMap<>();
             for (DataSnapshot snapshot :  dataSnapshot.getChildren()){
                 Video video = snapshot.getValue(Video.class);
-//                String name = ((HashMap<String ,String>)snapshot.getValue()).get("titel");
-//                if (name != null)
-//                    video.setName(name);
+//                List<Date> dateList = new ArrayList<>(video.getDateList());
+//                video.getDateList().clear();
+//                for (Date date : dateList) {
+//                    video.getDateList().add(Utility.removeTime(date));
+//                }
+////                String name = ((HashMap<String ,String>)snapshot.getValue()).get("titel");
+////                if (name != null)
+////                    video.setName(name);
                 newMap.put(video.getUuid(), video);
             }
             videoMap = newMap;
-            if (loadingCount == 0)
+            if (loadingCount == 0) {
+                loaded = true;
                 onInstanceFinishedLoading.onFinishedLoading(database);
+            }
         }, databaseCode, Database.VIDEO_MAP);
     }
     private void loadActorFromFirebase() {
@@ -219,8 +244,10 @@ public class Database {
                 newMap.put(darsteller.getUuid(), darsteller);
             }
             darstellerMap = newMap;
-            if (loadingCount == 0)
+            if (loadingCount == 0) {
+                loaded = true;
                 onInstanceFinishedLoading.onFinishedLoading(database);
+            }
         }, databaseCode, Database.DARSTELLER_MAP);
     }
     private void loadStudioFromFirebase() {
@@ -235,8 +262,10 @@ public class Database {
                 newMap.put(studio.getUuid(), studio);
             }
             studioMap = newMap;
-            if (loadingCount == 0)
+            if (loadingCount == 0) {
+                loaded = true;
                 onInstanceFinishedLoading.onFinishedLoading(database);
+            }
         }, databaseCode, Database.STUDIO_MAP);
     }
     private void loadGenreFromFirebase() {
@@ -251,76 +280,23 @@ public class Database {
                 newMap.put(genre.getUuid(), genre);
             }
             genreMap = newMap;
-            if (loadingCount == 0)
+            if (loadingCount == 0) {
+                loaded = true;
                 onInstanceFinishedLoading.onFinishedLoading(database);
+            }
         }, databaseCode, Database.GENRE_MAP);
     }
+    private void loadWatchLaterFromFirebase() {
+        loadingCount++;
+        Database.databaseCall_read(dataSnapshot -> {
+            loadingCount--;
+            if (dataSnapshot.getValue() == null)
+                return;
+            watchLaterList = (List<String>) dataSnapshot.getValue();
 
-//    private void getGroupsfromUser() {
-//        List<String> loggedInUser_groupsIdList = loggedInUser.getGroupIdList();
-//        if (loggedInUser_groupsIdList.size() == 0) {
-//            return;
-//        }
-//        for (String groupId : loggedInUser_groupsIdList) {
-//            Database.databaseCall_read(Arrays.asList(Database.GROUPS, groupId), dataSnapshot -> {
-//                if (dataSnapshot.getValue() == null) {
-//                    return;
-//                }
-//                Group foundGroup = Database.getFromData_group(dataSnapshot);
-//                groupsMap.put(foundGroup.getGroup_id(), foundGroup);
-//                if (groupsMap.size() == loggedInUser_groupsIdList.size()) {
-//                    getGroupPassengers();
-//                }
-//            });
-//            hasGroupChangeListener.put(groupId, false);
-//            addOnGroupChangeListener_database(groupId);
-//        }
-//    }
-//
-//    private void getGroupPassengers() {
-//        final int[] loggedInUser_passengerCount = {0};
-//        groupsMap.values().forEach(group -> loggedInUser_passengerCount[0] += group.getUserIdList().size());
-//
-//        for (Group group : groupsMap.values()) {
-//            for (String user : group.getUserIdList()) {
-//                Database.databaseCall_read(Arrays.asList(Database.USERS, user), dataSnapshot -> {
-//                    if (dataSnapshot.getValue() == null)
-//                        return;
-//                    User foundUser = Database.getFromData_user(dataSnapshot);
-//                    groupPassengerMap.put(foundUser.getUser_id(), foundUser);
-//                    loggedInUser_passengerCount[0]--;
-//                    if (loggedInUser_passengerCount[0] == 0) {
-//                        getGroupTrips();
-//                    }
-//                });
-//            }
-//        }
-//    }
-//
-//    private void getGroupTrips() {
-//        groupTripMap.clear();
-//        for (final String groupId : loggedInUser.getGroupIdList()) {
-//            if (groupsMap.get(groupId).getTripIdList().size() == 0) {
-//                groupTripMap.put(groupId, new HashMap<>());
-//                if (groupTripMap.size() >= loggedInUser.getGroupIdList().size()) {
-//                    Database.this.loaded = true;
-//                    onInstanceFinishedLoading.onFinishedLoading(Database.this); // --> fertig
-//                    return;
-//                }
-//                else
-//                    continue;
-//            }
-//            Database.databaseCall_read(Arrays.asList(Database.TRIPS, groupId), dataSnapshot -> {
-//                if (dataSnapshot.getValue() == null)
-//                    return;
-//                groupTripMap.put(groupId, Database.getFromData_tripMap(dataSnapshot));
-//                if (groupTripMap.size() >= loggedInUser.getGroupIdList().size()) {
-//                    Database.this.loaded = true;
-//                    onInstanceFinishedLoading.onFinishedLoading(Database.this); // --> fertig
-//                }
-//            });
-//        }
-//    }
+        }, databaseCode, Database.WATCH_LATER_LIST);
+    }
+
 //  <----- Get data from database -----
 
 
@@ -495,7 +471,6 @@ public class Database {
 //        groupsMap.replace(foundGroup.getGroup_id(), foundGroup); // Gruppe wird aktuallisiert
 //
 //        fireOnGroupChangeListeners();
-//        // ToDo: group trip map updaten
 //
 //    }
 //

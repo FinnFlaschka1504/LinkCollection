@@ -1,15 +1,18 @@
 package com.maxMustermannGeheim.linkcollection.Activitys;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.menu.MenuBuilder;
 
 import android.annotation.SuppressLint;
 import android.app.Dialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Pair;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -64,7 +67,7 @@ public class VideoActivity extends AppCompatActivity {
     Video randomVideo;
     private boolean scrolling = true;
     private SORT_TYPE sort_type = SORT_TYPE.NAME;
-    private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.ACTOR));
+    private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.ACTOR, FILTER_TYPE.GENRE, FILTER_TYPE.STUDIO));
     SearchView.OnQueryTextListener textListener;
 
     List<Video> allVideoList = new ArrayList<>();
@@ -82,7 +85,6 @@ public class VideoActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // ToDo: nach löschen liste neu laden und evl. auch aus datenbank löschen
-        // ToDo: bei hinzufügen bereits ausgewählte mit übergeben
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video);
@@ -105,6 +107,8 @@ public class VideoActivity extends AppCompatActivity {
 
             reLoadVideoRecycler();
             setResult(RESULT_OK);
+
+            Toast.makeText(this, toDelete.size() + (toDelete.size() == 1 ? " Video" : " Videos") + " gelöscht", Toast.LENGTH_SHORT).show();
         });
         loadVideoRecycler();
 
@@ -168,7 +172,6 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     private void sortList(List<Video> videoList) {
-        // ToDo: sortType
         switch (sort_type) {
             case NAME:
                 videoList.sort((video1, video2) -> video1.getName().compareTo(video2.getName()));
@@ -264,7 +267,7 @@ public class VideoActivity extends AppCompatActivity {
         video.getStudioList().forEach(uuid -> studioNames.add(database.studioMap.get(uuid).getName()));
         List<String> genreNames = new ArrayList<>();
         video.getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
-        return CustomDialog.Builder(this)
+        Dialog returnDialog = CustomDialog.Builder(this)
                 .setTitle("Deteil Ansicht")
                 .setView(R.layout.dialog_video)
                 .setButtonType(CustomDialog.ButtonType.CUSTOM)
@@ -284,12 +287,12 @@ public class VideoActivity extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.dialog_video_views)).setText(String.valueOf(video.getDateList().size()));
                     ((RatingBar) view.findViewById(R.id.dialog_video_rating)).setRating(video.getRating());
 
-                    final boolean[] watchLater = {database.watchLaterList.contains(video.getUuid())};
-                    view.findViewById(R.id.dialog_video_watchLater_background).setPressed(watchLater[0]);
+                    final boolean[] isInWatchLater = {database.watchLaterList.contains(video.getUuid())};
+                    view.findViewById(R.id.dialog_video_watchLater_background).setPressed(isInWatchLater[0]);
                     view.findViewById(R.id.dialog_video_watchLater).setOnClickListener(view1 -> {
-                        watchLater[0] = !watchLater[0];
-                        view.findViewById(R.id.dialog_video_watchLater_background).setPressed(watchLater[0]);
-                        if (watchLater[0]) {
+                        isInWatchLater[0] = !isInWatchLater[0];
+                        view.findViewById(R.id.dialog_video_watchLater_background).setPressed(isInWatchLater[0]);
+                        if (isInWatchLater[0]) {
                             database.watchLaterList.add(video.getUuid());
                             Toast.makeText(this, "Zu 'Später-Ansehen' hinzugefügt", Toast.LENGTH_SHORT).show();
                         } else {
@@ -298,12 +301,15 @@ public class VideoActivity extends AppCompatActivity {
                         }
                         textListener.onQueryTextSubmit(videos_search.getQuery().toString());
                         setResult(RESULT_OK);
+                        Utility.saveAll(mySPR_daten, database);
                     });
 
                     view.findViewById(R.id.dialog_video_editViews).setOnClickListener(view1 ->
                             showCalenderDialog(Arrays.asList(video), dialogVideoPair));
                 })
                 .show();
+        returnDialog.setOnDismissListener(dialogInterface -> dialogVideoPair = null);
+        return returnDialog;
     }
 
     public void showCalenderDialog(List<Video> videoList, Pair<Dialog, Video> dialogVideoPair) {
@@ -330,6 +336,7 @@ public class VideoActivity extends AppCompatActivity {
     private Dialog showEditOrNewDialog(Object object) {
         if (!Utility.isOnline(this))
             return null;
+        setResult(RESULT_OK);
 
         final Video[] video = {(Video) object};
         List<String> darstellerNames = new ArrayList<>();
@@ -341,10 +348,8 @@ public class VideoActivity extends AppCompatActivity {
             video[0].getStudioList().forEach(uuid -> studioNames.add(database.studioMap.get(uuid).getName()));
             video[0].getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
         }
-//        else
-//            video = new Video();
-        final Video[] finalVideo = {video[0]};
-        return CustomDialog.Builder(this)
+//        final Video[] finalVideo = {video[0]};
+        Dialog returnDialog =  CustomDialog.Builder(this)
                 .setTitle(object == null ? "Neues Video" : "Video Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
                 .setButtonType(CustomDialog.ButtonType.SAVE_CANCEL)
@@ -355,75 +360,112 @@ public class VideoActivity extends AppCompatActivity {
                         Toast.makeText(this, "Einen Titel eingeben", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    Video videoNeu;
-                    if (object == null)
-                        videoNeu = new Video(titel);
+                    String url = ((EditText) dialog.findViewById(R.id.dialog_editOrAddVideo_Url)).getText().toString().trim();
+                    boolean checked = ((CheckBox) dialog.findViewById(R.id.dialog_editOrAddVideo_watchLater)).isChecked();
+
+                    if (url.equals("") && !checked){
+                        CustomDialog.Builder(this)
+                        .setTitle("Ohne URL speichern?")
+                        .setText("Möchtest du wirklich das Video ohne URL speichern")
+                        .setButtonType(CustomDialog.ButtonType.YES_NO)
+                        .addButton(CustomDialog.YES_BUTTON, dialog1 ->
+                                saveVideo(dialog, object, titel, url, false, video))
+                        .show();
+                    }
                     else
-                        videoNeu = database.videoMap.get(((Video) object).getUuid());
-
-                    videoNeu.setName(titel);
-                    videoNeu.setDarstellerList(finalVideo[0].getDarstellerList());
-                    videoNeu.setStudioList(finalVideo[0].getStudioList());
-                    videoNeu.setGenreList(finalVideo[0].getGenreList());
-                    videoNeu.setUrl(((EditText) dialog.findViewById(R.id.dialog_editOrAddVideo_Url)).getText().toString());
-                    videoNeu.setRating(((RatingBar) dialog.findViewById(R.id.dialog_editOrAddVideo_rating)).getRating());
-
-                    if (((CheckBox) dialog.findViewById(R.id.dialog_editOrAddVideo_watchLater)).isChecked())
-                        database.watchLaterList.add(videoNeu.getUuid());
-                    else
-                        videoNeu.addDate(new Date());
-
-                    database.videoMap.put(videoNeu.getUuid(), videoNeu);
-                    reLoadVideoRecycler();
-                    dialog.dismiss();
-                    setResult(RESULT_OK);
-
-                    allVideoList = new ArrayList<>(database.videoMap.values());
-                    sortList(allVideoList);
-                    filterdVideoList = new ArrayList<>(allVideoList);
-                    textListener.onQueryTextChange(videos_search.getQuery().toString());
-
-                    Utility.saveDatabase(mySPR_daten);
-                    if (Utility.isOnline())
-                        database.writeAllToFirebase();
-
-
-                    if (dialogVideoPair == null)
-                        return;
-
-                    dialogVideoPair.first.dismiss();
-                    dialogVideoPair = new Pair<>(showDetailDialog(object), dialogVideoPair.second);
+                        saveVideo(dialog, object, titel, url, checked, video);
 
                 }, false)
                 .setSetViewContent(view -> {
-                    if (finalVideo[0] != null) {
-                        ((EditText) view.findViewById(R.id.dialog_editOrAddVideo_Titel)).setText(finalVideo[0].getName());
+                    if (video[0] != null) {
+                        ((EditText) view.findViewById(R.id.dialog_editOrAddVideo_Titel)).setText(video[0].getName());
                         ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_Darsteller)).setText(String.join(", ", darstellerNames));
                         view.findViewById(R.id.dialog_editOrAddVideo_Darsteller).setSelected(true);
                         ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_Studio)).setText(String.join(", ", studioNames));
                         view.findViewById(R.id.dialog_editOrAddVideo_Studio).setSelected(true);
                         ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_Genre)).setText(String.join(", ", genreNames));
                         view.findViewById(R.id.dialog_editOrAddVideo_Genre).setSelected(true);
-                        ((EditText) view.findViewById(R.id.dialog_editOrAddVideo_Url)).setText(finalVideo[0].getUrl());
-                        ((RatingBar) view.findViewById(R.id.dialog_editOrAddVideo_rating)).setRating(finalVideo[0].getRating());
+                        ((EditText) view.findViewById(R.id.dialog_editOrAddVideo_Url)).setText(video[0].getUrl());
+                        ((RatingBar) view.findViewById(R.id.dialog_editOrAddVideo_rating)).setRating(video[0].getRating());
                     }
                     else {
                         view.findViewById(R.id.dialog_editOrAddVideo_watchLater).setVisibility(View.VISIBLE);
-                        finalVideo[0] = new Video();
+                        video[0] = new Video();
                     }
 
 
                     view.findViewById(R.id.dialog_editOrAddVideo_editActor).setOnClickListener(view1 ->
-                            showEditDialog(finalVideo[0] == null ? null : finalVideo[0].getDarstellerList(), finalVideo[0], DatenObjekt.OBJECT_TYPE.DARSTELLER));
+                            showEditCatigoryDialog(video[0] == null ? null : video[0].getDarstellerList(), video[0], DatenObjekt.OBJECT_TYPE.DARSTELLER));
                     view.findViewById(R.id.dialog_editOrAddVideo_editStudio).setOnClickListener(view1 ->
-                            showEditDialog(finalVideo[0] == null ? null : finalVideo[0].getStudioList(), finalVideo[0], DatenObjekt.OBJECT_TYPE.STUDIO ));
+                            showEditCatigoryDialog(video[0] == null ? null : video[0].getStudioList(), video[0], DatenObjekt.OBJECT_TYPE.STUDIO ));
                     view.findViewById(R.id.dialog_editOrAddVideo_editGenre).setOnClickListener(view1 ->
-                            showEditDialog(finalVideo[0] == null ? null : finalVideo[0].getGenreList(), finalVideo[0], DatenObjekt.OBJECT_TYPE.GENRE));
+                            showEditCatigoryDialog(video[0] == null ? null : video[0].getGenreList(), video[0], DatenObjekt.OBJECT_TYPE.GENRE));
                 })
                 .show();
+        DialogInterface.OnKeyListener keylistener = (dialog, keyCode, KEvent) -> {
+            int keyaction = KEvent.getAction();
+
+            if(keyaction == KeyEvent.ACTION_DOWN)
+            {
+                int keycode = KEvent.getKeyCode();
+                int keyunicode = KEvent.getUnicodeChar(KEvent.getMetaState() );
+                char character = (char) keyunicode;
+//                    if(keycode== KeyCode.Enter){
+//
+//
+//                    }
+            }
+            return false;
+        };
+        returnDialog.setOnKeyListener(keylistener);
+        return returnDialog;
     }
 
-    private Dialog showEditDialog(List<String> preSelectedUuidList, Video video, DatenObjekt.OBJECT_TYPE editType) {
+    private void saveVideo(Dialog dialog, Object object, String titel, String url, boolean checked, Video[] video) {
+        boolean neuesVideo = object == null;
+        Video videoNeu;
+        if (object == null)
+            videoNeu = new Video(titel);
+        else
+            videoNeu = database.videoMap.get(((Video) object).getUuid());
+
+        videoNeu.setName(titel);
+        videoNeu.setDarstellerList(video[0].getDarstellerList());
+        videoNeu.setStudioList(video[0].getStudioList());
+        videoNeu.setGenreList(video[0].getGenreList());
+        videoNeu.setUrl(url);
+        videoNeu.setRating(((RatingBar) dialog.findViewById(R.id.dialog_editOrAddVideo_rating)).getRating());
+
+        boolean addedYesterday = false;
+        if (checked)
+            database.watchLaterList.add(videoNeu.getUuid());
+        else if (neuesVideo)
+            addedYesterday = videoNeu.addDate(new Date(), true);
+
+        database.videoMap.put(videoNeu.getUuid(), videoNeu);
+        reLoadVideoRecycler();
+        dialog.dismiss();
+
+        allVideoList = new ArrayList<>(database.videoMap.values());
+        sortList(allVideoList);
+        filterdVideoList = new ArrayList<>(allVideoList);
+        textListener.onQueryTextChange(videos_search.getQuery().toString());
+
+        Utility.saveDatabase(mySPR_daten);
+        if (Utility.isOnline())
+            database.writeAllToFirebase();
+
+        Utility.showCenterdToast(this, "Video gespeichert" + (addedYesterday ? "\nAutomatisch für gestern eingetragen" : ""));
+
+        if (dialogVideoPair == null)
+            return;
+
+        dialogVideoPair.first.dismiss();
+        dialogVideoPair = new Pair<>(showDetailDialog(object), dialogVideoPair.second);
+
+    }
+
+    private Dialog showEditCatigoryDialog(List<String> preSelectedUuidList, Video video, DatenObjekt.OBJECT_TYPE editType) {
         if (preSelectedUuidList == null)
             preSelectedUuidList = new ArrayList<>();
 
@@ -450,7 +492,6 @@ public class VideoActivity extends AppCompatActivity {
         int saveButtonId_add = View.generateViewId();
 
 
-        List<String> finalSelectedUuidList = preSelectedUuidList;
         String finalEditType_string = editType_string;
         String finalEditType_string1 = editType_string;
         Dialog dialog_AddActorOrGenre = CustomDialog.Builder(this)
@@ -479,7 +520,7 @@ public class VideoActivity extends AppCompatActivity {
                                 selectedUuidList.add(datenObjekt.getUuid());
                                 addDialogVideoPair.first.dismiss();
                                 addDialogVideoPair = new Pair<>(
-                                        showEditDialog(selectedUuidList, video, editType), video);
+                                        showEditCatigoryDialog(selectedUuidList, video, editType), video);
 
                             }, saveButtonId_add)
                             .setEdit(new CustomDialog.EditBuilder()
@@ -699,16 +740,16 @@ public class VideoActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.task_bar, menu);
+        getMenuInflater().inflate(R.menu.task_bar_video, menu);
 
         Menu subMenu = menu.getItem(((MenuBuilder) menu).findItemIndex(R.id.taskBar_filter)).getSubMenu();
-        subMenu.getItem(((MenuBuilder) subMenu).findItemIndex(R.id.taskBar_filterByName))
+        subMenu.getItem(((MenuBuilder) subMenu).findItemIndex(R.id.taskBar_video_filterByName))
                 .setChecked(filterTypeSet.contains(FILTER_TYPE.NAME));
-        subMenu.getItem(((MenuBuilder) subMenu).findItemIndex(R.id.taskBar_filterByDarsteller))
+        subMenu.getItem(((MenuBuilder) subMenu).findItemIndex(R.id.taskBar_video_filterByDarsteller))
                 .setChecked(filterTypeSet.contains(FILTER_TYPE.ACTOR));
-        subMenu.getItem(((MenuBuilder) subMenu).findItemIndex(R.id.taskBar_filterByStudio))
+        subMenu.getItem(((MenuBuilder) subMenu).findItemIndex(R.id.taskBar_video_filterByStudio))
                 .setChecked(filterTypeSet.contains(FILTER_TYPE.STUDIO));
-        subMenu.getItem(((MenuBuilder) subMenu).findItemIndex(R.id.taskBar_filterByGenre))
+        subMenu.getItem(((MenuBuilder) subMenu).findItemIndex(R.id.taskBar_video_filterByGenre))
                 .setChecked(filterTypeSet.contains(FILTER_TYPE.GENRE));
         return true;
     }
@@ -718,13 +759,13 @@ public class VideoActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         switch (id) {
-            case R.id.taskBar_add:
+            case R.id.taskBar_video_add:
                 editDialogVideoPair = new Pair<>(showEditOrNewDialog(null), null);
                 break;
-            case R.id.taskBar_random:
+            case R.id.taskBar_video_random:
                 showRandomDialog();
                 break;
-            case R.id.taskBar_scroll:
+            case R.id.taskBar_video_scroll:
                 if (item.isChecked()) {
                     item.setChecked(false);
                     scrolling = false;
@@ -734,7 +775,7 @@ public class VideoActivity extends AppCompatActivity {
                 }
                 customRecycler_VideoList.reload();
                 break;
-            case R.id.taskBar_delete:
+            case R.id.taskBar_video_delete:
                 if (database.videoMap.isEmpty()) {
                     Toast.makeText(this, "Keine Videos", Toast.LENGTH_SHORT).show();
                     return true;
@@ -748,23 +789,23 @@ public class VideoActivity extends AppCompatActivity {
                 delete = !delete;
                 break;
 
-            case R.id.taskBar_sortByName:
+            case R.id.taskBar_video_sortByName:
                 sort_type = SORT_TYPE.NAME;
                 item.setChecked(true);
                 reLoadVideoRecycler();
                 break;
-            case R.id.taskBar_sortByViews:
+            case R.id.taskBar_video_sortByViews:
                 sort_type = SORT_TYPE.VIEWS;
                 item.setChecked(true);
                 reLoadVideoRecycler();
                 break;
-            case R.id.taskBar_sortByRating:
+            case R.id.taskBar_video_sortByRating:
                 sort_type = SORT_TYPE.RATING;
                 item.setChecked(true);
                 reLoadVideoRecycler();
                 break;
 
-            case R.id.taskBar_filterByName:
+            case R.id.taskBar_video_filterByName:
                 if (item.isChecked()) {
                     filterTypeSet.remove(FILTER_TYPE.NAME);
                     item.setChecked(false);
@@ -774,7 +815,7 @@ public class VideoActivity extends AppCompatActivity {
                 }
                 textListener.onQueryTextChange(videos_search.getQuery().toString());
                 break;
-            case R.id.taskBar_filterByDarsteller:
+            case R.id.taskBar_video_filterByDarsteller:
                 if (item.isChecked()) {
                     filterTypeSet.remove(FILTER_TYPE.ACTOR);
                     item.setChecked(false);
@@ -784,7 +825,7 @@ public class VideoActivity extends AppCompatActivity {
                 }
                 textListener.onQueryTextChange(videos_search.getQuery().toString());
                 break;
-            case R.id.taskBar_filterByGenre:
+            case R.id.taskBar_video_filterByGenre:
                 if (item.isChecked()) {
                     filterTypeSet.remove(FILTER_TYPE.GENRE);
                     item.setChecked(false);
@@ -794,7 +835,7 @@ public class VideoActivity extends AppCompatActivity {
                 }
                 textListener.onQueryTextChange(videos_search.getQuery().toString());
                 break;
-            case R.id.taskBar_filterByStudio:
+            case R.id.taskBar_video_filterByStudio:
                 if (item.isChecked()) {
                     filterTypeSet.remove(FILTER_TYPE.STUDIO);
                     item.setChecked(false);
@@ -805,6 +846,15 @@ public class VideoActivity extends AppCompatActivity {
                 textListener.onQueryTextChange(videos_search.getQuery().toString());
                 break;
 
+            case android.R.id.home:
+                if (delete) {
+                    videos_confirmDelete.setVisibility(View.GONE);
+                    reLoadVideoRecycler();
+                    delete = false;
+                    return true;
+                }
+                finish();
+                break;
 
         }
         return true;
@@ -882,17 +932,6 @@ public class VideoActivity extends AppCompatActivity {
         }
 
         super.onBackPressed();
-    }
-
-    @SuppressLint("RestrictedApi")
-    public boolean onSupportNavigateUp() {
-        if (delete) {
-            videos_confirmDelete.setVisibility(View.GONE);
-            reLoadVideoRecycler();
-            delete = false;
-            return true;
-        }
-        return super.onSupportNavigateUp();
     }
 
     @Override

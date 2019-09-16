@@ -119,7 +119,7 @@ public class Database {
 
             String watchLaterList_string = mySPR_daten.getString(WATCH_LATER_LIST, "--Leer--");
             if (!watchLaterList_string.equals("--Leer--")) {
-                database.genreMap = gson.fromJson(
+                database.watchLaterList = gson.fromJson(
                         watchLaterList_string, new TypeToken<List<String>>(){
                         }.getType()
                 );
@@ -294,6 +294,10 @@ public class Database {
                 return;
             watchLaterList = (List<String>) dataSnapshot.getValue();
 
+            if (loadingCount == 0) {
+                loaded = true;
+                onInstanceFinishedLoading.onFinishedLoading(database);
+            }
         }, databaseCode, Database.WATCH_LATER_LIST);
     }
 
@@ -401,7 +405,6 @@ public class Database {
 
 
 //  ----- Change Listener ----->
-    // ToDo: onLoggedInUserChange
     interface OnChangeListener {
         void onChangeListener();
     }

@@ -62,9 +62,6 @@ public class CustomRecycler {
     Map<Integer, Pair<OnClickListener, Boolean>> idSubOnClickListenerMap = new HashMap<>();
     private SELECTION_MODE selectionMode = SELECTION_MODE.SINGLE_SELECTION;
 
-    // ToDo: set sub OnClickListener
-
-
     private CustomRecycler(Context context) {
         this.context = context;
     }
@@ -79,7 +76,6 @@ public class CustomRecycler {
         return customRecycler;
     }
 
-    // ToDo: eventuell per z.B. User.class die dataset-Liste nicht abstrakt machen
 
 
     public CustomRecycler setRecycler(RecyclerView recycler) {
@@ -346,6 +342,12 @@ public class CustomRecycler {
 
     public RecyclerView reload() {
         this.recycler.setAdapter(new MyAdapter(objectList));
+        return recycler;
+    }
+
+    public RecyclerView reloadNew() {
+        this.recycler.setAdapter(new MyAdapter(objectList));
+        generate();
         return recycler;
     }
 }

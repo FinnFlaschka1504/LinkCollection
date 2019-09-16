@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.util.Pair;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewStub;
 import android.view.WindowManager;
@@ -258,7 +259,7 @@ public class Utility {
             setButtons(layout, calendarView.getEvents(new Date()).size());
 
         layout.findViewById(R.id.dialog_editViews_add).setOnClickListener(view -> {
-            videoList.get(0).getDateList().add(selectedDate[0]);
+            videoList.get(0).addDate(selectedDate[0], false);
             calendarView.addEvent(new Event(Color.BLACK
                     , selectedDate[0].getTime(), videoList.get(0)));
             loadVideoList(calendarView.getEvents(selectedDate[0]), layout, customRecycler);
@@ -301,5 +302,12 @@ public class Utility {
         cal.set(Calendar.SECOND, 0);
         cal.set(Calendar.MILLISECOND, 0);
         return cal.getTime();
+    }
+
+    public static void showCenterdToast(Context context, String text) {
+        Toast toast = Toast.makeText(context, text, Toast.LENGTH_SHORT);
+        TextView v = toast.getView().findViewById(android.R.id.message);
+        if( v != null) v.setGravity(Gravity.CENTER);
+        toast.show();
     }
 }

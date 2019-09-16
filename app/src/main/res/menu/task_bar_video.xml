@@ -3,31 +3,31 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-        android:id="@+id/taskBar_add"
+        android:id="@+id/taskBar_video_add"
         android:icon="@drawable/ic_add"
         android:title="Hinzufügen"
         app:showAsAction="always" />
     <item
-        android:id="@+id/taskBar_random"
+        android:id="@+id/taskBar_video_random"
         android:icon="@drawable/ic_random"
         android:title="Zufall"
         app:showAsAction="always" />
     <item
-        android:id="@+id/taskBar_sort"
+        android:id="@+id/taskBar_video_sort"
         android:icon="@drawable/ic_sort"
         android:title="Sortieren"
         app:showAsAction="always">
         <menu>
             <group android:checkableBehavior="single">
                 <item
-                    android:id="@+id/taskBar_sortByName"
+                    android:id="@+id/taskBar_video_sortByName"
                     android:checked="true"
                     android:title="Nach Name" />
                 <item
-                    android:id="@+id/taskBar_sortByViews"
+                    android:id="@+id/taskBar_video_sortByViews"
                     android:title="Nach Ansichten" />
                 <item
-                    android:id="@+id/taskBar_sortByRating"
+                    android:id="@+id/taskBar_video_sortByRating"
                     android:title="Nach Bewertung" />
             </group>
         </menu>
@@ -39,30 +39,30 @@
         app:showAsAction="always">
         <menu>
             <item
-                android:id="@+id/taskBar_filterByName"
+                android:id="@+id/taskBar_video_filterByName"
                 android:checkable="true"
                 android:title="Nach Name" />
             <item
-                android:id="@+id/taskBar_filterByDarsteller"
+                android:id="@+id/taskBar_video_filterByDarsteller"
                 android:checkable="true"
                 android:title="Nach Darsteller" />
             <item
-                android:id="@+id/taskBar_filterByGenre"
+                android:id="@+id/taskBar_video_filterByGenre"
                 android:checkable="true"
                 android:title="Nach Genre" />
             <item
-                android:id="@+id/taskBar_filterByStudio"
+                android:id="@+id/taskBar_video_filterByStudio"
                 android:checkable="true"
                 android:title="Nach Studio" />
         </menu>
     </item>
     <item
-        android:id="@+id/taskBar_scroll"
+        android:id="@+id/taskBar_video_scroll"
         android:checkable="true"
         android:checked="true"
         android:title="Scrollen" />
     <item
-        android:id="@+id/taskBar_delete"
+        android:id="@+id/taskBar_video_delete"
         android:icon="@drawable/ic_delete"
         android:title="Löschen"
         app:showAsAction="ifRoom" />

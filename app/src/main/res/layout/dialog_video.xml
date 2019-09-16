@@ -157,7 +157,7 @@
                 android:clickable="true"
                 android:foreground="@drawable/ripple"
                 android:padding="5dp"
-                app:srcCompat="@android:drawable/ic_menu_edit" />
+                app:srcCompat="@drawable/ic_kallendar_grey" />
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="wrap_content"

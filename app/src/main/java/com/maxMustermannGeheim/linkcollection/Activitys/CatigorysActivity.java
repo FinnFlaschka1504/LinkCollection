@@ -1,13 +1,18 @@
 package com.maxMustermannGeheim.linkcollection.Activitys;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
+import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Pair;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.SearchView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.maxMustermannGeheim.linkcollection.Daten.DatenObjekt;
 import com.maxMustermannGeheim.linkcollection.Daten.Video;
@@ -18,13 +23,24 @@ import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 import static com.maxMustermannGeheim.linkcollection.Activitys.MainActivity.SHARED_PREFERENCES_NAME;
 
 public class CatigorysActivity extends AppCompatActivity {
+    public static final int START_CATIGORY_SEARCH = 001;
+
+    enum SORT_TYPE{
+        NAME, COUNT
+    }
+
+
+    private int columnCount = 2;
     private String catigoryName;
     private MainActivity.CATIGORYS catigory;
+    private SORT_TYPE sort_type = SORT_TYPE.NAME;
     private Database database = Database.getInstance();
     SharedPreferences mySPR_daten;
 
@@ -32,38 +48,28 @@ public class CatigorysActivity extends AppCompatActivity {
     private SearchView catigorys_search;
     private SearchView.OnQueryTextListener textListener;
 
-    private List<DatenObjekt> allDatenObjektList;
-    private List<DatenObjekt> filterdDatenObjektList;
+    private List<Pair<DatenObjekt, Integer>> allDatenObjektPairList;
+    private List<Pair<DatenObjekt, Integer>> filterdDatenObjektPairList;
 
-    // ToDo: zurück navigieren hinzufügen und fixen
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_catigorys);
         mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_NAME, 0);
 
-        catigoryName = getIntent().getStringExtra(MainActivity.EXTRA_CATIGORY);
         setTitle(catigoryName);
-        if (catigoryName.equals(MainActivity.CATIGORYS.Darsteller.name()))
-            catigory = MainActivity.CATIGORYS.Darsteller;
-        else if (catigoryName.equals(MainActivity.CATIGORYS.Genre.name()))
-            catigory = MainActivity.CATIGORYS.Genre;
-        else if (catigoryName.equals(MainActivity.CATIGORYS.Studios.name()))
-            catigory = MainActivity.CATIGORYS.Studios;
+        setDatenObjektIntegerPairLiist();
 
         switch (catigory) {
             case Genre:
-                allDatenObjektList = new ArrayList<>(database.genreMap.values());
                 break;
             case Darsteller:
-                allDatenObjektList = new ArrayList<>(database.darstellerMap.values());
                 break;
             case Studios:
-                allDatenObjektList = new ArrayList<>(database.studioMap.values());
                 break;
         }
-        allDatenObjektList.sort((objekt1, objekt2) -> objekt1.getName().compareTo(objekt2.getName()));
-        filterdDatenObjektList = new ArrayList<>(allDatenObjektList);
+        sortList(allDatenObjektPairList);
+        filterdDatenObjektPairList = new ArrayList<>(allDatenObjektPairList);
         loadRecycler();
 
         catigorys_search = findViewById(R.id.catigorys_search);
@@ -76,13 +82,14 @@ public class CatigorysActivity extends AppCompatActivity {
 
             @Override
             public boolean onQueryTextChange(String s) {
-                filterdDatenObjektList = new ArrayList<>(allDatenObjektList);
+                filterdDatenObjektPairList = new ArrayList<>(allDatenObjektPairList);
                 s = s.trim();
                 if (!s.equals("")) {
-                    for (DatenObjekt datenObjekt : allDatenObjektList) {
-                            if (!datenObjekt.getName().toLowerCase().contains(s.toLowerCase()))
-                                filterdDatenObjektList.remove(datenObjekt);
-                        }
+                    for (Pair<DatenObjekt, Integer> datenObjektIntegerPair: allDatenObjektPairList) {
+                        DatenObjekt datenObjekt = datenObjektIntegerPair.first;
+                        if (!datenObjekt.getName().toLowerCase().contains(s.toLowerCase()))
+                            filterdDatenObjektPairList.remove(datenObjektIntegerPair);
+                    }
                 }
                 reLoadRecycler();
                 return true;
@@ -90,53 +97,96 @@ public class CatigorysActivity extends AppCompatActivity {
         };
         catigorys_search.setOnQueryTextListener(textListener);
         catigorys_search.setQueryHint(catigoryName + " filtern");
+    }
+
+    private void sortList(List<Pair<DatenObjekt, Integer>> datenObjektPairList) {
+        switch (sort_type) {
+            case NAME:
+                datenObjektPairList.sort((objekt1, objekt2) -> objekt1.first.getName().compareTo(objekt2.first.getName()));
+                break;
+            case COUNT:
+                datenObjektPairList.sort((objekt1, objekt2) -> objekt1.second.compareTo(objekt2.second));
+                Collections.reverse(datenObjektPairList);
+                break;
+        }
+    }
+
+    private void setDatenObjektIntegerPairLiist() {
+        List<Pair<DatenObjekt, Integer>> pairList = new ArrayList<>();
+
+        catigoryName = getIntent().getStringExtra(MainActivity.EXTRA_CATIGORY);
+        setTitle(catigoryName);
+        if (catigoryName.equals(MainActivity.CATIGORYS.Darsteller.name())) {
+            catigory = MainActivity.CATIGORYS.Darsteller;
+
+            for (DatenObjekt datenObjekt : database.darstellerMap.values()) {
+                int count = 0;
+                for (Video video : database.videoMap.values()) {
+                    if (video.getDarstellerList().contains(datenObjekt.getUuid()))
+                        count++;
+                }
+                pairList.add(new Pair<>(datenObjekt, count));
+            }
+
+            allDatenObjektPairList = pairList;
+        } else if (catigoryName.equals(MainActivity.CATIGORYS.Genre.name())) {
+            catigory = MainActivity.CATIGORYS.Genre;
+
+            for (DatenObjekt datenObjekt : database.genreMap.values()) {
+                int count = 0;
+                for (Video video : database.videoMap.values()) {
+                    if (video.getGenreList().contains(datenObjekt.getUuid()))
+                        count++;
+                }
+                pairList.add(new Pair<>(datenObjekt, count));
+            }
+
+            allDatenObjektPairList = pairList;
+        } else if (catigoryName.equals(MainActivity.CATIGORYS.Studios.name())) {
+            catigory = MainActivity.CATIGORYS.Studios;
+
+            for (DatenObjekt datenObjekt : database.studioMap.values()) {
+                int count = 0;
+                for (Video video : database.videoMap.values()) {
+                    if (video.getStudioList().contains(datenObjekt.getUuid()))
+                        count++;
+                }
+                pairList.add(new Pair<>(datenObjekt, count));
+            }
+
+            allDatenObjektPairList = pairList;
+        }
 
     }
 
     private void loadRecycler() {
         customRecycler = CustomRecycler.Builder(this, findViewById(R.id.catigorys_recycler))
                 .setItemLayout(R.layout.list_item_catigory_item)
-                .setObjectList(allDatenObjektList)
+                .setObjectList(allDatenObjektPairList)
                 .setViewList(viewIdList -> {
                     viewIdList.add(R.id.listItem_catigoryItem_name);
                     viewIdList.add(R.id.userlistItem_catigoryItem_count);
                     return viewIdList;
                 })
                 .setSetItemContent((viewHolder, viewIdMap, object) -> {
-                    DatenObjekt datenObjekt = (DatenObjekt) object;
-                    ((TextView) viewIdMap.get(R.id.listItem_catigoryItem_name)).setText(datenObjekt.getName());
+                    DatenObjekt datenObjekt = (DatenObjekt) ((Pair) object).first;
 
-                    int count = 0;
-                    for (Video video : database.videoMap.values()) {
-                        switch (catigory) {
-                            case Genre:
-                                if (video.getGenreList().contains(datenObjekt.getUuid()))
-                                    count++;
-                                break;
-                            case Darsteller:
-                                if (video.getDarstellerList().contains(datenObjekt.getUuid()))
-                                    count++;
-                                break;
-                            case Studios:
-                                if (video.getStudioList().contains(datenObjekt.getUuid()))
-                                    count++;
-                                break;
-                        }
-                    }
-                    ((TextView) viewIdMap.get(R.id.userlistItem_catigoryItem_count)).setText(String.valueOf(count));
+                    ((TextView) viewIdMap.get(R.id.listItem_catigoryItem_name)).setText(datenObjekt.getName());
+                    ((TextView) viewIdMap.get(R.id.userlistItem_catigoryItem_count)).setText(String.valueOf(((Pair) object).second));
                 })
-                .setRowOrColumnCount(2)
+                .setRowOrColumnCount(columnCount)
                 .setShowDivider(false)
                 .setOnClickListener((recycler, view, object, index) -> {
-                    startActivity(new  Intent(this, VideoActivity.class)
-                        .putExtra(VideoActivity.EXTRA_SEARCH, ((DatenObjekt) object).getName())
-                        .putExtra(VideoActivity.EXTRA_SEARCH_CATIGORY, catigoryName));
+                    startActivityForResult(new  Intent(this, VideoActivity.class)
+                        .putExtra(VideoActivity.EXTRA_SEARCH, ((DatenObjekt) ((Pair) object).first).getName())
+                        .putExtra(VideoActivity.EXTRA_SEARCH_CATIGORY, catigoryName),
+                            START_CATIGORY_SEARCH);
                 })
                 .setUseCustomRipple(true)
                 .setOnLongClickListener((recycler, view, object, index) -> {
                     if (!Utility.isOnline(this))
                         return;
-                    DatenObjekt datenObjekt = (DatenObjekt) object;
+                    DatenObjekt datenObjekt = (DatenObjekt) ((Pair) object).first;
                     CustomDialog.Builder(this)
                             .setTitle(catigoryName + " Umbenennen, oder Löschen")
                             .setEdit(new CustomDialog.EditBuilder()
@@ -146,11 +196,11 @@ public class CatigorysActivity extends AppCompatActivity {
                             .addButton("Löschen", dialog -> {
                                 CustomDialog.Builder(this)
                                         .setTitle("Löschen")
-                                        .setText("Wirklich '" + ((DatenObjekt) object).getName() + "' löschen?")
+                                        .setText("Wirklich '" + ((DatenObjekt) ((Pair) object).first).getName() + "' löschen?")
                                         .setButtonType(CustomDialog.ButtonType.YES_NO)
                                         .addButton(CustomDialog.YES_BUTTON, dialog1 -> {
                                             dialog.dismiss();
-                                            removeCatigory((DatenObjekt) object);
+                                            removeCatigory((DatenObjekt) ((Pair) object).first);
                                         })
                                         .show();
                             }, false)
@@ -158,7 +208,7 @@ public class CatigorysActivity extends AppCompatActivity {
                             .addButton("OK", dialog -> {
                                 if (!Utility.isOnline(this))
                                     return;
-                                ((DatenObjekt) object).setName(CustomDialog.getEditText(dialog));
+                                ((DatenObjekt) ((Pair) object).first).setName(CustomDialog.getEditText(dialog));
                                 reLoadRecycler();
                                 Utility.saveAll(mySPR_daten, database);
                             })
@@ -169,8 +219,8 @@ public class CatigorysActivity extends AppCompatActivity {
     }
 
     private void removeCatigory(DatenObjekt datenObjekt) {
-        allDatenObjektList.remove(datenObjekt);
-        filterdDatenObjektList.remove(datenObjekt);
+        allDatenObjektPairList.remove(datenObjekt);
+        filterdDatenObjektPairList.remove(datenObjekt);
         switch (catigory) {
             case Genre:
                 database.genreMap.remove(datenObjekt.getUuid());
@@ -184,8 +234,82 @@ public class CatigorysActivity extends AppCompatActivity {
     }
 
     private void reLoadRecycler() {
-//        sortList(filterdVideoList);
-        customRecycler.setObjectList(filterdDatenObjektList).reload();
+        sortList(filterdDatenObjektPairList);
+        customRecycler.setObjectList(filterdDatenObjektPairList).reload();
+    }
+
+    private void showRandomDialog() {
+        final Pair<DatenObjekt, Integer>[] randomPair = new Pair[]{filterdDatenObjektPairList.get((int) (Math.random() * filterdDatenObjektPairList.size()))};
+        CustomDialog.Builder(this)
+                .setTitle("Zufall")
+                .setText(randomPair[0].first.getName() + " (" + randomPair[0].second + ")")
+                .setButtonType(CustomDialog.ButtonType.CUSTOM)
+                .addButton("Nochmal", dialog -> {
+                    randomPair[0] = filterdDatenObjektPairList.get((int) (Math.random() * filterdDatenObjektPairList.size()));
+                            CustomDialog.changeText(dialog, randomPair[0].first.getName() + " (" + randomPair[0].second + ")");
+                        },
+                        false)
+                .addButton("Suchen", dialog -> {
+                    startActivityForResult(new  Intent(this, VideoActivity.class)
+                                    .putExtra(VideoActivity.EXTRA_SEARCH, randomPair[0].first.getName())
+                                    .putExtra(VideoActivity.EXTRA_SEARCH_CATIGORY, catigoryName),
+                            START_CATIGORY_SEARCH);
+                })
+                .show();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.task_bar_catigory, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        switch (id) {
+            case R.id.taskBar_catigory__random:
+                showRandomDialog();
+                break;
+
+            case R.id.taskBar_catigory__sortByName:
+                sort_type = SORT_TYPE.NAME;
+                item.setChecked(true);
+                reLoadRecycler();
+                break;
+            case R.id.taskBar_catigory__sortByViews:
+                sort_type = SORT_TYPE.COUNT;
+                item.setChecked(true);
+                reLoadRecycler();
+                break;
+
+            case R.id.taskBar_catigory__showAs:
+                if (columnCount == 2) {
+                    columnCount = 1;
+                    item.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_show_as_grid));
+                } else {
+                    columnCount = 2;
+                    item.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_show_as_list));
+                }
+                customRecycler.setRowOrColumnCount(columnCount).reloadNew();
+                break;
+
+            case android.R.id.home:
+                finish();
+                break;
+
+        }
+        return true;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        if (resultCode == RESULT_OK /*&& requestCode == START_VIDEOS*/) {
+            setDatenObjektIntegerPairLiist();
+            textListener.onQueryTextChange(catigorys_search.getQuery().toString());
+            reLoadRecycler();
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
 }

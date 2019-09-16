@@ -4,6 +4,9 @@ import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Pair;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewStub;
 import android.widget.LinearLayout;
@@ -14,7 +17,6 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
-import com.maxMustermannGeheim.linkcollection.Daten.DatenObjekt;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
@@ -31,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     SharedPreferences mySPR_daten;
     public static final String SHARED_PREFERENCES_NAME = "LinkCollection_Daten";
     private Dialog calenderDialog;
+    private boolean firstTime;
 
     public enum CATIGORYS{
         Video, Darsteller, Studios, Genre, WatchLater
@@ -48,7 +51,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.loading_screen);
+        if (savedInstanceState == null)
+            setContentView(R.layout.loading_screen);
+        else
+            setContentView(R.layout.activity_main);
+        firstTime = savedInstanceState == null;
+
         mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_NAME, 0);
 //        mySPR_daten.edit().clear().commit();
         loadDatabase(false);
@@ -56,9 +64,11 @@ public class MainActivity extends AppCompatActivity {
 
     void loadDatabase(boolean createNew) {
         Database.OnInstanceFinishedLoading onInstanceFinishedLoading = database_neu -> {
-            setContentView(R.layout.activity_main);
 
-            Toast.makeText(this, "Datenbank:\n" + Database.databaseCode, Toast.LENGTH_SHORT).show();
+            if (firstTime) {
+                setContentView(R.layout.activity_main);
+                Utility.showCenterdToast(this, "Datenbank:\n" + Database.databaseCode);
+            }
 
             if (false/*database_neu.isLoaded()*/)
                 database_neu.generateData();
@@ -157,6 +167,32 @@ public class MainActivity extends AppCompatActivity {
         database.videoMap.values().forEach(video -> dateSet.addAll(video.getDateList()));
         ((TextView) findViewById(R.id.main_daysCount)).setText(String.valueOf(dateSet.size()));
         ((TextView) findViewById(R.id.main_watchLaterCount)).setText(String.valueOf(database.watchLaterList.size()));
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.task_bar_main, menu);
+        return true;
+    }
+
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        switch (id) {
+            case R.id.taskBar_main_settings:
+                CustomDialog.Builder(this)
+                        .setTitle("Einstellungen")
+                        .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
+                        .setEdit(new CustomDialog.EditBuilder()
+                                .setHint("Datenbank-Code")
+                                .setText(Database.databaseCode))
+                        .show();
+                // ToDo: datenbank-code ändern
+                break;
+        }
+        return true;
     }
 
     @Override

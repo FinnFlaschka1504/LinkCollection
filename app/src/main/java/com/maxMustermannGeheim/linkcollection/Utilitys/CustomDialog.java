@@ -562,6 +562,10 @@ public class CustomDialog {
             return editText.getText().toString().trim();
     }
 
+    public static void changeText(Dialog dialog, String text) {
+        ((TextView) dialog.findViewById(R.id.dialog_custom_text)).setText(text);
+    }
+
 }
 
 

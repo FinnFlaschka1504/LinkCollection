@@ -4,6 +4,7 @@ import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -28,19 +29,6 @@ public class Video extends DatenObjekt{
 
     public Video() {
     }
-
-//    public String getUuid() {
-//        return uuid;
-//    }
-//
-//    public String getName() {
-//        return name;
-//    }
-//
-//    public Video setName(String name) {
-//        this.name = name;
-//        return this;
-//    }
 
     public String getUrl() {
         return url;
@@ -96,8 +84,22 @@ public class Video extends DatenObjekt{
         return dateList;
     }
 
-    public void addDate(Date date) {
+    public boolean addDate(Date date, boolean checkTime) {
+        boolean isBefore = false;
+        if (checkTime) {
+            Calendar limitTime = Calendar.getInstance();
+            limitTime.set(Calendar.HOUR_OF_DAY, 6);
+            Calendar givenDate = Calendar.getInstance();
+            givenDate.setTime(date);
+
+            isBefore = givenDate.before(limitTime);
+            if (isBefore)
+                givenDate.add(Calendar.DATE, -1);
+            date = givenDate.getTime();
+        }
         this.dateList.add(Utility.removeTime(date));
+
+        return isBefore;
     }
 
     public Float getRating() {

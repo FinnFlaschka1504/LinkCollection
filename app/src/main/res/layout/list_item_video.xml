@@ -63,7 +63,9 @@
                     android:id="@+id/listItem_video_Views_layout"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:visibility="gone"
+                    tools:visibility="visible">
 
                     <View
                         android:layout_width="1dp"

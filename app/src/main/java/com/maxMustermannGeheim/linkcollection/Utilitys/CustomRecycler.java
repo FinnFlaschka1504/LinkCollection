@@ -38,7 +38,7 @@ public class CustomRecycler {
     private Context context;
     private RecyclerView recycler;
     private int itemView;
-    private List<Integer> viewIdList;
+    private List<Integer> viewIdList = new ArrayList<>();
     private SetCellContent setItemContent;
     private List objectList;
     private int orientation = RecyclerView.VERTICAL;

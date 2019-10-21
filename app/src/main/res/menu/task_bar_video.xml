@@ -18,7 +18,7 @@
         android:title="Sortieren"
         app:showAsAction="always">
         <menu>
-            <group android:checkableBehavior="single">
+            <group android:id="@+id/g1" android:checkableBehavior="single">
                 <item
                     android:id="@+id/taskBar_video_sortByName"
                     android:checked="true"
@@ -29,6 +29,15 @@
                 <item
                     android:id="@+id/taskBar_video_sortByRating"
                     android:title="Nach Bewertung" />
+                <item
+                    android:id="@+id/taskBar_video_sortByLatest"
+                    android:title="Nach Datum" />
+            </group>
+            <group android:id="@+id/g2">
+                <item
+                    android:checkable="true"
+                    android:id="@+id/taskBar_video_sortReverse"
+                    android:title="Umkehren" />
             </group>
         </menu>
     </item>

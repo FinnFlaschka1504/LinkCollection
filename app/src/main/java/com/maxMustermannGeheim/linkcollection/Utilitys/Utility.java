@@ -7,10 +7,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.util.Pair;
 import android.view.Gravity;
 import android.view.View;
-import android.view.ViewStub;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -189,11 +187,11 @@ public class Utility {
                     viewIdList.add(R.id.listItem_video_Studio);
                     viewIdList.add(R.id.listItem_video_Genre);
                     viewIdList.add(R.id.listItem_video_rating_layout);
-                    viewIdList.add(R.id.listItem_video_edit);
+                    viewIdList.add(R.id.listItem_video_details);
                     return viewIdList;
                 })
                 .setSetItemContent((viewHolder, viewIdMap, object) -> {
-                    viewIdMap.get(R.id.listItem_video_edit).setVisibility(View.GONE);
+                    viewIdMap.get(R.id.listItem_video_details).setVisibility(View.GONE);
                     viewIdMap.get(R.id.listItem_video_Views_layout).setVisibility(View.GONE);
 
 
@@ -226,7 +224,7 @@ public class Utility {
 
         for (Video video : videoList) {
             for (Date date : video.getDateList()) {
-                Event ev1 = new Event(Color.BLACK
+                Event ev1 = new Event(context.getColor(R.color.colorDrawable)
                         , date.getTime(), video);
                 calendarView.addEvent(ev1);
 

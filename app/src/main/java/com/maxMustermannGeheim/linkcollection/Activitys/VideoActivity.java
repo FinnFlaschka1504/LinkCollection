@@ -240,6 +240,8 @@ public class VideoActivity extends AppCompatActivity {
                     } else
                         viewHolder.itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.GONE);
 
+                    viewHolder.itemView.findViewById(R.id.listItem_video_later).setVisibility(database.watchLaterList.contains(video.getUuid()) ? View.VISIBLE : View.GONE);
+
                     List<String> darstellerNames = new ArrayList<>();
                     video.getDarstellerList().forEach(uuid -> darstellerNames.add(database.darstellerMap.get(uuid).getName()));
                     ((TextView) viewHolder.itemView.findViewById(R.id.listItem_video_Darsteller)).setText(String.join(", ", darstellerNames));
@@ -276,11 +278,11 @@ public class VideoActivity extends AppCompatActivity {
                         String test = null;
                     }
                 })
-                .addSubOnClickListener(R.id.listItem_video_edit, (recycler, view, object, index) -> {
-                    editDialogVideoPair = new Pair<>(showEditOrNewDialog(object), (Video) object);
+                .addSubOnClickListener(R.id.listItem_video_details, (recycler, view, object, index) -> {
+                    dialogVideoPair = new Pair<>(showDetailDialog(object), (Video) object);
                 }, false)
                 .setOnLongClickListener((recycler, view, object, index) -> {
-                    dialogVideoPair = new Pair<>(showDetailDialog(object), (Video) object);
+                    editDialogVideoPair = new Pair<>(showEditOrNewDialog(object), (Video) object);
                 })
                 .setShowDivider(false)
                 .generateCustomRecycler();
@@ -586,8 +588,6 @@ public class VideoActivity extends AppCompatActivity {
                 }, saveButtonId)
                 .show();
 
-//        Button saveButton = dialog_AddActorOrGenre.findViewById(saveButtonId);
-//        saveButton.setEnabled(false);
 
         CustomRecycler customRecycler_selectList = CustomRecycler.Builder(this, dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_selectPassengers));
 
@@ -681,8 +681,7 @@ public class VideoActivity extends AppCompatActivity {
                             break;
                     }
 
-                    if (selectedUuidList.contains(object))
-                        ((CheckBox) viewHolder.itemView.findViewById(R.id.selectList_selected)).setChecked(true);
+                    ((CheckBox) viewHolder.itemView.findViewById(R.id.selectList_selected)).setChecked(selectedUuidList.contains(object));
                 })
                 .setOnClickListener((recycler, view, object, index) -> {
                     CheckBox checkBox = view.findViewById(R.id.selectList_selected);

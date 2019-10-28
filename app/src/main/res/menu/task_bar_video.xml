@@ -21,7 +21,6 @@
             <group android:id="@+id/g1" android:checkableBehavior="single">
                 <item
                     android:id="@+id/taskBar_video_sortByName"
-                    android:checked="true"
                     android:title="Nach Name" />
                 <item
                     android:id="@+id/taskBar_video_sortByViews"
@@ -31,6 +30,7 @@
                     android:title="Nach Bewertung" />
                 <item
                     android:id="@+id/taskBar_video_sortByLatest"
+                    android:checked="true"
                     android:title="Nach Datum" />
             </group>
             <group android:id="@+id/g2">

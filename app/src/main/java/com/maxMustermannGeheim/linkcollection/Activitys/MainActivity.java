@@ -60,9 +60,11 @@ public class MainActivity extends AppCompatActivity {
         mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_NAME, 0);
 //        mySPR_daten.edit().clear().commit();
         loadDatabase(false);
+
     }
 
     void loadDatabase(boolean createNew) {
+
         Database.OnInstanceFinishedLoading onInstanceFinishedLoading = database_neu -> {
 
             if (firstTime) {

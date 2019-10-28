@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="3dp"
     android:orientation="horizontal">
+
 
     <CheckBox
         android:id="@+id/listItem_video_deleteCheck"
@@ -20,8 +20,10 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_margin="5dp"
         android:layout_weight="1"
         android:background="@drawable/tile_background"
+        android:elevation="3dp"
         android:foreground="@drawable/ripple"
         android:orientation="horizontal"
         android:padding="8dp">
@@ -79,6 +81,15 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="1" />
+
+                    <ImageView
+                        android:id="@+id/listItem_video_later"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:padding="2dp"
+                        android:visibility="gone"
+                        app:srcCompat="@drawable/ic_time"
+                        tools:visibility="visible" />
                 </LinearLayout>
 
             </LinearLayout>
@@ -202,15 +213,14 @@
         </LinearLayout>
 
         <ImageView
-            android:id="@+id/listItem_video_edit"
+            android:id="@+id/listItem_video_details"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:clickable="true"
             android:foreground="@drawable/ripple"
             android:padding="5dp"
-            app:srcCompat="@android:drawable/ic_menu_edit" />
+            app:srcCompat="@drawable/ic_info" />
 
     </LinearLayout>
-
 </LinearLayout>

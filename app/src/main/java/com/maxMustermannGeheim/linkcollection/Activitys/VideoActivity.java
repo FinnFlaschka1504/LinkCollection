@@ -52,6 +52,7 @@ public class VideoActivity extends AppCompatActivity {
     public static final String EXTRA_SEARCH = "EXTRA_SEARCH";
     public static final String EXTRA_SEARCH_CATIGORY = "EXTRA_SEARCH_CATOGORY";
     public static final String WATCH_LATER_SEARCH = "WATCH_LATER_SEARCH";
+    public static final String ACTION_ADD_VIDEO = "ACTION_ADD_VIDEO";
 
     enum SORT_TYPE{
         NAME, VIEWS, RATING, LATEST
@@ -87,67 +88,14 @@ public class VideoActivity extends AppCompatActivity {
         // ToDo: nach löschen liste neu laden und evl. auch aus datenbank löschen
 
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_video);
         database = Database.getInstance();
-        mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_NAME, 0);
+        if (database == null)
+            setContentView(R.layout.loading_screen);
+        else
+            setContentView(R.layout.activity_video);
+        mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_NAME, MODE_PRIVATE);
 
-        allVideoList = new ArrayList<>(database.videoMap.values());
-        sortList(allVideoList);
-        filterdVideoList = new ArrayList<>(allVideoList);
-
-        videos_confirmDelete = findViewById(R.id.videos_confirmDelete);
-        videos_confirmDelete.setOnClickListener(view -> {
-            for (String uuidVideo : toDelete) {
-                filterdVideoList.remove(database.videoMap.get(uuidVideo));
-                allVideoList.remove(database.videoMap.get(uuidVideo));
-                database.videoMap.remove(uuidVideo);
-            }
-            delete = false;
-            videos_confirmDelete.setVisibility(View.GONE);
-
-            reLoadVideoRecycler();
-            setResult(RESULT_OK);
-
-            Toast.makeText(this, toDelete.size() + (toDelete.size() == 1 ? " Video" : " Videos") + " gelöscht", Toast.LENGTH_SHORT).show();
-        });
-        loadVideoRecycler();
-
-        videos_search = findViewById(R.id.videos_search);
-        textListener = new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String s) {
-                this.onQueryTextChange(s);
-                return true;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String s) {
-                filterdVideoList = new ArrayList<>(allVideoList);
-
-                if (!s.trim().equals("")) {
-                    if (s.trim().equals(WATCH_LATER_SEARCH)) {
-                        filterdVideoList = new ArrayList<>();
-                        for (String videoUuid : database.watchLaterList) {
-                            filterdVideoList.add(database.videoMap.get(videoUuid));
-                        }
-                        reLoadVideoRecycler();
-                        return true;
-                    }
-
-                    for (String subQuery : s.split("\\|")) {
-                        subQuery = subQuery.trim();
-                        List<Video> subList = new ArrayList<>(filterdVideoList);
-                        for (Video video : subList) {
-                            if (!Utility.containedInVideo(subQuery, video, filterTypeSet))
-                                filterdVideoList.remove(video);
-                        }
-                    }
-                }
-                reLoadVideoRecycler();
-                return true;
-            }
-        };
-        videos_search.setOnQueryTextListener(textListener);
+        loadDatabase();
 
         String extraSearchCatigory = getIntent().getStringExtra(EXTRA_SEARCH_CATIGORY);
         if (extraSearchCatigory != null) {
@@ -169,6 +117,81 @@ public class VideoActivity extends AppCompatActivity {
                 videos_search.setQuery(extraSearch, true);
             }
         }
+    }
+
+    private void loadDatabase() {
+        @SuppressLint("RestrictedApi") Runnable whenLoaded = () -> {
+            setContentView(R.layout.activity_video);
+            allVideoList = new ArrayList<>(database.videoMap.values());
+            sortList(allVideoList);
+            filterdVideoList = new ArrayList<>(allVideoList);
+
+            videos_confirmDelete = findViewById(R.id.videos_confirmDelete);
+            videos_confirmDelete.setOnClickListener(view -> {
+                for (String uuidVideo : toDelete) {
+                    filterdVideoList.remove(database.videoMap.get(uuidVideo));
+                    allVideoList.remove(database.videoMap.get(uuidVideo));
+                    database.videoMap.remove(uuidVideo);
+                }
+                delete = false;
+                videos_confirmDelete.setVisibility(View.GONE);
+
+                reLoadVideoRecycler();
+                setResult(RESULT_OK);
+
+                Toast.makeText(this, toDelete.size() + (toDelete.size() == 1 ? " Video" : " Videos") + " gelöscht", Toast.LENGTH_SHORT).show();
+            });
+            loadVideoRecycler();
+
+            videos_search = findViewById(R.id.videos_search);
+            textListener = new SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String s) {
+                    this.onQueryTextChange(s);
+                    return true;
+                }
+
+                @Override
+                public boolean onQueryTextChange(String s) {
+                    filterdVideoList = new ArrayList<>(allVideoList);
+
+                    if (!s.trim().equals("")) {
+                        if (s.trim().equals(WATCH_LATER_SEARCH)) {
+                            filterdVideoList = new ArrayList<>();
+                            for (String videoUuid : database.watchLaterList) {
+                                filterdVideoList.add(database.videoMap.get(videoUuid));
+                            }
+                            reLoadVideoRecycler();
+                            return true;
+                        }
+
+                        for (String subQuery : s.split("\\|")) {
+                            subQuery = subQuery.trim();
+                            List<Video> subList = new ArrayList<>(filterdVideoList);
+                            for (Video video : subList) {
+                                if (!Utility.containedInVideo(subQuery, video, filterTypeSet))
+                                    filterdVideoList.remove(video);
+                            }
+                        }
+                    }
+                    reLoadVideoRecycler();
+                    return true;
+                }
+            };
+            videos_search.setOnQueryTextListener(textListener);
+
+            if (getIntent().getAction().equals(ACTION_ADD_VIDEO))
+                showEditOrNewDialog(null);
+        };
+
+        if (database == null) {
+            Database.getInstance(mySPR_daten, newDatabase -> {
+                database = newDatabase;
+                whenLoaded.run();
+            }, false);
+        } // || Database.isReady())
+        else
+            whenLoaded.run();
     }
 
     private void sortList(List<Video> videoList) {
@@ -230,39 +253,38 @@ public class VideoActivity extends AppCompatActivity {
 //                    viewIdList.add(R.id.listItem_video_rating_layout);
 //                    return viewIdList;
 //                })
-                .setSetItemContent((viewHolder, viewIdMap, object) -> {
-                    viewHolder.itemView.findViewById(R.id.listItem_video_deleteCheck).setVisibility(delete ? View.VISIBLE :View.GONE);
-                    Video video = (Video) object;
-                    ((TextView) viewHolder.itemView.findViewById(R.id.listItem_video_Titel)).setText(video.getName());
+                .setSetItemContent((CustomRecycler.SetItemContent<Video>) (itemView, video) -> {
+                    itemView.findViewById(R.id.listItem_video_deleteCheck).setVisibility(delete ? View.VISIBLE :View.GONE);
+                    ((TextView) itemView.findViewById(R.id.listItem_video_Titel)).setText(video.getName());
                     if (!video.getDateList().isEmpty()) {
-                        viewHolder.itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.VISIBLE);
-                        ((TextView) viewHolder.itemView.findViewById(R.id.listItem_video_Views)).setText(String.valueOf(video.getDateList().size()));
+                        itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.VISIBLE);
+                        ((TextView) itemView.findViewById(R.id.listItem_video_Views)).setText(String.valueOf(video.getDateList().size()));
                     } else
-                        viewHolder.itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.GONE);
+                        itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.GONE);
 
-                    viewHolder.itemView.findViewById(R.id.listItem_video_later).setVisibility(database.watchLaterList.contains(video.getUuid()) ? View.VISIBLE : View.GONE);
+                    itemView.findViewById(R.id.listItem_video_later).setVisibility(database.watchLaterList.contains(video.getUuid()) ? View.VISIBLE : View.GONE);
 
                     List<String> darstellerNames = new ArrayList<>();
                     video.getDarstellerList().forEach(uuid -> darstellerNames.add(database.darstellerMap.get(uuid).getName()));
-                    ((TextView) viewHolder.itemView.findViewById(R.id.listItem_video_Darsteller)).setText(String.join(", ", darstellerNames));
-                    viewHolder.itemView.findViewById(R.id.listItem_video_Darsteller).setSelected(scrolling);
+                    ((TextView) itemView.findViewById(R.id.listItem_video_Darsteller)).setText(String.join(", ", darstellerNames));
+                    itemView.findViewById(R.id.listItem_video_Darsteller).setSelected(scrolling);
 
                     if (video.getRating() > 0) {
-                        viewHolder.itemView.findViewById(R.id.listItem_video_rating_layout).setVisibility(View.VISIBLE);
-                        ((TextView) viewHolder.itemView.findViewById(R.id.listItem_video_rating)).setText(String.valueOf(video.getRating()));
+                        itemView.findViewById(R.id.listItem_video_rating_layout).setVisibility(View.VISIBLE);
+                        ((TextView) itemView.findViewById(R.id.listItem_video_rating)).setText(String.valueOf(video.getRating()));
                     }
                     else
-                        viewHolder.itemView.findViewById(R.id.listItem_video_rating_layout).setVisibility(View.GONE);
+                        itemView.findViewById(R.id.listItem_video_rating_layout).setVisibility(View.GONE);
 
                     List<String> studioNames = new ArrayList<>();
                     video.getStudioList().forEach(uuid -> studioNames.add(database.studioMap.get(uuid).getName()));
-                    ((TextView) viewHolder.itemView.findViewById(R.id.listItem_video_Studio)).setText(String.join(", ", studioNames));
-                    viewHolder.itemView.findViewById(R.id.listItem_video_Studio).setSelected(scrolling);
+                    ((TextView) itemView.findViewById(R.id.listItem_video_Studio)).setText(String.join(", ", studioNames));
+                    itemView.findViewById(R.id.listItem_video_Studio).setSelected(scrolling);
 
                     List<String> genreNames = new ArrayList<>();
                     video.getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
-                    ((TextView) viewHolder.itemView.findViewById(R.id.listItem_video_Genre)).setText(String.join(", ", genreNames));
-                    viewHolder.itemView.findViewById(R.id.listItem_video_Genre).setSelected(scrolling);
+                    ((TextView) itemView.findViewById(R.id.listItem_video_Genre)).setText(String.join(", ", genreNames));
+                    itemView.findViewById(R.id.listItem_video_Genre).setSelected(scrolling);
                 })
                 .setUseCustomRipple(true)
                 .setOnClickListener((recycler, view, object, index) -> {
@@ -595,23 +617,19 @@ public class VideoActivity extends AppCompatActivity {
                 .setItemLayout(R.layout.list_item_bubble)
                 .setObjectList(selectedUuidList)
                 .setShowDivider(false)
-                .setViewList(viewIdList -> {
-                    viewIdList.add(R.id.list_bubble_name);
-                    return viewIdList;
-                })
-                .setSetItemContent((viewHolder, viewIdMap, object) -> {
+                .setSetItemContent((itemView, object) -> {
                     switch (editType){
                         case DARSTELLER:
                             Darsteller darsteller = database.darstellerMap.get(object);
-                            ((TextView) viewHolder.itemView.findViewById(R.id.list_bubble_name)).setText(darsteller.getName());
+                            ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(darsteller.getName());
                             break;
                         case STUDIO:
                             Studio studio = database.studioMap.get(object);
-                            ((TextView) viewHolder.itemView.findViewById(R.id.list_bubble_name)).setText(studio.getName());
+                            ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(studio.getName());
                             break;
                         case GENRE:
                             Genre genre = database.genreMap.get(object);
-                            ((TextView) viewHolder.itemView.findViewById(R.id.list_bubble_name)).setText(genre.getName());
+                            ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(genre.getName());
                             break;
                     }
 
@@ -660,28 +678,23 @@ public class VideoActivity extends AppCompatActivity {
                 .setItemLayout(R.layout.list_item_select_actor)
                 .setMultiClickEnabled(true)
                 .setObjectList(sortedAllObjectIdList)
-                .setViewList(viewIdList -> {
-                    viewIdList.add(R.id.selectList_name);
-                    viewIdList.add(R.id.selectList_selected);
-                    return viewIdList;
-                })
-                .setSetItemContent((viewHolder, viewIdMap, object) -> {
+                .setSetItemContent((itemView, object) -> {
                     switch (editType){
                         case DARSTELLER:
                             Darsteller darsteller = database.darstellerMap.get(object);
-                            ((TextView) viewHolder.itemView.findViewById(R.id.selectList_name)).setText(darsteller.getName());
+                            ((TextView) itemView.findViewById(R.id.selectList_name)).setText(darsteller.getName());
                             break;
                         case STUDIO:
                             Studio studio = database.studioMap.get(object);
-                            ((TextView) viewHolder.itemView.findViewById(R.id.selectList_name)).setText(studio.getName());
+                            ((TextView) itemView.findViewById(R.id.selectList_name)).setText(studio.getName());
                             break;
                         case GENRE:
                             Genre genre = database.genreMap.get(object);
-                            ((TextView) viewHolder.itemView.findViewById(R.id.selectList_name)).setText(genre.getName());
+                            ((TextView) itemView.findViewById(R.id.selectList_name)).setText(genre.getName());
                             break;
                     }
 
-                    ((CheckBox) viewHolder.itemView.findViewById(R.id.selectList_selected)).setChecked(selectedUuidList.contains(object));
+                    ((CheckBox) itemView.findViewById(R.id.selectList_selected)).setChecked(selectedUuidList.contains(object));
                 })
                 .setOnClickListener((recycler, view, object, index) -> {
                     CheckBox checkBox = view.findViewById(R.id.selectList_selected);

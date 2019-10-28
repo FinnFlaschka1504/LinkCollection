@@ -3,6 +3,9 @@ package com.maxMustermannGeheim.linkcollection.Activitys;
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ShortcutInfo;
+import android.content.pm.ShortcutManager;
+import android.graphics.drawable.Icon;
 import android.os.Bundle;
 import android.util.Pair;
 import android.view.Menu;
@@ -23,6 +26,7 @@ import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
@@ -58,8 +62,16 @@ public class MainActivity extends AppCompatActivity {
         firstTime = savedInstanceState == null;
 
         mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_NAME, 0);
-//        mySPR_daten.edit().clear().commit();
         loadDatabase(false);
+
+        ShortcutManager shortcutManager = getSystemService(ShortcutManager.class);
+        ShortcutInfo shortcut = new ShortcutInfo.Builder(this, getLocalClassName() + ".Shortcut")
+                .setShortLabel("Video Hinzufügen")
+                .setLongLabel("Ein neues Video Hinzufügen")
+                .setIcon(Icon.createWithResource(this, R.drawable.ic_add_video_shortcut))
+                .setIntent(new Intent(this, VideoActivity.class).setAction(VideoActivity.ACTION_ADD_VIDEO))
+                .build();
+        shortcutManager.setDynamicShortcuts(Arrays.asList(shortcut));
 
     }
 

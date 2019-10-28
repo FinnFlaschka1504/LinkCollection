@@ -163,16 +163,11 @@ public class CatigorysActivity extends AppCompatActivity {
         customRecycler = CustomRecycler.Builder(this, findViewById(R.id.catigorys_recycler))
                 .setItemLayout(R.layout.list_item_catigory_item)
                 .setObjectList(allDatenObjektPairList)
-                .setViewList(viewIdList -> {
-                    viewIdList.add(R.id.listItem_catigoryItem_name);
-                    viewIdList.add(R.id.userlistItem_catigoryItem_count);
-                    return viewIdList;
-                })
-                .setSetItemContent((viewHolder, viewIdMap, object) -> {
+                .setSetItemContent((itemView, object) -> {
                     DatenObjekt datenObjekt = (DatenObjekt) ((Pair) object).first;
 
-                    ((TextView) viewIdMap.get(R.id.listItem_catigoryItem_name)).setText(datenObjekt.getName());
-                    ((TextView) viewIdMap.get(R.id.userlistItem_catigoryItem_count)).setText(String.valueOf(((Pair) object).second));
+                    ((TextView) itemView.findViewById(R.id.listItem_catigoryItem_name)).setText(datenObjekt.getName());
+                    ((TextView) itemView.findViewById(R.id.userlistItem_catigoryItem_count)).setText(String.valueOf(((Pair) object).second));
                 })
                 .setRowOrColumnCount(columnCount)
                 .setShowDivider(false)

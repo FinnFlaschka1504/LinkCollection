@@ -180,38 +180,28 @@ public class Utility {
         Database database = Database.getInstance();
         CustomRecycler customRecycler = CustomRecycler.Builder(context, layout.findViewById(R.id.fragmentCalender_videoList))
                 .setItemLayout(R.layout.list_item_video)
-                .setViewList(viewIdList -> {
-                    viewIdList.add(R.id.listItem_video_Titel);
-                    viewIdList.add(R.id.listItem_video_Views_layout);
-                    viewIdList.add(R.id.listItem_video_Darsteller);
-                    viewIdList.add(R.id.listItem_video_Studio);
-                    viewIdList.add(R.id.listItem_video_Genre);
-                    viewIdList.add(R.id.listItem_video_rating_layout);
-                    viewIdList.add(R.id.listItem_video_details);
-                    return viewIdList;
-                })
-                .setSetItemContent((viewHolder, viewIdMap, object) -> {
-                    viewIdMap.get(R.id.listItem_video_details).setVisibility(View.GONE);
-                    viewIdMap.get(R.id.listItem_video_Views_layout).setVisibility(View.GONE);
+                .setSetItemContent((itemView, object) -> {
+                    itemView.findViewById(R.id.listItem_video_details).setVisibility(View.GONE);
+                    itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.GONE);
 
 
                     Video video = ((Video) ((Event) object).getData());
-                    ((TextView) viewIdMap.get(R.id.listItem_video_Titel)).setText(video.getName());
+                    ((TextView) itemView.findViewById(R.id.listItem_video_Titel)).setText(video.getName());
 
                     List<String> darstellerNames = new ArrayList<>();
                     video.getDarstellerList().forEach(uuid -> darstellerNames.add(database.darstellerMap.get(uuid).getName()));
-                    ((TextView) viewIdMap.get(R.id.listItem_video_Darsteller)).setText(String.join(", ", darstellerNames));
-                    viewIdMap.get(R.id.listItem_video_Darsteller).setSelected(true);
+                    ((TextView) itemView.findViewById(R.id.listItem_video_Darsteller)).setText(String.join(", ", darstellerNames));
+                    itemView.findViewById(R.id.listItem_video_Darsteller).setSelected(true);
 
                     List<String> studioNames = new ArrayList<>();
                     video.getStudioList().forEach(uuid -> studioNames.add(database.studioMap.get(uuid).getName()));
-                    ((TextView) viewIdMap.get(R.id.listItem_video_Studio)).setText(String.join(", ", studioNames));
-                    viewIdMap.get(R.id.listItem_video_Studio).setSelected(true);
+                    ((TextView) itemView.findViewById(R.id.listItem_video_Studio)).setText(String.join(", ", studioNames));
+                    itemView.findViewById(R.id.listItem_video_Studio).setSelected(true);
 
                     List<String> genreNames = new ArrayList<>();
                     video.getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
-                    ((TextView) viewIdMap.get(R.id.listItem_video_Genre)).setText(String.join(", ", genreNames));
-                    viewIdMap.get(R.id.listItem_video_Genre).setSelected(true);
+                    ((TextView) itemView.findViewById(R.id.listItem_video_Genre)).setText(String.join(", ", genreNames));
+                    itemView.findViewById(R.id.listItem_video_Genre).setSelected(true);
                 })
                 .setUseCustomRipple(true)
                 .setShowDivider(false);

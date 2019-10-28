@@ -20,7 +20,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class CustomRecycler {
+public class CustomRecycler<T>{
+
+    // ToDo: ItemTouchHelper https://www.youtube.com/watch?v=dvDTmJtGE_I
+    //  holder.itemView.setTag
 
     public enum ORIENTATION {
         VERTICAL, HORIZONTAL
@@ -38,8 +41,8 @@ public class CustomRecycler {
     private Context context;
     private RecyclerView recycler;
     private int itemView;
-    private List<Integer> viewIdList = new ArrayList<>();
-    private SetCellContent setItemContent;
+    //    private List<Integer> viewIdList = new ArrayList<>();
+    private SetItemContent<T> setItemContent;
     private List objectList;
     private int orientation = RecyclerView.VERTICAL;
     private OnLongClickListener onLongClickListener;
@@ -60,20 +63,28 @@ public class CustomRecycler {
         onClickListener.runOnClickListener(recycler, view, objectList.get(index), index);
     };
     Map<Integer, Pair<OnClickListener, Boolean>> idSubOnClickListenerMap = new HashMap<>();
+    Map<Integer, Pair<OnClickListener, Boolean>> idSubOnLongClickListenerMap = new HashMap<>();
     private SELECTION_MODE selectionMode = SELECTION_MODE.SINGLE_SELECTION;
+    private boolean useActiveObjectList;
+    GetActiveObjectList getActiveObjectList;
 
     private CustomRecycler(Context context) {
         this.context = context;
     }
 
     public static CustomRecycler Builder(Context context) {
-        return new CustomRecycler(context);
+        return new CustomRecycler<Object>(context);
     }
 
     public static CustomRecycler Builder(Context context, RecyclerView recycler) {
-        CustomRecycler customRecycler = new CustomRecycler(context);
+        CustomRecycler customRecycler = new CustomRecycler<Object>(context);
         customRecycler.recycler = recycler;
         return customRecycler;
+    }
+
+    public CustomRecycler (Context context, RecyclerView recycler) {
+        this.context = context;
+        this.recycler = recycler;
     }
 
 
@@ -93,18 +104,19 @@ public class CustomRecycler {
     }
 
     public CustomRecycler setObjectList(List objectList) {
-        this.objectList = new ArrayList(objectList);
+//        this.objectList = new ArrayList(objectList);
+        this.objectList = objectList;
         return this;
     }
 
-
-
-    public interface SetViewList{
-        List<Integer> runSetViewList(List<Integer> viewIdList);
+    public interface GetActiveObjectList<T>{
+        List<T> runGetActiveObjectList();
     }
 
-    public CustomRecycler setViewList(SetViewList viewList) {
-        this.viewIdList = viewList.runSetViewList(new ArrayList<>());
+    public CustomRecycler setGetActiveObjectList(GetActiveObjectList getActiveObjectList) {
+        this.getActiveObjectList = getActiveObjectList;
+        objectList = getActiveObjectList.runGetActiveObjectList();
+        useActiveObjectList = true;
         return this;
     }
 
@@ -151,22 +163,32 @@ public class CustomRecycler {
         return this;
     }
 
+    public CustomRecycler addSubOnLongClickListener(int viewId, OnClickListener onClickListener, boolean ripple) {
+        idSubOnLongClickListenerMap.put(viewId, new Pair<>(onClickListener, ripple));
+        return this;
+    }
+
+    public CustomRecycler addSubOnLongClickListener(int viewId, OnClickListener onClickListener) {
+        idSubOnLongClickListenerMap.put(viewId, new Pair<>(onClickListener, true));
+        return this;
+    }
+
     public CustomRecycler setRowOrColumnCount(int rowOrColumnCount) {
         this.rowOrColumnCount = rowOrColumnCount;
         return this;
     }
 
-    public interface SetCellContent {
-        void runSetCellContent(MyAdapter.ViewHolder viewHolder, Map<Integer, View> viewIdMap, Object object);
+    public interface SetItemContent<T> {
+        void runSetCellContent(View itemView, T t);
     }
 
-    public CustomRecycler setSetItemContent(SetCellContent setItemContent) {
+    public CustomRecycler setSetItemContent(SetItemContent setItemContent) {
         this.setItemContent = setItemContent;
         return this;
     }
 
-    public interface OnClickListener {
-        void runOnClickListener(RecyclerView recycler, View view, Object object, int index);
+    public interface OnClickListener<T> {
+        void runOnClickListener(RecyclerView recycler, View itemView, T t, int index);
     }
 
     public CustomRecycler setOnClickListener(OnClickListener onClickListener) {
@@ -174,8 +196,8 @@ public class CustomRecycler {
         return this;
     }
 
-    public interface OnLongClickListener {
-        void runOnLongClickListener(RecyclerView recycler, View view, Object object, int index);
+    public interface OnLongClickListener<T> {
+        void runOnLongClickListener(RecyclerView recycler, View view, T t, int index);
     }
 
     public CustomRecycler setOnLongClickListener(OnLongClickListener onLongClickListener) {
@@ -217,6 +239,24 @@ public class CustomRecycler {
                 }
             }
 
+            if (!idSubOnLongClickListenerMap.isEmpty()) {
+                for (Map.Entry<Integer, Pair<OnClickListener, Boolean>> entry : idSubOnLongClickListenerMap.entrySet()) {
+                    View view = v.findViewById(entry.getKey());
+                    view.setOnLongClickListener(view2 -> {
+                        int index = recycler.getChildAdapterPosition(v);
+                        entry.getValue().first.runOnClickListener(recycler, v, dataset.get(index), index);
+                        view.setFocusable(true);
+                        view.setClickable(true);
+                        if (entry.getValue().second) {
+                            TypedValue outValue = new TypedValue();
+                            context.getTheme().resolveAttribute(android.R.attr.selectableItemBackground, outValue, true);
+                            view.setBackgroundResource(outValue.resourceId);
+                        }
+                        return true;
+                    });
+                }
+            }
+
             if (selectionMode != SELECTION_MODE.MULTI_SELECTION) {
                 if (onClickListener != null || onLongClickListener != null) {
 
@@ -245,7 +285,8 @@ public class CustomRecycler {
 
         @Override
         public void onBindViewHolder(ViewHolder viewHolder, int position) {
-            setItemContent.runSetCellContent(viewHolder, viewHolder.viewMap, dataset.get(position));
+//            if (dataset.get(position).getClass() != T)
+            setItemContent.runSetCellContent(viewHolder.itemView, (T) dataset.get(position));
         }
 
         @Override
@@ -279,17 +320,16 @@ public class CustomRecycler {
         }
 
         public class ViewHolder extends RecyclerView.ViewHolder {
-            Map<Integer, View> viewMap = new HashMap<>();
+//            Map<Integer, View> viewMap = new HashMap<>();
 
             public ViewHolder(View v) {
                 super(v);
-                for (Integer id : viewIdList) {
-                    viewMap.put(id, v.findViewById(id));
-                }
+//                for (Integer id : viewIdList) {
+//                    viewMap.put(id, v.findViewById(id));
+//                }
             }
         }
     }
-
 
 
 
@@ -341,6 +381,8 @@ public class CustomRecycler {
     }
 
     public RecyclerView reload() {
+        if (useActiveObjectList)
+            objectList = getActiveObjectList.runGetActiveObjectList();
         this.recycler.setAdapter(new MyAdapter(objectList));
         return recycler;
     }

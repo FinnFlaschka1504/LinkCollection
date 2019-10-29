@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".Activitys.VideoActivity">
+    tools:context=".Activitys.Videos.VideoActivity">
 
     <SearchView
         android:id="@+id/videos_search"
@@ -13,7 +13,7 @@
         android:focusable="auto"
         android:iconifiedByDefault="false"
         android:queryBackground="@android:color/transparent"
-        android:queryHint="Video-, oder Darsteller-Namen ('|': Divider)"
+        android:queryHint="Filter eingeben ('|' als Divider)"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">

@@ -1,8 +1,10 @@
-package com.maxMustermannGeheim.linkcollection.Daten;
+package com.maxMustermannGeheim.linkcollection.Daten.Videos;
+
+import com.maxMustermannGeheim.linkcollection.Daten.DatenObjekt;
 
 import java.util.UUID;
 
-public class Studio extends DatenObjekt{
+public class Studio extends DatenObjekt {
 //    private String uuid = "studio_" + UUID.randomUUID().toString();
 //
 //    private String name;

@@ -5,6 +5,7 @@
     android:layout_margin="3dp"
     android:background="@drawable/tile_background"
     android:clickable="true"
+    android:elevation="3dp"
     android:foreground="@drawable/ripple"
     android:gravity="center_horizontal"
     android:orientation="vertical"

@@ -1,10 +1,9 @@
-package com.maxMustermannGeheim.linkcollection.Activitys;
+package com.maxMustermannGeheim.linkcollection.Activitys.Videos;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
-import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -14,8 +13,9 @@ import android.view.MenuItem;
 import android.widget.SearchView;
 import android.widget.TextView;
 
+import com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.DatenObjekt;
-import com.maxMustermannGeheim.linkcollection.Daten.Video;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
@@ -25,9 +25,8 @@ import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 
-import static com.maxMustermannGeheim.linkcollection.Activitys.MainActivity.SHARED_PREFERENCES_NAME;
+import static com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
 public class CatigorysActivity extends AppCompatActivity {
     public static final int START_CATIGORY_SEARCH = 001;
@@ -39,7 +38,7 @@ public class CatigorysActivity extends AppCompatActivity {
 
     private int columnCount = 2;
     private String catigoryName;
-    private MainActivity.CATIGORYS catigory;
+    private MainActivity.CATEGORIES catigory;
     private SORT_TYPE sort_type = SORT_TYPE.NAME;
     private Database database = Database.getInstance();
     SharedPreferences mySPR_daten;
@@ -55,7 +54,7 @@ public class CatigorysActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_catigorys);
-        mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_NAME, 0);
+        mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
         setTitle(catigoryName);
         setDatenObjektIntegerPairLiist();
@@ -114,10 +113,10 @@ public class CatigorysActivity extends AppCompatActivity {
     private void setDatenObjektIntegerPairLiist() {
         List<Pair<DatenObjekt, Integer>> pairList = new ArrayList<>();
 
-        catigoryName = getIntent().getStringExtra(MainActivity.EXTRA_CATIGORY);
+        catigoryName = getIntent().getStringExtra(MainActivity.EXTRA_CATEGORY);
         setTitle(catigoryName);
-        if (catigoryName.equals(MainActivity.CATIGORYS.Darsteller.name())) {
-            catigory = MainActivity.CATIGORYS.Darsteller;
+        if (catigoryName.equals(MainActivity.CATEGORIES.Darsteller.name())) {
+            catigory = MainActivity.CATEGORIES.Darsteller;
 
             for (DatenObjekt datenObjekt : database.darstellerMap.values()) {
                 int count = 0;
@@ -129,8 +128,8 @@ public class CatigorysActivity extends AppCompatActivity {
             }
 
             allDatenObjektPairList = pairList;
-        } else if (catigoryName.equals(MainActivity.CATIGORYS.Genre.name())) {
-            catigory = MainActivity.CATIGORYS.Genre;
+        } else if (catigoryName.equals(MainActivity.CATEGORIES.Genre.name())) {
+            catigory = MainActivity.CATEGORIES.Genre;
 
             for (DatenObjekt datenObjekt : database.genreMap.values()) {
                 int count = 0;
@@ -142,8 +141,8 @@ public class CatigorysActivity extends AppCompatActivity {
             }
 
             allDatenObjektPairList = pairList;
-        } else if (catigoryName.equals(MainActivity.CATIGORYS.Studios.name())) {
-            catigory = MainActivity.CATIGORYS.Studios;
+        } else if (catigoryName.equals(MainActivity.CATEGORIES.Studios.name())) {
+            catigory = MainActivity.CATEGORIES.Studios;
 
             for (DatenObjekt datenObjekt : database.studioMap.values()) {
                 int count = 0;
@@ -205,7 +204,7 @@ public class CatigorysActivity extends AppCompatActivity {
                                     return;
                                 ((DatenObjekt) ((Pair) object).first).setName(CustomDialog.getEditText(dialog));
                                 reLoadRecycler();
-                                Utility.saveAll(mySPR_daten, database);
+                                Database.saveAll();
                             })
                             .show();
                 })

@@ -1,4 +1,4 @@
-package com.maxMustermannGeheim.linkcollection.Activitys;
+package com.maxMustermannGeheim.linkcollection.Activitys.Videos;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.menu.MenuBuilder;
@@ -26,11 +26,12 @@ import android.widget.Toast;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.maxMustermannGeheim.linkcollection.Daten.Darsteller;
+import com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.DatenObjekt;
-import com.maxMustermannGeheim.linkcollection.Daten.Genre;
-import com.maxMustermannGeheim.linkcollection.Daten.Studio;
-import com.maxMustermannGeheim.linkcollection.Daten.Video;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
@@ -45,8 +46,9 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
-import static com.maxMustermannGeheim.linkcollection.Activitys.MainActivity.SHARED_PREFERENCES_NAME;
+import static com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
 public class VideoActivity extends AppCompatActivity {
     public static final String EXTRA_SEARCH = "EXTRA_SEARCH";
@@ -85,7 +87,6 @@ public class VideoActivity extends AppCompatActivity {
     @SuppressLint("RestrictedApi")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // ToDo: nach löschen liste neu laden und evl. auch aus datenbank löschen
 
         super.onCreate(savedInstanceState);
         database = Database.getInstance();
@@ -93,7 +94,7 @@ public class VideoActivity extends AppCompatActivity {
             setContentView(R.layout.loading_screen);
         else
             setContentView(R.layout.activity_video);
-        mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_NAME, MODE_PRIVATE);
+        mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
         loadDatabase();
 
@@ -101,14 +102,14 @@ public class VideoActivity extends AppCompatActivity {
         if (extraSearchCatigory != null) {
             filterTypeSet.clear();
 
-            if (extraSearchCatigory.equals(MainActivity.CATIGORYS.Darsteller.name())) {
+            if (extraSearchCatigory.equals(MainActivity.CATEGORIES.Darsteller.name())) {
                 filterTypeSet.add(FILTER_TYPE.ACTOR);
-            } else if (extraSearchCatigory.equals(MainActivity.CATIGORYS.Genre.name())) {
+            } else if (extraSearchCatigory.equals(MainActivity.CATEGORIES.Genre.name())) {
                 filterTypeSet.add(FILTER_TYPE.GENRE);
-            } else if (extraSearchCatigory.equals(MainActivity.CATIGORYS.Studios.name())) {
+            } else if (extraSearchCatigory.equals(MainActivity.CATEGORIES.Studios.name())) {
                 filterTypeSet.add(FILTER_TYPE.STUDIO);
             }
-//            else if (extraSearchCatigory.equals(MainActivity.CATIGORYS.Video.name())) {
+//            else if (extraSearchCatigory.equals(MainActivity.CATEGORIES.Video.name())) {
 //                filterTypeSet.add(FILTER_TYPE.NAME);
 //            }
 
@@ -180,16 +181,16 @@ public class VideoActivity extends AppCompatActivity {
             };
             videos_search.setOnQueryTextListener(textListener);
 
-            if (getIntent().getAction().equals(ACTION_ADD_VIDEO))
+            if (Objects.equals(getIntent().getAction(), ACTION_ADD_VIDEO))
                 showEditOrNewDialog(null);
         };
 
-        if (database == null) {
+        if (database == null || !Database.isReady()) {
             Database.getInstance(mySPR_daten, newDatabase -> {
                 database = newDatabase;
                 whenLoaded.run();
             }, false);
-        } // || Database.isReady())
+        }
         else
             whenLoaded.run();
     }
@@ -358,7 +359,7 @@ public class VideoActivity extends AppCompatActivity {
                         }
                         textListener.onQueryTextSubmit(videos_search.getQuery().toString());
                         setResult(RESULT_OK);
-                        Utility.saveAll(mySPR_daten, database);
+                        Database.saveAll();
                     });
 
                     view.findViewById(R.id.dialog_video_editViews).setOnClickListener(view1 ->
@@ -508,9 +509,7 @@ public class VideoActivity extends AppCompatActivity {
         filterdVideoList = new ArrayList<>(allVideoList);
         textListener.onQueryTextChange(videos_search.getQuery().toString());
 
-        Utility.saveDatabase(mySPR_daten);
-        if (Utility.isOnline())
-            database.writeAllToFirebase();
+        Database.saveAll();
 
         Utility.showCenterdToast(this, "Video gespeichert" + (addedYesterday ? "\nAutomatisch für gestern eingetragen" : ""));
 
@@ -997,7 +996,7 @@ public class VideoActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        Utility.saveAll(mySPR_daten, database);
+        Database.saveAll();
         super.onDestroy();
     }
 

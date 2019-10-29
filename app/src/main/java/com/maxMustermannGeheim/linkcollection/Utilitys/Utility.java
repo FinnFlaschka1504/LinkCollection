@@ -5,7 +5,6 @@ import android.app.Dialog;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.view.Gravity;
 import android.view.View;
@@ -17,11 +16,10 @@ import android.widget.Toast;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
-import com.google.gson.Gson;
-import com.maxMustermannGeheim.linkcollection.Activitys.MainActivity;
-import com.maxMustermannGeheim.linkcollection.Activitys.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity;
+import com.maxMustermannGeheim.linkcollection.Activitys.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.DatenObjekt;
-import com.maxMustermannGeheim.linkcollection.Daten.Video;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 
 import java.io.IOException;
@@ -32,9 +30,8 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 
-import static com.maxMustermannGeheim.linkcollection.Activitys.MainActivity.SHARED_PREFERENCES_NAME;
-import static com.maxMustermannGeheim.linkcollection.Activitys.VideoActivity.EXTRA_SEARCH;
-import static com.maxMustermannGeheim.linkcollection.Activitys.VideoActivity.EXTRA_SEARCH_CATIGORY;
+import static com.maxMustermannGeheim.linkcollection.Activitys.Videos.VideoActivity.EXTRA_SEARCH;
+import static com.maxMustermannGeheim.linkcollection.Activitys.Videos.VideoActivity.EXTRA_SEARCH_CATIGORY;
 
 public class Utility {
 
@@ -48,6 +45,9 @@ public class Utility {
         }
     }
     static public boolean isOnline() {
+        // ToDo: zurückändern
+        if (true)
+            return true;
         Runtime runtime = Runtime.getRuntime();
         try {
             Process ipProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
@@ -77,21 +77,6 @@ public class Utility {
             dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
     }
 
-    public static void saveDatabase(SharedPreferences mySPR_daten) {
-        Gson gson = new Gson();
-        Database database = Database.getInstance();
-        if (database == null)
-            return;
-
-        mySPR_daten.edit()
-                .putString(Database.VIDEO_MAP, gson.toJson(database.videoMap))
-                .putString(Database.DARSTELLER_MAP, gson.toJson(database.darstellerMap))
-                .putString(Database.STUDIO_MAP, gson.toJson(database.studioMap))
-                .putString(Database.GENRE_MAP, gson.toJson(database.genreMap))
-                .putString(Database.WATCH_LATER_LIST, gson.toJson(database.watchLaterList))
-                .apply();
-    }
-
     public static boolean containedInVideo(String query, Video video, HashSet<VideoActivity.FILTER_TYPE> filterTypeSet) {
         if (video.getUuid().equals(query)) return true;
         if (filterTypeSet.contains(VideoActivity.FILTER_TYPE.NAME)) {
@@ -107,8 +92,7 @@ public class Utility {
                 return true;
         }
         if (filterTypeSet.contains(VideoActivity.FILTER_TYPE.STUDIO)) {
-            if (containedInStudio(query, video.getStudioList()))
-                return true;
+            return containedInStudio(query, video.getStudioList());
         }
         return false;
     }
@@ -141,32 +125,6 @@ public class Utility {
         }
         return false;
     }
-
-    public static void saveAll(SharedPreferences mySPR_daten, Database database) {
-        Utility.saveDatabase(mySPR_daten);
-        if (Utility.isOnline())
-            database.writeAllToFirebase();
-    }
-
-//    public static void showCalenderDialog(Context context, List<Video> videoList, boolean showAll, Pair<Dialog, Video> dialogVideoPair) {
-//        CustomDialog.Builder(context)
-//                .setTitle(showAll ? "Video Calender" : "Ansichten Bearbeiten")
-//                .setView(R.layout.dialog_edit_views)
-//                .setSetViewContent(view -> {
-//                    ViewStub stub_groups = view.findViewById(R.id.dialog_editViews_calender);
-//                    stub_groups.setLayoutResource(R.layout.fragment_calender);
-//                    stub_groups.inflate();
-//                    CompactCalendarView calendarView = view.findViewById(R.id.fragmentCalender_calendar);
-//                    calendarView.setFirstDayOfWeek(Calendar.MONDAY);
-//                    setupCalender(context, calendarView, ((LinearLayout) view), videoList, showAll);
-//                })
-//                .addButton(CustomDialog.BACK_BUTTON, dialog -> {
-//                    if (dialogVideoPair != null)
-//                        dialogVideoPair.first.re
-//                })
-//                .show();
-//
-//    }
 
     public static void setupCalender(Context context, CompactCalendarView calendarView, LinearLayout layout, List<Video> videoList, boolean openVideo) {
         calendarView.removeAllEvents();
@@ -210,7 +168,7 @@ public class Utility {
             customRecycler.setOnClickListener((recycler, view, object, index) ->
                     ((MainActivity) context).startActivityForResult(new Intent(context, VideoActivity.class)
                             .putExtra(EXTRA_SEARCH, ((DatenObjekt) ((Event) object).getData()).getUuid())
-                            .putExtra(EXTRA_SEARCH_CATIGORY, MainActivity.CATIGORYS.Video.name()), ((MainActivity) context).START_VIDEO_FROM_CALENDER));
+                            .putExtra(EXTRA_SEARCH_CATIGORY, MainActivity.CATEGORIES.Video.name()), ((MainActivity) context).START_VIDEO_FROM_CALENDER));
 
         for (Video video : videoList) {
             for (Date date : video.getDateList()) {
@@ -252,14 +210,14 @@ public class Utility {
                     , selectedDate[0].getTime(), videoList.get(0)));
             loadVideoList(calendarView.getEvents(selectedDate[0]), layout, customRecycler);
             setButtons(layout, 1);
-            saveAll(context.getSharedPreferences(SHARED_PREFERENCES_NAME, 0), database);
+            Database.saveAll();
         });
         layout.findViewById(R.id.dialog_editViews_remove).setOnClickListener(view -> {
             videoList.get(0).getDateList().remove(selectedDate[0]);
             calendarView.removeEvents(selectedDate[0]);
             loadVideoList(calendarView.getEvents(selectedDate[0]), layout, customRecycler);
             setButtons(layout, 0);
-            saveAll(context.getSharedPreferences(SHARED_PREFERENCES_NAME, 0), database);
+            Database.saveAll();
         });
     }
 

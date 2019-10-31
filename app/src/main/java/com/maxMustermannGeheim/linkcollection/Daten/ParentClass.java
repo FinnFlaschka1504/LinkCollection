@@ -7,17 +7,17 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 
 import java.util.UUID;
 
-public class DatenObjekt {
+public class ParentClass {
     public enum OBJECT_TYPE{
-        DARSTELLER, STUDIO, GENRE
+        DARSTELLER, STUDIO, GENRE, KNOWLEDGE_CATEGORY
     }
     protected String uuid;
     protected String name;
 
-    public DatenObjekt() {
+    public ParentClass() {
     }
 
-    public DatenObjekt(OBJECT_TYPE object_type, String name) {
+    public ParentClass(OBJECT_TYPE object_type, String name) {
         switch (object_type) {
             default:
             case DARSTELLER:
@@ -33,26 +33,26 @@ public class DatenObjekt {
         this.name = name;
     }
 
-    public DatenObjekt(OBJECT_TYPE object_type) {
-        switch (object_type) {
-            default:
-            case DARSTELLER:
-                uuid = "darsteller_" + UUID.randomUUID().toString();
-                break;
-            case STUDIO:
-                uuid = "studio_" + UUID.randomUUID().toString();
-                break;
-            case GENRE:
-                uuid = "genre_" + UUID.randomUUID().toString();
-                break;
-        }
-    }
+//    public ParentClass(OBJECT_TYPE object_type) {
+//        switch (object_type) {
+//            default:
+//            case DARSTELLER:
+//                uuid = "darsteller_" + UUID.randomUUID().toString();
+//                break;
+//            case STUDIO:
+//                uuid = "studio_" + UUID.randomUUID().toString();
+//                break;
+//            case GENRE:
+//                uuid = "genre_" + UUID.randomUUID().toString();
+//                break;
+//        }
+//    }
 
     public String getUuid() {
         return uuid;
     }
 
-    public DatenObjekt setUuid(String uuid) {
+    public ParentClass setUuid(String uuid) {
         this.uuid = uuid;
         return this;
     }
@@ -61,7 +61,7 @@ public class DatenObjekt {
         return name;
     }
 
-    public DatenObjekt setName(String name) {
+    public ParentClass setName(String name) {
         this.name = name;
         return this;
     }

@@ -27,10 +27,7 @@ import android.widget.Toast;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity;
-import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
-import com.maxMustermannGeheim.linkcollection.Daten.DatenObjekt;
-import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
-import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
@@ -45,7 +42,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import static com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity.SHARED_PREFERENCES_DATA;
@@ -76,8 +72,7 @@ public class VideoActivity extends AppCompatActivity {
     List<Video> allVideoList = new ArrayList<>();
     List<Video> filterdVideoList = new ArrayList<>();
 
-    private Pair<Dialog, Video> addDialogVideoPair;
-    private Pair<Dialog, Video> editDialogVideoPair;
+    private Dialog[] addOrEditDialog = new Dialog[]{null};
     private Pair<Dialog, Video> dialogVideoPair;
 
     private CustomRecycler customRecycler_VideoList;
@@ -243,17 +238,6 @@ public class VideoActivity extends AppCompatActivity {
         customRecycler_VideoList = CustomRecycler.Builder(this, findViewById(R.id.videos_recycler))
                 .setItemLayout(R.layout.list_item_video)
                 .setObjectList(filterdVideoList)
-//                .setViewList(viewIdList -> {
-//                    viewIdList.add(R.id.listItem_video_deleteCheck);
-//                    viewIdList.add(R.id.listItem_video_Titel);
-//                    viewIdList.add(R.id.listItem_video_Views);
-//                    viewIdList.add(R.id.listItem_video_Darsteller);
-//                    viewIdList.add(R.id.listItem_video_Studio);
-//                    viewIdList.add(R.id.listItem_video_Genre);
-//                    viewIdList.add(R.id.listItem_video_rating);
-//                    viewIdList.add(R.id.listItem_video_rating_layout);
-//                    return viewIdList;
-//                })
                 .setSetItemContent((CustomRecycler.SetItemContent<Video>) (itemView, video) -> {
                     itemView.findViewById(R.id.listItem_video_deleteCheck).setVisibility(delete ? View.VISIBLE :View.GONE);
                     ((TextView) itemView.findViewById(R.id.listItem_video_Titel)).setText(video.getName());
@@ -305,7 +289,7 @@ public class VideoActivity extends AppCompatActivity {
                     dialogVideoPair = new Pair<>(showDetailDialog(object), (Video) object);
                 }, false)
                 .setOnLongClickListener((recycler, view, object, index) -> {
-                    editDialogVideoPair = new Pair<>(showEditOrNewDialog(object), (Video) object);
+                    addOrEditDialog[0] = showEditOrNewDialog(object);
                 })
                 .setShowDivider(false)
                 .generateCustomRecycler();
@@ -330,7 +314,7 @@ public class VideoActivity extends AppCompatActivity {
                 .setView(R.layout.dialog_video)
                 .setButtonType(CustomDialog.ButtonType.CUSTOM)
                 .addButton("Bearbeiten", dialog ->
-                        editDialogVideoPair = new Pair<>(showEditOrNewDialog(object), (Video) object), false)
+                        addOrEditDialog[0] = showEditOrNewDialog(object), false)
                 .addButton("Öffnen mit...", dialog -> openUrl(object, true), false)
                 .setSetViewContent(view -> {
                     ((TextView) view.findViewById(R.id.dialog_video_Titel)).setText(video.getName());
@@ -406,12 +390,10 @@ public class VideoActivity extends AppCompatActivity {
             video[0].getStudioList().forEach(uuid -> studioNames.add(database.studioMap.get(uuid).getName()));
             video[0].getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
         }
-//        final Video[] finalVideo = {video[0]};
         Dialog returnDialog =  CustomDialog.Builder(this)
                 .setTitle(object == null ? "Neues Video" : "Video Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
                 .setButtonType(CustomDialog.ButtonType.SAVE_CANCEL)
-//                .addButton(CustomDialog.CANCEL_BUTTON, dialog -> {}, false)
                 .addButton(CustomDialog.SAVE_BUTTON, dialog -> {
                     String titel = ((EditText) dialog.findViewById(R.id.dialog_editOrAddVideo_Titel)).getText().toString().trim();
                     if (titel.isEmpty()) {
@@ -453,29 +435,29 @@ public class VideoActivity extends AppCompatActivity {
 
 
                     view.findViewById(R.id.dialog_editOrAddVideo_editActor).setOnClickListener(view1 ->
-                            showEditCatigoryDialog(video[0] == null ? null : video[0].getDarstellerList(), video[0], DatenObjekt.OBJECT_TYPE.DARSTELLER));
+                            Utility.showEditCatigoryDialog(this, addOrEditDialog, video[0] == null ? null : video[0].getDarstellerList(), video[0], ParentClass.OBJECT_TYPE.DARSTELLER));
                     view.findViewById(R.id.dialog_editOrAddVideo_editStudio).setOnClickListener(view1 ->
-                            showEditCatigoryDialog(video[0] == null ? null : video[0].getStudioList(), video[0], DatenObjekt.OBJECT_TYPE.STUDIO ));
+                            Utility.showEditCatigoryDialog(this, addOrEditDialog, video[0] == null ? null : video[0].getStudioList(), video[0], ParentClass.OBJECT_TYPE.STUDIO ));
                     view.findViewById(R.id.dialog_editOrAddVideo_editGenre).setOnClickListener(view1 ->
-                            showEditCatigoryDialog(video[0] == null ? null : video[0].getGenreList(), video[0], DatenObjekt.OBJECT_TYPE.GENRE));
+                            Utility.showEditCatigoryDialog(this, addOrEditDialog, video[0] == null ? null : video[0].getGenreList(), video[0], ParentClass.OBJECT_TYPE.GENRE));
                 })
                 .show();
-        DialogInterface.OnKeyListener keylistener = (dialog, keyCode, KEvent) -> {
-            int keyaction = KEvent.getAction();
-
-            if(keyaction == KeyEvent.ACTION_DOWN)
-            {
-                int keycode = KEvent.getKeyCode();
-                int keyunicode = KEvent.getUnicodeChar(KEvent.getMetaState() );
-                char character = (char) keyunicode;
-//                    if(keycode== KeyCode.Enter){
+//        DialogInterface.OnKeyListener keylistener = (dialog, keyCode, KEvent) -> {
+//            int keyaction = KEvent.getAction();
 //
-//
-//                    }
-            }
-            return false;
-        };
-        returnDialog.setOnKeyListener(keylistener);
+//            if(keyaction == KeyEvent.ACTION_DOWN)
+//            {
+//                int keycode = KEvent.getKeyCode();
+//                int keyunicode = KEvent.getUnicodeChar(KEvent.getMetaState() );
+//                char character = (char) keyunicode;
+////                    if(keycode== KeyCode.Enter){
+////
+////
+////                    }
+//            }
+//            return false;
+//        };
+//        returnDialog.setOnKeyListener(keylistener);
         return returnDialog;
     }
 
@@ -521,269 +503,9 @@ public class VideoActivity extends AppCompatActivity {
 
     }
 
-    private Dialog showEditCatigoryDialog(List<String> preSelectedUuidList, Video video, DatenObjekt.OBJECT_TYPE editType) {
-        if (preSelectedUuidList == null)
-            preSelectedUuidList = new ArrayList<>();
 
-        List<String> selectedUuidList = new  ArrayList<>(preSelectedUuidList);
-        List<String> filterdUuidList;
-        String editType_string;
-        switch (editType){
-            default:
-            case DARSTELLER:
-                filterdUuidList = new ArrayList<>(database.darstellerMap.keySet());
-                editType_string = "Darsteller";
-                break;
-            case STUDIO:
-                filterdUuidList = new ArrayList<>(database.studioMap.keySet());
-                editType_string = "Studio";
-                break;
-            case GENRE:
-                filterdUuidList = new ArrayList<>(database.genreMap.keySet());
-                editType_string = "Genre";
-                break;
-        }
-
-        int saveButtonId = View.generateViewId();
-        int saveButtonId_add = View.generateViewId();
-
-
-        String finalEditType_string = editType_string;
-        String finalEditType_string1 = editType_string;
-        Dialog dialog_AddActorOrGenre = CustomDialog.Builder(this)
-                .setTitle(editType_string + " Bearbeiten")
-                .setButtonType(CustomDialog.ButtonType.CUSTOM)
-                .setView(R.layout.dialog_edit_item)
-                .setDimensions(true, true)
-                .addButton("Hinzufügen", dialog -> {
-                    addDialogVideoPair = new Pair<>(dialog, video);
-                    CustomDialog.Builder(this)
-                            .setTitle(finalEditType_string + " Hinzufügen")
-                            .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
-                            .addButton(CustomDialog.OK_BUTTON, dialog1 -> {
-                                DatenObjekt datenObjekt = new DatenObjekt(editType, CustomDialog.getEditText(dialog1));
-                                switch (editType){
-                                    case DARSTELLER:
-                                        database.darstellerMap.put(datenObjekt.getUuid(), datenObjekt.newDarsteller());
-                                        break;
-                                    case STUDIO:
-                                        database.studioMap.put(datenObjekt.getUuid(), datenObjekt.newStudio());
-                                        break;
-                                    case GENRE:
-                                        database.genreMap.put(datenObjekt.getUuid(), datenObjekt.newGenre());
-                                        break;
-                                }
-                                selectedUuidList.add(datenObjekt.getUuid());
-                                addDialogVideoPair.first.dismiss();
-                                addDialogVideoPair = new Pair<>(
-                                        showEditCatigoryDialog(selectedUuidList, video, editType), video);
-
-                            }, saveButtonId_add)
-                            .setEdit(new CustomDialog.EditBuilder()
-                                    .setFireButtonOnOK(true, saveButtonId_add)
-                                    .setHint(finalEditType_string1 + "-Name")
-                                    .setText(((SearchView) dialog.findViewById(R.id.dialogAddPassenger_search)).getQuery().toString()))
-                            .show();
-
-                }, false)
-                .addButton("Abbrechen", dialog -> {})
-                .addButton("Speichern", dialog -> {
-                    List<String> nameList = new ArrayList<>();
-                    switch (editType){
-                        case DARSTELLER:
-                            video.setDarstellerList(selectedUuidList);
-                            selectedUuidList.forEach(uuid -> nameList.add(database.darstellerMap.get(uuid).getName()));
-                            ((TextView) editDialogVideoPair.first.findViewById(R.id.dialog_editOrAddVideo_Darsteller)).setText(String.join(", ", nameList));
-                            break;
-                        case STUDIO:
-                            video.setStudioList(selectedUuidList);
-                            selectedUuidList.forEach(uuid -> nameList.add(database.studioMap.get(uuid).getName()));
-                            ((TextView) editDialogVideoPair.first.findViewById(R.id.dialog_editOrAddVideo_Studio)).setText(String.join(", ", nameList));
-                            break;
-                        case GENRE:
-                            video.setGenreList(selectedUuidList);
-                            selectedUuidList.forEach(uuid -> nameList.add(database.genreMap.get(uuid).getName()));
-                            ((TextView) editDialogVideoPair.first.findViewById(R.id.dialog_editOrAddVideo_Genre)).setText(String.join(", ", nameList));
-                            break;
-                    }
-                }, saveButtonId)
-                .show();
-
-
-        CustomRecycler customRecycler_selectList = CustomRecycler.Builder(this, dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_selectPassengers));
-
-        CustomRecycler customRecycler_selectedList = CustomRecycler.Builder(this, dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_selectedPassengers))
-                .setItemLayout(R.layout.list_item_bubble)
-                .setObjectList(selectedUuidList)
-                .setShowDivider(false)
-                .setSetItemContent((itemView, object) -> {
-                    switch (editType){
-                        case DARSTELLER:
-                            Darsteller darsteller = database.darstellerMap.get(object);
-                            ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(darsteller.getName());
-                            break;
-                        case STUDIO:
-                            Studio studio = database.studioMap.get(object);
-                            ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(studio.getName());
-                            break;
-                        case GENRE:
-                            Genre genre = database.genreMap.get(object);
-                            ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(genre.getName());
-                            break;
-                    }
-
-                    dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_nothingSelected).setVisibility(View.GONE);
-                })
-                .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
-                .setOnClickListener((recycler, view, object, index) -> {
-                    Toast.makeText(this,
-                            "Halten zum abwählen" , Toast.LENGTH_SHORT).show();
-                })
-                .setOnLongClickListener((recycler, view, object, index) -> {
-                    ((CustomRecycler.MyAdapter) recycler.getAdapter()).removeItemAt(index);
-                    selectedUuidList.remove(object);
-
-                    if (selectedUuidList.size() <= 0) {
-                        dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_nothingSelected).setVisibility(View.VISIBLE);
-                    } else {
-                        dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_nothingSelected).setVisibility(View.GONE);
-                    }
-                    dialog_AddActorOrGenre.findViewById(saveButtonId).setEnabled(true);
-
-                    customRecycler_selectList.setObjectList(filterdUuidList).reload();
-                })
-                .setUseCustomRipple(true)
-                .generateCustomRecycler();
-
-        List<String> sortedAllObjectIdList;
-        switch (editType){
-            default:
-            case DARSTELLER:
-                sortedAllObjectIdList = new ArrayList(database.darstellerMap.keySet());
-                sortedAllObjectIdList.sort((id1, id2) -> database.darstellerMap.get(id1).getName().compareTo(database.darstellerMap.get(id2).getName()));
-                break;
-            case STUDIO:
-                sortedAllObjectIdList = new ArrayList(database.studioMap.keySet());
-                sortedAllObjectIdList.sort((id1, id2) -> database.studioMap.get(id1).getName().compareTo(database.studioMap.get(id2).getName()));
-                break;
-            case GENRE:
-                sortedAllObjectIdList = new ArrayList(database.genreMap.keySet());
-                sortedAllObjectIdList.sort((id1, id2) -> database.genreMap.get(id1).getName().compareTo(database.genreMap.get(id2).getName()));
-                break;
-        }
-
-
-        customRecycler_selectList
-                .setItemLayout(R.layout.list_item_select_actor)
-                .setMultiClickEnabled(true)
-                .setObjectList(sortedAllObjectIdList)
-                .setSetItemContent((itemView, object) -> {
-                    switch (editType){
-                        case DARSTELLER:
-                            Darsteller darsteller = database.darstellerMap.get(object);
-                            ((TextView) itemView.findViewById(R.id.selectList_name)).setText(darsteller.getName());
-                            break;
-                        case STUDIO:
-                            Studio studio = database.studioMap.get(object);
-                            ((TextView) itemView.findViewById(R.id.selectList_name)).setText(studio.getName());
-                            break;
-                        case GENRE:
-                            Genre genre = database.genreMap.get(object);
-                            ((TextView) itemView.findViewById(R.id.selectList_name)).setText(genre.getName());
-                            break;
-                    }
-
-                    ((CheckBox) itemView.findViewById(R.id.selectList_selected)).setChecked(selectedUuidList.contains(object));
-                })
-                .setOnClickListener((recycler, view, object, index) -> {
-                    CheckBox checkBox = view.findViewById(R.id.selectList_selected);
-                    checkBox.setChecked(!checkBox.isChecked());
-                    if (selectedUuidList.contains(object))
-                        selectedUuidList.remove(object);
-                    else
-                        selectedUuidList.add((String) object);
-
-                    if (selectedUuidList.size() <= 0) {
-                        dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_nothingSelected).setVisibility(View.VISIBLE);
-                    } else {
-                        dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_nothingSelected).setVisibility(View.GONE);
-                    }
-                    dialog_AddActorOrGenre.findViewById(saveButtonId).setEnabled(true);
-
-                    customRecycler_selectedList.setObjectList(selectedUuidList).reload();
-                })
-                .generateCustomRecycler();
-
-        SearchView searchView = dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_search);
-        searchView.requestFocus();
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String s) {
-                return true;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String s) {
-                s = s.trim();
-                if (s.equals("")) {
-//                    List<String> objectIdList = new ArrayList<>();
-//                    switch (editType){
-//                        case DARSTELLER:
-//                            objectIdList = new ArrayList<>(database.darstellerMap.keySet());
-//                            objectIdList.sort((id1, id2) -> database.darstellerMap.get(id1).getName().compareTo(database.darstellerMap.get(id2).getName()));
-//                            break;
-//                        case STUDIO:
-//                            objectIdList = new ArrayList<>(database.studioMap.keySet());
-//                            objectIdList.sort((id1, id2) -> database.studioMap.get(id1).getName().compareTo(database.studioMap.get(id2).getName()));
-//                            break;
-//                        case GENRE:
-//                            objectIdList = new ArrayList<>(database.genreMap.keySet());
-//                            objectIdList.sort((id1, id2) -> database.genreMap.get(id1).getName().compareTo(database.genreMap.get(id2).getName()));
-//                            break;
-//                    }
-                    customRecycler_selectList.setObjectList(sortedAllObjectIdList).reload();
-                }
-                switch (editType){
-                    case DARSTELLER:
-                        Map<String, Darsteller> darstellerMap = database.darstellerMap;
-                        filterdUuidList.clear();
-                        for (String uuidActor : sortedAllObjectIdList) {
-                            if (darstellerMap.get(uuidActor).getName().toLowerCase().contains(s.toLowerCase()))
-                                filterdUuidList.add(uuidActor);
-                        }
-                        break;
-                    case STUDIO:
-                        Map<String, Studio> studioMap = database.studioMap;
-                        filterdUuidList.clear();
-                        for (String uuidActor : sortedAllObjectIdList) {
-                            if (studioMap.get(uuidActor).getName().toLowerCase().contains(s.toLowerCase()))
-                                filterdUuidList.add(uuidActor);
-                        }
-                        break;
-                    case GENRE:
-                        Map<String, Genre> genreMap = database.genreMap;
-                        filterdUuidList.clear();
-                        for (String uuidActor : sortedAllObjectIdList) {
-                            if (genreMap.get(uuidActor).getName().toLowerCase().contains(s.toLowerCase()))
-                                filterdUuidList.add(uuidActor);
-                        }
-                        break;
-                }
-
-                customRecycler_selectList.setObjectList(filterdUuidList).reload();
-
-                return true;
-            }
-        });
-
-        return dialog_AddActorOrGenre;
-
-    }
-
-    @SuppressLint("RestrictedApi")
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.task_bar_video, menu);
 
         Menu subMenu = menu.getItem(((MenuBuilder) menu).findItemIndex(R.id.taskBar_filter)).getSubMenu();
@@ -804,7 +526,7 @@ public class VideoActivity extends AppCompatActivity {
         int id = item.getItemId();
         switch (id) {
             case R.id.taskBar_video_add:
-                editDialogVideoPair = new Pair<>(showEditOrNewDialog(null), null);
+                addOrEditDialog[0] = showEditOrNewDialog(null);
                 break;
             case R.id.taskBar_video_random:
                 showRandomDialog();

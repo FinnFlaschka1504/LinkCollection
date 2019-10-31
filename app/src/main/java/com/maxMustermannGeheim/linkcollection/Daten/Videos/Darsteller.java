@@ -1,10 +1,8 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Videos;
 
-import com.maxMustermannGeheim.linkcollection.Daten.DatenObjekt;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 
-import java.util.UUID;
-
-public class Darsteller extends DatenObjekt {
+public class Darsteller extends ParentClass {
 //    private String uuid = "darsteller_" + UUID.randomUUID().toString();
 //
 //    private String name;

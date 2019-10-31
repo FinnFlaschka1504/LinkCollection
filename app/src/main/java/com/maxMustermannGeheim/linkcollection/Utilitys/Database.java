@@ -14,10 +14,10 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Category;
+import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
-import com.maxMustermannGeheim.linkcollection.Daten.DatenObjekt;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
@@ -71,7 +71,7 @@ public class Database {
     public static final String CATEGORY_MAP = "CATEGORY_MAP";
 
     public Map<String, Knowledge> knowledgeMap = new HashMap<>();
-    public Map<String, Category> categoryMap = new HashMap<>();
+    public Map<String, KnowledgeCategory> categoryMap = new HashMap<>();
 
 
     private List<Content> contentList;
@@ -86,7 +86,7 @@ public class Database {
                     , new Content<List,String>(String.class, watchLaterList, databaseCode_Content, VIDEOS, WATCH_LATER_LIST)
 
                     , new Content<Map, Knowledge>(Knowledge.class, knowledgeMap, databaseCode_Content, KNOWLEDGE, KNOWLEDGE_MAP)
-                    , new Content<Map, Category>(Category.class, categoryMap, databaseCode_Content, KNOWLEDGE, CATEGORY_MAP)
+                    , new Content<Map, KnowledgeCategory>(KnowledgeCategory.class, categoryMap, databaseCode_Content, KNOWLEDGE, CATEGORY_MAP)
             );
     }
 //  <----- Content deklaration -----
@@ -204,7 +204,7 @@ public class Database {
             if (dataSnapshot.getValue() != null) {
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     V value = snapshot.getValue(tClass);
-                    ((Map) content).put(((DatenObjekt) value).getUuid(), value);
+                    ((Map) content).put(((ParentClass) value).getUuid(), value);
                 }
                 return ((HashMap) content);
             }
@@ -513,7 +513,7 @@ public class Database {
         void runOnChangeListener();
     }
     public interface OnChangeListener_updateData {
-        void runOnChangeListener_updateData(DataSnapshot dataSnapshot, Database database, ChangeListener<DatenObjekt> changeListener);
+        void runOnChangeListener_updateData(DataSnapshot dataSnapshot, Database database, ChangeListener<ParentClass> changeListener);
     }
 
     public class ChangeListener<T> {
@@ -575,7 +575,7 @@ public class Database {
 
             for (DataSnapshot snapshot :  dataSnapshot.getChildren()){
                 T standardArticle = snapshot.getValue(tClass);
-                newMap.put(((DatenObjekt) standardArticle).getUuid(), standardArticle);
+                newMap.put(((ParentClass) standardArticle).getUuid(), standardArticle);
             }
             return newMap;
         }

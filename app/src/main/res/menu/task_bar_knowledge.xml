@@ -48,17 +48,9 @@
                 android:checkable="true"
                 android:title="Nach Name" />
             <item
-                android:id="@+id/taskBar_knowledge_filterByDarsteller"
+                android:id="@+id/taskBar_knowledge_filterByCategory"
                 android:checkable="true"
                 android:title="Nach Darsteller" />
-            <item
-                android:id="@+id/taskBar_knowledge_filterByGenre"
-                android:checkable="true"
-                android:title="Nach Genre" />
-            <item
-                android:id="@+id/taskBar_knowledge_filterByStudio"
-                android:checkable="true"
-                android:title="Nach Studio" />
         </menu>
     </item>
 

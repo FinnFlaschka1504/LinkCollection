@@ -2,19 +2,26 @@ package com.maxMustermannGeheim.linkcollection.Daten.Knowledge;
 
 import android.util.Pair;
 
-import com.maxMustermannGeheim.linkcollection.Daten.DatenObjekt;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
-public class Knowledge extends DatenObjekt {
+public class Knowledge extends ParentClass {
 
-    private String description;
+    private String content;
     private List<Pair<String,String>> sources = new ArrayList<>();
     private List<String> categoryIdList = new ArrayList<>();
     private Float rating = -1f;
 
     public Knowledge() {
+    }
+
+    public Knowledge(String name) {
+        uuid = "knowledge_" + UUID.randomUUID().toString();
+        this.name = name;
     }
 
     @Override
@@ -23,7 +30,7 @@ public class Knowledge extends DatenObjekt {
     }
 
     @Override
-    public DatenObjekt setName(String name) {
+    public ParentClass setName(String name) {
         return super.setName(name);
     }
 
@@ -33,16 +40,16 @@ public class Knowledge extends DatenObjekt {
     }
 
     @Override
-    public DatenObjekt setUuid(String uuid) {
+    public ParentClass setUuid(String uuid) {
         return super.setUuid(uuid);
     }
 
-    public String getDescription() {
-        return description;
+    public String getContent() {
+        return content;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setContent(String content) {
+        this.content = content;
     }
 
     public List<Pair<String, String>> getSources() {
@@ -68,4 +75,15 @@ public class Knowledge extends DatenObjekt {
     public void setRating(Float rating) {
         this.rating = rating;
     }
+
+    public Knowledge cloneKnowledge() {
+        Knowledge knowledge = new Knowledge();
+        knowledge.name = this.name;
+        knowledge.uuid = this.uuid;
+        knowledge.categoryIdList = new ArrayList<>(this.categoryIdList);
+        knowledge.rating = this.rating;
+        knowledge.sources = new ArrayList<>(this.sources);
+        return knowledge;
+    }
+
 }

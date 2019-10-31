@@ -12,20 +12,18 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewStub;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.maxMustermannGeheim.linkcollection.Activitys.Knowledge.KnowledgeActivity;
+import com.maxMustermannGeheim.linkcollection.Activitys.Settings;
 import com.maxMustermannGeheim.linkcollection.Activitys.Videos.CatigorysActivity;
 import com.maxMustermannGeheim.linkcollection.Activitys.Videos.VideoActivity;
-import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
@@ -34,26 +32,22 @@ import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
     public static final String SHARED_PREFERENCES_DATA = "LinkCollection_Daten";
     public static final String SHARED_PREFERENCES_SETTINGS = "SHARED_PREFERENCES_SETTINGS";
     public static final String EXTRA_CATEGORY = "EXTRA_CATEGORY";
-    public static final String SETTING_LAST_OPEN_CATEGORY = "SETTING_LAST_OPEN_CATEGORY";
-    public static final int VIDEO_INT = 1;
-    public static final int KNOWLEDGE_INT = 2;
+    public static final String SETTING_LAST_OPEN_SPACE = "SETTING_LAST_OPEN_SPACE";
 
 
-    final int START_VIDEOS = 001;
-    final int START_ACTOR = 002;
-    final int START_STUDIO = 003;
-    final int START_GENRE = 004;
-    public final int START_VIDEO_FROM_CALENDER = 005;
-    public final int START_WATCH_LATER = 006;
-    private final int START_KNOWLEDGE = 007;
+    final int START_VIDEOS = 1;
+    final int START_ACTOR = 2;
+    final int START_STUDIO = 3;
+    final int START_GENRE = 4;
+    public final int START_VIDEO_FROM_CALENDER = 5;
+    public final int START_WATCH_LATER = 6;
+    private final int START_KNOWLEDGE = 7;
+    private final int START_SETTINGS = 8;
 
     Database database;
     SharedPreferences mySPR_daten;
@@ -66,27 +60,28 @@ public class MainActivity extends AppCompatActivity {
     public enum CATEGORIES {
         Video, Darsteller, Studios, Genre, WatchLater
     }
-    private enum  FRAGMENT_TYPE {
-        VIDEOS(VIDEO_INT), KNOWLEDGE(KNOWLEDGE_INT);
-
-        private int id;
-
-        FRAGMENT_TYPE(int id) {
-            this.id = id;
-        }
-
-        public int getId() {
-            return id;
-        }
-        static FRAGMENT_TYPE getType(int id) {
-            for (FRAGMENT_TYPE fragmentType : FRAGMENT_TYPE.values()) {
-                if (fragmentType.id == id)
-                    return fragmentType;
-            }
-            return null;
-        }
-    }
-    private FRAGMENT_TYPE currentFragmentType;
+//    private enum  FRAGMENT_TYPE {
+//        VIDEOS(VIDEO_INT), KNOWLEDGE(KNOWLEDGE_INT);
+//
+//        private int id;
+//
+//        FRAGMENT_TYPE(int id) {
+//            this.id = id;
+//        }
+//
+//        public int getId() {
+//            return id;
+//        }
+//        static FRAGMENT_TYPE getType(int id) {
+//            for (FRAGMENT_TYPE fragmentType : FRAGMENT_TYPE.values()) {
+//                if (fragmentType.id == id)
+//                    return fragmentType;
+//            }
+//            return null;
+//        }
+//    }
+//    private FRAGMENT_TYPE currentSpaceType;
+    private Settings.Space currentSpace;
 
     // ToDo: serien (als expandeble Layout)
     @Override
@@ -101,7 +96,6 @@ public class MainActivity extends AppCompatActivity {
         mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_DATA, MODE_PRIVATE);
         mySPR_settings = getSharedPreferences(SHARED_PREFERENCES_SETTINGS, MODE_PRIVATE);
 
-        currentFragmentType = FRAGMENT_TYPE.getType(mySPR_settings.getInt(SETTING_LAST_OPEN_CATEGORY, VIDEO_INT));
         loadDatabase(false);
 
         ShortcutManager shortcutManager = getSystemService(ShortcutManager.class);
@@ -136,7 +130,6 @@ public class MainActivity extends AppCompatActivity {
             if (firstTime) {
                 setContentView(R.layout.activity_main);
                 Utility.showCenterdToast(this, "Datenbank:\n" + Database.databaseCode);
-                setTheme(R.style.AppTheme);
             }
 
             setLayout();
@@ -154,46 +147,54 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     private void setLayout() {
-        Fragment fragment = null;
         BottomNavigationView bottomNavigationView = findViewById(R.id.main_bottom_navigation);
-        switch (currentFragmentType) {
-            case VIDEOS:
-                videoFragment = new FragmentVideos();
-                fragment = videoFragment;
-                bottomNavigationView.setSelectedItemId(R.id.drawer_videos);
+
+        Settings.startSettings_ifNeeded(this);
+        bottomNavigationView.getMenu().clear();
+        int count = 0;
+        for (Settings.Space space : Settings.Space.allSpaces) {
+            if (!space.isShown()) continue;
+
+            if (count == 4)
                 break;
-            case KNOWLEDGE:
-                knowledgeFragment = new FragmentKnowledge();
-                fragment = knowledgeFragment;
-                bottomNavigationView.setSelectedItemId(R.id.drawer_knowledge);
-                break;
+            bottomNavigationView.getMenu().add(Menu.NONE, space.getItemId(), Menu.NONE, space.getName()).setIcon(space.getIconId());
+            count++;
         }
-        getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container, fragment).runOnCommit(this::setCounts).commit();
+
+        currentSpace = Settings.Space.getSpaceById(mySPR_settings.getInt(SETTING_LAST_OPEN_SPACE, Settings.Space.SPACE_VIDEO));
+
+        if (!currentSpace.isShown())
+            currentSpace = Settings.Space.getFirstShown();
+
+        bottomNavigationView.setVisibility(bottomNavigationView.getMenu().size() == 1 ? View.GONE : View.VISIBLE);
+
+        if (!currentSpace.hasFragment())
+            currentSpace.setFragment(new SpaceFragment(currentSpace.getLayoutId()));
+
+//        getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container
+//                , currentSpace.getFragment()
+//        ).runOnCommit(this::setCounts).commitAllowingStateLoss();
         bottomNavigationView.setOnNavigationItemSelectedListener(onNavigationItemSelectedListener);
+        bottomNavigationView.setSelectedItemId(currentSpace.getItemId());
     }
 
     BottomNavigationView.OnNavigationItemSelectedListener onNavigationItemSelectedListener = menuItem -> {
-        Fragment selectedFragment;
-        switch (menuItem.getItemId()) {
-            case R.id.drawer_videos:
-                if (videoFragment == null)
-                    videoFragment = new FragmentVideos();
-                selectedFragment = videoFragment;
-                currentFragmentType = FRAGMENT_TYPE.VIDEOS;
-                break;
-            case R.id.drawer_knowledge:
-                if (knowledgeFragment == null)
-                    knowledgeFragment = new FragmentKnowledge();
-                selectedFragment = knowledgeFragment;
-                currentFragmentType = FRAGMENT_TYPE.KNOWLEDGE;
-                break;
-            default:
-                Toast.makeText(this, "Noch nicht zugewiesen", Toast.LENGTH_SHORT).show();
-                return false;
+
+        Settings.Space selectedSpace = Settings.Space.getSpaceById(menuItem.getItemId());
+        if (selectedSpace == null) {
+            Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
+            return false;
         }
 
-        getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container, selectedFragment).runOnCommit(this::setCounts).commit();
+        if (!selectedSpace.isShown())
+            selectedSpace = Settings.Space.getFirstShown();
+
+        if (!selectedSpace.hasFragment())
+            selectedSpace.setFragment(new SpaceFragment(selectedSpace.getLayoutId()));
+        getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container, selectedSpace.getFragment()).runOnCommit(this::setCounts).commitAllowingStateLoss();
+        currentSpace = selectedSpace;
 
         return true;
     };
@@ -210,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
                 .addButton(CustomDialog.OK_BUTTON, dialog ->
                         onFinish.runOndatabaseCodeFinish(CustomDialog.getEditText(dialog)), buttonId)
                 .setEdit(new CustomDialog.EditBuilder()
-                        .setFireButtonOnOK(true, buttonId))
+                        .setFireButtonOnOK(buttonId))
                 .show();
 
     }
@@ -286,45 +287,21 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void setCounts() {
-        switch (currentFragmentType) {
-            case VIDEOS:
-                ((TextView) findViewById(R.id.main_videoCount)).setText(String.valueOf(database.videoMap.size()));
-                ((TextView) findViewById(R.id.main_darstellerCount)).setText(String.valueOf(database.darstellerMap.size()));
-                ((TextView) findViewById(R.id.main_genreCount)).setText(String.valueOf(database.genreMap.size()));
-                ((TextView) findViewById(R.id.main_studioCount)).setText(String.valueOf(database.studioMap.size()));
-                Set<Date> dateSet = new HashSet<>();
-                database.videoMap.values().forEach(video -> dateSet.addAll(video.getDateList()));
-                ((TextView) findViewById(R.id.main_daysCount)).setText(String.valueOf(dateSet.size()));
-                ((TextView) findViewById(R.id.main_watchLaterCount)).setText(String.valueOf(database.watchLaterList.size()));
-            break;
-            case KNOWLEDGE:
-                ((TextView) findViewById(R.id.main_knowledgeCount)).setText(String.valueOf(database.knowledgeMap.size()));
-                ((TextView) findViewById(R.id.main_categoryCount)).setText(String.valueOf(database.categoryMap.size()));
-                break;
-        }
+        currentSpace.setLayout();
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.task_bar_main, menu);
         return true;
     }
-
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         switch (id) {
             case R.id.taskBar_main_settings:
-                CustomDialog.Builder(this)
-                        .setTitle("Einstellungen")
-                        .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
-                        .setEdit(new CustomDialog.EditBuilder()
-                                .setHint("Datenbank-Code")
-                                .setText(Database.databaseCode))
-                        .show();
-                // ToDo: datenbank-code ändern
+                startActivityForResult(new Intent(this, Settings.class), START_SETTINGS);
                 break;
         }
         return true;
@@ -336,8 +313,13 @@ public class MainActivity extends AppCompatActivity {
             if (requestCode == START_VIDEO_FROM_CALENDER) {
                 calenderDialog.dismiss();
                 showCalenderDialog(null);
+                setCounts();
             }
-            setCounts();
+            else if (requestCode == START_SETTINGS) {
+                setLayout();
+            }
+            else
+                setCounts();
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
@@ -351,7 +333,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        mySPR_settings.edit().putInt(SETTING_LAST_OPEN_CATEGORY, currentFragmentType.getId()).apply();
+        mySPR_settings.edit().putInt(SETTING_LAST_OPEN_SPACE, currentSpace.getItemId()).apply();
         super.onDestroy();
     }
 

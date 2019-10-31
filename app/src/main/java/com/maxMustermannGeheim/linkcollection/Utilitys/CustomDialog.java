@@ -219,9 +219,9 @@ public class CustomDialog {
             return this;
         }
 
-        public EditBuilder setFireButtonOnOK(boolean fireButtonOnOK, int buttonId) {
+        public EditBuilder setFireButtonOnOK(int buttonId) {
             this.buttonId = buttonId;
-            this.fireButtonOnOK = fireButtonOnOK;
+            this.fireButtonOnOK = true;
             return this;
         }
     }

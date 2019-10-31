@@ -1,6 +1,8 @@
 package com.maxMustermannGeheim.linkcollection.Utilitys;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.util.Pair;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -37,6 +39,7 @@ public class CustomRecycler<T>{
     private long lastClickTime = System.currentTimeMillis();
     private boolean isMultiClickEnabled = false;
     private boolean showDivider = true;
+    private boolean hideLastDivider;
     private boolean useCustomRipple = false;
     private Context context;
     private RecyclerView recycler;
@@ -135,6 +138,11 @@ public class CustomRecycler<T>{
 
     public CustomRecycler setShowDivider(boolean showDivider) {
         this.showDivider = showDivider;
+        return this;
+    }
+
+    public CustomRecycler removeLastDivider() {
+        this.hideLastDivider = true;
         return this;
     }
 
@@ -285,7 +293,6 @@ public class CustomRecycler<T>{
 
         @Override
         public void onBindViewHolder(ViewHolder viewHolder, int position) {
-//            if (dataset.get(position).getClass() != T)
             setItemContent.runSetCellContent(viewHolder.itemView, (T) dataset.get(position));
         }
 
@@ -358,22 +365,35 @@ public class CustomRecycler<T>{
         recycler.setAdapter(mAdapter);
 
         if (showDivider) {
-            // ToDo: evl. letzten divider löschen
-//            DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(context, orientation) {
-//                @Override
-//                public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
-//                    int position = parent.getChildAdapterPosition(view);
-//                    // hide the divider for the last child
-//                    if (position == parent.getAdapter().getItemCount() - 1) {
-//                        outRect.setEmpty();
-//                    } else {
-//                        super.getItemOffsets(outRect, view, parent, state);
-//                    }
-//                }
-//            };
-            DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(recycler.getContext(),
-                    ((LinearLayoutManager) layoutManager).getOrientation());
-            dividerItemDecoration.setDrawable(ContextCompat.getDrawable(context, R.drawable.divider));
+            Drawable mDivider = ContextCompat.getDrawable(context, R.drawable.divider);
+            DividerItemDecoration dividerItemDecoration;
+            if (hideLastDivider) {
+                dividerItemDecoration = new DividerItemDecoration(context, orientation) {
+                    @Override
+                    public void onDraw(Canvas canvas, RecyclerView parent, RecyclerView.State state) {
+                        int dividerLeft = parent.getPaddingLeft();
+                        int dividerRight = parent.getWidth() - parent.getPaddingRight();
+
+                        int childCount = parent.getChildCount();
+                        for (int i = 0; i <= childCount - 2; i++) {
+                            View child = parent.getChildAt(i);
+
+                            RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child.getLayoutParams();
+
+                            int dividerTop = child.getBottom() + params.bottomMargin;
+                            int dividerBottom = dividerTop + mDivider.getIntrinsicHeight();
+
+                            mDivider.setBounds(dividerLeft, dividerTop, dividerRight, dividerBottom);
+                            mDivider.draw(canvas);
+                        }
+                    }
+                };
+            }
+            else {
+                dividerItemDecoration = new DividerItemDecoration(recycler.getContext(),
+                        ((LinearLayoutManager) layoutManager).getOrientation());
+                dividerItemDecoration.setDrawable(ContextCompat.getDrawable(context, R.drawable.divider));
+            }
             recycler.addItemDecoration(dividerItemDecoration);
         }
 

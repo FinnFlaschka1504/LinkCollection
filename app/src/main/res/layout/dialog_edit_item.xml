@@ -64,8 +64,10 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/dialogAddPassenger_selectPassengers"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
         android:layout_weight="1"
+        android:minHeight="1000dp"
+        tools:layout_height="wrap_content"
         tools:layout_weight="0" />
 
 </LinearLayout>

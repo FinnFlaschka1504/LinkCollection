@@ -1,6 +1,6 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Videos;
 
-import com.maxMustermannGeheim.linkcollection.Daten.DatenObjekt;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
 import java.util.ArrayList;
@@ -12,7 +12,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class Video extends DatenObjekt {
+public class Video extends ParentClass {
 //    private String uuid = "video_" + UUID.randomUUID().toString();
 //
 //    private String name;

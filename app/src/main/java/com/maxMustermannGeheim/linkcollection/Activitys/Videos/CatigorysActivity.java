@@ -14,7 +14,7 @@ import android.widget.SearchView;
 import android.widget.TextView;
 
 import com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity;
-import com.maxMustermannGeheim.linkcollection.Daten.DatenObjekt;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
@@ -47,8 +47,8 @@ public class CatigorysActivity extends AppCompatActivity {
     private SearchView catigorys_search;
     private SearchView.OnQueryTextListener textListener;
 
-    private List<Pair<DatenObjekt, Integer>> allDatenObjektPairList;
-    private List<Pair<DatenObjekt, Integer>> filterdDatenObjektPairList;
+    private List<Pair<ParentClass, Integer>> allDatenObjektPairList;
+    private List<Pair<ParentClass, Integer>> filterdDatenObjektPairList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,9 +84,9 @@ public class CatigorysActivity extends AppCompatActivity {
                 filterdDatenObjektPairList = new ArrayList<>(allDatenObjektPairList);
                 s = s.trim();
                 if (!s.equals("")) {
-                    for (Pair<DatenObjekt, Integer> datenObjektIntegerPair: allDatenObjektPairList) {
-                        DatenObjekt datenObjekt = datenObjektIntegerPair.first;
-                        if (!datenObjekt.getName().toLowerCase().contains(s.toLowerCase()))
+                    for (Pair<ParentClass, Integer> datenObjektIntegerPair: allDatenObjektPairList) {
+                        ParentClass parentClass = datenObjektIntegerPair.first;
+                        if (!parentClass.getName().toLowerCase().contains(s.toLowerCase()))
                             filterdDatenObjektPairList.remove(datenObjektIntegerPair);
                     }
                 }
@@ -98,7 +98,7 @@ public class CatigorysActivity extends AppCompatActivity {
         catigorys_search.setQueryHint(catigoryName + " filtern");
     }
 
-    private void sortList(List<Pair<DatenObjekt, Integer>> datenObjektPairList) {
+    private void sortList(List<Pair<ParentClass, Integer>> datenObjektPairList) {
         switch (sort_type) {
             case NAME:
                 datenObjektPairList.sort((objekt1, objekt2) -> objekt1.first.getName().compareTo(objekt2.first.getName()));
@@ -111,46 +111,46 @@ public class CatigorysActivity extends AppCompatActivity {
     }
 
     private void setDatenObjektIntegerPairLiist() {
-        List<Pair<DatenObjekt, Integer>> pairList = new ArrayList<>();
+        List<Pair<ParentClass, Integer>> pairList = new ArrayList<>();
 
         catigoryName = getIntent().getStringExtra(MainActivity.EXTRA_CATEGORY);
         setTitle(catigoryName);
         if (catigoryName.equals(MainActivity.CATEGORIES.Darsteller.name())) {
             catigory = MainActivity.CATEGORIES.Darsteller;
 
-            for (DatenObjekt datenObjekt : database.darstellerMap.values()) {
+            for (ParentClass parentClass : database.darstellerMap.values()) {
                 int count = 0;
                 for (Video video : database.videoMap.values()) {
-                    if (video.getDarstellerList().contains(datenObjekt.getUuid()))
+                    if (video.getDarstellerList().contains(parentClass.getUuid()))
                         count++;
                 }
-                pairList.add(new Pair<>(datenObjekt, count));
+                pairList.add(new Pair<>(parentClass, count));
             }
 
             allDatenObjektPairList = pairList;
         } else if (catigoryName.equals(MainActivity.CATEGORIES.Genre.name())) {
             catigory = MainActivity.CATEGORIES.Genre;
 
-            for (DatenObjekt datenObjekt : database.genreMap.values()) {
+            for (ParentClass parentClass : database.genreMap.values()) {
                 int count = 0;
                 for (Video video : database.videoMap.values()) {
-                    if (video.getGenreList().contains(datenObjekt.getUuid()))
+                    if (video.getGenreList().contains(parentClass.getUuid()))
                         count++;
                 }
-                pairList.add(new Pair<>(datenObjekt, count));
+                pairList.add(new Pair<>(parentClass, count));
             }
 
             allDatenObjektPairList = pairList;
         } else if (catigoryName.equals(MainActivity.CATEGORIES.Studios.name())) {
             catigory = MainActivity.CATEGORIES.Studios;
 
-            for (DatenObjekt datenObjekt : database.studioMap.values()) {
+            for (ParentClass parentClass : database.studioMap.values()) {
                 int count = 0;
                 for (Video video : database.videoMap.values()) {
-                    if (video.getStudioList().contains(datenObjekt.getUuid()))
+                    if (video.getStudioList().contains(parentClass.getUuid()))
                         count++;
                 }
-                pairList.add(new Pair<>(datenObjekt, count));
+                pairList.add(new Pair<>(parentClass, count));
             }
 
             allDatenObjektPairList = pairList;
@@ -163,16 +163,16 @@ public class CatigorysActivity extends AppCompatActivity {
                 .setItemLayout(R.layout.list_item_catigory_item)
                 .setObjectList(allDatenObjektPairList)
                 .setSetItemContent((itemView, object) -> {
-                    DatenObjekt datenObjekt = (DatenObjekt) ((Pair) object).first;
+                    ParentClass parentClass = (ParentClass) ((Pair) object).first;
 
-                    ((TextView) itemView.findViewById(R.id.listItem_catigoryItem_name)).setText(datenObjekt.getName());
+                    ((TextView) itemView.findViewById(R.id.listItem_catigoryItem_name)).setText(parentClass.getName());
                     ((TextView) itemView.findViewById(R.id.userlistItem_catigoryItem_count)).setText(String.valueOf(((Pair) object).second));
                 })
                 .setRowOrColumnCount(columnCount)
                 .setShowDivider(false)
                 .setOnClickListener((recycler, view, object, index) -> {
                     startActivityForResult(new  Intent(this, VideoActivity.class)
-                        .putExtra(VideoActivity.EXTRA_SEARCH, ((DatenObjekt) ((Pair) object).first).getName())
+                        .putExtra(VideoActivity.EXTRA_SEARCH, ((ParentClass) ((Pair) object).first).getName())
                         .putExtra(VideoActivity.EXTRA_SEARCH_CATIGORY, catigoryName),
                             START_CATIGORY_SEARCH);
                 })
@@ -180,21 +180,21 @@ public class CatigorysActivity extends AppCompatActivity {
                 .setOnLongClickListener((recycler, view, object, index) -> {
                     if (!Utility.isOnline(this))
                         return;
-                    DatenObjekt datenObjekt = (DatenObjekt) ((Pair) object).first;
+                    ParentClass parentClass = (ParentClass) ((Pair) object).first;
                     CustomDialog.Builder(this)
                             .setTitle(catigoryName + " Umbenennen, oder Löschen")
                             .setEdit(new CustomDialog.EditBuilder()
-                                    .setText(datenObjekt.getName())
+                                    .setText(parentClass.getName())
                                     .setHint("Name"))
                             .setButtonType(CustomDialog.ButtonType.CUSTOM)
                             .addButton("Löschen", dialog -> {
                                 CustomDialog.Builder(this)
                                         .setTitle("Löschen")
-                                        .setText("Wirklich '" + ((DatenObjekt) ((Pair) object).first).getName() + "' löschen?")
+                                        .setText("Wirklich '" + ((ParentClass) ((Pair) object).first).getName() + "' löschen?")
                                         .setButtonType(CustomDialog.ButtonType.YES_NO)
                                         .addButton(CustomDialog.YES_BUTTON, dialog1 -> {
                                             dialog.dismiss();
-                                            removeCatigory((DatenObjekt) ((Pair) object).first);
+                                            removeCatigory((ParentClass) ((Pair) object).first);
                                         })
                                         .show();
                             }, false)
@@ -202,7 +202,7 @@ public class CatigorysActivity extends AppCompatActivity {
                             .addButton("OK", dialog -> {
                                 if (!Utility.isOnline(this))
                                     return;
-                                ((DatenObjekt) ((Pair) object).first).setName(CustomDialog.getEditText(dialog));
+                                ((ParentClass) ((Pair) object).first).setName(CustomDialog.getEditText(dialog));
                                 reLoadRecycler();
                                 Database.saveAll();
                             })
@@ -212,15 +212,15 @@ public class CatigorysActivity extends AppCompatActivity {
 
     }
 
-    private void removeCatigory(DatenObjekt datenObjekt) {
-        allDatenObjektPairList.remove(datenObjekt);
-        filterdDatenObjektPairList.remove(datenObjekt);
+    private void removeCatigory(ParentClass parentClass) {
+        allDatenObjektPairList.remove(parentClass);
+        filterdDatenObjektPairList.remove(parentClass);
         switch (catigory) {
             case Genre:
-                database.genreMap.remove(datenObjekt.getUuid());
+                database.genreMap.remove(parentClass.getUuid());
                 for (Video video : database.videoMap.values()) {
-                    if (video.getGenreList().contains(datenObjekt.getUuid()))
-                        video.getGenreList().remove(datenObjekt.getUuid());
+                    if (video.getGenreList().contains(parentClass.getUuid()))
+                        video.getGenreList().remove(parentClass.getUuid());
                 }
         }
         setResult(RESULT_OK);
@@ -233,7 +233,7 @@ public class CatigorysActivity extends AppCompatActivity {
     }
 
     private void showRandomDialog() {
-        final Pair<DatenObjekt, Integer>[] randomPair = new Pair[]{filterdDatenObjektPairList.get((int) (Math.random() * filterdDatenObjektPairList.size()))};
+        final Pair<ParentClass, Integer>[] randomPair = new Pair[]{filterdDatenObjektPairList.get((int) (Math.random() * filterdDatenObjektPairList.size()))};
         CustomDialog.Builder(this)
                 .setTitle("Zufall")
                 .setText(randomPair[0].first.getName() + " (" + randomPair[0].second + ")")

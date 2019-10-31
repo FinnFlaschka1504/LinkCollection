@@ -11,11 +11,17 @@ import androidx.fragment.app.Fragment;
 
 import com.maxMustermannGeheim.linkcollection.R;
 
-public class FragmentKnowledge extends Fragment {
+public class SpaceFragment extends Fragment {
+
+    private int layoutId;
+
+    public SpaceFragment(int layoutId) {
+        this.layoutId = layoutId;
+    }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.main_fragment_knowledge, container, false);
+        return inflater.inflate(layoutId, container, false);
     }
 }

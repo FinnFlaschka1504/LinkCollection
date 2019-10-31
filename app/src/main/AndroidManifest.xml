@@ -13,6 +13,8 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
+        <activity android:name=".Activitys.Settings"
+            android:parentActivityName=".Activitys.Main.MainActivity"/>
         <activity
             android:name=".Activitys.Main.MainActivity"
             android:configChanges="orientation|screenSize"

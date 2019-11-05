@@ -11,13 +11,7 @@
 
     <string name="bottomMenu_video">Video</string>
     <string name="bottomMenu_knowledge">Wissen</string>
-    <string name="bottomMenu_dept">Schulden</string>
+    <string name="bottomMenu_owe">Schulden</string>
     <string name="bottomMenu_jokes">Witze</string>
 
-    <string-array name="bottomMenuItems">
-        <item>@string/bottomMenu_video</item>
-        <item>@string/bottomMenu_knowledge</item>
-        <item>@string/bottomMenu_dept</item>
-        <item>@string/bottomMenu_jokes</item>
-    </string-array>
 </resources>

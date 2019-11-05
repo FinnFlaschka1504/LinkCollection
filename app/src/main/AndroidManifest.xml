@@ -13,8 +13,11 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".Activitys.Settings"
-            android:parentActivityName=".Activitys.Main.MainActivity"/>
+        <activity android:name=".Activitys.Knowledge.KnowledgeCategoryActivity"></activity>
+        <activity
+            android:name=".Activitys.Settings"
+            android:label="Einstellungen"
+            android:parentActivityName=".Activitys.Main.MainActivity" />
         <activity
             android:name=".Activitys.Main.MainActivity"
             android:configChanges="orientation|screenSize"

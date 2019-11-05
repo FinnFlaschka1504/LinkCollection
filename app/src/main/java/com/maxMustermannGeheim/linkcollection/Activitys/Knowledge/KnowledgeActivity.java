@@ -5,7 +5,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Pair;
 import android.view.Menu;
@@ -20,7 +19,6 @@ import android.widget.Toast;
 import com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
-import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
@@ -29,7 +27,6 @@ import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -91,7 +88,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 //                reLoadRecycler();
 //                setResult(RESULT_OK);
 //
-//                Toast.makeText(this, toDelete.size() + (toDelete.size() == 1 ? " Video" : " Videos") + " gelöscht", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(this, toDelete.size() + (toDelete.size() == 1 ? " VIDEO" : " Videos") + " gelöscht", Toast.LENGTH_SHORT).show();
 //            });
             loadRecycler();
 
@@ -120,8 +117,8 @@ public class KnowledgeActivity extends AppCompatActivity {
 //
 //                        for (String subQuery : s.split("\\|")) {
 //                            subQuery = subQuery.trim();
-//                            List<Video> subList = new ArrayList<>(filterdVideoList);
-//                            for (Video video : subList) {
+//                            List<VIDEO> subList = new ArrayList<>(filterdVideoList);
+//                            for (VIDEO video : subList) {
 //                                if (!Utility.containedInVideo(subQuery, video, filterTypeSet))
 //                                    filterdVideoList.remove(video);
 //                            }
@@ -228,7 +225,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .setTitle(knowledge == null ? "Neues Wissen" : "Wissen Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_knowledge)
                 .setButtonType(CustomDialog.ButtonType.SAVE_CANCEL)
-                .addButton(CustomDialog.SAVE_BUTTON, dialog -> {
+                .addButton(CustomDialog.SAVE_BUTTON, (customDialog, dialog) -> {
                     String titel = ((EditText) dialog.findViewById(R.id.dialog_editOrAddKnowledge_Titel)).getText().toString().trim();
                     if (titel.isEmpty()) {
                         Toast.makeText(this, "Einen Titel eingeben", Toast.LENGTH_SHORT).show();
@@ -241,7 +238,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                                 .setTitle("Ohne Inhalt speichern?")
                                 .setText("Möchtest du wirklich ohne einen Inhalt speichern")
                                 .setButtonType(CustomDialog.ButtonType.YES_NO)
-                                .addButton(CustomDialog.YES_BUTTON, dialog1 ->
+                                .addButton(CustomDialog.YES_BUTTON, (customDialog1, dialog1) ->
                                         saveKnowledge(dialog, titel, content, newKnowledge, knowledge))
                                 .show();
                     }
@@ -280,7 +277,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .setTitle("Deteil Ansicht")
                 .setView(R.layout.dialog_video)
                 .setButtonType(CustomDialog.ButtonType.CUSTOM)
-                .addButton("Bearbeiten", dialog ->
+                .addButton("Bearbeiten", (customDialog, dialog) ->
                         addOrEditDialog[0] = showEditOrNewDialog(knowledge), false)
 //                .addButton("Öffnen mit...", dialog -> openUrl(knowledge, true), false)
                 .setSetViewContent(view -> {
@@ -353,7 +350,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         randomKnowledge[0].getCategoryIdList().forEach(uuid -> categoryNames.add(database.categoryMap.get(uuid).getName()));
 
 //        CustomDialog.Builder(this)
-//                .setTitle("Zufälliges Video")
+//                .setTitle("Zufälliges VIDEO")
 //                .setView(R.layout.dialog_video)
 //                .setButtonType(CustomDialog.ButtonType.CUSTOM)
 //                .addButton("Nochmal", dialog -> {

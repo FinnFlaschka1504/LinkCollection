@@ -6,7 +6,6 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
-import android.util.Pair;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
@@ -21,6 +20,7 @@ import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
 import com.maxMustermannGeheim.linkcollection.Activitys.Knowledge.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity;
+import com.maxMustermannGeheim.linkcollection.Activitys.Videos.CatigorysActivity;
 import com.maxMustermannGeheim.linkcollection.Activitys.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
@@ -184,11 +184,11 @@ public class Utility {
             customRecycler.setOnClickListener((recycler, view, object, index) ->
                     ((MainActivity) context).startActivityForResult(new Intent(context, VideoActivity.class)
                             .putExtra(EXTRA_SEARCH, ((ParentClass) ((Event) object).getData()).getUuid())
-                            .putExtra(EXTRA_SEARCH_CATIGORY, MainActivity.CATEGORIES.Video.name()), ((MainActivity) context).START_VIDEO_FROM_CALENDER));
+                            .putExtra(EXTRA_SEARCH_CATIGORY, CatigorysActivity.CATEGORIES.VIDEO.name()), ((MainActivity) context).START_VIDEO_FROM_CALENDER));
 
         for (Video video : videoList) {
             for (Date date : video.getDateList()) {
-                Event ev1 = new Event(context.getColor(R.color.colorDrawable)
+                Event ev1 = new Event(context.getColor(R.color.colorDayNightContent)
                         , date.getTime(), video);
                 calendarView.addEvent(ev1);
 
@@ -286,7 +286,7 @@ public class Utility {
             default:
             case DARSTELLER:
                 filterdUuidList = new ArrayList<>(database.darstellerMap.keySet());
-                editType_string = "Darsteller";
+                editType_string = "DARSTELLER";
                 break;
             case STUDIO:
                 filterdUuidList = new ArrayList<>(database.studioMap.keySet());
@@ -294,7 +294,7 @@ public class Utility {
                 break;
             case GENRE:
                 filterdUuidList = new ArrayList<>(database.genreMap.keySet());
-                editType_string = "Genre";
+                editType_string = "GENRE";
                 break;
         }
 
@@ -309,12 +309,12 @@ public class Utility {
                 .setButtonType(CustomDialog.ButtonType.CUSTOM)
                 .setView(R.layout.dialog_edit_item)
                 .setDimensions(true, true)
-                .addButton("Hinzufügen", dialog -> {
-                    addOrEditDialog[0] = dialog;
+                .addButton("Hinzufügen", (customDialog, dialog) -> {
+//                    addOrEditDialog[0] = dialog;
                     CustomDialog.Builder(context)
                             .setTitle(finalEditType_string + " Hinzufügen")
                             .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
-                            .addButton(CustomDialog.OK_BUTTON, dialog1 -> {
+                            .addButton(CustomDialog.OK_BUTTON, (customDialog1, dialog1) -> {
                                 ParentClass parentClass = new ParentClass(editType, CustomDialog.getEditText(dialog1));
                                 switch (editType){
                                     case DARSTELLER:
@@ -328,8 +328,9 @@ public class Utility {
                                         break;
                                 }
                                 selectedUuidList.add(parentClass.getUuid());
-                                addOrEditDialog[0].dismiss();
-                                addOrEditDialog[0] = showEditCatigoryDialog(context, addOrEditDialog,selectedUuidList, o, editType);
+                                dialog.dismiss();
+//                                addOrEditDialog[0].dismiss();
+                                /*addOrEditDialog[0] =*/ showEditCatigoryDialog(context, addOrEditDialog,selectedUuidList, o, editType);
 
                             }, saveButtonId_add)
                             .setEdit(new CustomDialog.EditBuilder()
@@ -339,8 +340,8 @@ public class Utility {
                             .show();
 
                 }, false)
-                .addButton("Abbrechen", dialog -> {})
-                .addButton("Speichern", dialog -> {
+                .addButton("Abbrechen", (customDialog, dialog) -> {})
+                .addButton("Speichern", (customDialog, dialog) -> {
                     List<String> nameList = new ArrayList<>();
                     switch (editType){
                         case DARSTELLER:

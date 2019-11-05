@@ -25,6 +25,7 @@ import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import static com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
@@ -35,10 +36,19 @@ public class CatigorysActivity extends AppCompatActivity {
         NAME, COUNT
     }
 
+    public enum CATEGORIES {
+        VIDEO, DARSTELLER, STUDIOS, GENRE, WATCH_LATER;
+
+        private String singular;
+        private String plural;
+        private String id = UUID.randomUUID().toString();
+
+    }
+
 
     private int columnCount = 2;
     private String catigoryName;
-    private MainActivity.CATEGORIES catigory;
+    private CATEGORIES catigory;
     private SORT_TYPE sort_type = SORT_TYPE.NAME;
     private Database database = Database.getInstance();
     SharedPreferences mySPR_daten;
@@ -60,11 +70,11 @@ public class CatigorysActivity extends AppCompatActivity {
         setDatenObjektIntegerPairLiist();
 
         switch (catigory) {
-            case Genre:
+            case GENRE:
                 break;
-            case Darsteller:
+            case DARSTELLER:
                 break;
-            case Studios:
+            case STUDIOS:
                 break;
         }
         sortList(allDatenObjektPairList);
@@ -115,8 +125,8 @@ public class CatigorysActivity extends AppCompatActivity {
 
         catigoryName = getIntent().getStringExtra(MainActivity.EXTRA_CATEGORY);
         setTitle(catigoryName);
-        if (catigoryName.equals(MainActivity.CATEGORIES.Darsteller.name())) {
-            catigory = MainActivity.CATEGORIES.Darsteller;
+        if (catigoryName.equals(CATEGORIES.DARSTELLER.name())) {
+            catigory = CATEGORIES.DARSTELLER;
 
             for (ParentClass parentClass : database.darstellerMap.values()) {
                 int count = 0;
@@ -128,8 +138,8 @@ public class CatigorysActivity extends AppCompatActivity {
             }
 
             allDatenObjektPairList = pairList;
-        } else if (catigoryName.equals(MainActivity.CATEGORIES.Genre.name())) {
-            catigory = MainActivity.CATEGORIES.Genre;
+        } else if (catigoryName.equals(CATEGORIES.GENRE.name())) {
+            catigory = CATEGORIES.GENRE;
 
             for (ParentClass parentClass : database.genreMap.values()) {
                 int count = 0;
@@ -141,8 +151,8 @@ public class CatigorysActivity extends AppCompatActivity {
             }
 
             allDatenObjektPairList = pairList;
-        } else if (catigoryName.equals(MainActivity.CATEGORIES.Studios.name())) {
-            catigory = MainActivity.CATEGORIES.Studios;
+        } else if (catigoryName.equals(CATEGORIES.STUDIOS.name())) {
+            catigory = CATEGORIES.STUDIOS;
 
             for (ParentClass parentClass : database.studioMap.values()) {
                 int count = 0;
@@ -187,19 +197,19 @@ public class CatigorysActivity extends AppCompatActivity {
                                     .setText(parentClass.getName())
                                     .setHint("Name"))
                             .setButtonType(CustomDialog.ButtonType.CUSTOM)
-                            .addButton("Löschen", dialog -> {
+                            .addButton("Löschen", (customDialog, dialog) -> {
                                 CustomDialog.Builder(this)
                                         .setTitle("Löschen")
                                         .setText("Wirklich '" + ((ParentClass) ((Pair) object).first).getName() + "' löschen?")
                                         .setButtonType(CustomDialog.ButtonType.YES_NO)
-                                        .addButton(CustomDialog.YES_BUTTON, dialog1 -> {
+                                        .addButton(CustomDialog.YES_BUTTON, (customDialog1, dialog1) -> {
                                             dialog.dismiss();
                                             removeCatigory((ParentClass) ((Pair) object).first);
                                         })
                                         .show();
                             }, false)
-                            .addButton("Abbrechen", dialog -> {})
-                            .addButton("OK", dialog -> {
+                            .addButton("Abbrechen", (customDialog, dialog) -> {})
+                            .addButton("OK", (customDialog, dialog) -> {
                                 if (!Utility.isOnline(this))
                                     return;
                                 ((ParentClass) ((Pair) object).first).setName(CustomDialog.getEditText(dialog));
@@ -216,7 +226,7 @@ public class CatigorysActivity extends AppCompatActivity {
         allDatenObjektPairList.remove(parentClass);
         filterdDatenObjektPairList.remove(parentClass);
         switch (catigory) {
-            case Genre:
+            case GENRE:
                 database.genreMap.remove(parentClass.getUuid());
                 for (Video video : database.videoMap.values()) {
                     if (video.getGenreList().contains(parentClass.getUuid()))
@@ -238,12 +248,12 @@ public class CatigorysActivity extends AppCompatActivity {
                 .setTitle("Zufall")
                 .setText(randomPair[0].first.getName() + " (" + randomPair[0].second + ")")
                 .setButtonType(CustomDialog.ButtonType.CUSTOM)
-                .addButton("Nochmal", dialog -> {
+                .addButton("Nochmal", (customDialog, dialog) -> {
                     randomPair[0] = filterdDatenObjektPairList.get((int) (Math.random() * filterdDatenObjektPairList.size()));
                             CustomDialog.changeText(dialog, randomPair[0].first.getName() + " (" + randomPair[0].second + ")");
                         },
                         false)
-                .addButton("Suchen", dialog -> {
+                .addButton("Suchen", (customDialog, dialog) -> {
                     startActivityForResult(new  Intent(this, VideoActivity.class)
                                     .putExtra(VideoActivity.EXTRA_SEARCH, randomPair[0].first.getName())
                                     .putExtra(VideoActivity.EXTRA_SEARCH_CATIGORY, catigoryName),

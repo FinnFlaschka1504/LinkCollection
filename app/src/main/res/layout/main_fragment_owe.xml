@@ -13,6 +13,49 @@
         android:layout_height="match_parent"
         android:layout_margin="8dp"
         android:orientation="vertical">
+        
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/main_owe_summaryOwn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                tools:text="Du schuldest anderen 7.58 €" />
+            <TextView
+                android:id="@+id/main_owe_summaryOthers"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                tools:text="Dir wird 17.36 € geschuldet" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+<!--                <com.akexorcist.roundcornerprogressbar.RoundCornerProgressBar-->
+<!--                    android:id="@+id/main_owe_progressBarOwn"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="20dp"-->
+<!--                    android:layout_margin="3dp"-->
+<!--                    app:rcBackgroundColor="#E2E2E2"-->
+<!--                    app:rcProgressColor="#4CAF50"-->
+<!--                    app:rcRadius="10dp"-->
+<!--                    app:rcReverse="false"/>-->
+                <com.akexorcist.roundcornerprogressbar.RoundCornerProgressBar
+                    android:id="@+id/main_owe_progressBarOthers"
+                    android:layout_width="match_parent"
+                    android:layout_height="20dp"
+                    android:layout_margin="3dp"
+                    app:rcBackgroundColor="#4CAF50"
+                    app:rcProgressColor="#F44336"
+                    app:rcRadius="10dp"
+                    app:rcReverse="true"/>
+            </FrameLayout>
+        </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -40,7 +83,7 @@
                         android:layout_width="0dp"
                         android:layout_height="0dp"
                         android:alpha="0.075"
-                        android:src="@drawable/ic_knowledge"
+                        android:src="@drawable/ic_euro"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
@@ -64,12 +107,12 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="8dp"
-                            android:text="Wissen"
+                            android:text="Schulden"
                             android:textSize="24sp"
                             android:textStyle="bold" />
 
                         <TextView
-                            android:id="@+id/main_knowledgeCount"
+                            android:id="@+id/main_owe_countAll"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="–" />
@@ -98,7 +141,7 @@
                         android:layout_width="0dp"
                         android:layout_height="0dp"
                         android:alpha="0.075"
-                        android:src="@drawable/ic_categories"
+                        android:src="@drawable/ic_person"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
@@ -122,12 +165,12 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="8dp"
-                            android:text="Kategorien"
+                            android:text="Personen"
                             android:textSize="24sp"
                             android:textStyle="bold" />
 
                         <TextView
-                            android:id="@+id/main_categoryCount"
+                            android:id="@+id/main_owe_countPerson"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="–" />

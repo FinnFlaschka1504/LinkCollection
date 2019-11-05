@@ -29,8 +29,6 @@ import java.util.Map;
 
 public class CustomDialog {
 
-
-
     public enum ButtonType {
         YES_NO, SAVE_CANCEL, BACK, OK, OK_CANCEL, CUSTOM;
     }
@@ -51,6 +49,7 @@ public class CustomDialog {
     private int titleTextAlignment = View.TEXT_ALIGNMENT_CENTER;
     private boolean isTextBold = false;
     private SetViewContent setViewContent;
+    private Object objectExtra;
 
     private List<Boolean> dismissDialogList = new ArrayList<>();
     private List<Pair<String, OnClick>> pairList = new ArrayList<>();
@@ -133,7 +132,7 @@ public class CustomDialog {
     }
 
     public interface OnClick {
-        void run(Dialog dialog);
+        void runOnClick(CustomDialog customDialog, Dialog dialog);
     }
 
     public interface SetViewContent{
@@ -277,7 +276,7 @@ public class CustomDialog {
                     buttonList.get(0).setOnClickListener(view1 -> {
                         if (dismissDialogList.get(index))
                             dialog.dismiss();
-                        pairList.get(index).second.run(dialog);
+                        pairList.get(index).second.runOnClick(this, dialog);
                     });
                 }
                 else
@@ -292,7 +291,7 @@ public class CustomDialog {
                     buttonList.get(1).setOnClickListener(view1 -> {
                         if (dismissDialogList.get(index))
                             dialog.dismiss();
-                        pairList.get(index).second.run(dialog);
+                        pairList.get(index).second.runOnClick(this, dialog);
                     });
                 }
                 else
@@ -309,7 +308,7 @@ public class CustomDialog {
                     buttonList.get(0).setOnClickListener(view1 -> {
                         if (dismissDialogList.get(index))
                             dialog.dismiss();
-                        pairList.get(index).second.run(dialog);
+                        pairList.get(index).second.runOnClick(this, dialog);
                     });
                 }
                 else
@@ -323,7 +322,7 @@ public class CustomDialog {
                     buttonList.get(1).setOnClickListener(view1 -> {
                         if (dismissDialogList.get(index))
                             dialog.dismiss();
-                        pairList.get(index).second.run(dialog);
+                        pairList.get(index).second.runOnClick(this, dialog);
                     });
                 }
                 else
@@ -340,7 +339,7 @@ public class CustomDialog {
                     buttonList.get(0).setOnClickListener(view1 -> {
                         if (dismissDialogList.get(index))
                             dialog.dismiss();
-                        pairList.get(index).second.run(dialog);
+                        pairList.get(index).second.runOnClick(this, dialog);
                     });
                 }
                 else
@@ -356,7 +355,7 @@ public class CustomDialog {
                     buttonList.get(0).setOnClickListener(view1 -> {
                         if (dismissDialogList.get(index))
                             dialog.dismiss();
-                        pairList.get(index).second.run(dialog);
+                        pairList.get(index).second.runOnClick(this, dialog);
                     });
                 }
                 else
@@ -370,7 +369,7 @@ public class CustomDialog {
                     buttonList.get(1).setOnClickListener(view1 -> {
                         if (dismissDialogList.get(index))
                             dialog.dismiss();
-                        pairList.get(index).second.run(dialog);
+                        pairList.get(index).second.runOnClick(this, dialog);
                     });
                 }
                 else
@@ -387,7 +386,7 @@ public class CustomDialog {
                     buttonList.get(0).setOnClickListener(view1 -> {
                         if (dismissDialogList.get(index))
                             dialog.dismiss();
-                        pairList.get(index).second.run(dialog);
+                        pairList.get(index).second.runOnClick(this, dialog);
                     });
                 }
                 else
@@ -404,7 +403,7 @@ public class CustomDialog {
             buttonList.get(count).setOnClickListener(view1 -> {
                 if (dismissDialogList.get(finalCount))
                     dialog.dismiss();
-                pair.second.run(dialog);
+                pair.second.runOnClick(this, dialog);
             });
             count++;
         }
@@ -460,6 +459,15 @@ public class CustomDialog {
 
     public Dialog getDialog() {
         return dialog;
+    }
+
+    public Object getObjectExtra() {
+        return objectExtra;
+    }
+
+    public CustomDialog setObjectExtra(Object objectExtra) {
+        this.objectExtra = objectExtra;
+        return this;
     }
 
     public Dialog show() {

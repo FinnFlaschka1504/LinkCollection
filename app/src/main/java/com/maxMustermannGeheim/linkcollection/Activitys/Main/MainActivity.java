@@ -16,7 +16,6 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -54,12 +53,7 @@ public class MainActivity extends AppCompatActivity {
     SharedPreferences mySPR_settings;
     private Dialog calenderDialog;
     private boolean firstTime;
-    private Fragment videoFragment;
-    private Fragment knowledgeFragment;
 
-    public enum CATEGORIES {
-        Video, Darsteller, Studios, Genre, WatchLater
-    }
 //    private enum  FRAGMENT_TYPE {
 //        VIDEOS(VIDEO_INT), KNOWLEDGE(KNOWLEDGE_INT);
 //
@@ -100,8 +94,8 @@ public class MainActivity extends AppCompatActivity {
 
         ShortcutManager shortcutManager = getSystemService(ShortcutManager.class);
         ShortcutInfo shortcut = new ShortcutInfo.Builder(this, getLocalClassName() + ".Shortcut")
-                .setShortLabel("Video Hinzufügen")
-                .setLongLabel("Ein neues Video Hinzufügen")
+                .setShortLabel("VIDEO Hinzufügen")
+                .setLongLabel("Ein neues VIDEO Hinzufügen")
                 .setIcon(Icon.createWithResource(this, R.drawable.ic_add_video_shortcut))
                 .setIntent(new Intent(this, VideoActivity.class).setAction(VideoActivity.ACTION_ADD_VIDEO))
                 .build();
@@ -118,7 +112,6 @@ public class MainActivity extends AppCompatActivity {
 
             database = database_neu;
             setLayout();
-
         });
 
     }
@@ -172,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (!currentSpace.hasFragment())
             currentSpace.setFragment(new SpaceFragment(currentSpace.getLayoutId()));
-
+        SpaceFragment.currentSpace = currentSpace;
 //        getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container
 //                , currentSpace.getFragment()
 //        ).runOnCommit(this::setCounts).commitAllowingStateLoss();
@@ -193,6 +186,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (!selectedSpace.hasFragment())
             selectedSpace.setFragment(new SpaceFragment(selectedSpace.getLayoutId()));
+        SpaceFragment.currentSpace = selectedSpace;
         getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container, selectedSpace.getFragment()).runOnCommit(this::setCounts).commitAllowingStateLoss();
         currentSpace = selectedSpace;
 
@@ -208,7 +202,7 @@ public class MainActivity extends AppCompatActivity {
         CustomDialog.Builder(MainActivity.this)
                 .setTitle("DatenBank-Code Eingeben")
                 .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
-                .addButton(CustomDialog.OK_BUTTON, dialog ->
+                .addButton(CustomDialog.OK_BUTTON, (customDialog, dialog) ->
                         onFinish.runOndatabaseCodeFinish(CustomDialog.getEditText(dialog)), buttonId)
                 .setEdit(new CustomDialog.EditBuilder()
                         .setFireButtonOnOK(buttonId))
@@ -216,7 +210,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-//  ----- Video ----->
+//  ----- VIDEO ----->
     public void openVideoActivity(View view) {
         if (!Database.isReady())
             return;
@@ -228,7 +222,7 @@ public class MainActivity extends AppCompatActivity {
         if (!Database.isReady())
             return;
         Intent intent = new Intent(this, CatigorysActivity.class);
-        intent.putExtra(EXTRA_CATEGORY, CATEGORIES.Darsteller.name());
+        intent.putExtra(EXTRA_CATEGORY, CatigorysActivity.CATEGORIES.DARSTELLER.name());
         startActivityForResult(intent, START_ACTOR);
     }
 
@@ -236,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
         if (!Database.isReady())
             return;
         Intent intent = new Intent(this, CatigorysActivity.class);
-        intent.putExtra(EXTRA_CATEGORY, CATEGORIES.Studios.name());
+        intent.putExtra(EXTRA_CATEGORY, CatigorysActivity.CATEGORIES.STUDIOS.name());
         startActivityForResult(intent, START_STUDIO);
     }
 
@@ -244,7 +238,7 @@ public class MainActivity extends AppCompatActivity {
         if (!Database.isReady())
             return;
         Intent intent = new Intent(this, CatigorysActivity.class);
-        intent.putExtra(EXTRA_CATEGORY, CATEGORIES.Genre.name());
+        intent.putExtra(EXTRA_CATEGORY, CatigorysActivity.CATEGORIES.GENRE.name());
         startActivityForResult(intent, START_GENRE);
     }
 
@@ -253,7 +247,7 @@ public class MainActivity extends AppCompatActivity {
             return;
 
         calenderDialog = CustomDialog.Builder(this)
-                .setTitle("Video Calender")
+                .setTitle("VIDEO Calender")
                 .setView(R.layout.dialog_edit_views)
                 .setSetViewContent(view -> {
                     ViewStub stub_groups = view.findViewById(R.id.dialog_editViews_calender);
@@ -271,9 +265,9 @@ public class MainActivity extends AppCompatActivity {
             return;
         startActivityForResult(new  Intent(this, VideoActivity.class)
                 .putExtra(VideoActivity.EXTRA_SEARCH, VideoActivity.WATCH_LATER_SEARCH)
-                .putExtra(VideoActivity.EXTRA_SEARCH_CATIGORY, CATEGORIES.WatchLater.name()), START_WATCH_LATER);
+                .putExtra(VideoActivity.EXTRA_SEARCH_CATIGORY, CatigorysActivity.CATEGORIES.WATCH_LATER.name()), START_WATCH_LATER);
     }
-//  <----- Video -----
+//  <----- VIDEO -----
 
 
 //  ----- Knowledge ----->
@@ -329,7 +323,6 @@ public class MainActivity extends AppCompatActivity {
         Database.saveAll();
         super.onStop();
     }
-
 
     @Override
     protected void onDestroy() {

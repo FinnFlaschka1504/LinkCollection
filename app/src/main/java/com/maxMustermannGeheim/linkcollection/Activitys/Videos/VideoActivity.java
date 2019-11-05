@@ -5,13 +5,12 @@ import androidx.appcompat.view.menu.MenuBuilder;
 
 import android.annotation.SuppressLint;
 import android.app.Dialog;
-import android.content.DialogInterface;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Pair;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -26,7 +25,6 @@ import android.widget.Toast;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
@@ -97,14 +95,14 @@ public class VideoActivity extends AppCompatActivity {
         if (extraSearchCatigory != null) {
             filterTypeSet.clear();
 
-            if (extraSearchCatigory.equals(MainActivity.CATEGORIES.Darsteller.name())) {
+            if (extraSearchCatigory.equals(CatigorysActivity.CATEGORIES.DARSTELLER.name())) {
                 filterTypeSet.add(FILTER_TYPE.ACTOR);
-            } else if (extraSearchCatigory.equals(MainActivity.CATEGORIES.Genre.name())) {
+            } else if (extraSearchCatigory.equals(CatigorysActivity.CATEGORIES.GENRE.name())) {
                 filterTypeSet.add(FILTER_TYPE.GENRE);
-            } else if (extraSearchCatigory.equals(MainActivity.CATEGORIES.Studios.name())) {
+            } else if (extraSearchCatigory.equals(CatigorysActivity.CATEGORIES.STUDIOS.name())) {
                 filterTypeSet.add(FILTER_TYPE.STUDIO);
             }
-//            else if (extraSearchCatigory.equals(MainActivity.CATEGORIES.Video.name())) {
+//            else if (extraSearchCatigory.equals(MainActivity.CATEGORIES.VIDEO.name())) {
 //                filterTypeSet.add(FILTER_TYPE.NAME);
 //            }
 
@@ -135,10 +133,11 @@ public class VideoActivity extends AppCompatActivity {
                 reLoadVideoRecycler();
                 setResult(RESULT_OK);
 
-                Toast.makeText(this, toDelete.size() + (toDelete.size() == 1 ? " Video" : " Videos") + " gelöscht", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, toDelete.size() + (toDelete.size() == 1 ? " VIDEO" : " Videos") + " gelöscht", Toast.LENGTH_SHORT).show();
             });
             loadVideoRecycler();
 
+            Context that = this;
             videos_search = findViewById(R.id.videos_search);
             textListener = new SearchView.OnQueryTextListener() {
                 @Override
@@ -154,8 +153,28 @@ public class VideoActivity extends AppCompatActivity {
                     if (!s.trim().equals("")) {
                         if (s.trim().equals(WATCH_LATER_SEARCH)) {
                             filterdVideoList = new ArrayList<>();
+                            List<String> unableToFindList = new ArrayList<>();
                             for (String videoUuid : database.watchLaterList) {
-                                filterdVideoList.add(database.videoMap.get(videoUuid));
+                                Video video = database.videoMap.get(videoUuid);
+                                if (video == null)
+                                    unableToFindList.add(videoUuid);
+                                else
+                                    filterdVideoList.add(video);
+                            }
+                            if (!unableToFindList.isEmpty()) {
+                                CustomDialog.Builder(that)
+                                        .setTitle("Problem beim Laden der Liste!")
+                                        .setText((unableToFindList.size() == 1 ? "Ein VIDEO konnte" : unableToFindList.size() + " Videos konnten") + " nicht gefunden werden")
+                                        .setObjectExtra(unableToFindList)
+                                        .setButtonType(CustomDialog.ButtonType.CUSTOM)
+                                        .addButton("Ignorieren", (customDialog, dialog) -> {})
+                                        .addButton("Entfernen", (customDialog, dialog) -> {
+                                            database.watchLaterList.removeAll(((ArrayList<String>) customDialog.getObjectExtra()));
+                                            Toast.makeText(that, "Entfernt", Toast.LENGTH_SHORT).show();
+                                            Database.saveAll();
+                                            setResult(RESULT_OK);
+                                        })
+                                        .show();
                             }
                             reLoadVideoRecycler();
                             return true;
@@ -313,9 +332,9 @@ public class VideoActivity extends AppCompatActivity {
                 .setTitle("Deteil Ansicht")
                 .setView(R.layout.dialog_video)
                 .setButtonType(CustomDialog.ButtonType.CUSTOM)
-                .addButton("Bearbeiten", dialog ->
+                .addButton("Bearbeiten", (customDialog, dialog) ->
                         addOrEditDialog[0] = showEditOrNewDialog(object), false)
-                .addButton("Öffnen mit...", dialog -> openUrl(object, true), false)
+                .addButton("Öffnen mit...", (customDialog, dialog) -> openUrl(object, true), false)
                 .setSetViewContent(view -> {
                     ((TextView) view.findViewById(R.id.dialog_video_Titel)).setText(video.getName());
                     ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(String.join(", ", darstellerNames));
@@ -391,10 +410,10 @@ public class VideoActivity extends AppCompatActivity {
             video[0].getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
         }
         Dialog returnDialog =  CustomDialog.Builder(this)
-                .setTitle(object == null ? "Neues Video" : "Video Bearbeiten")
+                .setTitle(object == null ? "Neues VIDEO" : "VIDEO Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
                 .setButtonType(CustomDialog.ButtonType.SAVE_CANCEL)
-                .addButton(CustomDialog.SAVE_BUTTON, dialog -> {
+                .addButton(CustomDialog.SAVE_BUTTON, (customDialog, dialog) -> {
                     String titel = ((EditText) dialog.findViewById(R.id.dialog_editOrAddVideo_Titel)).getText().toString().trim();
                     if (titel.isEmpty()) {
                         Toast.makeText(this, "Einen Titel eingeben", Toast.LENGTH_SHORT).show();
@@ -406,9 +425,9 @@ public class VideoActivity extends AppCompatActivity {
                     if (url.equals("") && !checked){
                         CustomDialog.Builder(this)
                         .setTitle("Ohne URL speichern?")
-                        .setText("Möchtest du wirklich das Video ohne URL speichern")
+                        .setText("Möchtest du wirklich das VIDEO ohne URL speichern")
                         .setButtonType(CustomDialog.ButtonType.YES_NO)
-                        .addButton(CustomDialog.YES_BUTTON, dialog1 ->
+                        .addButton(CustomDialog.YES_BUTTON, (customDialog1, dialog1) ->
                                 saveVideo(dialog, object, titel, url, false, video))
                         .show();
                     }
@@ -493,7 +512,7 @@ public class VideoActivity extends AppCompatActivity {
 
         Database.saveAll();
 
-        Utility.showCenterdToast(this, "Video gespeichert" + (addedYesterday ? "\nAutomatisch für gestern eingetragen" : ""));
+        Utility.showCenterdToast(this, "VIDEO gespeichert" + (addedYesterday ? "\nAutomatisch für gestern eingetragen" : ""));
 
         if (dialogVideoPair == null)
             return;
@@ -651,10 +670,10 @@ public class VideoActivity extends AppCompatActivity {
         randomVideo.getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
 
         CustomDialog.Builder(this)
-                .setTitle("Zufälliges Video")
+                .setTitle("Zufälliges VIDEO")
                 .setView(R.layout.dialog_video)
                 .setButtonType(CustomDialog.ButtonType.CUSTOM)
-                .addButton("Nochmal", dialog -> {
+                .addButton("Nochmal", (customDialog, dialog) -> {
                     Toast.makeText(this, "Neu", Toast.LENGTH_SHORT).show();
                     randomVideo = filterdVideoList.get((int) (Math.random() * filterdVideoList.size()));
                     ((TextView) dialog.findViewById(R.id.dialog_video_Titel)).setText(randomVideo.getName());
@@ -672,7 +691,7 @@ public class VideoActivity extends AppCompatActivity {
                     ((TextView) dialog.findViewById(R.id.dialog_video_Genre)).setText(String.join(", ", genreNames_neu));
 
                 }, false)
-                .addButton("Öffnen", dialog -> openUrl(randomVideo, false), false)
+                .addButton("Öffnen", (customDialog, dialog) -> openUrl(randomVideo, false), false)
                 .setSetViewContent(view -> {
                     ((TextView) view.findViewById(R.id.dialog_video_Titel)).setText(randomVideo.getName());
                     ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(String.join(", ", darstellerNames));

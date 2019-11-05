@@ -22,7 +22,7 @@ public class Darsteller extends ParentClass {
 //        return name;
 //    }
 //
-//    public Darsteller setName(String name) {
+//    public DARSTELLER setName(String name) {
 //        this.name = name;
 //        return this;
 //    }

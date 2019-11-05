@@ -13,6 +13,7 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.akexorcist.roundcornerprogressbar.RoundCornerProgressBar;
 import com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
@@ -141,6 +142,17 @@ public class Settings extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.main_knowledgeCount)).setText(String.valueOf(database.knowledgeMap.size()));
                     ((TextView) view.findViewById(R.id.main_categoryCount)).setText(String.valueOf(database.categoryMap.size()));
                 }));
+        allSpaces.add(new Space(context.getString(R.string.bottomMenu_owe)).setItemId(Space.SPACE_OWE).setIconId(R.drawable.ic_euro).setLayoutId(R.layout.main_fragment_owe)
+                .setSetLayout(view -> {
+//                    RoundCornerProgressBar main_owe_progressBarOwn = view.findViewById(R.id.main_owe_progressBarOwn);
+//                    main_owe_progressBarOwn.setProgress(70);
+//                    main_owe_progressBarOwn.setMax(100);
+                    RoundCornerProgressBar main_owe_progressBarOthers = view.findViewById(R.id.main_owe_progressBarOthers);
+                    main_owe_progressBarOthers.setProgress(30);
+                    main_owe_progressBarOthers.setMax(100);
+//                    ((TextView) view.findViewById(R.id.main_knowledgeCount)).setText(String.valueOf(database.knowledgeMap.size()));
+//                    ((TextView) view.findViewById(R.id.main_categoryCount)).setText(String.valueOf(database.categoryMap.size()));
+                }));
 
         for (Space space : allSpaces) {
             settingsMap.put(SETTING_SPACE_SHOWN_ + space.getName().toUpperCase(), String.valueOf(space.isShown()));
@@ -247,7 +259,7 @@ public class Settings extends AppCompatActivity {
                     .setTitle("Datenbank-Code Ändern")
                     .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
                     .setEdit(new CustomDialog.EditBuilder().setText(Database.databaseCode).setFireButtonOnOK(okButtonId))
-                    .addButton(CustomDialog.OK_BUTTON, dialog -> {
+                    .addButton(CustomDialog.OK_BUTTON, (customDialog, dialog) -> {
                         String code = CustomDialog.getEditText(dialog).trim();
                         SharedPreferences mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
                         mySPR_daten.edit().putString(Database.DATABASE_CODE, code).commit();
@@ -261,6 +273,7 @@ public class Settings extends AppCompatActivity {
         public static List<Space> allSpaces = new ArrayList<>();
         public static final int SPACE_VIDEO = 1;
         public static final int SPACE_KNOWLEDGE = 2;
+        public static final int SPACE_OWE = 3;
 
         private int itemId;
         private boolean shown = true;

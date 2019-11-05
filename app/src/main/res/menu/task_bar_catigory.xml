@@ -20,7 +20,7 @@
                     android:title="Nach Name" />
                 <item
                     android:id="@+id/taskBar_catigory__sortByViews"
-                    android:title="Nach Ansichten" />
+                    android:title="Nach Counts" />
             </group>
         </menu>
     </item>

@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.maxMustermannGeheim.linkcollection.Activitys.Videos.VideoActivity.EXTRA_SEARCH;
-import static com.maxMustermannGeheim.linkcollection.Activitys.Videos.VideoActivity.EXTRA_SEARCH_CATIGORY;
+import static com.maxMustermannGeheim.linkcollection.Activitys.Videos.VideoActivity.EXTRA_SEARCH_CATEGORY;
 
 public class Utility {
 
@@ -184,7 +184,7 @@ public class Utility {
             customRecycler.setOnClickListener((recycler, view, object, index) ->
                     ((MainActivity) context).startActivityForResult(new Intent(context, VideoActivity.class)
                             .putExtra(EXTRA_SEARCH, ((ParentClass) ((Event) object).getData()).getUuid())
-                            .putExtra(EXTRA_SEARCH_CATIGORY, CatigorysActivity.CATEGORIES.VIDEO.name()), ((MainActivity) context).START_VIDEO_FROM_CALENDER));
+                            .putExtra(EXTRA_SEARCH_CATEGORY, CatigorysActivity.CATEGORIES.VIDEO.name()), ((MainActivity) context).START_VIDEO_FROM_CALENDER));
 
         for (Video video : videoList) {
             for (Date date : video.getDateList()) {

@@ -247,7 +247,7 @@ public class MainActivity extends AppCompatActivity {
             return;
 
         calenderDialog = CustomDialog.Builder(this)
-                .setTitle("VIDEO Calender")
+                .setTitle("Video Kalender")
                 .setView(R.layout.dialog_edit_views)
                 .setSetViewContent(view -> {
                     ViewStub stub_groups = view.findViewById(R.id.dialog_editViews_calender);
@@ -265,7 +265,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         startActivityForResult(new  Intent(this, VideoActivity.class)
                 .putExtra(VideoActivity.EXTRA_SEARCH, VideoActivity.WATCH_LATER_SEARCH)
-                .putExtra(VideoActivity.EXTRA_SEARCH_CATIGORY, CatigorysActivity.CATEGORIES.WATCH_LATER.name()), START_WATCH_LATER);
+                .putExtra(VideoActivity.EXTRA_SEARCH_CATEGORY, CatigorysActivity.CATEGORIES.WATCH_LATER.name()), START_WATCH_LATER);
     }
 //  <----- VIDEO -----
 

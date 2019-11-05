@@ -46,7 +46,7 @@ import static com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity
 
 public class VideoActivity extends AppCompatActivity {
     public static final String EXTRA_SEARCH = "EXTRA_SEARCH";
-    public static final String EXTRA_SEARCH_CATIGORY = "EXTRA_SEARCH_CATOGORY";
+    public static final String EXTRA_SEARCH_CATEGORY = "EXTRA_SEARCH_CATOGORY";
     public static final String WATCH_LATER_SEARCH = "WATCH_LATER_SEARCH";
     public static final String ACTION_ADD_VIDEO = "ACTION_ADD_VIDEO";
 
@@ -91,26 +91,29 @@ public class VideoActivity extends AppCompatActivity {
 
         loadDatabase();
 
-        String extraSearchCatigory = getIntent().getStringExtra(EXTRA_SEARCH_CATIGORY);
-        if (extraSearchCatigory != null) {
+        String extraSearchCategory = getIntent().getStringExtra(EXTRA_SEARCH_CATEGORY);
+        if (extraSearchCategory != null) {
+            CatigorysActivity.CATEGORIES extraSearchCatigory = CatigorysActivity.CATEGORIES.valueOf(extraSearchCategory);
             filterTypeSet.clear();
 
-            if (extraSearchCatigory.equals(CatigorysActivity.CATEGORIES.DARSTELLER.name())) {
-                filterTypeSet.add(FILTER_TYPE.ACTOR);
-            } else if (extraSearchCatigory.equals(CatigorysActivity.CATEGORIES.GENRE.name())) {
-                filterTypeSet.add(FILTER_TYPE.GENRE);
-            } else if (extraSearchCatigory.equals(CatigorysActivity.CATEGORIES.STUDIOS.name())) {
-                filterTypeSet.add(FILTER_TYPE.STUDIO);
+            switch (extraSearchCatigory) {
+                case DARSTELLER:
+                    filterTypeSet.add(FILTER_TYPE.ACTOR);
+                    break;
+                case GENRE:
+                    filterTypeSet.add(FILTER_TYPE.GENRE);
+                    break;
+                case STUDIOS:
+                    filterTypeSet.add(FILTER_TYPE.STUDIO);
+                    break;
             }
-//            else if (extraSearchCatigory.equals(MainActivity.CATEGORIES.VIDEO.name())) {
-//                filterTypeSet.add(FILTER_TYPE.NAME);
-//            }
 
             String extraSearch = getIntent().getStringExtra(EXTRA_SEARCH);
             if (extraSearch != null) {
                 videos_search.setQuery(extraSearch, true);
             }
         }
+
     }
 
     private void loadDatabase() {

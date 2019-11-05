@@ -1,12 +1,10 @@
 package com.maxMustermannGeheim.linkcollection.Activitys.Knowledge;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Pair;
+import android.text.format.DateFormat;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -16,38 +14,46 @@ import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.menu.MenuBuilder;
+
+import com.maxMustermannGeheim.linkcollection.Activitys.Main.CatigorysActivity;
 import com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity;
+import com.maxMustermannGeheim.linkcollection.Activitys.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
-import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class KnowledgeActivity extends AppCompatActivity {
     private static final String ACTION_ADD_KNOWLEDGE = "ACTION_ADD_KNOWLEDGE";
-    private Pair<Dialog, Knowledge> dialogKnowledgePair;
+    private Dialog detailDialog;
 
 
     enum SORT_TYPE{
-        NAME, RATING
+        NAME, RATING, LATEST
     }
 
     public enum FILTER_TYPE{
-        NAME, CATEGORY
+        NAME, CATEGORY, CONTENT
     }
 
 
     private boolean reverse;
-    private SORT_TYPE sort_type;
+    private SORT_TYPE sort_type = SORT_TYPE.LATEST;
     Database database = Database.getInstance();
     private CustomRecycler customRecycler_List;
     private Dialog[] addOrEditDialog = new Dialog[]{null};
@@ -56,7 +62,7 @@ public class KnowledgeActivity extends AppCompatActivity {
     private SearchView.OnQueryTextListener textListener;
     private SearchView videos_search;
     private ArrayList<Knowledge> allKnowledgeList;
-    private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.CATEGORY));
+    private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.CATEGORY, FILTER_TYPE.CONTENT));
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,6 +72,23 @@ public class KnowledgeActivity extends AppCompatActivity {
         mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
         loadDatabase();
+
+        CatigorysActivity.CATEGORIES extraSearchCategory = (CatigorysActivity.CATEGORIES) getIntent().getSerializableExtra(CatigorysActivity.EXTRA_SEARCH_CATEGORY);
+        if (extraSearchCategory != null) {
+            filterTypeSet.clear();
+
+            switch (extraSearchCategory) {
+                case KNOWLEDGE_CATEGORIES:
+                    filterTypeSet.add(FILTER_TYPE.CATEGORY);
+                    break;
+            }
+
+            String extraSearch = getIntent().getStringExtra(CatigorysActivity.EXTRA_SEARCH);
+            if (extraSearch != null) {
+                videos_search.setQuery(extraSearch, true);
+            }
+        }
+
     }
 
     private void loadDatabase() {
@@ -102,7 +125,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 
                 @Override
                 public boolean onQueryTextChange(String s) {
-                    searchQuery = s;
+                    searchQuery = s.trim().toLowerCase();
 //                    filterdVideoList = new ArrayList<>(allVideoList);
 //
 //                    if (!s.trim().equals("")) {
@@ -162,7 +185,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 
 
                     ((TextView) itemView.findViewById(R.id.listItem_knowledge_categories)).setText(String.join(", ",
-                            knowledge.getCategoryIdList().stream().map(categoryId -> database.categoryMap.get(categoryId).getName()).collect(Collectors.toList())));
+                            knowledge.getCategoryIdList().stream().map(categoryId -> database.knowledgeCategoryMap.get(categoryId).getName()).collect(Collectors.toList())));
                     itemView.findViewById(R.id.listItem_knowledge_categories).setSelected(true);
 
                     if (knowledge.getRating() > 0) {
@@ -185,9 +208,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     }
 //                  openUrl(object, false);
                 })
-                .addSubOnClickListener(R.id.listItem_knowledge_details, (recycler, view, object, index) -> {
-//                    dialogKnowledgePair = new Pair<>(showDetailDialog((Knowledge) object), (Knowledge) object);
-                }, false)
+                .addSubOnClickListener(R.id.listItem_knowledge_details, (recycler, view, object, index) -> detailDialog = showDetailDialog((Knowledge) object), false)
                 .setOnLongClickListener((recycler, view, object, index) -> {
                     addOrEditDialog[0] = showEditOrNewDialog((Knowledge) object);
                 })
@@ -200,6 +221,19 @@ public class KnowledgeActivity extends AppCompatActivity {
     }
 
     private List<Knowledge> sortList(List<Knowledge> knowledgeList) {
+        switch (sort_type) {
+            case NAME:
+                knowledgeList.sort((o1, o2) -> o1.getName().compareTo(o2.getName()));
+                break;
+            case RATING:
+                knowledgeList.sort((o1, o2) -> o1.getRating().compareTo(o2.getRating()) * -1);
+                break;
+            case LATEST:
+                knowledgeList.sort((o1, o2) -> o1.getLastChanged().compareTo(o2.getLastChanged()) * -1);
+                break;
+        }
+        if (reverse)
+            Collections.reverse(knowledgeList);
         return knowledgeList;
         // ToDo: implementieren
     }
@@ -218,7 +252,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         List<String> sourcesNames = new ArrayList<>();
         if (knowledge != null) {
             newKnowledge[0] = knowledge.cloneKnowledge();
-            newKnowledge[0].getCategoryIdList().forEach(uuid -> categoriesNames.add(database.darstellerMap.get(uuid).getName()));
+            newKnowledge[0].getCategoryIdList().forEach(uuid -> categoriesNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
             newKnowledge[0].getSources().forEach(nameUrlPair  -> sourcesNames.add(nameUrlPair.first));
         }
         Dialog returnDialog =  CustomDialog.Builder(this)
@@ -261,7 +295,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 
 
                     view.findViewById(R.id.dialog_editOrAddKnowledge_editCategories).setOnClickListener(view1 ->
-                            Utility.showEditCatigoryDialog(this, addOrEditDialog, newKnowledge[0].getCategoryIdList(), newKnowledge[0], ParentClass.OBJECT_TYPE.KNOWLEDGE_CATEGORY));
+                            Utility.showEditCatigoryDialog(this, addOrEditDialog, newKnowledge[0].getCategoryIdList(), newKnowledge[0], CatigorysActivity.CATEGORIES.KNOWLEDGE_CATEGORIES));
 //                    view.findViewById(R.id.dialog_editOrAddKnowledge_editStudio).setOnClickListener(view1 ->
 //                            Utility.showEditCatigoryDialog(this, addOrEditDialog, newKnowledge[0].getStudioList(), newKnowledge[0], ParentClass.OBJECT_TYPE.STUDIO ));
                 })
@@ -272,43 +306,44 @@ public class KnowledgeActivity extends AppCompatActivity {
     private Dialog showDetailDialog(Knowledge knowledge) {
         setResult(RESULT_OK);
         List<String> categoriesNames = new ArrayList<>();
-        knowledge.getCategoryIdList().forEach(uuid -> categoriesNames.add(database.darstellerMap.get(uuid).getName()));
+        knowledge.getCategoryIdList().forEach(uuid -> categoriesNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
         Dialog returnDialog = CustomDialog.Builder(this)
                 .setTitle("Deteil Ansicht")
-                .setView(R.layout.dialog_video)
+                .setView(R.layout.dialog_detail_knowledge)
                 .setButtonType(CustomDialog.ButtonType.CUSTOM)
                 .addButton("Bearbeiten", (customDialog, dialog) ->
                         addOrEditDialog[0] = showEditOrNewDialog(knowledge), false)
 //                .addButton("Öffnen mit...", dialog -> openUrl(knowledge, true), false)
                 .setSetViewContent(view -> {
-                    ((TextView) view.findViewById(R.id.dialog_video_Titel)).setText(knowledge.getName());
-                    ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(String.join(", ", categoriesNames));
-                    view.findViewById(R.id.dialog_video_Darsteller).setSelected(true);
-                    view.findViewById(R.id.dialog_video_details).setVisibility(View.VISIBLE);
+                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_title)).setText(knowledge.getName());
+                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_content)).setText(knowledge.getContent());
+                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_categories)).setText(String.join(", ", categoriesNames));
+                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_lastChanged)).setText(String.format("%s Uhr", new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.GERMANY).format(knowledge.getLastChanged())));
+                    view.findViewById(R.id.dialog_detailKnowledge_details).setVisibility(View.VISIBLE);
 //                    ((TextView) view.findViewById(R.id.dialog_video_Url)).setText(knowledge.getUrl());
 //                    ((TextView) view.findViewById(R.id.dialog_video_views)).setText(String.valueOf(knowledge.getDateList().size()));
-                    ((RatingBar) view.findViewById(R.id.dialog_video_rating)).setRating(knowledge.getRating());
+                    ((RatingBar) view.findViewById(R.id.dialog_detailKnowledge_rating)).setRating(knowledge.getRating());
 
-                    final boolean[] isInWatchLater = {database.watchLaterList.contains(knowledge.getUuid())};
-                    view.findViewById(R.id.dialog_video_watchLater_background).setPressed(isInWatchLater[0]);
-                    view.findViewById(R.id.dialog_video_watchLater).setOnClickListener(view1 -> {
-                        isInWatchLater[0] = !isInWatchLater[0];
-                        view.findViewById(R.id.dialog_video_watchLater_background).setPressed(isInWatchLater[0]);
-                        if (isInWatchLater[0]) {
-                            database.watchLaterList.add(knowledge.getUuid());
-                            Toast.makeText(this, "Zu 'Später-Ansehen' hinzugefügt", Toast.LENGTH_SHORT).show();
-                        } else {
-                            database.watchLaterList.remove(knowledge.getUuid());
-                            Toast.makeText(this, "Aus 'Später-Ansehen' entfernt", Toast.LENGTH_SHORT).show();
-                        }
-                        textListener.onQueryTextSubmit(videos_search.getQuery().toString());
-                        setResult(RESULT_OK);
-                        Database.saveAll();
-                    });
+//                    final boolean[] isInWatchLater = {database.watchLaterList.contains(knowledge.getUuid())};
+//                    view.findViewById(R.id.dialog_video_watchLater_background).setPressed(isInWatchLater[0]);
+//                    view.findViewById(R.id.dialog_video_watchLater).setOnClickListener(view1 -> {
+//                        isInWatchLater[0] = !isInWatchLater[0];
+//                        view.findViewById(R.id.dialog_video_watchLater_background).setPressed(isInWatchLater[0]);
+//                        if (isInWatchLater[0]) {
+//                            database.watchLaterList.add(knowledge.getUuid());
+//                            Toast.makeText(this, "Zu 'Später-Ansehen' hinzugefügt", Toast.LENGTH_SHORT).show();
+//                        } else {
+//                            database.watchLaterList.remove(knowledge.getUuid());
+//                            Toast.makeText(this, "Aus 'Später-Ansehen' entfernt", Toast.LENGTH_SHORT).show();
+//                        }
+//                        textListener.onQueryTextSubmit(videos_search.getQuery().toString());
+//                        setResult(RESULT_OK);
+//                        Database.saveAll();
+//                    });
 
                 })
                 .show();
-        returnDialog.setOnDismissListener(dialogInterface -> dialogKnowledgePair = null);
+        returnDialog.setOnDismissListener(dialogInterface -> detailDialog = null);
         return returnDialog;
     }
 
@@ -322,6 +357,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         knowledge.setCategoryIdList(newKnowledge[0].getCategoryIdList());
         knowledge.setSources(newKnowledge[0].getSources());
         knowledge.setRating(((RatingBar) dialog.findViewById(R.id.dialog_editOrAddKnowledge_rating)).getRating());
+        knowledge.setLastChanged(new Date());
 
         database.knowledgeMap.put(knowledge.getUuid(), knowledge);
         reLoadRecycler();
@@ -331,49 +367,48 @@ public class KnowledgeActivity extends AppCompatActivity {
 
         Utility.showCenterdToast(this, "Wissen gespeichert");
 
-        if (dialogKnowledgePair == null)
+        if (detailDialog == null)
             return;
 
-        dialogKnowledgePair.first.dismiss();
-        dialogKnowledgePair = new Pair<>(showDetailDialog(knowledge), dialogKnowledgePair.second);
+        detailDialog.dismiss();
+        detailDialog = showDetailDialog(knowledge);
 
     }
 
     private void showRandomDialog() {
         List<Knowledge> filterdKnowledgeList = filterList(allKnowledgeList);
         if (filterdKnowledgeList.isEmpty()) {
-            Toast.makeText(this, "Keine Videos", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Nichts zum Zeigen", Toast.LENGTH_SHORT).show();
             return;
         }
         final Knowledge[] randomKnowledge = {filterdKnowledgeList.get((int) (Math.random() * filterdKnowledgeList.size()))};
         List<String> categoryNames = new ArrayList<>();
-        randomKnowledge[0].getCategoryIdList().forEach(uuid -> categoryNames.add(database.categoryMap.get(uuid).getName()));
+        randomKnowledge[0].getCategoryIdList().forEach(uuid -> categoryNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
 
-//        CustomDialog.Builder(this)
-//                .setTitle("Zufälliges VIDEO")
-//                .setView(R.layout.dialog_video)
-//                .setButtonType(CustomDialog.ButtonType.CUSTOM)
-//                .addButton("Nochmal", dialog -> {
-//                    Toast.makeText(this, "Neu", Toast.LENGTH_SHORT).show();
-//                    randomKnowledge[0] = filterdKnowledgeList.get((int) (Math.random() * filterdKnowledgeList.size()));
-//                    ((TextView) dialog.findViewById(R.id.dialog_video_Titel)).setText(randomKnowledge[0].getName());
-//
-//                    List<String> darstellerNames_neu = new ArrayList<>();
-//                    randomKnowledge[0].getDarstellerList().forEach(uuid -> darstellerNames_neu.add(database.darstellerMap.get(uuid).getName()));
-//                    ((TextView) dialog.findViewById(R.id.dialog_video_Darsteller)).setText(String.join(", ", darstellerNames_neu));
-//
-//
-//                }, false)
-//                .addButton("Öffnen", dialog -> openUrl(randomKnowledge[0], false), false)
-//                .setSetViewContent(view -> {
-//                    ((TextView) view.findViewById(R.id.dialog_video_Titel)).setText(randomKnowledge[0].getName());
-//                    ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(String.join(", ", categoryNames));
-//                    ((TextView) view.findViewById(R.id.dialog_video_Studio)).setText(String.join(", ", studioNames));
-//                    ((TextView) view.findViewById(R.id.dialog_video_Genre)).setText(String.join(", ", genreNames));
-//                    view.findViewById(R.id.dialog_video_Darsteller).setSelected(true);
-//
-//                })
-//                .show();
+        CustomDialog.Builder(this)
+                .setTitle("Zufälliges Wissen")
+                .setView(R.layout.dialog_detail_knowledge)
+                .setButtonType(CustomDialog.ButtonType.CUSTOM)
+                .addButton("Nochmal", (customDialog, dialog) -> {
+                    Toast.makeText(this, "Neu", Toast.LENGTH_SHORT).show();
+                    randomKnowledge[0] = filterdKnowledgeList.get((int) (Math.random() * filterdKnowledgeList.size()));
+                    ((TextView) dialog.findViewById(R.id.dialog_detailKnowledge_title)).setText(randomKnowledge[0].getName());
+                    ((TextView) dialog.findViewById(R.id.dialog_detailKnowledge_content)).setText(randomKnowledge[0].getContent());
+
+                    List<String> darstellerNames_neu = new ArrayList<>();
+                    randomKnowledge[0].getCategoryIdList().forEach(uuid -> darstellerNames_neu.add(database.knowledgeCategoryMap.get(uuid).getName()));
+                    ((TextView) dialog.findViewById(R.id.dialog_detailKnowledge_categories)).setText(String.join(", ", darstellerNames_neu));
+
+
+                }, false)
+//                .addButton("Öffnen", (customDialog, dialog) -> openUrl(randomKnowledge[0], false), false)
+                .setSetViewContent(view -> {
+                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_title)).setText(randomKnowledge[0].getName());
+                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_content)).setText(randomKnowledge[0].getContent());
+                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_categories)).setText(String.join(", ", categoryNames));
+
+                })
+                .show();
 
     }
 
@@ -381,6 +416,14 @@ public class KnowledgeActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.task_bar_knowledge, menu);
+
+        Menu subMenu = menu.findItem(R.id.taskBar_filter).getSubMenu();
+        subMenu.findItem(R.id.taskBar_knowledge_filterByName)
+                .setChecked(filterTypeSet.contains(FILTER_TYPE.NAME));
+        subMenu.findItem(R.id.taskBar_knowledge_filterByCategory)
+                .setChecked(filterTypeSet.contains(FILTER_TYPE.CATEGORY));
+        subMenu.findItem(R.id.taskBar_knowledge_filterByContent)
+                .setChecked(filterTypeSet.contains(FILTER_TYPE.CONTENT));
 
         return true;
     }
@@ -406,6 +449,11 @@ public class KnowledgeActivity extends AppCompatActivity {
                 item.setChecked(true);
                 reLoadRecycler();
                 break;
+            case R.id.taskBar_knowledge_sortByLatest:
+                sort_type = SORT_TYPE.LATEST;
+                item.setChecked(true);
+                reLoadRecycler();
+                break;
             case R.id.taskBar_knowledge_sortReverse:
                 boolean checked = !item.isChecked();
                 item.setChecked(checked);
@@ -421,7 +469,8 @@ public class KnowledgeActivity extends AppCompatActivity {
                     filterTypeSet.add(FILTER_TYPE.NAME);
                     item.setChecked(true);
                 }
-                textListener.onQueryTextChange(videos_search.getQuery().toString());
+                reLoadRecycler();
+//                textListener.onQueryTextChange(videos_search.getQuery().toString());
                 break;
             case R.id.taskBar_knowledge_filterByCategory:
                 if (item.isChecked()) {
@@ -431,7 +480,18 @@ public class KnowledgeActivity extends AppCompatActivity {
                     filterTypeSet.add(FILTER_TYPE.CATEGORY);
                     item.setChecked(true);
                 }
-                textListener.onQueryTextChange(videos_search.getQuery().toString());
+                reLoadRecycler();
+//                textListener.onQueryTextChange(videos_search.getQuery().toString());
+                break;
+            case R.id.taskBar_knowledge_filterByContent:
+                if (item.isChecked()) {
+                    filterTypeSet.remove(FILTER_TYPE.CONTENT);
+                    item.setChecked(false);
+                } else {
+                    filterTypeSet.add(FILTER_TYPE.CONTENT);
+                    item.setChecked(true);
+                }
+                reLoadRecycler();
                 break;
 
             case android.R.id.home:

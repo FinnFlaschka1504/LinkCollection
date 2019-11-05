@@ -88,6 +88,7 @@
                 android:elevation="3dp"
                 android:foreground="@drawable/ripple"
                 android:gravity="center"
+                android:onClick="openKnowledgeCategoryActivity"
                 android:orientation="vertical">
 
                 <androidx.constraintlayout.widget.ConstraintLayout

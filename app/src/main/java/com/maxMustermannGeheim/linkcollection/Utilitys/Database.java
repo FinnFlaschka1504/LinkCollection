@@ -68,10 +68,10 @@ public class Database {
     public static final String KNOWLEDGE = "KNOWLEDGE";
 
     public static final String KNOWLEDGE_MAP = "KNOWLEDGE_MAP";
-    public static final String CATEGORY_MAP = "CATEGORY_MAP";
+    public static final String KNOWLEDGE_CATEGORY_MAP = "KNOWLEDGE_CATEGORY_MAP";
 
     public Map<String, Knowledge> knowledgeMap = new HashMap<>();
-    public Map<String, KnowledgeCategory> categoryMap = new HashMap<>();
+    public Map<String, KnowledgeCategory> knowledgeCategoryMap = new HashMap<>();
 
 
     private List<Content> contentList;
@@ -86,7 +86,7 @@ public class Database {
                     , new Content<List,String>(String.class, watchLaterList, databaseCode_Content, VIDEOS, WATCH_LATER_LIST)
 
                     , new Content<Map, Knowledge>(Knowledge.class, knowledgeMap, databaseCode_Content, KNOWLEDGE, KNOWLEDGE_MAP)
-                    , new Content<Map, KnowledgeCategory>(KnowledgeCategory.class, categoryMap, databaseCode_Content, KNOWLEDGE, CATEGORY_MAP)
+                    , new Content<Map, KnowledgeCategory>(KnowledgeCategory.class, knowledgeCategoryMap, databaseCode_Content, KNOWLEDGE, KNOWLEDGE_CATEGORY_MAP)
             );
     }
 //  <----- Content deklaration -----

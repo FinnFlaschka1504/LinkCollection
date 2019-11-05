@@ -6,6 +6,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,6 +16,7 @@ public class Knowledge extends ParentClass {
     private List<Pair<String,String>> sources = new ArrayList<>();
     private List<String> categoryIdList = new ArrayList<>();
     private Float rating = -1f;
+    private Date lastChanged;
 
     public Knowledge() {
     }
@@ -74,6 +76,15 @@ public class Knowledge extends ParentClass {
 
     public void setRating(Float rating) {
         this.rating = rating;
+    }
+
+    public Date getLastChanged() {
+        return lastChanged;
+    }
+
+    public Knowledge setLastChanged(Date lastChanged) {
+        this.lastChanged = lastChanged;
+        return this;
     }
 
     public Knowledge cloneKnowledge() {

@@ -13,7 +13,6 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".Activitys.Knowledge.KnowledgeCategoryActivity"></activity>
         <activity
             android:name=".Activitys.Settings"
             android:label="Einstellungen"
@@ -37,7 +36,7 @@
             android:label="Wissen"
             android:parentActivityName=".Activitys.Main.MainActivity" />
         <activity
-            android:name=".Activitys.Videos.CatigorysActivity"
+            android:name=".Activitys.Main.CatigorysActivity"
             android:parentActivityName=".Activitys.Main.MainActivity" />
     </application>
 

@@ -140,7 +140,7 @@ public class Settings extends AppCompatActivity {
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_knowledge)).setItemId(Space.SPACE_KNOWLEDGE).setIconId(R.drawable.ic_knowledge).setLayoutId(R.layout.main_fragment_knowledge)
                 .setSetLayout(view -> {
                     ((TextView) view.findViewById(R.id.main_knowledgeCount)).setText(String.valueOf(database.knowledgeMap.size()));
-                    ((TextView) view.findViewById(R.id.main_categoryCount)).setText(String.valueOf(database.categoryMap.size()));
+                    ((TextView) view.findViewById(R.id.main_categoryCount)).setText(String.valueOf(database.knowledgeCategoryMap.size()));
                 }));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_owe)).setItemId(Space.SPACE_OWE).setIconId(R.drawable.ic_euro).setLayoutId(R.layout.main_fragment_owe)
                 .setSetLayout(view -> {
@@ -151,7 +151,7 @@ public class Settings extends AppCompatActivity {
                     main_owe_progressBarOthers.setProgress(30);
                     main_owe_progressBarOthers.setMax(100);
 //                    ((TextView) view.findViewById(R.id.main_knowledgeCount)).setText(String.valueOf(database.knowledgeMap.size()));
-//                    ((TextView) view.findViewById(R.id.main_categoryCount)).setText(String.valueOf(database.categoryMap.size()));
+//                    ((TextView) view.findViewById(R.id.main_categoryCount)).setText(String.valueOf(database.knowledgeCategoryMap.size()));
                 }));
 
         for (Space space : allSpaces) {

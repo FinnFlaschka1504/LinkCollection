@@ -50,8 +50,8 @@
         android:layout_marginRight="16dp"
         android:focusable="auto"
         android:iconifiedByDefault="false"
-        android:queryBackground="@android:color/transparent"
-        android:queryHint="Namen, oder E-Mail-Addresse">
+        android:inputType="textCapSentences"
+        android:queryBackground="@android:color/transparent">
 
     </SearchView>
 

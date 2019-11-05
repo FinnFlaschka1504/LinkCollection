@@ -21,7 +21,6 @@ import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.maxMustermannGeheim.linkcollection.Activitys.Knowledge.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activitys.Settings;
-import com.maxMustermannGeheim.linkcollection.Activitys.Videos.CatigorysActivity;
 import com.maxMustermannGeheim.linkcollection.Activitys.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
@@ -47,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
     public final int START_WATCH_LATER = 6;
     private final int START_KNOWLEDGE = 7;
     private final int START_SETTINGS = 8;
+    private final int START_KNOWLEDGE_CATEGORY = 9;
 
     Database database;
     SharedPreferences mySPR_daten;
@@ -222,7 +222,7 @@ public class MainActivity extends AppCompatActivity {
         if (!Database.isReady())
             return;
         Intent intent = new Intent(this, CatigorysActivity.class);
-        intent.putExtra(EXTRA_CATEGORY, CatigorysActivity.CATEGORIES.DARSTELLER.name());
+        intent.putExtra(EXTRA_CATEGORY, CatigorysActivity.CATEGORIES.DARSTELLER);
         startActivityForResult(intent, START_ACTOR);
     }
 
@@ -230,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
         if (!Database.isReady())
             return;
         Intent intent = new Intent(this, CatigorysActivity.class);
-        intent.putExtra(EXTRA_CATEGORY, CatigorysActivity.CATEGORIES.STUDIOS.name());
+        intent.putExtra(EXTRA_CATEGORY, CatigorysActivity.CATEGORIES.STUDIOS);
         startActivityForResult(intent, START_STUDIO);
     }
 
@@ -238,7 +238,7 @@ public class MainActivity extends AppCompatActivity {
         if (!Database.isReady())
             return;
         Intent intent = new Intent(this, CatigorysActivity.class);
-        intent.putExtra(EXTRA_CATEGORY, CatigorysActivity.CATEGORIES.GENRE.name());
+        intent.putExtra(EXTRA_CATEGORY, CatigorysActivity.CATEGORIES.GENRE);
         startActivityForResult(intent, START_GENRE);
     }
 
@@ -264,8 +264,8 @@ public class MainActivity extends AppCompatActivity {
         if (!Database.isReady())
             return;
         startActivityForResult(new  Intent(this, VideoActivity.class)
-                .putExtra(VideoActivity.EXTRA_SEARCH, VideoActivity.WATCH_LATER_SEARCH)
-                .putExtra(VideoActivity.EXTRA_SEARCH_CATEGORY, CatigorysActivity.CATEGORIES.WATCH_LATER.name()), START_WATCH_LATER);
+                .putExtra(CatigorysActivity.EXTRA_SEARCH, VideoActivity.WATCH_LATER_SEARCH)
+                .putExtra(CatigorysActivity.EXTRA_SEARCH_CATEGORY, CatigorysActivity.CATEGORIES.WATCH_LATER), START_WATCH_LATER);
     }
 //  <----- VIDEO -----
 
@@ -277,6 +277,14 @@ public class MainActivity extends AppCompatActivity {
     Intent intent = new Intent(this, KnowledgeActivity.class);
     startActivityForResult(intent, START_KNOWLEDGE);
 }
+
+    public void openKnowledgeCategoryActivity(View view) {
+        if (!Database.isReady())
+            return;
+        Intent intent = new Intent(this, CatigorysActivity.class);
+        intent.putExtra(EXTRA_CATEGORY, CatigorysActivity.CATEGORIES.KNOWLEDGE_CATEGORIES);
+        startActivityForResult(intent, START_KNOWLEDGE_CATEGORY);
+    }
 //  <----- Knowledge -----
 
 

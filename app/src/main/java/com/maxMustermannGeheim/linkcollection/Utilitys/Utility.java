@@ -19,10 +19,11 @@ import android.widget.Toast;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
 import com.maxMustermannGeheim.linkcollection.Activitys.Knowledge.KnowledgeActivity;
+import com.maxMustermannGeheim.linkcollection.Activitys.Main.CatigorysActivity;
 import com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity;
-import com.maxMustermannGeheim.linkcollection.Activitys.Videos.CatigorysActivity;
 import com.maxMustermannGeheim.linkcollection.Activitys.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
+import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
@@ -38,9 +39,8 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-import static com.maxMustermannGeheim.linkcollection.Activitys.Videos.VideoActivity.EXTRA_SEARCH;
-import static com.maxMustermannGeheim.linkcollection.Activitys.Videos.VideoActivity.EXTRA_SEARCH_CATEGORY;
 
 public class Utility {
 
@@ -136,10 +136,21 @@ public class Utility {
     //  <----- ... in Videos -----
 
     //  ----- ... in Knowledge ----->
-    public static boolean containedInKnowledge(String query, Knowledge video, HashSet<KnowledgeActivity.FILTER_TYPE> filterTypeSet) {
-        return true;
+    public static boolean containedInKnowledge(String query, Knowledge knowledge, HashSet<KnowledgeActivity.FILTER_TYPE> filterTypeSet) {
+        if (filterTypeSet.contains(KnowledgeActivity.FILTER_TYPE.NAME) && knowledge.getName().toLowerCase().contains(query))
+            return true;
+        if (filterTypeSet.contains(KnowledgeActivity.FILTER_TYPE.CATEGORY)) {
+//            for (ParentClass category : getMapFromDatabase(CatigorysActivity.CATEGORIES.KNOWLEDGE_CATEGORIES).values()) {
+            for (String categoryId : knowledge.getCategoryIdList()) {
+                if (getObjectFromDatabase(CatigorysActivity.CATEGORIES.KNOWLEDGE_CATEGORIES, categoryId).getName().toLowerCase().contains(query))
+                    return true;
+            }
+        }
+
+        return false;
     }
-        //  <----- ... in Knowledge -----
+    //  <----- ... in Knowledge -----
+
 //  <----- Filter -----
 
     public static void setupCalender(Context context, CompactCalendarView calendarView, LinearLayout layout, List<Video> videoList, boolean openVideo) {
@@ -183,8 +194,8 @@ public class Utility {
         if (openVideo)
             customRecycler.setOnClickListener((recycler, view, object, index) ->
                     ((MainActivity) context).startActivityForResult(new Intent(context, VideoActivity.class)
-                            .putExtra(EXTRA_SEARCH, ((ParentClass) ((Event) object).getData()).getUuid())
-                            .putExtra(EXTRA_SEARCH_CATEGORY, CatigorysActivity.CATEGORIES.VIDEO.name()), ((MainActivity) context).START_VIDEO_FROM_CALENDER));
+                            .putExtra(CatigorysActivity.EXTRA_SEARCH, ((ParentClass) ((Event) object).getData()).getUuid())
+                            .putExtra(CatigorysActivity.EXTRA_SEARCH_CATEGORY, CatigorysActivity.CATEGORIES.VIDEO.name()), ((MainActivity) context).START_VIDEO_FROM_CALENDER));
 
         for (Video video : videoList) {
             for (Date date : video.getDateList()) {
@@ -273,28 +284,29 @@ public class Utility {
         toast.show();
     }
 
-    public static Dialog showEditCatigoryDialog(Context context, Dialog[] addOrEditDialog, List<String> preSelectedUuidList, Object o, ParentClass.OBJECT_TYPE editType) {
+    public static Dialog showEditCatigoryDialog(Context context, Dialog[] addOrEditDialog, List<String> preSelectedUuidList, Object o, CatigorysActivity.CATEGORIES category) {
         Database database = Database.getInstance();
         
         if (preSelectedUuidList == null)
             preSelectedUuidList = new ArrayList<>();
 
         List<String> selectedUuidList = new  ArrayList<>(preSelectedUuidList);
-        List<String> filterdUuidList;
-        String editType_string;
-        switch (editType){
+        List<ParentClass> allObjectsList;
+        String editType_string = category.getPlural();
+        final String[] searchQuerry = {""};
+        switch (category){
             default:
             case DARSTELLER:
-                filterdUuidList = new ArrayList<>(database.darstellerMap.keySet());
-                editType_string = "DARSTELLER";
+                allObjectsList = new ArrayList<>(database.darstellerMap.values());
                 break;
-            case STUDIO:
-                filterdUuidList = new ArrayList<>(database.studioMap.keySet());
-                editType_string = "Studio";
+            case STUDIOS:
+                allObjectsList = new ArrayList<>(database.studioMap.values());
                 break;
             case GENRE:
-                filterdUuidList = new ArrayList<>(database.genreMap.keySet());
-                editType_string = "GENRE";
+                allObjectsList = new ArrayList<>(database.genreMap.values());
+                break;
+            case KNOWLEDGE_CATEGORIES:
+                allObjectsList = new ArrayList<>(database.knowledgeCategoryMap.values());
                 break;
         }
 
@@ -303,39 +315,39 @@ public class Utility {
 
 
         String finalEditType_string = editType_string;
-        String finalEditType_string1 = editType_string;
         Dialog dialog_AddActorOrGenre = CustomDialog.Builder(context)
                 .setTitle(editType_string + " Bearbeiten")
                 .setButtonType(CustomDialog.ButtonType.CUSTOM)
                 .setView(R.layout.dialog_edit_item)
                 .setDimensions(true, true)
                 .addButton("Hinzufügen", (customDialog, dialog) -> {
-//                    addOrEditDialog[0] = dialog;
                     CustomDialog.Builder(context)
                             .setTitle(finalEditType_string + " Hinzufügen")
                             .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
                             .addButton(CustomDialog.OK_BUTTON, (customDialog1, dialog1) -> {
-                                ParentClass parentClass = new ParentClass(editType, CustomDialog.getEditText(dialog1));
-                                switch (editType){
+                                ParentClass parentClass = ParentClass.newCategoy(category, CustomDialog.getEditText(dialog1));
+                                switch (category){
                                     case DARSTELLER:
-                                        database.darstellerMap.put(parentClass.getUuid(), parentClass.newDarsteller());
+                                        database.darstellerMap.put(parentClass.getUuid(), (Darsteller) parentClass);
                                         break;
-                                    case STUDIO:
-                                        database.studioMap.put(parentClass.getUuid(), parentClass.newStudio());
+                                    case STUDIOS:
+                                        database.studioMap.put(parentClass.getUuid(), (Studio) parentClass);
                                         break;
                                     case GENRE:
-                                        database.genreMap.put(parentClass.getUuid(), parentClass.newGenre());
+                                        database.genreMap.put(parentClass.getUuid(), (Genre) parentClass);
+                                        break;
+                                    case KNOWLEDGE_CATEGORIES:
+                                        database.knowledgeCategoryMap.put(parentClass.getUuid(), (KnowledgeCategory) parentClass);
                                         break;
                                 }
                                 selectedUuidList.add(parentClass.getUuid());
                                 dialog.dismiss();
-//                                addOrEditDialog[0].dismiss();
-                                /*addOrEditDialog[0] =*/ showEditCatigoryDialog(context, addOrEditDialog,selectedUuidList, o, editType);
-
+                                showEditCatigoryDialog(context, addOrEditDialog,selectedUuidList, o, category);
+                                Database.saveAll();
                             }, saveButtonId_add)
                             .setEdit(new CustomDialog.EditBuilder()
                                     .setFireButtonOnOK(saveButtonId_add)
-                                    .setHint(finalEditType_string1 + "-Name")
+                                    .setHint(finalEditType_string + "-Name")
                                     .setText(((SearchView) dialog.findViewById(R.id.dialogAddPassenger_search)).getQuery().toString()))
                             .show();
 
@@ -343,13 +355,13 @@ public class Utility {
                 .addButton("Abbrechen", (customDialog, dialog) -> {})
                 .addButton("Speichern", (customDialog, dialog) -> {
                     List<String> nameList = new ArrayList<>();
-                    switch (editType){
+                    switch (category){
                         case DARSTELLER:
                             ((Video) o).setDarstellerList(selectedUuidList);
                             selectedUuidList.forEach(uuid -> nameList.add(database.darstellerMap.get(uuid).getName()));
                             ((TextView) addOrEditDialog[0].findViewById(R.id.dialog_editOrAddVideo_Darsteller)).setText(String.join(", ", nameList));
                             break;
-                        case STUDIO:
+                        case STUDIOS:
                             ((Video) o).setStudioList(selectedUuidList);
                             selectedUuidList.forEach(uuid -> nameList.add(database.studioMap.get(uuid).getName()));
                             ((TextView) addOrEditDialog[0].findViewById(R.id.dialog_editOrAddVideo_Studio)).setText(String.join(", ", nameList));
@@ -358,6 +370,11 @@ public class Utility {
                             ((Video) o).setGenreList(selectedUuidList);
                             selectedUuidList.forEach(uuid -> nameList.add(database.genreMap.get(uuid).getName()));
                             ((TextView) addOrEditDialog[0].findViewById(R.id.dialog_editOrAddVideo_Genre)).setText(String.join(", ", nameList));
+                            break;
+                        case KNOWLEDGE_CATEGORIES:
+                            ((Knowledge) o).setCategoryIdList(selectedUuidList);
+                            selectedUuidList.forEach(uuid -> nameList.add(database.knowledgeCategoryMap.get(uuid).getName()));
+                            ((TextView) addOrEditDialog[0].findViewById(R.id.dialog_editOrAddKnowledge_categories)).setText(String.join(", ", nameList));
                             break;
                     }
                 }, saveButtonId)
@@ -370,21 +387,26 @@ public class Utility {
                 .setItemLayout(R.layout.list_item_bubble)
                 .setObjectList(selectedUuidList)
                 .setShowDivider(false)
-                .setSetItemContent((itemView, object) -> {
-                    switch (editType){
-                        case DARSTELLER:
-                            Darsteller darsteller = database.darstellerMap.get(object);
-                            ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(darsteller.getName());
-                            break;
-                        case STUDIO:
-                            Studio studio = database.studioMap.get(object);
-                            ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(studio.getName());
-                            break;
-                        case GENRE:
-                            Genre genre = database.genreMap.get(object);
-                            ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(genre.getName());
-                            break;
-                    }
+                .setSetItemContent((CustomRecycler.SetItemContent<String>)(itemView, uuid) -> {
+                    ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(getObjectFromDatabase(category, uuid).getName());
+//                    switch (category){
+//                        case DARSTELLER:
+//                            Darsteller darsteller = database.darstellerMap.get(uuid);
+//                            ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(darsteller.getName());
+//                            break;
+//                        case STUDIOS:
+//                            Studio studio = database.studioMap.get(uuid);
+//                            ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(studio.getName());
+//                            break;
+//                        case GENRE:
+//                            Genre genre = database.genreMap.get(uuid);
+//                            ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(genre.getName());
+//                            break;
+//                        case KNOWLEDGE_CATEGORIES:
+//                            Knowledge knowledge = database.knowledgeMap.get(uuid);
+//                            ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(knowledge.getName());
+//                            break;
+//                    }
 
                     dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_nothingSelected).setVisibility(View.GONE);
                 })
@@ -404,58 +426,48 @@ public class Utility {
                     }
                     dialog_AddActorOrGenre.findViewById(saveButtonId).setEnabled(true);
 
-                    customRecycler_selectList.setObjectList(filterdUuidList).reload();
+                    customRecycler_selectList.reload();
                 })
                 .setUseCustomRipple(true)
                 .generateCustomRecycler();
-
-        List<String> sortedAllObjectIdList;
-        switch (editType){
-            default:
-            case DARSTELLER:
-                sortedAllObjectIdList = new ArrayList(database.darstellerMap.keySet());
-                sortedAllObjectIdList.sort((id1, id2) -> database.darstellerMap.get(id1).getName().compareTo(database.darstellerMap.get(id2).getName()));
-                break;
-            case STUDIO:
-                sortedAllObjectIdList = new ArrayList(database.studioMap.keySet());
-                sortedAllObjectIdList.sort((id1, id2) -> database.studioMap.get(id1).getName().compareTo(database.studioMap.get(id2).getName()));
-                break;
-            case GENRE:
-                sortedAllObjectIdList = new ArrayList(database.genreMap.keySet());
-                sortedAllObjectIdList.sort((id1, id2) -> database.genreMap.get(id1).getName().compareTo(database.genreMap.get(id2).getName()));
-                break;
-        }
 
 
         customRecycler_selectList
                 .setItemLayout(R.layout.list_item_select_actor)
                 .setMultiClickEnabled(true)
-                .setObjectList(sortedAllObjectIdList)
-                .setSetItemContent((itemView, object) -> {
-                    switch (editType){
-                        case DARSTELLER:
-                            Darsteller darsteller = database.darstellerMap.get(object);
-                            ((TextView) itemView.findViewById(R.id.selectList_name)).setText(darsteller.getName());
-                            break;
-                        case STUDIO:
-                            Studio studio = database.studioMap.get(object);
-                            ((TextView) itemView.findViewById(R.id.selectList_name)).setText(studio.getName());
-                            break;
-                        case GENRE:
-                            Genre genre = database.genreMap.get(object);
-                            ((TextView) itemView.findViewById(R.id.selectList_name)).setText(genre.getName());
-                            break;
+                .setGetActiveObjectList(() -> {
+                    if (searchQuerry[0].equals("")) {
+                        return allObjectsList;
                     }
-
-                    ((CheckBox) itemView.findViewById(R.id.selectList_selected)).setChecked(selectedUuidList.contains(object));
+                    return getMapFromDatabase(category).values().stream().filter(parentClass -> parentClass.getName().toLowerCase().contains(searchQuerry[0].toLowerCase()))
+                            .sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList());
+//                    switch (category){
+//                        case DARSTELLER:
+//                            return database.darstellerMap.values().stream().filter(parentClass -> parentClass.getName().toLowerCase().contains(searchQuerry[0].toLowerCase()))
+//                                    .sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList());
+//                        case STUDIOS:
+//                            return database.studioMap.values().stream().filter(parentClass -> parentClass.getName().toLowerCase().contains(searchQuerry[0].toLowerCase()))
+//                                    .sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList());
+//                        case GENRE:
+//                            return database.genreMap.values().stream().filter(parentClass -> parentClass.getName().toLowerCase().contains(searchQuerry[0].toLowerCase()))
+//                                    .sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList());
+//                    }
+//                    return new ArrayList();
+//                    sortedAllObjectIdList
                 })
-                .setOnClickListener((recycler, view, object, index) -> {
+                .setSetItemContent((itemView, object) -> {
+                    ParentClass parentClass = (ParentClass) object;
+                    ((TextView) itemView.findViewById(R.id.selectList_name)).setText(parentClass.getName());
+
+                    ((CheckBox) itemView.findViewById(R.id.selectList_selected)).setChecked(selectedUuidList.contains(parentClass.getUuid()));
+                })
+                .setOnClickListener((CustomRecycler.OnClickListener<ParentClass>) (recycler, view, parentClass, index) -> {
                     CheckBox checkBox = view.findViewById(R.id.selectList_selected);
                     checkBox.setChecked(!checkBox.isChecked());
-                    if (selectedUuidList.contains(object))
-                        selectedUuidList.remove(object);
+                    if (selectedUuidList.contains(parentClass.getUuid()))
+                        selectedUuidList.remove(parentClass.getUuid());
                     else
-                        selectedUuidList.add((String) object);
+                        selectedUuidList.add(parentClass.getUuid());
 
                     if (selectedUuidList.size() <= 0) {
                         dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_nothingSelected).setVisibility(View.VISIBLE);
@@ -464,11 +476,12 @@ public class Utility {
                     }
                     dialog_AddActorOrGenre.findViewById(saveButtonId).setEnabled(true);
 
-                    customRecycler_selectedList.setObjectList(selectedUuidList).reload();
+                    customRecycler_selectedList.reload();
                 })
                 .generateCustomRecycler();
 
         SearchView searchView = dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_search);
+        searchView.setQueryHint(category.getPlural() + " durchsuchen");
         searchView.requestFocus();
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
@@ -478,38 +491,8 @@ public class Utility {
 
             @Override
             public boolean onQueryTextChange(String s) {
-                s = s.trim();
-                if (s.equals("")) {
-                    customRecycler_selectList.setObjectList(sortedAllObjectIdList).reload();
-                }
-                switch (editType){
-                    case DARSTELLER:
-                        Map<String, Darsteller> darstellerMap = database.darstellerMap;
-                        filterdUuidList.clear();
-                        for (String uuidActor : sortedAllObjectIdList) {
-                            if (darstellerMap.get(uuidActor).getName().toLowerCase().contains(s.toLowerCase()))
-                                filterdUuidList.add(uuidActor);
-                        }
-                        break;
-                    case STUDIO:
-                        Map<String, Studio> studioMap = database.studioMap;
-                        filterdUuidList.clear();
-                        for (String uuidActor : sortedAllObjectIdList) {
-                            if (studioMap.get(uuidActor).getName().toLowerCase().contains(s.toLowerCase()))
-                                filterdUuidList.add(uuidActor);
-                        }
-                        break;
-                    case GENRE:
-                        Map<String, Genre> genreMap = database.genreMap;
-                        filterdUuidList.clear();
-                        for (String uuidActor : sortedAllObjectIdList) {
-                            if (genreMap.get(uuidActor).getName().toLowerCase().contains(s.toLowerCase()))
-                                filterdUuidList.add(uuidActor);
-                        }
-                        break;
-                }
-
-                customRecycler_selectList.setObjectList(filterdUuidList).reload();
+                searchQuerry[0] = s.trim();
+                customRecycler_selectList.reload();
 
                 return true;
             }
@@ -518,4 +501,22 @@ public class Utility {
         return dialog_AddActorOrGenre;
     }
 
+    public static ParentClass getObjectFromDatabase(CatigorysActivity.CATEGORIES category, String uuid) {
+        return getMapFromDatabase(category).get(uuid);
+    }
+
+    private static Map<String, ? extends ParentClass> getMapFromDatabase(CatigorysActivity.CATEGORIES category) {
+        Database database = Database.getInstance();
+        switch (category) {
+            case DARSTELLER:
+                return database.darstellerMap;
+            case STUDIOS:
+                return database.studioMap;
+            case GENRE:
+                return database.genreMap;
+            case KNOWLEDGE_CATEGORIES:
+                return database.knowledgeCategoryMap;
+        }
+        return null;
+    }
 }

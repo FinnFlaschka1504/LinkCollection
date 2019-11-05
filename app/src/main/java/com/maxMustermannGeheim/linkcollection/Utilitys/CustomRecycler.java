@@ -76,11 +76,11 @@ public class CustomRecycler<T>{
     }
 
     public static CustomRecycler Builder(Context context) {
-        return new CustomRecycler<Object>(context);
+        return new CustomRecycler<>(context);
     }
 
     public static CustomRecycler Builder(Context context, RecyclerView recycler) {
-        CustomRecycler customRecycler = new CustomRecycler<Object>(context);
+        CustomRecycler customRecycler = new CustomRecycler<>(context);
         customRecycler.recycler = recycler;
         return customRecycler;
     }
@@ -107,7 +107,6 @@ public class CustomRecycler<T>{
     }
 
     public CustomRecycler setObjectList(List objectList) {
-//        this.objectList = new ArrayList(objectList);
         this.objectList = objectList;
         return this;
     }

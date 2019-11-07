@@ -13,12 +13,15 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
+        <activity android:name=".Activities.Content.OweActivity"
+            android:label="Schulden"
+            android:parentActivityName=".Activities.Main.MainActivity"/>
         <activity
-            android:name=".Activitys.Settings"
+            android:name=".Activities.Settings"
             android:label="Einstellungen"
-            android:parentActivityName=".Activitys.Main.MainActivity" />
+            android:parentActivityName=".Activities.Main.MainActivity" />
         <activity
-            android:name=".Activitys.Main.MainActivity"
+            android:name=".Activities.Main.MainActivity"
             android:configChanges="orientation|screenSize"
             android:theme="@style/AppTheme">
             <intent-filter>
@@ -28,16 +31,16 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".Activitys.Content.VideoActivity"
+            android:name=".Activities.Content.VideoActivity"
             android:label="@string/VideoActivity_label"
-            android:parentActivityName=".Activitys.Main.MainActivity" />
+            android:parentActivityName=".Activities.Main.MainActivity" />
         <activity
-            android:name=".Activitys.Content.KnowledgeActivity"
+            android:name=".Activities.Content.KnowledgeActivity"
             android:label="Wissen"
-            android:parentActivityName=".Activitys.Main.MainActivity" />
+            android:parentActivityName=".Activities.Main.MainActivity" />
         <activity
-            android:name=".Activitys.Main.CatigorysActivity"
-            android:parentActivityName=".Activitys.Main.MainActivity" />
+            android:name=".Activities.Main.CategoriesActivity"
+            android:parentActivityName=".Activities.Main.MainActivity" />
     </application>
 
 </manifest>

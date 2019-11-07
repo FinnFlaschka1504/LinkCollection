@@ -1,4 +1,4 @@
-package com.maxMustermannGeheim.linkcollection.Activitys.Main;
+package com.maxMustermannGeheim.linkcollection.Activities.Main;
 
 import android.app.Dialog;
 import android.content.Intent;
@@ -19,9 +19,10 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.maxMustermannGeheim.linkcollection.Activitys.Content.KnowledgeActivity;
-import com.maxMustermannGeheim.linkcollection.Activitys.Settings;
-import com.maxMustermannGeheim.linkcollection.Activitys.Content.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Settings;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
@@ -30,12 +31,15 @@ import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     public static final String SHARED_PREFERENCES_DATA = "LinkCollection_Daten";
     public static final String SHARED_PREFERENCES_SETTINGS = "SHARED_PREFERENCES_SETTINGS";
     public static final String EXTRA_CATEGORY = "EXTRA_CATEGORY";
     public static final String SETTING_LAST_OPEN_SPACE = "SETTING_LAST_OPEN_SPACE";
+    public static final String ACTION_ADD = "ACTION_ADD";
 
 
     final int START_VIDEOS = 1;
@@ -47,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
     private final int START_KNOWLEDGE = 7;
     private final int START_SETTINGS = 8;
     private final int START_KNOWLEDGE_CATEGORY = 9;
+    private final int START_OWE = 10;
 
     Database database;
     SharedPreferences mySPR_daten;
@@ -92,14 +97,6 @@ public class MainActivity extends AppCompatActivity {
 
         loadDatabase(false);
 
-        ShortcutManager shortcutManager = getSystemService(ShortcutManager.class);
-        ShortcutInfo shortcut = new ShortcutInfo.Builder(this, getLocalClassName() + ".Shortcut")
-                .setShortLabel("VIDEO Hinzufügen")
-                .setLongLabel("Ein neues VIDEO Hinzufügen")
-                .setIcon(Icon.createWithResource(this, R.drawable.ic_add_video_shortcut))
-                .setIntent(new Intent(this, VideoActivity.class).setAction(VideoActivity.ACTION_ADD_VIDEO))
-                .build();
-        shortcutManager.setDynamicShortcuts(Arrays.asList(shortcut));
 
         if (Database.exists())
             Database.removeDatabaseReloadListener(null);
@@ -145,8 +142,27 @@ public class MainActivity extends AppCompatActivity {
         BottomNavigationView bottomNavigationView = findViewById(R.id.main_bottom_navigation);
 
         Settings.startSettings_ifNeeded(this);
+
+        ShortcutManager shortcutManager = getSystemService(ShortcutManager.class);
+        List<ShortcutInfo> shortcutInfoList = new ArrayList<>();
+        int count = 1;
+        for (Settings.Space space : Settings.Space.allSpaces) {
+            if (count > 5) break;
+            shortcutInfoList.add(new ShortcutInfo.Builder(this, space.getName() + ".Shortcut")
+                            .setShortLabel(space.getName() + " Hinzufügen")
+//                    .setLongLabel("Ein neues VIDEO Hinzufügen")
+                            .setIcon(Icon.createWithResource(this, space.getIconId()))
+                            .setIntent(new Intent(this, space.getActivity()).setAction(ACTION_ADD))
+                            .build()
+            );
+
+            count++;
+        }
+        Collections.reverse(shortcutInfoList);
+        shortcutManager.setDynamicShortcuts(shortcutInfoList);
+
         bottomNavigationView.getMenu().clear();
-        int count = 0;
+        count = 0;
         for (Settings.Space space : Settings.Space.allSpaces) {
             if (!space.isShown()) continue;
 
@@ -221,24 +237,24 @@ public class MainActivity extends AppCompatActivity {
     public void openActorActivity(View view) {
         if (!Database.isReady())
             return;
-        Intent intent = new Intent(this, CatigorysActivity.class);
-        intent.putExtra(EXTRA_CATEGORY, CatigorysActivity.CATEGORIES.DARSTELLER);
+        Intent intent = new Intent(this, CategoriesActivity.class);
+        intent.putExtra(EXTRA_CATEGORY, CategoriesActivity.CATEGORIES.DARSTELLER);
         startActivityForResult(intent, START_ACTOR);
     }
 
     public void openStudioActivity(View view) {
         if (!Database.isReady())
             return;
-        Intent intent = new Intent(this, CatigorysActivity.class);
-        intent.putExtra(EXTRA_CATEGORY, CatigorysActivity.CATEGORIES.STUDIOS);
+        Intent intent = new Intent(this, CategoriesActivity.class);
+        intent.putExtra(EXTRA_CATEGORY, CategoriesActivity.CATEGORIES.STUDIOS);
         startActivityForResult(intent, START_STUDIO);
     }
 
     public void openGenreActivity(View view) {
         if (!Database.isReady())
             return;
-        Intent intent = new Intent(this, CatigorysActivity.class);
-        intent.putExtra(EXTRA_CATEGORY, CatigorysActivity.CATEGORIES.GENRE);
+        Intent intent = new Intent(this, CategoriesActivity.class);
+        intent.putExtra(EXTRA_CATEGORY, CategoriesActivity.CATEGORIES.GENRE);
         startActivityForResult(intent, START_GENRE);
     }
 
@@ -264,8 +280,8 @@ public class MainActivity extends AppCompatActivity {
         if (!Database.isReady())
             return;
         startActivityForResult(new  Intent(this, VideoActivity.class)
-                .putExtra(CatigorysActivity.EXTRA_SEARCH, VideoActivity.WATCH_LATER_SEARCH)
-                .putExtra(CatigorysActivity.EXTRA_SEARCH_CATEGORY, CatigorysActivity.CATEGORIES.WATCH_LATER), START_WATCH_LATER);
+                .putExtra(CategoriesActivity.EXTRA_SEARCH, VideoActivity.WATCH_LATER_SEARCH)
+                .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.WATCH_LATER), START_WATCH_LATER);
     }
 //  <----- VIDEO -----
 
@@ -281,12 +297,21 @@ public class MainActivity extends AppCompatActivity {
     public void openKnowledgeCategoryActivity(View view) {
         if (!Database.isReady())
             return;
-        Intent intent = new Intent(this, CatigorysActivity.class);
-        intent.putExtra(EXTRA_CATEGORY, CatigorysActivity.CATEGORIES.KNOWLEDGE_CATEGORIES);
+        Intent intent = new Intent(this, CategoriesActivity.class);
+        intent.putExtra(EXTRA_CATEGORY, CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES);
         startActivityForResult(intent, START_KNOWLEDGE_CATEGORY);
     }
 //  <----- Knowledge -----
 
+
+//  ----- Owe ----->
+    public void openOweActivity(View view) {
+    if (!Database.isReady())
+        return;
+    Intent intent = new Intent(this, OweActivity.class);
+    startActivityForResult(intent, START_OWE);
+}
+//  <----- Owe -----
 
     private void setCounts() {
         currentSpace.setLayout();

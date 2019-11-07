@@ -54,7 +54,7 @@ public class CustomRecycler<T>{
             return false;
         lastClickTime = System.currentTimeMillis();
         int index = recycler.getChildAdapterPosition(view);
-        onLongClickListener.runOnLongClickListener(recycler, view, objectList.get(index), index);
+        onLongClickListener.runOnLongClickListener(this, view, objectList.get(index), index);
         return true;
     };
     private OnClickListener onClickListener;
@@ -63,7 +63,7 @@ public class CustomRecycler<T>{
             return;
         lastClickTime = System.currentTimeMillis();
         int index = recycler.getChildAdapterPosition(view);
-        onClickListener.runOnClickListener(recycler, view, objectList.get(index), index);
+        onClickListener.runOnClickListener(this, view, objectList.get(index), index);
     };
     Map<Integer, Pair<OnClickListener, Boolean>> idSubOnClickListenerMap = new HashMap<>();
     Map<Integer, Pair<OnClickListener, Boolean>> idSubOnLongClickListenerMap = new HashMap<>();
@@ -195,7 +195,7 @@ public class CustomRecycler<T>{
     }
 
     public interface OnClickListener<T> {
-        void runOnClickListener(RecyclerView recycler, View itemView, T t, int index);
+        void runOnClickListener(CustomRecycler customRecycler, View itemView, T t, int index);
     }
 
     public CustomRecycler setOnClickListener(OnClickListener onClickListener) {
@@ -204,7 +204,7 @@ public class CustomRecycler<T>{
     }
 
     public interface OnLongClickListener<T> {
-        void runOnLongClickListener(RecyclerView recycler, View view, T t, int index);
+        void runOnLongClickListener(CustomRecycler customRecycler, View view, T t, int index);
     }
 
     public CustomRecycler setOnLongClickListener(OnLongClickListener onLongClickListener) {
@@ -234,7 +234,7 @@ public class CustomRecycler<T>{
                     View view = v.findViewById(entry.getKey());
                     view.setOnClickListener(view2 -> {
                         int index = recycler.getChildAdapterPosition(v);
-                        entry.getValue().first.runOnClickListener(recycler, v, dataset.get(index), index);
+                        entry.getValue().first.runOnClickListener(CustomRecycler.this, v, dataset.get(index), index);
                         view.setFocusable(true);
                         view.setClickable(true);
                         if (entry.getValue().second) {
@@ -251,7 +251,7 @@ public class CustomRecycler<T>{
                     View view = v.findViewById(entry.getKey());
                     view.setOnLongClickListener(view2 -> {
                         int index = recycler.getChildAdapterPosition(v);
-                        entry.getValue().first.runOnClickListener(recycler, v, dataset.get(index), index);
+                        entry.getValue().first.runOnClickListener(CustomRecycler.this, v, dataset.get(index), index);
                         view.setFocusable(true);
                         view.setClickable(true);
                         if (entry.getValue().second) {

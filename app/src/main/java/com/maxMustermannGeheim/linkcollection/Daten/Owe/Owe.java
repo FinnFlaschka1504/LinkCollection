@@ -2,17 +2,38 @@ package com.maxMustermannGeheim.linkcollection.Daten.Owe;
 
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 public class Owe extends ParentClass {
-    enum STATE {
-        TO_ME, FROM_ME
+    public enum OWN_OR_OTHER {
+        OWN("Eigen"), OTHER("Fremd");
+
+        String name;
+
+        OWN_OR_OTHER() {
+        }
+
+        OWN_OR_OTHER(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public OWN_OR_OTHER setName(String name) {
+            this.name = name;
+            return this;
+        }
     }
 
     private String description;
-    private STATE state;
-    private double amount;
-    private String personId;
+    private OWN_OR_OTHER ownOrOther;
+    private List<Item> itemList = new ArrayList<>();
+    private Date date;
 
     public Owe() {
     }
@@ -31,30 +52,88 @@ public class Owe extends ParentClass {
         return this;
     }
 
-    public STATE getState() {
-        return state;
+    public OWN_OR_OTHER getOwnOrOther() {
+        return ownOrOther;
     }
 
-    public Owe setState(STATE state) {
-        this.state = state;
+    public Owe setOwnOrOther(OWN_OR_OTHER ownOrOther) {
+        this.ownOrOther = ownOrOther;
         return this;
     }
 
-    public double getAmount() {
-        return amount;
+    public List<Item> getItemList() {
+        return itemList;
     }
 
-    public Owe setAmount(double amount) {
-        this.amount = amount;
+    public Owe setItemList(List<Item> itemList) {
+        this.itemList = itemList;
         return this;
     }
 
-    public String getPersonId() {
-        return personId;
+    public boolean isOpen() {
+        return itemList.stream().anyMatch(Item::isOpen);
     }
 
-    public Owe setPersonId(String personId) {
-        this.personId = personId;
+    public Date getDate() {
+        return date;
+    }
+
+    public Owe setDate(Date date) {
+        this.date = date;
         return this;
     }
+
+    public static class Item{
+        private double amount;
+        private String personId;
+        private boolean open = true;
+
+        public Item() {
+        }
+
+        public Item(String personId, double amount) {
+            this.amount = amount;
+            this.personId = personId;
+        }
+
+        public double getAmount() {
+            return amount;
+        }
+
+        public Item setAmount(double amount) {
+            this.amount = amount;
+            return this;
+        }
+
+        public String getPersonId() {
+            return personId;
+        }
+
+        public Item setPersonId(String personId) {
+            this.personId = personId;
+            return this;
+        }
+
+        public boolean isOpen() {
+            return open;
+        }
+
+        public Item setOpen(boolean open) {
+            this.open = open;
+            return this;
+        }
+
+
+    }
+
+    public Owe cloneOwe() {
+        Owe owe = new Owe();
+        owe.name = this.name;
+        owe.uuid = this.uuid;
+        owe.description = this.description;
+        owe.itemList = new ArrayList<>(this.itemList);
+        owe.date = this.date;
+        return owe;
+    }
+
 }

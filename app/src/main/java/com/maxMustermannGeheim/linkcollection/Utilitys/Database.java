@@ -16,6 +16,8 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
+import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
+import com.maxMustermannGeheim.linkcollection.Daten.Owe.Person;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
@@ -49,45 +51,48 @@ public class Database {
 
 //  ----- Content deklaration ----->
     public static final String VIDEOS = "VIDEOS";
-
     public static final String VIDEO_MAP = "VIDEO_MAP";
     public static final String STUDIO_MAP = "STUDIO_MAP";
     public static final String DARSTELLER_MAP = "DARSTELLER_MAP";
     public static final String GENRE_MAP = "GENRE_MAP";
     public static final String WATCH_LATER_LIST = "WATCH_LATER_LIST";
     public static final String DATABASE_CODE = "DATABASE_CODE";
-
     public static String databaseCode;
     public Map<String, Video> videoMap = new HashMap<>();
     public Map<String, Darsteller> darstellerMap = new HashMap<>();
     public Map<String, Studio> studioMap = new HashMap<>();
     public Map<String, Genre> genreMap = new HashMap<>();
     public List<String> watchLaterList = new ArrayList<>();
-
-
+    
     public static final String KNOWLEDGE = "KNOWLEDGE";
-
     public static final String KNOWLEDGE_MAP = "KNOWLEDGE_MAP";
     public static final String KNOWLEDGE_CATEGORY_MAP = "KNOWLEDGE_CATEGORY_MAP";
-
     public Map<String, Knowledge> knowledgeMap = new HashMap<>();
     public Map<String, KnowledgeCategory> knowledgeCategoryMap = new HashMap<>();
 
-
+    public static final String OWE = "OWE";
+    public static final String OWE_MAP = "OWE_MAP";
+    public static final String PERSON_MAP = "PERSON_MAP";
+    public Map<String, Owe> oweMap = new HashMap<>();
+    public Map<String, Person> personMap = new HashMap<>();
+    
     private List<Content> contentList;
     {
         Content databaseCode_Content = new Content<String, String>(String.class, "databaseCode", DATABASE_CODE).setSaveOnline(false);
         contentList = Arrays.asList(
                 databaseCode_Content
-                    , new Content<Map,Video>(Video.class, videoMap, databaseCode_Content, VIDEOS, VIDEO_MAP)
-                    , new Content<Map,Studio>(Studio.class, studioMap, databaseCode_Content, VIDEOS, STUDIO_MAP)
-                    , new Content<Map,Darsteller>(Darsteller.class, darstellerMap, databaseCode_Content, VIDEOS, DARSTELLER_MAP)
-                    , new Content<Map,Genre>(Genre.class, genreMap, databaseCode_Content, VIDEOS, GENRE_MAP)
-                    , new Content<List,String>(String.class, watchLaterList, databaseCode_Content, VIDEOS, WATCH_LATER_LIST)
+                , new Content<Map,Video>(Video.class, videoMap, databaseCode_Content, VIDEOS, VIDEO_MAP)
+                , new Content<Map,Studio>(Studio.class, studioMap, databaseCode_Content, VIDEOS, STUDIO_MAP)
+                , new Content<Map,Darsteller>(Darsteller.class, darstellerMap, databaseCode_Content, VIDEOS, DARSTELLER_MAP)
+                , new Content<Map,Genre>(Genre.class, genreMap, databaseCode_Content, VIDEOS, GENRE_MAP)
+                , new Content<List,String>(String.class, watchLaterList, databaseCode_Content, VIDEOS, WATCH_LATER_LIST)
 
-                    , new Content<Map, Knowledge>(Knowledge.class, knowledgeMap, databaseCode_Content, KNOWLEDGE, KNOWLEDGE_MAP)
-                    , new Content<Map, KnowledgeCategory>(KnowledgeCategory.class, knowledgeCategoryMap, databaseCode_Content, KNOWLEDGE, KNOWLEDGE_CATEGORY_MAP)
-            );
+                , new Content<Map, Knowledge>(Knowledge.class, knowledgeMap, databaseCode_Content, KNOWLEDGE, KNOWLEDGE_MAP)
+                , new Content<Map, KnowledgeCategory>(KnowledgeCategory.class, knowledgeCategoryMap, databaseCode_Content, KNOWLEDGE, KNOWLEDGE_CATEGORY_MAP)
+
+                , new Content<Map, Owe>(Owe.class, oweMap, databaseCode_Content, OWE, OWE_MAP)
+                , new Content<Map, Person>(Person.class, personMap, databaseCode_Content, OWE, PERSON_MAP)
+        );
     }
 //  <----- Content deklaration -----
 
@@ -341,7 +346,7 @@ public class Database {
             database.writeAllToFirebase();
     }
 
-    public void saveDatabase_offline(SharedPreferences mySPR_daten) {
+    private void saveDatabase_offline(SharedPreferences mySPR_daten) {
         Gson gson = new Gson();
         SharedPreferences.Editor editor = mySPR_daten.edit();
 
@@ -357,7 +362,7 @@ public class Database {
         editor.apply();
     }
 
-    public void writeAllToFirebase() {
+    private void writeAllToFirebase() {
         for (Content content : getContentMap(true).values()) {
             if (content.saveOnline)
                 databaseCall_write(content.content, content.getPathArray());

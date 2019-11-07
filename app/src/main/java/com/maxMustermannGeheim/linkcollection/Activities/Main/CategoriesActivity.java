@@ -1,4 +1,4 @@
-package com.maxMustermannGeheim.linkcollection.Activitys.Main;
+package com.maxMustermannGeheim.linkcollection.Activities.Main;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -14,8 +14,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
-import com.maxMustermannGeheim.linkcollection.Activitys.Content.KnowledgeActivity;
-import com.maxMustermannGeheim.linkcollection.Activitys.Content.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
@@ -30,9 +30,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity.SHARED_PREFERENCES_DATA;
+import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
-public class CatigorysActivity extends AppCompatActivity {
+public class CategoriesActivity extends AppCompatActivity {
     public static final int START_CATIGORY_SEARCH = 001;
     public static final String EXTRA_SEARCH_CATEGORY = "EXTRA_SEARCH_CATOGORY";
     public static final String EXTRA_SEARCH = "EXTRA_SEARCH";
@@ -209,14 +209,14 @@ public class CatigorysActivity extends AppCompatActivity {
                 })
                 .setRowOrColumnCount(columnCount)
                 .setShowDivider(false)
-                .setOnClickListener((recycler, view, object, index) -> {
+                .setOnClickListener((customRecycler, view, object, index) -> {
                     startActivityForResult(new Intent(this, catigory.getSearchIn())
                                     .putExtra(EXTRA_SEARCH, ((ParentClass) ((Pair) object).first).getName())
                                     .putExtra(EXTRA_SEARCH_CATEGORY, catigory),
                             START_CATIGORY_SEARCH);
                 })
                 .setUseCustomRipple(true)
-                .setOnLongClickListener((CustomRecycler.OnLongClickListener<Pair<ParentClass, Integer>>)(recycler, view, item, index) -> {
+                .setOnLongClickListener((CustomRecycler.OnLongClickListener<Pair<ParentClass, Integer>>)(customRecycler, view, item, index) -> {
                     if (!Utility.isOnline(this))
                         return;
                     ParentClass parentClass = item.first;

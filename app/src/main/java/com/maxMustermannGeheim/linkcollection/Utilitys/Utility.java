@@ -21,12 +21,14 @@ import android.widget.Toast;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
-import com.maxMustermannGeheim.linkcollection.Activitys.Content.KnowledgeActivity;
-import com.maxMustermannGeheim.linkcollection.Activitys.Main.CatigorysActivity;
-import com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity;
-import com.maxMustermannGeheim.linkcollection.Activitys.Content.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
+import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
@@ -41,6 +43,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -110,6 +113,14 @@ public class Utility {
         }
     }
 
+    public static String formatToEuro(double amount) {
+        if (amount % 1 == 0)
+            return String.format(Locale.GERMANY,"%.0f €", amount);
+        else
+            return String.format(Locale.GERMANY,"%.2f €", amount);
+    }
+
+
     //  ----- Filter ----->
     private static boolean contains(String all, String sub) {
     return all.toLowerCase().contains(sub.toLowerCase());
@@ -167,9 +178,9 @@ public class Utility {
         if (filterTypeSet.contains(KnowledgeActivity.FILTER_TYPE.NAME) && knowledge.getName().toLowerCase().contains(query))
             return true;
         if (filterTypeSet.contains(KnowledgeActivity.FILTER_TYPE.CATEGORY)) {
-//            for (ParentClass category : getMapFromDatabase(CatigorysActivity.CATEGORIES.KNOWLEDGE_CATEGORIES).values()) {
+//            for (ParentClass category : getMapFromDatabase(CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES).values()) {
             for (String categoryId : knowledge.getCategoryIdList()) {
-                if (getObjectFromDatabase(CatigorysActivity.CATEGORIES.KNOWLEDGE_CATEGORIES, categoryId).getName().toLowerCase().contains(query))
+                if (getObjectFromDatabase(CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES, categoryId).getName().toLowerCase().contains(query))
                     return true;
             }
         }
@@ -177,6 +188,22 @@ public class Utility {
         return false;
     }
     //  <----- ... in Knowledge -----
+
+    //  ----- ... in Owe ----->
+    public static boolean containedInOwe(String query, Owe owe, HashSet<OweActivity.FILTER_TYPE> filterTypeSet) {
+        if (filterTypeSet.contains(KnowledgeActivity.FILTER_TYPE.NAME) && owe.getName().toLowerCase().contains(query))
+            return true;
+//        if (filterTypeSet.contains(KnowledgeActivity.FILTER_TYPE.CATEGORY)) {
+////            for (ParentClass category : getMapFromDatabase(CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES).values()) {
+//            for (String categoryId : owe.getCategoryIdList()) {
+//                if (getObjectFromDatabase(CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES, categoryId).getName().toLowerCase().contains(query))
+//                    return true;
+//            }
+//        }
+
+        return false;
+    }
+    //  <----- ... in Owe -----
 
 //  <----- Filter -----
 
@@ -219,10 +246,10 @@ public class Utility {
                 .setShowDivider(false);
 
         if (openVideo)
-            customRecycler.setOnClickListener((recycler, view, object, index) ->
+            customRecycler.setOnClickListener((customRecycler1, view, object, index) ->
                     ((MainActivity) context).startActivityForResult(new Intent(context, VideoActivity.class)
-                            .putExtra(CatigorysActivity.EXTRA_SEARCH, ((ParentClass) ((Event) object).getData()).getUuid())
-                            .putExtra(CatigorysActivity.EXTRA_SEARCH_CATEGORY, CatigorysActivity.CATEGORIES.VIDEO.name()), ((MainActivity) context).START_VIDEO_FROM_CALENDER));
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH, ((ParentClass) ((Event) object).getData()).getUuid())
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO.name()), ((MainActivity) context).START_VIDEO_FROM_CALENDER));
 
         for (Video video : videoList) {
             for (Date date : video.getDateList()) {
@@ -311,7 +338,7 @@ public class Utility {
         toast.show();
     }
 
-    public static Dialog showEditCatigoryDialog(Context context, Dialog[] addOrEditDialog, List<String> preSelectedUuidList, Object o, CatigorysActivity.CATEGORIES category) {
+    public static Dialog showEditItemDialog(Context context, Dialog[] addOrEditDialog, List<String> preSelectedUuidList, Object o, CategoriesActivity.CATEGORIES category) {
         Database database = Database.getInstance();
         
         if (preSelectedUuidList == null)
@@ -369,7 +396,7 @@ public class Utility {
                                 }
                                 selectedUuidList.add(parentClass.getUuid());
                                 dialog.dismiss();
-                                showEditCatigoryDialog(context, addOrEditDialog,selectedUuidList, o, category);
+                                showEditItemDialog(context, addOrEditDialog,selectedUuidList, o, category);
                                 Database.saveAll();
                             }, saveButtonId_add)
                             .setEdit(new CustomDialog.EditBuilder()
@@ -438,12 +465,12 @@ public class Utility {
                     dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_nothingSelected).setVisibility(View.GONE);
                 })
                 .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
-                .setOnClickListener((recycler, view, object, index) -> {
+                .setOnClickListener((customRecycler, view, object, index) -> {
                     Toast.makeText(context,
                             "Halten zum abwählen" , Toast.LENGTH_SHORT).show();
                 })
-                .setOnLongClickListener((recycler, view, object, index) -> {
-                    ((CustomRecycler.MyAdapter) recycler.getAdapter()).removeItemAt(index);
+                .setOnLongClickListener((customRecycler, view, object, index) -> {
+                    ((CustomRecycler.MyAdapter) customRecycler.getRecycler().getAdapter()).removeItemAt(index);
                     selectedUuidList.remove(object);
 
                     if (selectedUuidList.size() <= 0) {
@@ -488,7 +515,7 @@ public class Utility {
 
                     ((CheckBox) itemView.findViewById(R.id.selectList_selected)).setChecked(selectedUuidList.contains(parentClass.getUuid()));
                 })
-                .setOnClickListener((CustomRecycler.OnClickListener<ParentClass>) (recycler, view, parentClass, index) -> {
+                .setOnClickListener((CustomRecycler.OnClickListener<ParentClass>) (customRecycler, view, parentClass, index) -> {
                     CheckBox checkBox = view.findViewById(R.id.selectList_selected);
                     checkBox.setChecked(!checkBox.isChecked());
                     if (selectedUuidList.contains(parentClass.getUuid()))
@@ -528,11 +555,11 @@ public class Utility {
         return dialog_AddActorOrGenre;
     }
 
-    public static ParentClass getObjectFromDatabase(CatigorysActivity.CATEGORIES category, String uuid) {
+    public static ParentClass getObjectFromDatabase(CategoriesActivity.CATEGORIES category, String uuid) {
         return getMapFromDatabase(category).get(uuid);
     }
 
-    private static Map<String, ? extends ParentClass> getMapFromDatabase(CatigorysActivity.CATEGORIES category) {
+    private static Map<String, ? extends ParentClass> getMapFromDatabase(CategoriesActivity.CATEGORIES category) {
         Database database = Database.getInstance();
         switch (category) {
             case DARSTELLER:

@@ -1,13 +1,11 @@
-package com.maxMustermannGeheim.linkcollection.Activitys.Content;
+package com.maxMustermannGeheim.linkcollection.Activities.Content;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Bundle;
 import android.util.Pair;
 import android.view.Menu;
@@ -24,7 +22,8 @@ import android.widget.Toast;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.maxMustermannGeheim.linkcollection.Activitys.Main.CatigorysActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
@@ -41,11 +40,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
-import static com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity.SHARED_PREFERENCES_DATA;
+import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
 public class VideoActivity extends AppCompatActivity {
     public static final String WATCH_LATER_SEARCH = "WATCH_LATER_SEARCH";
-    public static final String ACTION_ADD_VIDEO = "ACTION_ADD_VIDEO";
 
     enum SORT_TYPE{
         NAME, VIEWS, RATING, LATEST
@@ -88,7 +86,7 @@ public class VideoActivity extends AppCompatActivity {
 
         loadDatabase();
 
-        CatigorysActivity.CATEGORIES extraSearchCategory = (CatigorysActivity.CATEGORIES) getIntent().getSerializableExtra(CatigorysActivity.EXTRA_SEARCH_CATEGORY);
+        CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
         if (extraSearchCategory != null) {
             filterTypeSet.clear();
 
@@ -104,7 +102,7 @@ public class VideoActivity extends AppCompatActivity {
                     break;
             }
 
-            String extraSearch = getIntent().getStringExtra(CatigorysActivity.EXTRA_SEARCH);
+            String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
             if (extraSearch != null) {
                 videos_search.setQuery(extraSearch, true);
             }
@@ -138,7 +136,7 @@ public class VideoActivity extends AppCompatActivity {
             loadVideoRecycler();
 
             Context that = this;
-            videos_search = findViewById(R.id.videos_search);
+            videos_search = findViewById(R.id.search);
             textListener = new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String s) {
@@ -195,7 +193,7 @@ public class VideoActivity extends AppCompatActivity {
             };
             videos_search.setOnQueryTextListener(textListener);
 
-            if (Objects.equals(getIntent().getAction(), ACTION_ADD_VIDEO))
+            if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_ADD))
                 showEditOrNewDialog(null);
         };
 
@@ -291,7 +289,7 @@ public class VideoActivity extends AppCompatActivity {
                     itemView.findViewById(R.id.listItem_video_Genre).setSelected(scrolling);
                 })
                 .setUseCustomRipple(true)
-                .setOnClickListener((recycler, view, object, index) -> {
+                .setOnClickListener((customRecycler, view, object, index) -> {
                     if (!delete) {
                         openUrl(((Video) object).getUrl(), false);
                     } else {
@@ -304,10 +302,10 @@ public class VideoActivity extends AppCompatActivity {
                         String test = null;
                     }
                 })
-                .addSubOnClickListener(R.id.listItem_video_details, (recycler, view, object, index) -> {
+                .addSubOnClickListener(R.id.listItem_video_details, (customRecycler, view, object, index) -> {
                     dialogVideoPair = new Pair<>(showDetailDialog(object), (Video) object);
                 }, false)
-                .setOnLongClickListener((recycler, view, object, index) -> {
+                .setOnLongClickListener((customRecycler, view, object, index) -> {
                     addOrEditDialog[0] = showEditOrNewDialog(object);
                 })
                 .setShowDivider(false)
@@ -454,11 +452,11 @@ public class VideoActivity extends AppCompatActivity {
 
 
                     view.findViewById(R.id.dialog_editOrAddVideo_editActor).setOnClickListener(view1 ->
-                            Utility.showEditCatigoryDialog(this, addOrEditDialog, video[0] == null ? null : video[0].getDarstellerList(), video[0], CatigorysActivity.CATEGORIES.DARSTELLER));
+                            Utility.showEditItemDialog(this, addOrEditDialog, video[0] == null ? null : video[0].getDarstellerList(), video[0], CategoriesActivity.CATEGORIES.DARSTELLER));
                     view.findViewById(R.id.dialog_editOrAddVideo_editStudio).setOnClickListener(view1 ->
-                            Utility.showEditCatigoryDialog(this, addOrEditDialog, video[0] == null ? null : video[0].getStudioList(), video[0], CatigorysActivity.CATEGORIES.STUDIOS ));
+                            Utility.showEditItemDialog(this, addOrEditDialog, video[0] == null ? null : video[0].getStudioList(), video[0], CategoriesActivity.CATEGORIES.STUDIOS ));
                     view.findViewById(R.id.dialog_editOrAddVideo_editGenre).setOnClickListener(view1 ->
-                            Utility.showEditCatigoryDialog(this, addOrEditDialog, video[0] == null ? null : video[0].getGenreList(), video[0], CatigorysActivity.CATEGORIES.GENRE));
+                            Utility.showEditItemDialog(this, addOrEditDialog, video[0] == null ? null : video[0].getGenreList(), video[0], CategoriesActivity.CATEGORIES.GENRE));
                 })
                 .show();
 //        DialogInterface.OnKeyListener keylistener = (dialog, keyCode, KEvent) -> {

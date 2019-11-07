@@ -14,4 +14,8 @@
     <string name="bottomMenu_owe">Schulden</string>
     <string name="bottomMenu_jokes">Witze</string>
 
+    <string-array name="ownOrOther">
+        <item>Eigen</item>
+        <item>Fremd</item>
+    </string-array>
 </resources>

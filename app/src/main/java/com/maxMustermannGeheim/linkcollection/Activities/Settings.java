@@ -1,4 +1,4 @@
-package com.maxMustermannGeheim.linkcollection.Activitys;
+package com.maxMustermannGeheim.linkcollection.Activities;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
@@ -14,7 +14,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.akexorcist.roundcornerprogressbar.RoundCornerProgressBar;
-import com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
@@ -31,7 +34,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.maxMustermannGeheim.linkcollection.Activitys.Settings.Space.allSpaces;
+import static com.maxMustermannGeheim.linkcollection.Activities.Settings.Space.allSpaces;
 
 public class Settings extends AppCompatActivity {
 
@@ -126,7 +129,7 @@ public class Settings extends AppCompatActivity {
         if (!allSpaces.isEmpty())
             return;
 
-        allSpaces.add(new Space(context.getString(R.string.bottomMenu_video)).setItemId(Space.SPACE_VIDEO).setIconId(R.drawable.ic_videos).setLayoutId(R.layout.main_fragment_videos)
+        allSpaces.add(new Space(context.getString(R.string.bottomMenu_video)).setActivity(VideoActivity.class).setItemId(Space.SPACE_VIDEO).setIconId(R.drawable.ic_videos).setLayoutId(R.layout.main_fragment_videos)
                 .setSetLayout(view -> {
                     ((TextView) view.findViewById(R.id.main_videoCount)).setText(String.valueOf(database.videoMap.size()));
                     ((TextView) view.findViewById(R.id.main_darstellerCount)).setText(String.valueOf(database.darstellerMap.size()));
@@ -137,12 +140,12 @@ public class Settings extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.main_daysCount)).setText(String.valueOf(dateSet.size()));
                     ((TextView) view.findViewById(R.id.main_watchLaterCount)).setText(String.valueOf(database.watchLaterList.size()));
                 }));
-        allSpaces.add(new Space(context.getString(R.string.bottomMenu_knowledge)).setItemId(Space.SPACE_KNOWLEDGE).setIconId(R.drawable.ic_knowledge).setLayoutId(R.layout.main_fragment_knowledge)
+        allSpaces.add(new Space(context.getString(R.string.bottomMenu_knowledge)).setActivity(KnowledgeActivity.class).setItemId(Space.SPACE_KNOWLEDGE).setIconId(R.drawable.ic_knowledge).setLayoutId(R.layout.main_fragment_knowledge)
                 .setSetLayout(view -> {
                     ((TextView) view.findViewById(R.id.main_knowledgeCount)).setText(String.valueOf(database.knowledgeMap.size()));
                     ((TextView) view.findViewById(R.id.main_categoryCount)).setText(String.valueOf(database.knowledgeCategoryMap.size()));
                 }));
-        allSpaces.add(new Space(context.getString(R.string.bottomMenu_owe)).setItemId(Space.SPACE_OWE).setIconId(R.drawable.ic_euro).setLayoutId(R.layout.main_fragment_owe)
+        allSpaces.add(new Space(context.getString(R.string.bottomMenu_owe)).setActivity(OweActivity.class).setItemId(Space.SPACE_OWE).setIconId(R.drawable.ic_euro).setLayoutId(R.layout.main_fragment_owe)
                 .setSetLayout(view -> {
 //                    RoundCornerProgressBar main_owe_progressBarOwn = view.findViewById(R.id.main_owe_progressBarOwn);
 //                    main_owe_progressBarOwn.setProgress(70);
@@ -150,8 +153,8 @@ public class Settings extends AppCompatActivity {
                     RoundCornerProgressBar main_owe_progressBarOthers = view.findViewById(R.id.main_owe_progressBarOthers);
                     main_owe_progressBarOthers.setProgress(30);
                     main_owe_progressBarOthers.setMax(100);
-//                    ((TextView) view.findViewById(R.id.main_knowledgeCount)).setText(String.valueOf(database.knowledgeMap.size()));
-//                    ((TextView) view.findViewById(R.id.main_categoryCount)).setText(String.valueOf(database.knowledgeCategoryMap.size()));
+                    ((TextView) view.findViewById(R.id.main_owe_countAll)).setText(String.valueOf(database.oweMap.size()));
+                    ((TextView) view.findViewById(R.id.main_owe_countPerson)).setText(String.valueOf(database.personMap.size()));
                 }));
 
         for (Space space : allSpaces) {
@@ -231,7 +234,7 @@ public class Settings extends AppCompatActivity {
                                 ((CheckBox) itemView.findViewById(R.id.list_spaceSetting_shown)).setChecked(space.isShown());
                             })
                             .removeLastDivider()
-                            .setOnClickListener((CustomRecycler.OnClickListener<Space>) (recycler, itemView, space, index) -> {
+                            .setOnClickListener((CustomRecycler.OnClickListener<Space>) (customRecycler, itemView, space, index) -> {
                                 CheckBox list_spaceSetting_shown = itemView.findViewById(R.id.list_spaceSetting_shown);
                                 boolean checked = list_spaceSetting_shown.isChecked();
 
@@ -282,6 +285,7 @@ public class Settings extends AppCompatActivity {
         private int layoutId;
         private Fragment fragment;
         private SetLayout setLayout;
+        private Class activity;
 
         public Space(String name) {
             this.name = name;
@@ -349,6 +353,15 @@ public class Settings extends AppCompatActivity {
             return this;
         }
 
+        public Space setActivity(Class activity) {
+            this.activity = activity;
+            return this;
+        }
+
+        public Class getActivity() {
+            return activity;
+        }
+
         // ------------------
 
         public static Space getSpaceById(int id){
@@ -363,6 +376,7 @@ public class Settings extends AppCompatActivity {
             Optional<Space> first = allSpaces.stream().filter(Space::isShown).findFirst();
             return first.orElse(null);
         }
+
     }
 
     void updateSpaceStatusSettings() {

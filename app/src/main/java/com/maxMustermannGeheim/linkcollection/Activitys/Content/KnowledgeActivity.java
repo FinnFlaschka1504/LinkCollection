@@ -1,25 +1,27 @@
-package com.maxMustermannGeheim.linkcollection.Activitys.Knowledge;
+package com.maxMustermannGeheim.linkcollection.Activitys.Content;
 
 import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.text.format.DateFormat;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.view.menu.MenuBuilder;
 
+import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activitys.Main.CatigorysActivity;
 import com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity;
-import com.maxMustermannGeheim.linkcollection.Activitys.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
@@ -36,6 +38,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class KnowledgeActivity extends AppCompatActivity {
@@ -235,7 +239,6 @@ public class KnowledgeActivity extends AppCompatActivity {
         if (reverse)
             Collections.reverse(knowledgeList);
         return knowledgeList;
-        // ToDo: implementieren
     }
 
     private void reLoadRecycler() {
@@ -253,7 +256,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         if (knowledge != null) {
             newKnowledge[0] = knowledge.cloneKnowledge();
             newKnowledge[0].getCategoryIdList().forEach(uuid -> categoriesNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
-            newKnowledge[0].getSources().forEach(nameUrlPair  -> sourcesNames.add(nameUrlPair.first));
+            newKnowledge[0].getSources().forEach(nameUrlPair  -> sourcesNames.add(nameUrlPair.get(0)));
         }
         Dialog returnDialog =  CustomDialog.Builder(this)
                 .setTitle(knowledge == null ? "Neues Wissen" : "Wissen Bearbeiten")
@@ -280,7 +283,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                         saveKnowledge(dialog, titel, content, newKnowledge, knowledge);
 
                 }, false)
-                .setSetViewContent(view -> {
+                .setSetViewContent((customDialog, view) -> {
                     if (newKnowledge[0] != null) {
                         ((EditText) view.findViewById(R.id.dialog_editOrAddKnowledge_Titel)).setText(newKnowledge[0].getName());
                         ((EditText) view.findViewById(R.id.dialog_editOrAddKnowledge_content)).setText(knowledge.getContent());
@@ -296,6 +299,8 @@ public class KnowledgeActivity extends AppCompatActivity {
 
                     view.findViewById(R.id.dialog_editOrAddKnowledge_editCategories).setOnClickListener(view1 ->
                             Utility.showEditCatigoryDialog(this, addOrEditDialog, newKnowledge[0].getCategoryIdList(), newKnowledge[0], CatigorysActivity.CATEGORIES.KNOWLEDGE_CATEGORIES));
+                    view.findViewById(R.id.dialog_editOrAddKnowledge_editSources).setOnClickListener(view1 ->
+                                    showSourcesDialog(newKnowledge[0], view.findViewById(R.id.dialog_editOrAddKnowledge_sources), true));
 //                    view.findViewById(R.id.dialog_editOrAddKnowledge_editStudio).setOnClickListener(view1 ->
 //                            Utility.showEditCatigoryDialog(this, addOrEditDialog, newKnowledge[0].getStudioList(), newKnowledge[0], ParentClass.OBJECT_TYPE.STUDIO ));
                 })
@@ -314,38 +319,233 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .addButton("Bearbeiten", (customDialog, dialog) ->
                         addOrEditDialog[0] = showEditOrNewDialog(knowledge), false)
 //                .addButton("Öffnen mit...", dialog -> openUrl(knowledge, true), false)
-                .setSetViewContent(view -> {
+                .setSetViewContent((customDialog, view) -> {
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_title)).setText(knowledge.getName());
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_content)).setText(knowledge.getContent());
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_categories)).setText(String.join(", ", categoriesNames));
+                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_sources)).setText(knowledge.getSources().stream().map(strings -> strings.get(0)).collect(Collectors.joining(", ")));
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_lastChanged)).setText(String.format("%s Uhr", new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.GERMANY).format(knowledge.getLastChanged())));
                     view.findViewById(R.id.dialog_detailKnowledge_details).setVisibility(View.VISIBLE);
-//                    ((TextView) view.findViewById(R.id.dialog_video_Url)).setText(knowledge.getUrl());
-//                    ((TextView) view.findViewById(R.id.dialog_video_views)).setText(String.valueOf(knowledge.getDateList().size()));
                     ((RatingBar) view.findViewById(R.id.dialog_detailKnowledge_rating)).setRating(knowledge.getRating());
 
-//                    final boolean[] isInWatchLater = {database.watchLaterList.contains(knowledge.getUuid())};
-//                    view.findViewById(R.id.dialog_video_watchLater_background).setPressed(isInWatchLater[0]);
-//                    view.findViewById(R.id.dialog_video_watchLater).setOnClickListener(view1 -> {
-//                        isInWatchLater[0] = !isInWatchLater[0];
-//                        view.findViewById(R.id.dialog_video_watchLater_background).setPressed(isInWatchLater[0]);
-//                        if (isInWatchLater[0]) {
-//                            database.watchLaterList.add(knowledge.getUuid());
-//                            Toast.makeText(this, "Zu 'Später-Ansehen' hinzugefügt", Toast.LENGTH_SHORT).show();
-//                        } else {
-//                            database.watchLaterList.remove(knowledge.getUuid());
-//                            Toast.makeText(this, "Aus 'Später-Ansehen' entfernt", Toast.LENGTH_SHORT).show();
-//                        }
-//                        textListener.onQueryTextSubmit(videos_search.getQuery().toString());
-//                        setResult(RESULT_OK);
-//                        Database.saveAll();
-//                    });
-
+                    view.findViewById(R.id.dialog_detailKnowledge_listSources).setOnClickListener(v -> {
+                        showSourcesDialog(knowledge, view.findViewById(R.id.dialog_detailKnowledge_sources),false);
+                    });
                 })
                 .show();
         returnDialog.setOnDismissListener(dialogInterface -> detailDialog = null);
         return returnDialog;
     }
+
+
+//  ----- Sources ----->
+    private void showSourcesDialog(Knowledge knowledge, TextView sourcesText, boolean edit) {
+        int buttonId_add = View.generateViewId();
+        TextValidation nameValidation = (textInputLayout, changeErrorMessage) -> {
+            String text = textInputLayout.getEditText().getText().toString().trim();
+
+            if (text.isEmpty()) {
+                if (changeErrorMessage)
+                    textInputLayout.setError("Das Feld darf nicht leer sein!");
+                return false;
+            } else {
+                if (changeErrorMessage)
+                    textInputLayout.setError(null);
+                return true;
+            }
+        };
+        TextValidation urlValidation = (textInputLayout, changeErrorMessage) -> {
+            String text = textInputLayout.getEditText().getText().toString().trim();
+
+            if (text.isEmpty()) {
+                textInputLayout.setError("Das Feld darf nicht leer sein!");
+                return false;
+            } else if (!text.matches("(?i)^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?!(?:10|127)(?:\\.\\d{1,3}){3})(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?(?:[/?#]\\S*)?$")) {
+                textInputLayout.setError("Eine valide URL eingeben!");
+                return false;
+
+            } else {
+                textInputLayout.setError(null);
+                return true;
+            }
+
+        };
+        final List<String>[] currentSource = new List[]{null};
+        Dialog sourcesDialog = CustomDialog.Builder(this)
+                .setTitle("Quellen")
+                .setView(R.layout.dialog_sources)
+                .setSetViewContent((customDialog, view) -> {
+                    LinearLayout dialog_sources_editLayout = view.findViewById(R.id.dialog_sources_editLayout);
+                    TextInputLayout dialog_sources_name = view.findViewById(R.id.dialog_sources_name);
+                    TextInputLayout dialog_sources_url = view.findViewById(R.id.dialog_sources_url);
+                    if (edit) {
+                        dialog_sources_editLayout.setVisibility(View.VISIBLE);
+                        dialog_sources_url.getEditText().requestFocus();
+                        Utility.changeWindowKeyboard(customDialog.getDialog().getWindow(), true);
+                    }
+                    Button dialog_sources_save = view.findViewById(R.id.dialog_sources_save);
+                    dialog_sources_name.getEditText().addTextChangedListener(new TextWatcher() {
+                        @Override
+                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                        }
+
+                        @Override
+                        public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                        }
+
+                        @Override
+                        public void afterTextChanged(Editable s) {
+                            validation(nameValidation, urlValidation, dialog_sources_name, dialog_sources_url, true, false, dialog_sources_save);
+                        }
+                    });
+                    dialog_sources_url.getEditText().addTextChangedListener(new TextWatcher() {
+                        @Override
+                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                        }
+
+                        @Override
+                        public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                        }
+
+                        @Override
+                        public void afterTextChanged(Editable s) {
+                            if (urlValidation.runTextValidation(dialog_sources_url, true)) {
+                                if (dialog_sources_name.getEditText().getText().toString().isEmpty()) {
+                                    String domainName = getDomainFromUrl(s.toString(), true);
+                                    dialog_sources_name.getEditText().setText(domainName);
+                                }
+                            }
+                            validation(nameValidation, urlValidation, dialog_sources_name, dialog_sources_url, false, true, dialog_sources_save);
+                        }
+                    });
+                    Runnable hideEdit = () -> {
+                        dialog_sources_name.getEditText().setText("");
+                        dialog_sources_url.getEditText().setText("");
+                        dialog_sources_name.setError(null);
+                        dialog_sources_url.setError(null);
+                        dialog_sources_editLayout.setVisibility(View.GONE);
+                        Utility.changeWindowKeyboard(this, dialog_sources_url.getEditText(), false);
+                        dialog_sources_url.getEditText().clearFocus();
+                        customDialog.getDialog().findViewById(buttonId_add).setVisibility(View.VISIBLE);
+                        currentSource[0] = null;
+                    };
+
+
+                    view.findViewById(R.id.dialog_sources_cancel).setOnClickListener(v -> hideEdit.run());
+
+                    CustomRecycler sources_customRecycler = CustomRecycler.Builder(this, view.findViewById(R.id.dialog_sources_sources))
+                            .setItemLayout(R.layout.list_item_source)
+                            .setGetActiveObjectList(() -> {
+                                List<List<String>> sources = knowledge.getSources();
+                                view.findViewById(R.id.dialog_sources_noSources).setVisibility(sources.isEmpty() ? View.VISIBLE : View.GONE);
+                                return sources;
+                            })
+                            .setSetItemContent((CustomRecycler.SetItemContent<List<String>>)(itemView, nameUrlPair) -> {
+                                ((TextView) itemView.findViewById(R.id.listItem_source_name)).setText(nameUrlPair.get(0));
+                                ((TextView) itemView.findViewById(R.id.listItem_source_url)).setText(nameUrlPair.get(1));
+                            })
+                            .setShowDivider(false)
+                            .setUseCustomRipple(true)
+                            .setOnClickListener((recycler, itemView, o, index) -> Utility.openUrl(this, ((List<String>) o).get(1), false))
+                            .setOnLongClickListener((CustomRecycler.OnLongClickListener<List<String>>)(recycler, view1, stringList, index) -> {
+                                Dialog dialog = customDialog.getDialog();
+                                dialog.findViewById(R.id.dialog_sources_editLayout).setVisibility(View.VISIBLE);
+                                dialog.findViewById(buttonId_add).setVisibility(View.GONE);
+                                dialog.findViewById(R.id.dialog_sources_delete).setVisibility(View.VISIBLE);
+                                dialog_sources_name.getEditText().setText(stringList.get(0));
+                                dialog_sources_url.getEditText().setText(stringList.get(1));
+                                currentSource[0] = stringList;
+                            })
+                            .generateCustomRecycler();
+
+                    view.findViewById(R.id.dialog_sources_delete).setOnClickListener(v -> {
+                        CustomDialog.Builder(this)
+                                .setTitle("Quelle Löschen")
+                                .setText("Willst du wirklich die Quelle '" + currentSource[0].get(0) + "' löschen?")
+                                .setButtonType(CustomDialog.ButtonType.YES_NO)
+                                .addButton(CustomDialog.YES_BUTTON, (customDialog1, dialog) -> {
+                                    knowledge.getSources().remove(currentSource[0]);
+                                    hideEdit.run();
+                                    sources_customRecycler.reload();
+                                    Database.saveAll();
+                                })
+                                .show();
+                    });
+
+                    dialog_sources_save.setOnClickListener(v -> {
+                        if (!nameValidation.runTextValidation(dialog_sources_name, true) | !urlValidation.runTextValidation(dialog_sources_url, true))
+                            return;
+                        if (currentSource[0] == null) {
+                            List<String> newSource = Arrays.asList(dialog_sources_name.getEditText().getText().toString().trim()
+                                    , dialog_sources_url.getEditText().getText().toString().trim());
+                            knowledge.getSources().add(newSource);
+                        }
+                        else {
+                            currentSource[0].clear();
+                            currentSource[0].add(dialog_sources_name.getEditText().getText().toString().trim());
+                            currentSource[0].add(dialog_sources_url.getEditText().getText().toString().trim());
+                        }
+                        Database.saveAll();
+                        sources_customRecycler.reload();
+                        hideEdit.run();
+                        currentSource[0] = null;
+                    });
+                })
+                .setButtonType(CustomDialog.ButtonType.CUSTOM)
+                .addButton("Hinzufügen", (customDialog, dialog) -> {
+                    dialog.findViewById(R.id.dialog_sources_editLayout).setVisibility(View.VISIBLE);
+                    dialog.findViewById(buttonId_add).setVisibility(View.GONE);
+                    dialog.findViewById(R.id.dialog_sources_delete).setVisibility(View.GONE);
+                    EditText dialog_sources_url = ((TextInputLayout) dialog.findViewById(R.id.dialog_sources_url)).getEditText();
+                    dialog_sources_url.requestFocus();
+                    Utility.changeWindowKeyboard(this, dialog_sources_url, true);
+                }, buttonId_add, false)
+                .addButton("Zurück", (customDialog, dialog) -> {})
+                .setObjectExtra(sourcesText)
+                .setOnDialogDismiss(customDialog -> ((TextView) customDialog.getObjectExtra()).setText(
+                        knowledge.getSources().stream().map(strings -> strings.get(0)).collect(Collectors.joining(", "))
+                ))
+                .show();
+        if (edit)
+            sourcesDialog.findViewById(buttonId_add).setVisibility(View.GONE);
+    }
+
+    private boolean validation(TextValidation nameValidation, TextValidation urlValidation, TextInputLayout dialog_sources_name
+            , TextInputLayout dialog_sources_url, boolean changeError_name, boolean changeError_url, Button dialog_sources_save) {
+        if (!nameValidation.runTextValidation(dialog_sources_name, changeError_name) | !urlValidation.runTextValidation(dialog_sources_url, changeError_url)) {
+            dialog_sources_save.setEnabled(false);
+            return false;
+        } else {
+            dialog_sources_save.setEnabled(true);
+            return true;
+        }
+    }
+
+    interface TextValidation {
+        boolean runTextValidation(TextInputLayout textInputLayout, boolean changeErrorMessage);
+    }
+
+    private String getDomainFromUrl(String url, boolean shortened) {
+        Pattern pattern = Pattern.compile(":\\/\\/.[^\\/]*");
+        Matcher matcher = pattern.matcher(url);
+        if (matcher.find())
+        {
+            String substring = matcher.group(0).substring(3);
+            if (shortened) {
+                String[] split = substring.split("\\.");
+                return split[split.length - 2];
+            }
+            else
+                return substring;
+        }
+        return null;
+    }
+//  <----- Sources -----
+
 
     private void saveKnowledge(Dialog dialog, String titel, String content, Knowledge[] newKnowledge, Knowledge knowledge) {
 
@@ -402,7 +602,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 
                 }, false)
 //                .addButton("Öffnen", (customDialog, dialog) -> openUrl(randomKnowledge[0], false), false)
-                .setSetViewContent(view -> {
+                .setSetViewContent((customDialog, view) -> {
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_title)).setText(randomKnowledge[0].getName());
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_content)).setText(randomKnowledge[0].getContent());
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_categories)).setText(String.join(", ", categoryNames));

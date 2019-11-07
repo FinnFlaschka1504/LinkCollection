@@ -14,8 +14,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
-import com.maxMustermannGeheim.linkcollection.Activitys.Knowledge.KnowledgeActivity;
-import com.maxMustermannGeheim.linkcollection.Activitys.Videos.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Activitys.Content.KnowledgeActivity;
+import com.maxMustermannGeheim.linkcollection.Activitys.Content.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;

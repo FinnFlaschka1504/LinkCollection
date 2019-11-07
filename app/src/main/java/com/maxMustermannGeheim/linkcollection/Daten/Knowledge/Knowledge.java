@@ -13,7 +13,7 @@ import java.util.UUID;
 public class Knowledge extends ParentClass {
 
     private String content;
-    private List<Pair<String,String>> sources = new ArrayList<>();
+    private List<List<String>> sources = new ArrayList<>();
     private List<String> categoryIdList = new ArrayList<>();
     private Float rating = -1f;
     private Date lastChanged;
@@ -54,11 +54,11 @@ public class Knowledge extends ParentClass {
         this.content = content;
     }
 
-    public List<Pair<String, String>> getSources() {
+    public List<List<String>> getSources() {
         return sources;
     }
 
-    public void setSources(List<Pair<String, String>> sources) {
+    public void setSources(List<List<String>> sources) {
         this.sources = sources;
     }
 

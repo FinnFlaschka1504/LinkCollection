@@ -19,9 +19,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.maxMustermannGeheim.linkcollection.Activitys.Knowledge.KnowledgeActivity;
+import com.maxMustermannGeheim.linkcollection.Activitys.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activitys.Settings;
-import com.maxMustermannGeheim.linkcollection.Activitys.Videos.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Activitys.Content.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
@@ -249,7 +249,7 @@ public class MainActivity extends AppCompatActivity {
         calenderDialog = CustomDialog.Builder(this)
                 .setTitle("Video Kalender")
                 .setView(R.layout.dialog_edit_views)
-                .setSetViewContent(view -> {
+                .setSetViewContent((customDialog, view) -> {
                     ViewStub stub_groups = view.findViewById(R.id.dialog_editViews_calender);
                     stub_groups.setLayoutResource(R.layout.fragment_calender);
                     stub_groups.inflate();

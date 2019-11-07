@@ -1,7 +1,6 @@
-package com.maxMustermannGeheim.linkcollection.Activitys.Videos;
+package com.maxMustermannGeheim.linkcollection.Activitys.Content;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.view.menu.MenuBuilder;
 
 import android.annotation.SuppressLint;
 import android.app.Dialog;
@@ -294,7 +293,7 @@ public class VideoActivity extends AppCompatActivity {
                 .setUseCustomRipple(true)
                 .setOnClickListener((recycler, view, object, index) -> {
                     if (!delete) {
-                        openUrl(object, false);
+                        openUrl(((Video) object).getUrl(), false);
                     } else {
                         CheckBox checkBox = view.findViewById(R.id.listItem_video_deleteCheck);
                         checkBox.setChecked(!checkBox.isChecked());
@@ -335,8 +334,8 @@ public class VideoActivity extends AppCompatActivity {
                 .setButtonType(CustomDialog.ButtonType.CUSTOM)
                 .addButton("Bearbeiten", (customDialog, dialog) ->
                         addOrEditDialog[0] = showEditOrNewDialog(object), false)
-                .addButton("Öffnen mit...", (customDialog, dialog) -> openUrl(object, true), false)
-                .setSetViewContent(view -> {
+                .addButton("Öffnen mit...", (customDialog, dialog) -> openUrl(((Video) object).getUrl(), true), false)
+                .setSetViewContent((customDialog, view) -> {
                     ((TextView) view.findViewById(R.id.dialog_video_Titel)).setText(video.getName());
                     ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(String.join(", ", darstellerNames));
                     view.findViewById(R.id.dialog_video_Darsteller).setSelected(true);
@@ -378,7 +377,7 @@ public class VideoActivity extends AppCompatActivity {
         CustomDialog.Builder(this)
                 .setTitle("Ansichten Bearbeiten")
                 .setView(R.layout.dialog_edit_views)
-                .setSetViewContent(view -> {
+                .setSetViewContent((customDialog, view) -> {
                     ViewStub stub_groups = view.findViewById(R.id.dialog_editViews_calender);
                     stub_groups.setLayoutResource(R.layout.fragment_calender);
                     stub_groups.inflate();
@@ -436,7 +435,7 @@ public class VideoActivity extends AppCompatActivity {
                         saveVideo(dialog, object, titel, url, checked, video);
 
                 }, false)
-                .setSetViewContent(view -> {
+                .setSetViewContent((customDialog, view) -> {
                     if (video[0] != null) {
                         ((EditText) view.findViewById(R.id.dialog_editOrAddVideo_Titel)).setText(video[0].getName());
                         ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_Darsteller)).setText(String.join(", ", darstellerNames));
@@ -692,8 +691,8 @@ public class VideoActivity extends AppCompatActivity {
                     ((TextView) dialog.findViewById(R.id.dialog_video_Genre)).setText(String.join(", ", genreNames_neu));
 
                 }, false)
-                .addButton("Öffnen", (customDialog, dialog) -> openUrl(randomVideo, false), false)
-                .setSetViewContent(view -> {
+                .addButton("Öffnen", (customDialog, dialog) -> openUrl(randomVideo.getUrl(), false), false)
+                .setSetViewContent((customDialog, view) -> {
                     ((TextView) view.findViewById(R.id.dialog_video_Titel)).setText(randomVideo.getName());
                     ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(String.join(", ", darstellerNames));
                     ((TextView) view.findViewById(R.id.dialog_video_Studio)).setText(String.join(", ", studioNames));
@@ -705,22 +704,12 @@ public class VideoActivity extends AppCompatActivity {
 
     }
 
-    public void openUrl(Object object, boolean select) {
-        String url = ((Video) object).getUrl();
+    private void openUrl(String url, boolean select) {
         if (url == null || url.equals("")) {
             Toast.makeText(this, "Keine URL hinterlegt", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (!url.contains("http://") && !url.contains("https://"))
-            url = "http://".concat(url);
-        Intent i = new Intent(Intent.ACTION_VIEW);
-        i.setData(Uri.parse(url));
-        if (!select) {
-            startActivity(i);
-        } else {
-            Intent chooser = Intent.createChooser(i, "Öffnen mit...");
-            startActivity(chooser);
-        }
+        Utility.openUrl(this, url, select);
     }
 
     @SuppressLint("RestrictedApi")

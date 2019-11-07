@@ -50,6 +50,7 @@ public class CustomDialog {
     private boolean isTextBold = false;
     private SetViewContent setViewContent;
     private Object objectExtra;
+    private OnDialogDismiss onDialogDismiss;
 
     private List<Boolean> dismissDialogList = new ArrayList<>();
     private List<Pair<String, OnClick>> pairList = new ArrayList<>();
@@ -136,7 +137,7 @@ public class CustomDialog {
     }
 
     public interface SetViewContent{
-        void runSetViewContent(View view);
+        void runSetViewContent(CustomDialog customDialog, View view);
     }
 
     public CustomDialog setSetViewContent(SetViewContent setViewContent) {
@@ -470,6 +471,15 @@ public class CustomDialog {
         return this;
     }
 
+    public interface OnDialogDismiss {
+        void runOnDialogDismiss(CustomDialog customDialog);
+    }
+
+    public CustomDialog setOnDialogDismiss(OnDialogDismiss onDialogDismiss) {
+        this.onDialogDismiss = onDialogDismiss;
+        return this;
+    }
+
     public Dialog show() {
         TextView dialog_custom_title = dialog.findViewById(R.id.dialog_custom_title);
         TextView dialog_custom_text = dialog.findViewById(R.id.dialog_custom_text);
@@ -537,12 +547,15 @@ public class CustomDialog {
         if (showEdit)
             applySetEdit();
         if (showKeyboard) {
-            Utility.changeDialogKeyboard(dialog, true);
+            Utility.changeWindowKeyboard(dialog.getWindow(), true);
             dialog.findViewById(R.id.dialog_custom_edit).requestFocus();
         }
 
         if (setViewContent != null)
-            setViewContent.runSetViewContent(view);
+            setViewContent.runSetViewContent(this, view);
+
+        if (onDialogDismiss != null)
+            dialog.setOnDismissListener(dialog1 -> onDialogDismiss.runOnDialogDismiss(this));
 
         return dialog;
     }

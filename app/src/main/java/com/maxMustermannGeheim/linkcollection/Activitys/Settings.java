@@ -265,6 +265,7 @@ public class Settings extends AppCompatActivity {
                         mySPR_daten.edit().putString(Database.DATABASE_CODE, code).commit();
                         Database.getInstance(mySPR_daten, database1 -> {}, false);
                     }, okButtonId)
+                    .setOnDialogDismiss(customDialog -> settings_others_databaseCode.setText(CustomDialog.getEditText(customDialog.getDialog())))
                     .show();
         });
     }

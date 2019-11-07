@@ -6,9 +6,12 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
 import android.view.Gravity;
 import android.view.View;
+import android.view.Window;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -18,10 +21,10 @@ import android.widget.Toast;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
-import com.maxMustermannGeheim.linkcollection.Activitys.Knowledge.KnowledgeActivity;
+import com.maxMustermannGeheim.linkcollection.Activitys.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activitys.Main.CatigorysActivity;
 import com.maxMustermannGeheim.linkcollection.Activitys.Main.MainActivity;
-import com.maxMustermannGeheim.linkcollection.Activitys.Videos.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Activitys.Content.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
@@ -76,14 +79,38 @@ public class Utility {
         System.exit(0);
     }
 
-    public static void changeDialogKeyboard(Dialog dialog, boolean show) {
+    public static void changeWindowKeyboard(Window window, boolean show) {
         if (show)
-            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
         else
-            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
     }
 
-//  ----- Filter ----->
+    public static void changeWindowKeyboard(Context context, View view, boolean show) {
+        InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (show)
+            imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
+        else
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+    }
+
+    public static void openUrl(Context context, String url, boolean select) {
+        if (!url.contains("http://") && !url.contains("https://"))
+            url = "http://".concat(url);
+        if (!select) {
+            Intent i = new Intent(Intent.ACTION_VIEW);
+            i.setData(Uri.parse(url));
+            context.startActivity(i);
+        } else {
+            Intent i = new Intent(Intent.ACTION_VIEW);
+            i.setData(Uri.parse(url));
+            Intent chooser = Intent.createChooser(i, "Öffnen mit...");
+            if (chooser.resolveActivity(context.getPackageManager()) != null)
+                context.startActivity(chooser);
+        }
+    }
+
+    //  ----- Filter ----->
     private static boolean contains(String all, String sub) {
     return all.toLowerCase().contains(sub.toLowerCase());
 }

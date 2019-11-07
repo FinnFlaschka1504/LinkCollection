@@ -28,11 +28,11 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".Activitys.Videos.VideoActivity"
+            android:name=".Activitys.Content.VideoActivity"
             android:label="@string/VideoActivity_label"
             android:parentActivityName=".Activitys.Main.MainActivity" />
         <activity
-            android:name=".Activitys.Knowledge.KnowledgeActivity"
+            android:name=".Activitys.Content.KnowledgeActivity"
             android:label="Wissen"
             android:parentActivityName=".Activitys.Main.MainActivity" />
         <activity

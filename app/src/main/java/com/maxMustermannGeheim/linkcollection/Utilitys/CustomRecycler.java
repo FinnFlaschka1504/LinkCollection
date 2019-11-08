@@ -70,6 +70,7 @@ public class CustomRecycler<T>{
     private SELECTION_MODE selectionMode = SELECTION_MODE.SINGLE_SELECTION;
     private boolean useActiveObjectList;
     GetActiveObjectList getActiveObjectList;
+    private boolean hideOverscroll;
 
     private CustomRecycler(Context context) {
         this.context = context;
@@ -212,6 +213,10 @@ public class CustomRecycler<T>{
         return this;
     }
 
+    public CustomRecycler hideOverscroll() {
+        hideOverscroll = true;
+        return this;
+    }
 
 
     public class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> {
@@ -395,6 +400,9 @@ public class CustomRecycler<T>{
             }
             recycler.addItemDecoration(dividerItemDecoration);
         }
+
+        if (hideOverscroll)
+            recycler.setOverScrollMode(View.OVER_SCROLL_NEVER);
 
         return recycler;
     }

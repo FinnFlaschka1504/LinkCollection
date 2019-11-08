@@ -41,7 +41,8 @@
                         android:completionThreshold="0"
                         android:dropDownHeight="wrap_content"
                         android:hint="Name"
-                        android:imeOptions="flagNavigateNext" />
+                        android:imeOptions="flagNavigateNext"
+                        android:singleLine="true" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <ImageView
@@ -62,6 +63,7 @@
                 android:id="@+id/dialog_items_amount"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
                 app1:errorEnabled="true">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -69,7 +71,8 @@
                     android:layout_height="wrap_content"
                     android:hint="Betrag"
                     android:imeOptions="actionDone"
-                    android:inputType="numberDecimal" />
+                    android:inputType="numberDecimal"
+                    android:singleLine="true" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout
@@ -130,7 +133,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:layout_marginVertical="20dp"
-            android:text="Keine Quellen eingetragen"
+            android:text="Keine Einträge"
             android:textStyle="italic" />
     </FrameLayout>
 </LinearLayout>

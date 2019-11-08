@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal">
+    android:orientation="horizontal"
+    android:paddingHorizontal="8dp">
 
 
     <LinearLayout
@@ -102,7 +103,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginRight="8dp"
-                        android:text="Person:"
+                        android:text="Einträge:"
                         android:textStyle="bold" />
 
                     <TextView
@@ -122,26 +123,31 @@
             </LinearLayout>
         </LinearLayout>
 
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:layout_marginHorizontal="8dp"
+            android:layout_marginVertical="8dp"
+            android:background="?android:attr/listDivider" />
+
         <ImageView
             android:id="@+id/listItem_owe_check"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
-            android:tint="#4CAF50"
-            android:visibility="gone"
-            app:srcCompat="@drawable/ic_check"
-            tools:visibility="visible" />
+            android:tint="@color/colorDrawable"
+            app:srcCompat="@drawable/ic_check"/>
 
-        <ImageView
-            android:id="@+id/listItem_owe_details"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
-            android:layout_marginLeft="5dp"
-            android:clickable="true"
-            android:foreground="@drawable/ripple"
-            android:padding="5dp"
-            app:srcCompat="@drawable/ic_info" />
+        <!--        <ImageView-->
+<!--            android:id="@+id/listItem_owe_details"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_gravity="center_vertical"-->
+<!--            android:layout_marginLeft="5dp"-->
+<!--            android:clickable="true"-->
+<!--            android:foreground="@drawable/ripple"-->
+<!--            android:padding="5dp"-->
+<!--            app:srcCompat="@drawable/ic_info" />-->
 
     </LinearLayout>
 </LinearLayout>

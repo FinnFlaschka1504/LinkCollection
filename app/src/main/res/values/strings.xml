@@ -15,7 +15,7 @@
     <string name="bottomMenu_jokes">Witze</string>
 
     <string-array name="ownOrOther">
-        <item>Eigen</item>
-        <item>Fremd</item>
+        <item>Fremde</item>
+        <item>Eigene</item>
     </string-array>
 </resources>

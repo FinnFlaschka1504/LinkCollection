@@ -42,16 +42,17 @@ public class MainActivity extends AppCompatActivity {
     public static final String ACTION_ADD = "ACTION_ADD";
 
 
-    final int START_VIDEOS = 1;
-    final int START_ACTOR = 2;
-    final int START_STUDIO = 3;
-    final int START_GENRE = 4;
-    public final int START_VIDEO_FROM_CALENDER = 5;
-    public final int START_WATCH_LATER = 6;
-    private final int START_KNOWLEDGE = 7;
-    private final int START_SETTINGS = 8;
-    private final int START_KNOWLEDGE_CATEGORY = 9;
-    private final int START_OWE = 10;
+    public static final int START_VIDEOS = 1;
+    public static final int START_ACTOR = 2;
+    public static final int START_STUDIO = 3;
+    public static final int START_GENRE = 4;
+    public static final int START_VIDEO_FROM_CALENDER = 5;
+    public static final int START_WATCH_LATER = 6;
+    public static final int START_KNOWLEDGE = 7;
+    public static final int START_SETTINGS = 8;
+    public static final int START_KNOWLEDGE_CATEGORY = 9;
+    public static final int START_OWE = 10;
+    public static final int START_PERSON = 11;
 
     Database database;
     SharedPreferences mySPR_daten;
@@ -311,6 +312,18 @@ public class MainActivity extends AppCompatActivity {
     Intent intent = new Intent(this, OweActivity.class);
     startActivityForResult(intent, START_OWE);
 }
+
+    public void openPersonActivity(View view) {
+        if (!Database.isReady())
+            return;
+        Intent intent = new Intent(this, CategoriesActivity.class);
+        intent.putExtra(EXTRA_CATEGORY, CategoriesActivity.CATEGORIES.PERSON);
+        startActivityForResult(intent, START_PERSON);
+    }
+
+    public void showPopupwindow(View view) {
+        OweActivity.showPopupwindow(this, view);
+    }
 //  <----- Owe -----
 
     private void setCounts() {

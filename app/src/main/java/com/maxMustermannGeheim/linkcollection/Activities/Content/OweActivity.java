@@ -4,14 +4,22 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
 import android.app.Dialog;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
 import android.text.TextWatcher;
+import android.text.style.StrikethroughSpan;
+import android.text.style.StyleSpan;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
@@ -44,11 +52,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class OweActivity extends AppCompatActivity {
+    public static final String EXTRA_OWN_OR_OTHER = "EXTRA_OWN_OR_OTHER";
+    public static final String EXTRA_OPEN = "EXTRA_OPEN";
 
     enum SORT_TYPE{
         NAME, OWN_OR_OTHER, LATEST, STATUS
@@ -72,6 +80,7 @@ public class OweActivity extends AppCompatActivity {
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.DESCRIPTION, FILTER_TYPE.PERSON, FILTER_TYPE.OWN, FILTER_TYPE.OTHER
             , FILTER_TYPE.OPEN, FILTER_TYPE.CLOSED));
     private Dialog detailDialog;
+    private boolean fireSearch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,24 +89,43 @@ public class OweActivity extends AppCompatActivity {
 
         mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
-        loadDatabase();
-
         CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
         if (extraSearchCategory != null) {
-            filterTypeSet.clear();
+            filterTypeSet.remove(FILTER_TYPE.NAME);
+            filterTypeSet.remove(FILTER_TYPE.DESCRIPTION);
 
-            switch (extraSearchCategory) {
-                case KNOWLEDGE_CATEGORIES:
-                    filterTypeSet.add(FILTER_TYPE.PERSON);
-                    break;
+            if (extraSearchCategory == CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES) {
+                filterTypeSet.add(FILTER_TYPE.PERSON);
             }
 
             String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
             if (extraSearch != null) {
-                videos_search.setQuery(extraSearch, true);
+                fireSearch = true;
+                searchQuery = extraSearch;
             }
         }
+        Owe.OWN_OR_OTHER ownOrOther = (Owe.OWN_OR_OTHER) getIntent().getSerializableExtra(EXTRA_OWN_OR_OTHER);
+        if (ownOrOther != null) {
+            fireSearch = true;
+            switch (ownOrOther) {
+                case OWN:
+                    filterTypeSet.remove(FILTER_TYPE.OTHER);
+                    break;
+                case OTHER:
+                    filterTypeSet.remove(FILTER_TYPE.OWN);
+                    break;
+            }
+        }
+        Boolean open = (Boolean) getIntent().getSerializableExtra(EXTRA_OPEN);
+        if (open != null) {
+            if (open)
+                filterTypeSet.remove(FILTER_TYPE.CLOSED);
+            else
+                filterTypeSet.remove(FILTER_TYPE.OPEN);
+        }
 
+
+        loadDatabase();
     }
 
     private void loadDatabase() {
@@ -121,7 +149,8 @@ public class OweActivity extends AppCompatActivity {
                 }
             };
             videos_search.setOnQueryTextListener(textListener);
-
+            if (fireSearch)
+                videos_search.setQuery(searchQuery, true);
             if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_ADD))
                 showEditOrNewDialog(null);
         };
@@ -138,34 +167,60 @@ public class OweActivity extends AppCompatActivity {
     }
 
     private void loadRecycler() {
+        TextView noItem = findViewById(R.id.no_item);
         customRecycler_List = CustomRecycler.Builder(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_owe)
                 .setGetActiveObjectList(() -> {
-                    if (searchQuery.equals("")) {
-                        allOweList = new ArrayList<>(database.oweMap.values());
-                        return sortList(allOweList);
+                    allOweList = new ArrayList<>(database.oweMap.values());
+                    List<Owe> newOweList;
+                    if (searchQuery.equals("") && filterTypeSet.contains(FILTER_TYPE.OWN) && filterTypeSet.contains(FILTER_TYPE.OTHER) && filterTypeSet.contains(FILTER_TYPE.OPEN) && filterTypeSet.contains(FILTER_TYPE.CLOSED)) {
+                        newOweList = allOweList;
+                        sortList(newOweList);
+                        if (newOweList.isEmpty()) {
+                            noItem.setText("Keine Einträge");
+                            noItem.setVisibility(View.VISIBLE);
+                        }
+                        else
+                            noItem.setVisibility(View.GONE);
+                    } else {
+                        newOweList = filterList(allOweList);
+                        if (newOweList.isEmpty()) {
+                            noItem.setText("Kein Eintrag für die Suche");
+                            noItem.setVisibility(View.VISIBLE);
+                        }
+                        else
+                            noItem.setVisibility(View.GONE);
                     }
-                    else
-                        return filterList(allOweList);
+                    return newOweList;
                 })
                 .setSetItemContent((CustomRecycler.SetItemContent<Owe>) (itemView, owe) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_owe_title)).setText(owe.getName());
                     ((TextView) itemView.findViewById(R.id.listItem_owe_description)).setText(owe.getDescription());
 
-
-                    ((TextView) itemView.findViewById(R.id.listItem_owe_person)).setText(owe.getItemList().stream()
-                            .map(item -> database.personMap.get(item.getPersonId()).getName()).collect(Collectors.joining(", ")));
+                    setItemText(itemView.findViewById(R.id.listItem_owe_person), owe);
                     itemView.findViewById(R.id.listItem_owe_person).setSelected(true);
 
-                    if (owe.getItemList().stream().noneMatch(Owe.Item::isOpen))
-                        itemView.findViewById(R.id.listItem_owe_check).setVisibility(View.VISIBLE);
-                    else
-                        itemView.findViewById(R.id.listItem_owe_check).setVisibility(View.GONE);
+                    ImageView listItem_owe_check = itemView.findViewById(R.id.listItem_owe_check);
+                    if (owe.getItemList().stream().noneMatch(Owe.Item::isOpen)) {
+                        listItem_owe_check.setColorFilter(getColor(R.color.colorGreen), PorterDuff.Mode.SRC_IN);
+                        listItem_owe_check.setAlpha(1f);
+                    } else {
+                        listItem_owe_check.setColorFilter(getColor(R.color.colorDrawable), PorterDuff.Mode.SRC_IN);
+                        listItem_owe_check.setAlpha(0.2f);
+                    }
 
                     TextView listItem_owe_sum = itemView.findViewById(R.id.listItem_owe_sum);
-                    listItem_owe_sum.setText(String.format("(%s)", Utility.formatToEuro(owe.getItemList().stream().mapToDouble(Owe.Item::getAmount).sum())));
-                    if (owe.getOwnOrOther() == Owe.OWN_OR_OTHER.OWN)
-                        listItem_owe_sum.setTextColor(Color.parseColor("#4CAF50"));
+                    double allSum = owe.getItemList().stream().mapToDouble(Owe.Item::getAmount).sum();
+                    double sum = owe.getItemList().stream().filter(item -> !item.isOpen()).mapToDouble(Owe.Item::getAmount).sum();
+                    String text = "";
+                    if (sum != 0 && sum != allSum)
+                        text += Utility.formatToEuro(sum);
+                    if (!text.isEmpty())
+                        text += " / ";
+                    text += Utility.formatToEuro(allSum);
+                    listItem_owe_sum.setText(text);
+                    if (owe.getOwnOrOther() == Owe.OWN_OR_OTHER.OTHER)
+                        listItem_owe_sum.setTextColor(getColor(R.color.colorGreen));
                     else
                         listItem_owe_sum.setTextColor(Color.RED);
 //                    if (owe.getRating() > 0) {
@@ -176,19 +231,19 @@ public class OweActivity extends AppCompatActivity {
 //                        itemView.findViewById(R.id.listItem_owe_rating_layout).setVisibility(View.GONE);
                 })
                 .setUseCustomRipple(true)
-                .setOnClickListener((customRecycler, view, object, index) -> {
-                    TextView listItem_owe_content = view.findViewById(R.id.listItem_owe_description);
-                    if (listItem_owe_content.isFocusable()) {
-                        listItem_owe_content.setSingleLine(true);
-                        listItem_owe_content.setFocusable(false);
-
-                    } else {
-                        listItem_owe_content.setSingleLine(false);
-                        listItem_owe_content.setFocusable(true);
-                    }
-//                  openUrl(object, false);
-                })
-                .addSubOnClickListener(R.id.listItem_owe_details, (customRecycler, view, object, index) -> detailDialog = showDetailDialog((Owe) object), false)
+//                .setOnClickListener((customRecycler, view, object, index) -> {
+//                    TextView listItem_owe_content = view.findViewById(R.id.listItem_owe_description);
+//                    if (listItem_owe_content.isFocusable()) {
+//                        listItem_owe_content.setSingleLine(true);
+//                        listItem_owe_content.setFocusable(false);
+//
+//                    } else {
+//                        listItem_owe_content.setSingleLine(false);
+//                        listItem_owe_content.setFocusable(true);
+//                    }
+////                  openUrl(object, false);
+//                })
+                .setOnClickListener((customRecycler, view, object, index) -> detailDialog = showDetailDialog((Owe) object))
                 .setOnLongClickListener((customRecycler, view, object, index) -> {
                     addOrEditDialog[0] = showEditOrNewDialog((Owe) object);
                 })
@@ -233,11 +288,33 @@ public class OweActivity extends AppCompatActivity {
         if (owe != null) {
             newOwe[0] = owe.cloneOwe();
         }
-        Dialog returnDialog =  CustomDialog.Builder(this)
+        CustomDialog returnDialog =  CustomDialog.Builder(this)
                 .setTitle(owe == null ? "Neue Schulden" : "Schulden Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_owe)
-                .setButtonType(CustomDialog.ButtonType.SAVE_CANCEL)
-                .addButton(CustomDialog.SAVE_BUTTON, (customDialog, dialog) -> {
+                .setButtonType(CustomDialog.ButtonType.CUSTOM);
+
+        if (owe != null)
+            returnDialog.addButton("Löschen", (customDialog, dialog) -> {
+                if (!Utility.isOnline(this))
+                    return;
+
+                CustomDialog.Builder(this)
+                        .setTitle("Löschen")
+                        .setText("Willst du wirklich '" + owe.getName() + "' löschen?")
+                        .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
+                        .addButton(CustomDialog.OK_BUTTON, (customDialog1, dialog1) -> {
+                            database.oweMap.remove(owe.getUuid());
+                            Database.saveAll();
+                            reLoadRecycler();
+                            dialog.dismiss();
+                            setResult(RESULT_OK);
+                        })
+                        .show();
+            }, false);
+
+        returnDialog
+                .addButton("Abbrechen", (customDialog, dialog) -> {})
+                .addButton("Speichern", (customDialog, dialog) -> {
                     String title = ((EditText) dialog.findViewById(R.id.dialog_editOrAdd_owe_Title)).getText().toString().trim();
                     if (title.isEmpty()) {
                         Toast.makeText(this, "Einen Titel eingeben", Toast.LENGTH_SHORT).show();
@@ -246,7 +323,7 @@ public class OweActivity extends AppCompatActivity {
                     newOwe[0].setName(title);
                     newOwe[0].setDescription(((EditText) dialog.findViewById(R.id.dialog_editOrAdd_owe_description)).getText().toString().trim());
 
-                    newOwe[0].setOwnOrOther(((Spinner) dialog.findViewById(R.id.dialog_editOrAdd_owe_ownOrOther)).getSelectedItemPosition() == 0 ? Owe.OWN_OR_OTHER.OWN : Owe.OWN_OR_OTHER.OTHER);
+                    newOwe[0].setOwnOrOther(((Spinner) dialog.findViewById(R.id.dialog_editOrAdd_owe_ownOrOther)).getSelectedItemPosition() == 0 ? Owe.OWN_OR_OTHER.OTHER : Owe.OWN_OR_OTHER.OWN);
                   saveOwe(dialog, newOwe, owe);
 
                 }, false)
@@ -258,7 +335,7 @@ public class OweActivity extends AppCompatActivity {
                                 .map(item -> String.format("%s (%s)", database.personMap.get(item.getPersonId()).getName(), Utility.formatToEuro(item.getAmount())))
                                 .collect(Collectors.joining(", ")));
                         view.findViewById(R.id.dialog_editOrAdd_owe_items).setSelected(true);
-                        ((Spinner) view.findViewById(R.id.dialog_editOrAdd_owe_ownOrOther)).setSelection(newOwe[0].getOwnOrOther() == Owe.OWN_OR_OTHER.OWN ? 0 : 1);
+                        ((Spinner) view.findViewById(R.id.dialog_editOrAdd_owe_ownOrOther)).setSelection(newOwe[0].getOwnOrOther() == Owe.OWN_OR_OTHER.OTHER ? 0 : 1);
 
                     }
                     else
@@ -269,7 +346,7 @@ public class OweActivity extends AppCompatActivity {
                             showItemsDialog(newOwe[0], view.findViewById(R.id.dialog_editOrAdd_owe_items), true));
                 })
                 .show();
-        return returnDialog;
+        return returnDialog.getDialog();
     }
 
     private Dialog showDetailDialog(Owe owe) {
@@ -282,12 +359,9 @@ public class OweActivity extends AppCompatActivity {
                         addOrEditDialog[0] = showEditOrNewDialog(owe), false)
 //                .addButton("Öffnen mit...", dialog -> openUrl(owe, true), false)
                 .setSetViewContent((customDialog, view) -> {
-                    view.findViewById(R.id.dialog_detail_owe_details).setVisibility(View.VISIBLE);
                     ((TextView) view.findViewById(R.id.dialog_detail_owe_title)).setText(owe.getName());
                     ((TextView) view.findViewById(R.id.dialog_detail_owe_description)).setText(owe.getDescription());
-                    ((TextView) view.findViewById(R.id.dialog_detail_owe_items)).setText(String.join(", ", owe.getItemList().stream()
-                            .map(item -> String.format("%s (%s)", database.personMap.get(item.getPersonId()).getName(), Utility.formatToEuro(item.getAmount())))
-                            .collect(Collectors.joining(", "))));
+                    setItemText(view.findViewById(R.id.dialog_detail_owe_items), owe);
                     ((TextView) view.findViewById(R.id.dialog_detail_owe_ownOrOther)).setText(owe.getOwnOrOther().getName());
                     ((TextView) view.findViewById(R.id.dialog_detail_owe_lastChanged)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(owe.getDate()));
 
@@ -365,7 +439,6 @@ public class OweActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.task_bar_owe, menu);
 
         Menu subMenu = menu.findItem(R.id.taskBar_filter).getSubMenu();
@@ -379,6 +452,10 @@ public class OweActivity extends AppCompatActivity {
                 .setChecked(filterTypeSet.contains(FILTER_TYPE.OWN));
         subMenu.findItem(R.id.taskBar_owe_filterByOther)
                 .setChecked(filterTypeSet.contains(FILTER_TYPE.OTHER));
+        subMenu.findItem(R.id.taskBar_owe_filterByOpen)
+                .setChecked(filterTypeSet.contains(FILTER_TYPE.OPEN));
+        subMenu.findItem(R.id.taskBar_owe_filterByClosed)
+                .setChecked(filterTypeSet.contains(FILTER_TYPE.CLOSED));
 
         return true;
     }
@@ -505,7 +582,7 @@ public class OweActivity extends AppCompatActivity {
 //  ----- Sources ----->
     private void showItemsDialog(Owe owe, TextView sourcesText, boolean edit) {
         int buttonId_add = View.generateViewId();
-        final ArrayList<String> nameList = database.personMap.values().stream().map(ParentClass::getName).collect(Collectors.toCollection(ArrayList::new));
+        final ArrayList<String> nameList = database.personMap.values().stream().map(ParentClass::getName).sorted(String::compareTo).collect(Collectors.toCollection(ArrayList::new));
         KnowledgeActivity.TextValidation nameValidation = (textInputLayout, changeErrorMessage) -> {
             String text = textInputLayout.getEditText().getText().toString().trim();
 
@@ -527,7 +604,8 @@ public class OweActivity extends AppCompatActivity {
             String text = textInputLayout.getEditText().getText().toString().trim();
 
             if (text.isEmpty()) {
-                textInputLayout.setError("Das Feld darf nicht leer sein!");
+                if (changeErrorMessage)
+                    textInputLayout.setError("Das Feld darf nicht leer sein!");
                 return false;
             }
 //            else if (!text.matches("(?i)^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?!(?:10|127)(?:\\.\\d{1,3}){3})(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?(?:[/?#]\\S*)?$")) {
@@ -549,12 +627,15 @@ public class OweActivity extends AppCompatActivity {
                     LinearLayout dialog_items_editLayout = view.findViewById(R.id.dialog_items_editLayout);
                     TextInputLayout dialog_items_name = view.findViewById(R.id.dialog_items_name);
                     TextInputLayout dialog_items_amount = view.findViewById(R.id.dialog_items_amount);
-                    if (edit) {
-                        dialog_items_editLayout.setVisibility(View.VISIBLE);
-                        dialog_items_name.getEditText().requestFocus();
-                        Utility.changeWindowKeyboard(customDialog.getDialog().getWindow(), true);
-                    }
                     Button dialog_items_save = view.findViewById(R.id.dialog_items_save);
+                    dialog_items_amount.getEditText().setOnEditorActionListener((v, actionId, event) -> {
+                        boolean handled = false;
+                        if (actionId == EditorInfo.IME_ACTION_DONE) {
+                            dialog_items_save.callOnClick();
+                            handled = true;
+                        }
+                        return handled;
+                    });
                     final ImageView dialog_items_addNames = view.findViewById(R.id.dialog_items_addNames);
                     dialog_items_name.getEditText().addTextChangedListener(new TextWatcher() {
                         @Override
@@ -682,6 +763,13 @@ public class OweActivity extends AppCompatActivity {
                     ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, nameList);
                     autoCompleteName.setAdapter(adapter);
 
+                    if (edit) {
+                        dialog_items_editLayout.setVisibility(View.VISIBLE);
+                        dialog_items_name.getEditText().requestFocus();
+                        Utility.changeWindowKeyboard(customDialog.getDialog().getWindow(), true);
+                        autoCompleteName.showDropDown();
+                    }
+
                     dialog_items_addNames.setOnClickListener(v -> {
                         int saveButtonId = View.generateViewId();
                         CustomDialog.Builder(this)
@@ -700,6 +788,7 @@ public class OweActivity extends AppCompatActivity {
                                     nameList.add(name);
                                     adapter.add(name);
                                     dialog.dismiss();
+                                    validation(nameValidation, urlValidation, dialog_items_name, dialog_items_amount, true, false, dialog_items_save);
                                 }, saveButtonId, false)
                                 .show();
                     });
@@ -709,22 +798,38 @@ public class OweActivity extends AppCompatActivity {
                     dialog.findViewById(R.id.dialog_items_editLayout).setVisibility(View.VISIBLE);
                     dialog.findViewById(buttonId_add).setVisibility(View.GONE);
                     dialog.findViewById(R.id.dialog_items_delete).setVisibility(View.GONE);
-                    EditText dialog_items_name_edit = ((TextInputLayout) dialog.findViewById(R.id.dialog_items_name)).getEditText();
+                    AutoCompleteTextView dialog_items_name_edit = (AutoCompleteTextView) ((TextInputLayout) dialog.findViewById(R.id.dialog_items_name)).getEditText();
                     dialog_items_name_edit.requestFocus();
                     Utility.changeWindowKeyboard(this, dialog_items_name_edit, true);
+                    dialog_items_name_edit.showDropDown();
                 }, buttonId_add, false)
                 .addButton("Zurück", (customDialog, dialog) -> {})
                 .setObjectExtra(sourcesText)
                 .setOnDialogDismiss(customDialog -> {
-                    ((TextView) customDialog.getObjectExtra()).setText(
-                            owe.getItemList().stream()
-                                    .map(item -> String.format("%s (%s)", database.personMap.get(item.getPersonId()).getName(), Utility.formatToEuro(item.getAmount())))
-                                    .collect(Collectors.joining(", ")));
+                    setItemText((TextView) customDialog.getObjectExtra(), owe);
                     reLoadRecycler();
                 })
                 .show();
         if (edit)
             sourcesDialog.findViewById(buttonId_add).setVisibility(View.GONE);
+    }
+
+    private void setItemText(TextView textView, Owe owe) {
+        SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
+        owe.getItemList().forEach(item -> {
+            String text = String.format("%s (%s)", database.personMap.get(item.getPersonId()).getName(), Utility.formatToEuro(item.getAmount()));
+            if (!stringBuilder.toString().isEmpty())
+                stringBuilder.append(", ");
+
+            if (item.isOpen())
+                stringBuilder.append(text);
+            else
+                stringBuilder.append(text, new StrikethroughSpan(), Spannable.SPAN_COMPOSING);
+        });
+        if (stringBuilder.toString().isEmpty())
+            stringBuilder.append("<Keine Einträge>", new StyleSpan(Typeface.ITALIC), Spannable.SPAN_INCLUSIVE_INCLUSIVE);
+
+        textView.setText(stringBuilder);
     }
 
     private boolean validation(KnowledgeActivity.TextValidation nameValidation, KnowledgeActivity.TextValidation urlValidation, TextInputLayout dialog_items_name
@@ -741,22 +846,93 @@ public class OweActivity extends AppCompatActivity {
     interface TextValidation {
         boolean runTextValidation(TextInputLayout textInputLayout, boolean changeErrorMessage);
     }
-
-    private String getDomainFromUrl(String url, boolean shortened) {
-        Pattern pattern = Pattern.compile(":\\/\\/.[^\\/]*");
-        Matcher matcher = pattern.matcher(url);
-        if (matcher.find())
-        {
-            String substring = matcher.group(0).substring(3);
-            if (shortened) {
-                String[] split = substring.split("\\.");
-                return split[split.length - 2];
-            }
-            else
-                return substring;
-        }
-        return null;
-    }
 //  <----- Sources -----
 
+    public static void showPopupwindow(AppCompatActivity context, View anchor) {
+        String[] clickedBase = new String[]{null};
+
+        String ownOrOther = "Eigen/Fremd";
+        String open = "Offen";
+        CustomRecycler baseRecycler = CustomRecycler.Builder(context)
+                .setItemLayout(R.layout.popup_standard_list)
+                .setObjectList(Arrays.asList(ownOrOther, open))
+                .setShowDivider(false)
+                .hideOverscroll()
+                .setSetItemContent((itemView0, o0) -> {
+                    ((TextView) itemView0.findViewById(R.id.popup_standardList_text)).setText(o0.toString());
+                    View popup_standardList_sub = itemView0.findViewById(R.id.popup_standardList_sub);
+                    popup_standardList_sub.setVisibility(View.VISIBLE);
+                    popup_standardList_sub.setClickable(false);
+                    popup_standardList_sub.setForeground(null);
+                })
+                .addSubOnClickListener(R.id.popup_standardList_clickable, (customRecycler0, itemView0, o0, index0) -> {
+                    CustomRecycler recycler = CustomRecycler.Builder(context)
+                            .setItemLayout(R.layout.popup_standard_list);
+                    if (o0.equals(ownOrOther))
+                        recycler.setObjectList(Arrays.asList(Owe.OWN_OR_OTHER.OWN, Owe.OWN_OR_OTHER.OTHER));
+                    else
+                        recycler.setObjectList(Arrays.asList(true, false));
+
+                    recycler
+                            .setShowDivider(false)
+                            .hideOverscroll()
+                            .setSetItemContent((itemView, o) -> {
+                                if (o instanceof Owe.OWN_OR_OTHER)
+                                    ((TextView) itemView.findViewById(R.id.popup_standardList_text)).setText(((Owe.OWN_OR_OTHER) o).getName());
+                                else
+                                    ((TextView) itemView.findViewById(R.id.popup_standardList_text)).setText((boolean) o ? "Offene" : "Abgeschlosene");
+                                itemView.findViewById(R.id.popup_standardList_sub).setVisibility(View.VISIBLE);
+                                itemView.findViewById(R.id.popup_standardList_divider).setVisibility(View.VISIBLE);
+                            })
+                            .addSubOnClickListener(R.id.popup_standardList_clickable, (customRecycler, itemView, o, index) -> {
+                                if (o instanceof Owe.OWN_OR_OTHER)
+                                    context.startActivityForResult(new Intent(context, OweActivity.class).putExtra(EXTRA_OWN_OR_OTHER, (Owe.OWN_OR_OTHER) o), MainActivity.START_OWE);
+                                else
+                                    context.startActivityForResult(new Intent(context, OweActivity.class).putExtra(EXTRA_OPEN, (Boolean) o), MainActivity.START_OWE);
+                            }, false)
+                            .addSubOnClickListener(R.id.popup_standardList_sub, (customRecycler, itemView, o, index) -> {
+                                String name;
+                                if (o instanceof Owe.OWN_OR_OTHER)
+                                    name = ((Owe.OWN_OR_OTHER) o).getName();
+                                else
+                                    name = (boolean) o ? "Offene" : "Abgeschlosene";
+                                CustomRecycler subRecycler = CustomRecycler.Builder(context)
+                                        .setItemLayout(R.layout.popup_standard_list);
+
+                                if (o instanceof Owe.OWN_OR_OTHER)
+                                    subRecycler.setObjectList(Arrays.asList(true, false));
+                                else
+                                    subRecycler.setObjectList(Arrays.asList(Owe.OWN_OR_OTHER.OWN, Owe.OWN_OR_OTHER.OTHER));
+
+                                subRecycler
+                                        .setShowDivider(false)
+                                        .hideOverscroll()
+                                        .setSetItemContent((itemView2, o2) -> {
+                                            if (o instanceof Owe.OWN_OR_OTHER)
+                                                ((TextView) itemView2.findViewById(R.id.popup_standardList_text)).setText(String.format("%s & %s", name, (boolean) o2 ? "Offene" : "Abgeschlosene"));
+                                            else
+                                                ((TextView) itemView2.findViewById(R.id.popup_standardList_text)).setText(String.format("%s & %s", name, ((Owe.OWN_OR_OTHER) o2).getName()));
+                                        })
+                                        .addSubOnClickListener(R.id.popup_standardList_clickable, (customRecycler2, itemView2, o2, index2) -> {
+                                            if (o instanceof Owe.OWN_OR_OTHER)
+                                                context.startActivityForResult(new Intent(context, OweActivity.class).putExtra(EXTRA_OWN_OR_OTHER, (Owe.OWN_OR_OTHER) o)
+                                                    .putExtra(EXTRA_OPEN, Boolean.valueOf((boolean) o2)), MainActivity.START_OWE);
+                                            else
+                                                context.startActivityForResult(new Intent(context, OweActivity.class).putExtra(EXTRA_OWN_OR_OTHER, (Owe.OWN_OR_OTHER) o2)
+                                                    .putExtra(EXTRA_OPEN, Boolean.valueOf((boolean) o)), MainActivity.START_OWE);
+                                        },false);
+
+                                Utility.showPopupwindow(context, itemView, subRecycler);
+
+                            }, false);
+                            Utility.showPopupwindow(context, itemView0, recycler);
+
+                }, false);
+
+
+
+
+
+        Utility.showPopupwindow(context, anchor.findViewById(R.id.main_owe_filter_label), baseRecycler);
+    }
 }

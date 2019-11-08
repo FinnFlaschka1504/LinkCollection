@@ -6,6 +6,8 @@
     <color name="colorAccent">#D81B60</color>
     <color name="colorDdivider">#D7D8DD</color>
 
+    <color name="colorGreen">#4CAF50</color>
+
     <color name="colorTileBackground">@android:color/background_light</color>
     <color name="colorDrawable">@color/colorDayNightContent</color>
     <color name="colorText">@color/colorDayNightContent</color>

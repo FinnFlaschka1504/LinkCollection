@@ -13,11 +13,13 @@
         android:layout_height="match_parent"
         android:layout_margin="8dp"
         android:orientation="vertical">
-        
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:visibility="gone"
+            tools:visibility="visible">
 
             <TextView
                 android:id="@+id/main_owe_summaryOwn"
@@ -25,6 +27,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 tools:text="Du schuldest anderen 7.58 €" />
+
             <TextView
                 android:id="@+id/main_owe_summaryOthers"
                 android:layout_width="wrap_content"
@@ -36,15 +39,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
-<!--                <com.akexorcist.roundcornerprogressbar.RoundCornerProgressBar-->
-<!--                    android:id="@+id/main_owe_progressBarOwn"-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="20dp"-->
-<!--                    android:layout_margin="3dp"-->
-<!--                    app:rcBackgroundColor="#E2E2E2"-->
-<!--                    app:rcProgressColor="#4CAF50"-->
-<!--                    app:rcRadius="10dp"-->
-<!--                    app:rcReverse="false"/>-->
+                <!--                <com.akexorcist.roundcornerprogressbar.RoundCornerProgressBar-->
+                <!--                    android:id="@+id/main_owe_progressBarOwn"-->
+                <!--                    android:layout_width="match_parent"-->
+                <!--                    android:layout_height="20dp"-->
+                <!--                    android:layout_margin="3dp"-->
+                <!--                    app:rcBackgroundColor="#E2E2E2"-->
+                <!--                    app:rcProgressColor="#4CAF50"-->
+                <!--                    app:rcRadius="10dp"-->
+                <!--                    app:rcReverse="false"/>-->
                 <com.akexorcist.roundcornerprogressbar.RoundCornerProgressBar
                     android:id="@+id/main_owe_progressBarOthers"
                     android:layout_width="match_parent"
@@ -53,7 +56,7 @@
                     app:rcBackgroundColor="#4CAF50"
                     app:rcProgressColor="#F44336"
                     app:rcRadius="10dp"
-                    app:rcReverse="true"/>
+                    app:rcReverse="true" />
             </FrameLayout>
         </LinearLayout>
 
@@ -131,6 +134,7 @@
                 android:elevation="3dp"
                 android:foreground="@drawable/ripple"
                 android:gravity="center"
+                android:onClick="openPersonActivity"
                 android:orientation="vertical">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
@@ -197,7 +201,7 @@
                 android:elevation="3dp"
                 android:foreground="@drawable/ripple"
                 android:gravity="center"
-                android:onClick="openStudioActivity"
+                android:onClick="showPopupwindow"
                 android:orientation="vertical">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
@@ -208,7 +212,8 @@
                         android:layout_width="0dp"
                         android:layout_height="0dp"
                         android:alpha="0.075"
-                        android:src="@drawable/ic_in_and_out_flow"
+                        android:src="@drawable/ic_filter"
+                        android:tint="@color/colorDrawable"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
@@ -229,10 +234,11 @@
                         app:layout_constraintTop_toTopOf="parent">
 
                         <TextView
+                            android:id="@+id/main_owe_filter_label"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="8dp"
-                            android:text="Eigen/Fremd"
+                            android:text="Filter"
                             android:textSize="24sp"
                             android:textStyle="bold" />
 
@@ -241,7 +247,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="–"
-                            android:visibility="gone"/>
+                            android:visibility="gone" />
                     </LinearLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -257,9 +263,7 @@
                 android:elevation="3dp"
                 android:foreground="@drawable/ripple"
                 android:gravity="center"
-                android:onClick="openGenreActivity"
-                android:orientation="vertical"
-                android:visibility="invisible">
+                android:orientation="vertical">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
@@ -269,7 +273,7 @@
                         android:layout_width="0dp"
                         android:layout_height="0dp"
                         android:alpha="0.075"
-                        android:src="@drawable/ic_genre"
+                        android:src="@drawable/ic_trade_off"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
@@ -293,7 +297,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="8dp"
-                            android:text="GENRE"
+                            android:text="Ausgleich"
                             android:textSize="24sp"
                             android:textStyle="bold" />
 
@@ -301,7 +305,8 @@
                             android:id="@+id/main_genreCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="–" />
+                            android:text="–"
+                            android:visibility="gone" />
                     </LinearLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>
 

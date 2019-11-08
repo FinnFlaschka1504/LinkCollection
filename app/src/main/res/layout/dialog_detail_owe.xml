@@ -53,18 +53,6 @@
                 tools:text="Beschreibung.." />
         </LinearLayout>
 
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/dialog_detail_owe_details"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="16dp"
-        android:layout_weight="1"
-        android:orientation="vertical"
-        android:visibility="gone"
-        tools:visibility="visible">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -136,7 +124,6 @@
                 android:layout_weight="1"
                 tools:text="Datum" />
         </LinearLayout>
-
-
     </LinearLayout>
+
 </LinearLayout>

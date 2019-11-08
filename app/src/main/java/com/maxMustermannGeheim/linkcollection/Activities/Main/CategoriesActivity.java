@@ -2,7 +2,14 @@ package com.maxMustermannGeheim.linkcollection.Activities.Main;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StyleSpan;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -15,8 +22,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
+import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
@@ -44,13 +53,12 @@ public class CategoriesActivity extends AppCompatActivity {
     public enum CATEGORIES {
         VIDEO("Video", "Videos", VideoActivity.class), DARSTELLER("Darsteller", "Darsteller", VideoActivity.class)
         , STUDIOS("Studio", "Studios", VideoActivity.class), GENRE("Genre", "Genres", VideoActivity.class)
-        , WATCH_LATER("WATCH_LATER", "WATCH_LATER", VideoActivity.class), KNOWLEDGE_CATEGORIES("Kategorie", "Kategorien", KnowledgeActivity.class);
+        , WATCH_LATER("WATCH_LATER", "WATCH_LATER", VideoActivity.class), KNOWLEDGE_CATEGORIES("Kategorie", "Kategorien", KnowledgeActivity.class)
+        , PERSON("Person", "Personen", OweActivity.class);
 
         private String singular;
         private String plural;
         private Class searchIn;
-//        private String id = UUID.randomUUID().toString();
-
 
         CATEGORIES(String singular, String plural, Class searchIn) {
             this.singular = singular;
@@ -70,9 +78,6 @@ public class CategoriesActivity extends AppCompatActivity {
             return searchIn;
         }
 
-        //        public String getId() {
-//            return id;
-//        }
     }
 
 
@@ -193,6 +198,15 @@ public class CategoriesActivity extends AppCompatActivity {
                     pairList.add(new Pair<>(parentClass, count));
                 }
                 break;
+            case PERSON:
+                for (ParentClass parentClass : database.personMap.values()) {
+                    final int[] count = {0};
+                    for (Owe owe : database.oweMap.values()) {
+                        owe.getItemList().stream().filter(item -> item.getPersonId().equals(parentClass.getUuid())).forEach(item -> count[0] += Math.round(item.getAmount()));
+                    }
+                    pairList.add(new Pair<>(parentClass, count[0]));
+                }
+                break;
         }
         allDatenObjektPairList = pairList;
     }
@@ -201,11 +215,37 @@ public class CategoriesActivity extends AppCompatActivity {
         customRecycler = CustomRecycler.Builder(this, findViewById(R.id.catigorys_recycler))
                 .setItemLayout(R.layout.list_item_catigory_item)
                 .setGetActiveObjectList(() -> sortList(filterList(allDatenObjektPairList)))
-                .setSetItemContent((itemView, object) -> {
-                    ParentClass parentClass = (ParentClass) ((Pair) object).first;
+                .setSetItemContent((CustomRecycler.SetItemContent<Pair<ParentClass, Integer>>)(itemView, parentClassIntegerPair) -> {
+                    ((TextView) itemView.findViewById(R.id.listItem_catigoryItem_name)).setText(parentClassIntegerPair.first.getName());
 
-                    ((TextView) itemView.findViewById(R.id.listItem_catigoryItem_name)).setText(parentClass.getName());
-                    ((TextView) itemView.findViewById(R.id.userlistItem_catigoryItem_count)).setText(String.valueOf(((Pair) object).second));
+                    if (catigory == CATEGORIES.PERSON) {
+                        final double[] allOwn = {0};
+                        final double[] allOther = {0};
+                        database.oweMap.values().forEach(owe -> owe.getItemList().forEach(item -> {
+                            if (item.isOpen()) {
+                                if (item.getPersonId().equals(parentClassIntegerPair.first.getUuid())) {
+                                    if (owe.getOwnOrOther() == Owe.OWN_OR_OTHER.OWN)
+                                        allOwn[0] += item.getAmount();
+                                    else
+                                        allOther[0] += item.getAmount();
+                                }
+                            }
+                        }));
+                        SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
+                        if (allOwn[0] != 0)
+                            stringBuilder.append("E: " + Utility.formatToEuro(allOwn[0]), new ForegroundColorSpan(Color.RED), Spannable.SPAN_COMPOSING);
+                        if (allOther[0] != 0) {
+                            if (!stringBuilder.toString().isEmpty())
+                                stringBuilder.append(" & ");
+                            stringBuilder.append("F: " + Utility.formatToEuro(allOther[0]), new ForegroundColorSpan(getColor(R.color.colorGreen)), Spannable.SPAN_COMPOSING);
+                        }
+                        if (stringBuilder.toString().isEmpty())
+                            stringBuilder.append("<Keine Schulden>", new StyleSpan(Typeface.ITALIC), Spannable.SPAN_COMPOSING);
+
+                        ((TextView) itemView.findViewById(R.id.userlistItem_catigoryItem_count)).setText(stringBuilder);
+                    }
+                    else
+                        ((TextView) itemView.findViewById(R.id.userlistItem_catigoryItem_count)).setText(String.valueOf(parentClassIntegerPair.second));
                 })
                 .setRowOrColumnCount(columnCount)
                 .setShowDivider(false)
@@ -278,6 +318,12 @@ public class CategoriesActivity extends AppCompatActivity {
                 database.knowledgeCategoryMap.remove(parentClass.getUuid());
                 for (Knowledge knowledge : database.knowledgeMap.values()) {
                     knowledge.getCategoryIdList().remove(parentClass.getUuid());
+                }
+                break;
+            case PERSON:
+                database.personMap.remove(parentClass.getUuid());
+                for (Owe owe : database.oweMap.values()) {
+                    owe.setItemList(owe.getItemList().stream().filter(item1 -> !item1.getPersonId().equals(parentClass.getUuid())).collect(Collectors.toList()));
                 }
                 break;
         }

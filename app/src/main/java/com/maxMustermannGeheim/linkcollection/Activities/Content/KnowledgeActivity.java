@@ -97,25 +97,6 @@ public class KnowledgeActivity extends AppCompatActivity {
     private void loadDatabase() {
         @SuppressLint("RestrictedApi") Runnable whenLoaded = () -> {
             setContentView(R.layout.activity_knowledge);
-//            allVideoList = new ArrayList<>(database.videoMap.values());
-//            sortList(allVideoList);
-//            filterdVideoList = new ArrayList<>(allVideoList);
-//
-//            videos_confirmDelete = findViewById(R.id.videos_confirmDelete);
-//            videos_confirmDelete.setOnClickListener(view -> {
-//                for (String uuidVideo : toDelete) {
-//                    filterdVideoList.remove(database.videoMap.get(uuidVideo));
-//                    allVideoList.remove(database.videoMap.get(uuidVideo));
-//                    database.videoMap.remove(uuidVideo);
-//                }
-//                delete = false;
-//                videos_confirmDelete.setVisibility(View.GONE);
-//
-//                reLoadRecycler();
-//                setResult(RESULT_OK);
-//
-//                Toast.makeText(this, toDelete.size() + (toDelete.size() == 1 ? " VIDEO" : " Videos") + " gelöscht", Toast.LENGTH_SHORT).show();
-//            });
             loadRecycler();
 
             videos_search = findViewById(R.id.search);
@@ -129,27 +110,6 @@ public class KnowledgeActivity extends AppCompatActivity {
                 @Override
                 public boolean onQueryTextChange(String s) {
                     searchQuery = s.trim().toLowerCase();
-//                    filterdVideoList = new ArrayList<>(allVideoList);
-//
-//                    if (!s.trim().equals("")) {
-//                        if (s.trim().equals(WATCH_LATER_SEARCH)) {
-//                            filterdVideoList = new ArrayList<>();
-//                            for (String videoUuid : database.watchLaterList) {
-//                                filterdVideoList.add(database.videoMap.get(videoUuid));
-//                            }
-//                            reLoadRecycler();
-//                            return true;
-//                        }
-//
-//                        for (String subQuery : s.split("\\|")) {
-//                            subQuery = subQuery.trim();
-//                            List<VIDEO> subList = new ArrayList<>(filterdVideoList);
-//                            for (VIDEO video : subList) {
-//                                if (!Utility.containedInVideo(subQuery, video, filterTypeSet))
-//                                    filterdVideoList.remove(video);
-//                            }
-//                        }
-//                    }
                     reLoadRecycler();
                     return true;
                 }
@@ -257,11 +217,28 @@ public class KnowledgeActivity extends AppCompatActivity {
             newKnowledge[0].getCategoryIdList().forEach(uuid -> categoriesNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
             newKnowledge[0].getSources().forEach(nameUrlPair  -> sourcesNames.add(nameUrlPair.get(0)));
         }
-        Dialog returnDialog =  CustomDialog.Builder(this)
+        CustomDialog returnDialog =  CustomDialog.Builder(this)
                 .setTitle(knowledge == null ? "Neues Wissen" : "Wissen Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_knowledge)
-                .setButtonType(CustomDialog.ButtonType.SAVE_CANCEL)
-                .addButton(CustomDialog.SAVE_BUTTON, (customDialog, dialog) -> {
+                .setButtonType(CustomDialog.ButtonType.CUSTOM);
+
+        if (knowledge != null)
+            returnDialog.addButton("Löschen", (customDialog, dialog) -> {
+                CustomDialog.Builder(this)
+                        .setTitle("Löschen")
+                        .setText("Willst du wirklich '" + knowledge.getName() + "' löschen?")
+                        .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
+                        .addButton(CustomDialog.OK_BUTTON, (customDialog1, dialog1) -> {
+                            database.knowledgeMap.remove(knowledge.getUuid());
+                            Database.saveAll();
+                            reLoadRecycler();
+                        })
+                        .show();
+            }, false);
+
+        returnDialog
+                .addButton("Abbrechen", (customDialog, dialog) -> {})
+                .addButton("Speichern", (customDialog, dialog) -> {
                     String titel = ((EditText) dialog.findViewById(R.id.dialog_editOrAddKnowledge_Titel)).getText().toString().trim();
                     if (titel.isEmpty()) {
                         Toast.makeText(this, "Einen Titel eingeben", Toast.LENGTH_SHORT).show();
@@ -304,7 +281,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 //                            Utility.showEditItemDialog(this, addOrEditDialog, newKnowledge[0].getStudioList(), newKnowledge[0], ParentClass.OBJECT_TYPE.STUDIO ));
                 })
                 .show();
-        return returnDialog;
+        return returnDialog.getDialog();
     }
 
     private Dialog showDetailDialog(Knowledge knowledge) {

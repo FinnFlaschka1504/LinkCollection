@@ -1,5 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Owe;
 
+import androidx.annotation.NonNull;
+
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 
 import java.util.ArrayList;
@@ -9,7 +11,7 @@ import java.util.UUID;
 
 public class Owe extends ParentClass {
     public enum OWN_OR_OTHER {
-        OWN("Eigen"), OTHER("Fremd");
+        OWN("Eigene"), OTHER("Fremde");
 
         String name;
 
@@ -133,7 +135,7 @@ public class Owe extends ParentClass {
         owe.description = this.description;
         owe.itemList = new ArrayList<>(this.itemList);
         owe.date = this.date;
+        owe.ownOrOther = this.ownOrOther;
         return owe;
     }
-
 }

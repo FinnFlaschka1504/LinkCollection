@@ -6,11 +6,11 @@
         android:icon="@drawable/ic_add"
         android:title="Hinzufügen"
         app:showAsAction="always" />
-    <item
-        android:id="@+id/taskBar_owe_random"
-        android:icon="@drawable/ic_random"
-        android:title="Zufall"
-        app:showAsAction="always" />
+<!--    <item-->
+<!--        android:id="@+id/taskBar_owe_random"-->
+<!--        android:icon="@drawable/ic_random"-->
+<!--        android:title="Zufall"-->
+<!--        app:showAsAction="always" />-->
     <item
         android:id="@+id/taskBar_owe_sort"
         android:icon="@drawable/ic_sort"
@@ -64,11 +64,11 @@
                     <item
                         android:id="@+id/taskBar_owe_filterByOwn"
                         android:checkable="true"
-                        android:title="Nach Eigen" />
+                        android:title="Eigene" />
                     <item
                         android:id="@+id/taskBar_owe_filterByOther"
                         android:checkable="true"
-                        android:title="Nach Fremd" />
+                        android:title="Fremde" />
                 </menu>
             </item>
             <item
@@ -77,11 +77,11 @@
                     <item
                         android:id="@+id/taskBar_owe_filterByOpen"
                         android:checkable="true"
-                        android:title="Nach Eigen" />
+                        android:title="Offene" />
                     <item
                         android:id="@+id/taskBar_owe_filterByClosed"
                         android:checkable="true"
-                        android:title="Nach Fremd" />
+                        android:title="Abgeschlossene" />
                 </menu>
             </item>
 

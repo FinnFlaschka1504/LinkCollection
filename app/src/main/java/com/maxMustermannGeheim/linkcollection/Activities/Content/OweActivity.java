@@ -14,6 +14,8 @@ import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.TextWatcher;
+import android.text.style.BackgroundColorSpan;
+import android.text.style.ForegroundColorSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.view.Menu;
@@ -196,6 +198,7 @@ public class OweActivity extends AppCompatActivity {
                 .setSetItemContent((CustomRecycler.SetItemContent<Owe>) (itemView, owe) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_owe_title)).setText(owe.getName());
                     ((TextView) itemView.findViewById(R.id.listItem_owe_description)).setText(owe.getDescription());
+//                    itemView.findViewById(R.id.listItem_owe_description).setSelected(true);
 
                     setItemText(itemView.findViewById(R.id.listItem_owe_person), owe);
                     itemView.findViewById(R.id.listItem_owe_person).setSelected(true);
@@ -852,10 +855,10 @@ public class OweActivity extends AppCompatActivity {
         String[] clickedBase = new String[]{null};
 
         String ownOrOther = "Eigen/Fremd";
-        String open = "Offen";
+        String status = "Status";
         CustomRecycler baseRecycler = CustomRecycler.Builder(context)
                 .setItemLayout(R.layout.popup_standard_list)
-                .setObjectList(Arrays.asList(ownOrOther, open))
+                .setObjectList(Arrays.asList(ownOrOther, status))
                 .setShowDivider(false)
                 .hideOverscroll()
                 .setSetItemContent((itemView0, o0) -> {
@@ -929,10 +932,91 @@ public class OweActivity extends AppCompatActivity {
 
                 }, false);
 
-
-
-
-
         Utility.showPopupwindow(context, anchor.findViewById(R.id.main_owe_filter_label), baseRecycler);
     }
+
+    public static void showTradeOffDialog(AppCompatActivity activity, View view) {
+        Database database = Database.getInstance();
+        List<Utility.Triple<Person, Double, Double>> list = new ArrayList<>();
+        for (Person person : database.personMap.values()) {
+            final double[] allOwn = {0};
+            final double[] allOther = {0};
+            database.oweMap.values().forEach(owe -> owe.getItemList().forEach(item -> {
+                if (item.isOpen()) {
+                    if (item.getPersonId().equals(person.getUuid())) {
+                        if (owe.getOwnOrOther() == Owe.OWN_OR_OTHER.OWN)
+                            allOwn[0] += item.getAmount();
+                        else
+                            allOther[0] += item.getAmount();
+                    }
+                }
+            }));
+            if (allOwn[0] != 0 && allOther[0] != 0) {
+                list.add(new Utility.Triple<>(person, allOwn[0], allOther[0]));
+            }
+        }
+
+        if (list.isEmpty()) {
+            Toast.makeText(activity, "Es gibt nix zum Ausgleichen", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        CustomDialog tradeOff_customDialog = CustomDialog.Builder(activity);
+        CustomRecycler tradeOff_customRecycler = CustomRecycler.Builder(activity)
+                .setItemLayout(R.layout.list_item_trade_off)
+                .setObjectList(list)
+                .setShowDivider(false)
+                .setUseCustomRipple(true)
+                .setSetItemContent((CustomRecycler.SetItemContent<Utility.Triple<Person, Double, Double>>)(itemView, triple) -> {
+                    ((TextView) itemView.findViewById(R.id.listItem_tradeOff_name)).setText(triple.first.getName());
+                    ((TextView) itemView.findViewById(R.id.listItem_tradeOff_own)).setText(Utility.formatToEuro(triple.second));
+                    ((TextView) itemView.findViewById(R.id.listItem_tradeOff_other)).setText(Utility.formatToEuro(triple.third));
+
+                    TextView listItem_tradeOff_difference = itemView.findViewById(R.id.listItem_tradeOff_difference);
+                    listItem_tradeOff_difference.setText(Utility.formatToEuro(
+                            Math.abs(triple.second - triple.third)));
+                    listItem_tradeOff_difference.setTextColor(triple.second > triple.third ? Color.RED : activity.getColor(R.color.colorGreen));
+                })
+                .setOnClickListener((CustomRecycler.OnClickListener<Utility.Triple<Person, Double, Double>>)(customRecycler, itemView, triple, index) -> {
+                    double difference = triple.second - triple.third;
+                    SpannableStringBuilder builder = new SpannableStringBuilder();
+                    CustomDialog.Builder(activity)
+                            .setTitle("Ausgleich Erstellen")
+                            .setText(builder.append("Einen Ausgleich für '").append(triple.first.getName(), new StyleSpan(Typeface.BOLD), Spannable.SPAN_COMPOSING).append("' anlegen?")
+                                    .append("\nRestbetrag: ").append(Utility.formatToEuro(Math.abs(difference))
+                                            , (difference == 0 ? null : new ForegroundColorSpan(difference < 0 ? activity.getColor(R.color.colorGreen) : Color.RED )), Spannable.SPAN_EXCLUSIVE_INCLUSIVE)
+                                    .append(difference < 0 ? " (Fremd)" : difference > 0 ? " (Eigen)" : "", new StyleSpan(Typeface.ITALIC), Spannable.SPAN_COMPOSING))
+                            .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
+                            .addButton(CustomDialog.OK_BUTTON, (customDialog, dialog) -> {
+                                Owe newOwe = new Owe("Ausgleich: " + triple.first.getName())
+                                        .setDate(new Date())
+                                        .setDescription("Eigene: " + Utility.formatToEuro(triple.second) + "\nFremde: " + Utility.formatToEuro(triple.third)
+                                                + "\nDifferenz: " + Utility.formatToEuro(difference))
+                                        .setOwnOrOther(difference > 0 ? Owe.OWN_OR_OTHER.OWN : Owe.OWN_OR_OTHER.OTHER)
+                                        .setItemList(Arrays.asList(new Owe.Item(triple.first.getUuid(), Math.abs(difference))));
+
+                                database.oweMap.values().forEach(owe -> owe.getItemList().forEach(item -> {
+                                    if (item.isOpen() && item.getPersonId().equals(triple.first.getUuid()))
+                                        item.setOpen(false);
+                                }));
+                                database.oweMap.put(newOwe.getUuid(), newOwe);
+                                Database.saveAll();
+
+                                list.remove(triple);
+                                if (list.isEmpty())
+                                    tradeOff_customDialog.getDialog().dismiss();
+                                else
+                                    customRecycler.reload();
+                                Toast.makeText(activity, "Ausgleich erstellt", Toast.LENGTH_SHORT).show();
+                                MainActivity.setCounts();
+                            })
+                            .show();
+                });
+
+        tradeOff_customDialog
+                .setTitle("Ausgleiche Verfügbar Für")
+                .setView(tradeOff_customRecycler.generate())
+                .show();
+//        Utility.showPopupwindow(activity, view.findViewById(R.id.main_owe_tradeOff_label), tradeOff_customRecycler);
+    }
+
 }

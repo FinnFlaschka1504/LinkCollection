@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
 //        }
 //    }
 //    private FRAGMENT_TYPE currentSpaceType;
-    private Settings.Space currentSpace;
+    private static Settings.Space currentSpace;
 
     // ToDo: serien (als expandeble Layout)
     @Override
@@ -204,7 +204,7 @@ public class MainActivity extends AppCompatActivity {
         if (!selectedSpace.hasFragment())
             selectedSpace.setFragment(new SpaceFragment(selectedSpace.getLayoutId()));
         SpaceFragment.currentSpace = selectedSpace;
-        getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container, selectedSpace.getFragment()).runOnCommit(this::setCounts).commitAllowingStateLoss();
+        getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container, selectedSpace.getFragment()).runOnCommit(MainActivity::setCounts).commitAllowingStateLoss();
         currentSpace = selectedSpace;
 
         return true;
@@ -324,10 +324,15 @@ public class MainActivity extends AppCompatActivity {
     public void showPopupwindow(View view) {
         OweActivity.showPopupwindow(this, view);
     }
+
+    public void showTradeOffDialog(View view) {
+        OweActivity.showTradeOffDialog(this, view);
+    }
 //  <----- Owe -----
 
-    private void setCounts() {
-        currentSpace.setLayout();
+    public static void setCounts() {
+        if (currentSpace != null)
+            currentSpace.setLayout();
     }
 
     @Override

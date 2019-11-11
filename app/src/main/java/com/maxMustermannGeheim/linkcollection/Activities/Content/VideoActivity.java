@@ -288,7 +288,7 @@ public class VideoActivity extends AppCompatActivity {
                     ((TextView) itemView.findViewById(R.id.listItem_video_Genre)).setText(String.join(", ", genreNames));
                     itemView.findViewById(R.id.listItem_video_Genre).setSelected(scrolling);
                 })
-                .setUseCustomRipple(true)
+                .useCustomRipple()
                 .setOnClickListener((customRecycler, view, object, index) -> {
                     if (!delete) {
                         openUrl(((Video) object).getUrl(), false);
@@ -308,7 +308,7 @@ public class VideoActivity extends AppCompatActivity {
                 .setOnLongClickListener((customRecycler, view, object, index) -> {
                     addOrEditDialog[0] = showEditOrNewDialog(object);
                 })
-                .setShowDivider(false)
+                .hideDivider()
                 .generateCustomRecycler();
     }
 

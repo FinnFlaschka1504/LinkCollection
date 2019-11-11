@@ -44,7 +44,6 @@ public class CustomRecycler<T>{
     private Context context;
     private RecyclerView recycler;
     private int itemView;
-    //    private List<Integer> viewIdList = new ArrayList<>();
     private SetItemContent<T> setItemContent;
     private List objectList;
     private int orientation = RecyclerView.VERTICAL;
@@ -72,7 +71,7 @@ public class CustomRecycler<T>{
     GetActiveObjectList getActiveObjectList;
     private boolean hideOverscroll;
 
-    private CustomRecycler(Context context) {
+    public CustomRecycler(Context context) {
         this.context = context;
     }
 
@@ -131,13 +130,13 @@ public class CustomRecycler<T>{
         return this;
     }
 
-    public CustomRecycler setUseCustomRipple(boolean useCustomRipple) {
-        this.useCustomRipple = useCustomRipple;
+    public CustomRecycler useCustomRipple() {
+        this.useCustomRipple = true;
         return this;
     }
 
-    public CustomRecycler setShowDivider(boolean showDivider) {
-        this.showDivider = showDivider;
+    public CustomRecycler hideDivider() {
+        this.showDivider = false;
         return this;
     }
 

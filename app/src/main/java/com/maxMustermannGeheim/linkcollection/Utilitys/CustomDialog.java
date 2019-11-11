@@ -40,7 +40,7 @@ public class CustomDialog {
     private Context context;
     private Dialog dialog;
     private String title;
-    private String text;
+    private CharSequence text;
     private View view;
     private ButtonType buttonType = ButtonType.BACK;
     private Pair<Boolean, Boolean> dimensions = new Pair<>(true, false);
@@ -88,7 +88,7 @@ public class CustomDialog {
         return this;
     }
 
-    public CustomDialog setText(String text) {
+    public CustomDialog setText(CharSequence text) {
         this.text = text;
         return this;
     }

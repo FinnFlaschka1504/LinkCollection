@@ -158,7 +158,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     else
                         itemView.findViewById(R.id.listItem_knowledge_rating_layout).setVisibility(View.GONE);
                 })
-                .setUseCustomRipple(true)
+                .useCustomRipple()
                 .setOnClickListener((customRecycler, view, object, index) -> {
                     TextView listItem_knowledge_content = view.findViewById(R.id.listItem_knowledge_content);
                     if (listItem_knowledge_content.isFocusable()) {
@@ -175,7 +175,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .setOnLongClickListener((customRecycler, view, object, index) -> {
                     addOrEditDialog[0] = showEditOrNewDialog((Knowledge) object);
                 })
-                .setShowDivider(false)
+                .hideDivider()
                 .generateCustomRecycler();
     }
 
@@ -576,10 +576,10 @@ public class KnowledgeActivity extends AppCompatActivity {
                             })
                             .setSetItemContent((CustomRecycler.SetItemContent<List<String>>)(itemView, nameUrlPair) -> {
                                 ((TextView) itemView.findViewById(R.id.listItem_source_name)).setText(nameUrlPair.get(0));
-                                ((TextView) itemView.findViewById(R.id.listItem_source_url)).setText(nameUrlPair.get(1));
+                                ((TextView) itemView.findViewById(R.id.listItem_source_content)).setText(nameUrlPair.get(1));
                             })
-                            .setShowDivider(false)
-                            .setUseCustomRipple(true)
+                            .hideDivider()
+                            .useCustomRipple()
                             .setOnClickListener((customRecycler, itemView, o, index) -> Utility.openUrl(this, ((List<String>) o).get(1), false))
                             .setOnLongClickListener((CustomRecycler.OnLongClickListener<List<String>>)(customRecycler, view1, stringList, index) -> {
                                 Dialog dialog = customDialog.getDialog();
@@ -660,11 +660,11 @@ public class KnowledgeActivity extends AppCompatActivity {
     }
 
     private String getDomainFromUrl(String url, boolean shortened) {
-        Pattern pattern = Pattern.compile(":\\/\\/.[^\\/]*");
+        Pattern pattern = Pattern.compile("(?<=://)[^/]*");
         Matcher matcher = pattern.matcher(url);
         if (matcher.find())
         {
-            String substring = matcher.group(0).substring(3);
+            String substring = matcher.group(0); //.substring(3);
             if (shortened) {
                 String[] split = substring.split("\\.");
                 return split[split.length - 2];

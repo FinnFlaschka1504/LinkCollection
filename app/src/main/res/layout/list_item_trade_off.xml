@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:background="@drawable/tile_background"
+    android:clickable="true"
+    android:elevation="3dp"
+    android:foreground="@drawable/ripple"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="13dp"
+    android:layout_marginVertical="5dp"
+    android:layout_weight="1"
+    android:layout_width="match_parent"
+    android:orientation="horizontal"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_width="match_parent"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:orientation="horizontal">
+
+
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_marginRight="8dp"
+                android:layout_width="wrap_content"
+                android:text="Person:"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/listItem_tradeOff_name"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_width="wrap_content"
+                android:maxLines="2"
+                tools:text="Name" />
+
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_marginRight="8dp"
+                android:layout_width="wrap_content"
+                android:text="Eigene Schulden:"
+                android:textStyle="bold" />
+
+            <TextView
+                android:ellipsize="marquee"
+                android:fadingEdge="horizontal"
+                android:id="@+id/listItem_tradeOff_own"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_width="wrap_content"
+                android:singleLine="true"
+                tools:text="12,31 €" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:orientation="horizontal">
+
+
+            <TextView
+                android:layout_height="wrap_content"
+                android:layout_marginRight="8dp"
+                android:layout_width="wrap_content"
+                android:text="Fremde Schulden:"
+                android:textStyle="bold" />
+
+            <TextView
+                android:ellipsize="marquee"
+                android:fadingEdge="horizontal"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:id="@+id/listItem_tradeOff_other"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_width="match_parent"
+                android:marqueeRepeatLimit="marquee_forever"
+                android:scrollHorizontally="true"
+                android:singleLine="true"
+                tools:text="16,76 €" />
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_gravity="center_vertical"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:orientation="horizontal">
+
+        <View
+            android:background="?android:attr/listDivider"
+            android:layout_height="match_parent"
+            android:layout_marginHorizontal="8dp"
+            android:layout_width="1dp" />
+
+        <TextView
+            android:id="@+id/listItem_tradeOff_difference"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:textColor="@color/colorGreen"
+            tools:text="4,45 €" />
+
+    </LinearLayout>
+
+    <!--        <ImageView-->
+    <!--            android:id="@+id/listItem_tradeOff_details"-->
+    <!--            android:layout_width="wrap_content"-->
+    <!--            android:layout_height="wrap_content"-->
+    <!--            android:layout_gravity="center_vertical"-->
+    <!--            android:layout_marginLeft="5dp"-->
+    <!--            android:clickable="true"-->
+    <!--            android:foreground="@drawable/ripple"-->
+    <!--            android:padding="5dp"-->
+    <!--            app:srcCompat="@drawable/ic_info" />-->
+
+</LinearLayout>

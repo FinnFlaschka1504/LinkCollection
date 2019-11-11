@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -21,8 +20,6 @@ import android.widget.RelativeLayout;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
@@ -44,7 +41,6 @@ import com.maxMustermannGeheim.linkcollection.R;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
@@ -265,8 +261,8 @@ public class Utility {
                     ((TextView) itemView.findViewById(R.id.listItem_video_Genre)).setText(String.join(", ", genreNames));
                     itemView.findViewById(R.id.listItem_video_Genre).setSelected(true);
                 })
-                .setUseCustomRipple(true)
-                .setShowDivider(false);
+                .useCustomRipple()
+                .hideDivider();
 
         if (openVideo)
             customRecycler.setOnClickListener((customRecycler1, view, object, index) ->
@@ -463,7 +459,7 @@ public class Utility {
         CustomRecycler customRecycler_selectedList = CustomRecycler.Builder(context, dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_selectedPassengers))
                 .setItemLayout(R.layout.list_item_bubble)
                 .setObjectList(selectedUuidList)
-                .setShowDivider(false)
+                .hideDivider()
                 .setSetItemContent((CustomRecycler.SetItemContent<String>)(itemView, uuid) -> {
                     ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(getObjectFromDatabase(category, uuid).getName());
 //                    switch (category){
@@ -505,7 +501,7 @@ public class Utility {
 
                     customRecycler_selectList.reload();
                 })
-                .setUseCustomRipple(true)
+                .useCustomRipple()
                 .generateCustomRecycler();
 
 
@@ -598,11 +594,8 @@ public class Utility {
     }
 
 //  ----- PopupWindow ----->
-    public static void showPopupwindow(Context context, View anchor, CustomRecycler customRecycler) {
-
-    RecyclerView recyclerView = customRecycler.generate();
-
-    PopupWindow popupWindow = new PopupWindow(recyclerView, RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT, true);
+    public static void showPopupWindow(Context context, View anchor, View view) {
+    PopupWindow popupWindow = new PopupWindow(view, RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT, true);
     popupWindow.showAsDropDown(anchor, 0, 0);
 
     dimBehind(popupWindow);

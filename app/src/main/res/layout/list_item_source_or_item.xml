@@ -32,7 +32,7 @@
                 tools:text="name" />
 
             <TextView
-                android:id="@+id/listItem_source_url"
+                android:id="@+id/listItem_source_content"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ellipsize="marquee"

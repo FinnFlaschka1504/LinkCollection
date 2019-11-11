@@ -14,10 +14,10 @@ import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.TextWatcher;
-import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
+import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -41,6 +41,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Owe.Person;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
@@ -48,7 +49,6 @@ import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -70,7 +70,7 @@ public class OweActivity extends AppCompatActivity {
 
 
     private boolean reverse;
-    private SORT_TYPE sort_type = SORT_TYPE.LATEST;
+    private SORT_TYPE sort_type = SORT_TYPE.STATUS;
     Database database = Database.getInstance();
     private CustomRecycler customRecycler_List;
     private Dialog[] addOrEditDialog = new Dialog[]{null};
@@ -233,7 +233,7 @@ public class OweActivity extends AppCompatActivity {
 //                    else
 //                        itemView.findViewById(R.id.listItem_owe_rating_layout).setVisibility(View.GONE);
                 })
-                .setUseCustomRipple(true)
+                .useCustomRipple()
 //                .setOnClickListener((customRecycler, view, object, index) -> {
 //                    TextView listItem_owe_content = view.findViewById(R.id.listItem_owe_description);
 //                    if (listItem_owe_content.isFocusable()) {
@@ -250,7 +250,7 @@ public class OweActivity extends AppCompatActivity {
                 .setOnLongClickListener((customRecycler, view, object, index) -> {
                     addOrEditDialog[0] = showEditOrNewDialog((Owe) object);
                 })
-                .setShowDivider(false)
+                .hideDivider()
                 .generateCustomRecycler();
     }
 
@@ -261,20 +261,38 @@ public class OweActivity extends AppCompatActivity {
     private List<Owe> sortList(List<Owe> oweList) {
         switch (sort_type) {
             case NAME:
-                oweList.sort((o1, o2) -> o1.getName().compareTo(o2.getName()));
+                oweList.sort((o1, o2) -> o1.getName().compareTo(o2.getName()) * (reverse ? -1 : 1));
                 break;
             case OWN_OR_OTHER:
-                oweList.sort((o1, o2) -> o1.getOwnOrOther().compareTo(o2.getOwnOrOther()));
+                oweList.sort((o1, o2) -> {
+                    int compare;
+                    if ((compare = o1.getOwnOrOther().compareTo(o2.getOwnOrOther())) != 0)
+                        return compare * (reverse ? -1 : 1);
+                    else if ((compare = Boolean.compare(o1.isOpen(), o2.isOpen()) * -1) != 0)
+                        return compare;
+                    else
+                        return o1.getName().compareTo(o2.getName());
+                });
                 break;
             case LATEST:
-                oweList.sort((o1, o2) -> o1.getDate().compareTo(o2.getDate()) * -1);
+                oweList.sort((o1, o2) -> {
+                    int compare;
+                    if ((compare = o1.getDate().compareTo(o2.getDate()) * -1) != 0)
+                        return compare * (reverse ? -1 : 1);
+                    else
+                        return o1.getName().compareTo(o2.getName());
+                });
                 break;
             case STATUS:
-                oweList.sort((o1, o2) -> Boolean.compare(o1.isOpen(), o2.isOpen()) * -1);
+                oweList.sort((o1, o2) -> {
+                    int compare;
+                    if ((compare = Boolean.compare(o1.isOpen(), o2.isOpen()) * -1) != 0)
+                        return compare * (reverse ? -1 : 1);
+                    else
+                        return o1.getName().compareTo(o2.getName());
+                });
                 break;
         }
-        if (reverse)
-            Collections.reverse(oweList);
         return oweList;
     }
 
@@ -610,13 +628,12 @@ public class OweActivity extends AppCompatActivity {
                 if (changeErrorMessage)
                     textInputLayout.setError("Das Feld darf nicht leer sein!");
                 return false;
-            }
-//            else if (!text.matches("(?i)^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?!(?:10|127)(?:\\.\\d{1,3}){3})(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?(?:[/?#]\\S*)?$")) {
-//                textInputLayout.setError("Eine valide URL eingeben!");
-//                return false;
-//
-//            }
-            else {
+            } else if (!text.matches("^\\d*(\\.\\d{1,2})?$")) {
+                if (changeErrorMessage)
+                    textInputLayout.setError("Eine valide Zahl eingeben!");
+                return false;
+
+            } else {
                 textInputLayout.setError(null);
                 return true;
             }
@@ -663,23 +680,21 @@ public class OweActivity extends AppCompatActivity {
                     dialog_items_amount.getEditText().addTextChangedListener(new TextWatcher() {
                         @Override
                         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
+                            String BREAKPOINT = null;
                         }
 
                         @Override
                         public void onTextChanged(CharSequence s, int start, int before, int count) {
-
+                            if (before < count && s.toString().trim().matches("^\\.$")) {
+                                dialog_items_amount.getEditText().setText("0.");
+                                dialog_items_amount.getEditText().setSelection(2);
+                            } else {
+                                validation(nameValidation, urlValidation, dialog_items_name, dialog_items_amount, false, true, dialog_items_save);
+                            }
                         }
 
                         @Override
                         public void afterTextChanged(Editable s) {
-//                            if (urlValidation.runTextValidation(dialog_items_amount, true)) {
-//                                if (dialog_items_name.getEditText().getText().toString().isEmpty()) {
-//                                    String domainName = getDomainFromUrl(s.toString(), true);
-//                                    dialog_items_name.getEditText().setText(domainName);
-//                                }
-//                            }
-                            validation(nameValidation, urlValidation, dialog_items_name, dialog_items_amount, false, true, dialog_items_save);
                         }
                     });
                     Runnable hideEdit = () -> {
@@ -706,11 +721,11 @@ public class OweActivity extends AppCompatActivity {
                             })
                             .setSetItemContent((CustomRecycler.SetItemContent<Owe.Item>)(itemView, item) -> {
                                 ((TextView) itemView.findViewById(R.id.listItem_source_name)).setText(database.personMap.get(item.getPersonId()).getName());
-                                ((TextView) itemView.findViewById(R.id.listItem_source_url)).setText(Utility.formatToEuro(item.getAmount()));
+                                ((TextView) itemView.findViewById(R.id.listItem_source_content)).setText(Utility.formatToEuro(item.getAmount()));
                                 itemView.findViewById(R.id.listItem_source_check).setVisibility(item.isOpen() ? View.GONE : View.VISIBLE);
                             })
-                            .setShowDivider(false)
-                            .setUseCustomRipple(true)
+                            .hideDivider()
+                            .useCustomRipple()
                             .setOnClickListener((CustomRecycler.OnClickListener<Owe.Item>)(customRecycler, itemView, item, index) -> {
                                 item.setOpen(!item.isOpen());
                                 Database.saveAll();
@@ -744,17 +759,18 @@ public class OweActivity extends AppCompatActivity {
                     dialog_items_save.setOnClickListener(v -> {
                         if (!nameValidation.runTextValidation(dialog_items_name, true) | !urlValidation.runTextValidation(dialog_items_amount, true))
                             return;
+                        String amount_text = dialog_items_amount.getEditText().getText().toString().trim();
                         if (currentItem[0] == null) {
                             String personName = dialog_items_name.getEditText().getText().toString().trim();
                             String personId = database.personMap.values().stream().filter(person -> person.getName().equals(personName)).findFirst().get().getUuid();
-                            Owe.Item newItem = new Owe.Item(personId, Double.parseDouble(dialog_items_amount.getEditText().getText().toString().trim()));
+                            Owe.Item newItem = new Owe.Item(personId, Double.parseDouble(amount_text));
                             owe.getItemList().add(newItem);
                         }
                         else {
                             String personName = dialog_items_name.getEditText().getText().toString().trim();
                             String personId = database.personMap.values().stream().filter(person -> person.getName().equals(personName)).findFirst().get().getUuid();
                             currentItem[0].setPersonId(personId);
-                            currentItem[0].setAmount(Double.parseDouble(dialog_items_amount.getEditText().getText().toString().trim()));
+                            currentItem[0].setAmount(Double.parseDouble(amount_text));
                         }
                         Database.saveAll();
                         sources_customRecycler.reload();
@@ -851,89 +867,126 @@ public class OweActivity extends AppCompatActivity {
     }
 //  <----- Sources -----
 
-    public static void showPopupwindow(AppCompatActivity context, View anchor) {
-        String[] clickedBase = new String[]{null};
-
+    public static void showPopupwindow(AppCompatActivity context, View view) {
         String ownOrOther = "Eigen/Fremd";
         String status = "Status";
-        CustomRecycler baseRecycler = CustomRecycler.Builder(context)
-                .setItemLayout(R.layout.popup_standard_list)
-                .setObjectList(Arrays.asList(ownOrOther, status))
-                .setShowDivider(false)
-                .hideOverscroll()
-                .setSetItemContent((itemView0, o0) -> {
-                    ((TextView) itemView0.findViewById(R.id.popup_standardList_text)).setText(o0.toString());
-                    View popup_standardList_sub = itemView0.findViewById(R.id.popup_standardList_sub);
-                    popup_standardList_sub.setVisibility(View.VISIBLE);
-                    popup_standardList_sub.setClickable(false);
-                    popup_standardList_sub.setForeground(null);
+
+        CustomMenu.Builder(context, view.findViewById(R.id.main_owe_filter_label))
+                .setMenus((customMenu, items) -> {
+                    items.add(new CustomMenu.MenuItem(ownOrOther).setSubMenus(customMenu, (customMenu1, items1) -> {
+                        items1.add(new CustomMenu.MenuItem(Owe.OWN_OR_OTHER.OWN.getName(), Owe.OWN_OR_OTHER.OWN));
+                        items1.add(new CustomMenu.MenuItem(Owe.OWN_OR_OTHER.OTHER.getName(), Owe.OWN_OR_OTHER.OTHER));
+                        customMenu1.setOnClickListener((customRecycler, itemView, item, index) -> {
+                            customMenu1.getContext().startActivityForResult(new Intent(customMenu1.getContext(), OweActivity.class).putExtra(EXTRA_OWN_OR_OTHER, (Owe.OWN_OR_OTHER) item.getContent()), MainActivity.START_OWE);
+                        });
+                        customMenu1.setDynamicSubMenus(items1, (item, subItems) -> {
+                            subItems.add(new CustomMenu.MenuItem(item.getName() + " & " + "Offene", new Pair<>(item.getContent(), true)));
+                            subItems.add(new CustomMenu.MenuItem(item.getName() + " & " + "Abgeschlosene", new Pair<>(item.getContent(), false)));
+                        }, (customRecycler, itemView, item, index) -> {
+                            Pair<Owe.OWN_OR_OTHER, Boolean> contentPair = (Pair) item.getContent();
+                            context.startActivityForResult(new Intent(context, OweActivity.class).putExtra(EXTRA_OWN_OR_OTHER, contentPair.first)
+                                    .putExtra(EXTRA_OPEN, contentPair.second), MainActivity.START_OWE);
+                        });
+                    }));
+                    items.add(new CustomMenu.MenuItem(status).setSubMenus(customMenu, (customMenu1, items1) -> {
+                        items1.add(new CustomMenu.MenuItem("Offene", true));
+                        items1.add(new CustomMenu.MenuItem("Abgeschlosene", false));
+                        customMenu1.setOnClickListener((customRecycler, itemView, item, index) -> {
+                            customMenu1.getContext().startActivityForResult(new Intent(customMenu1.getContext(), OweActivity.class).putExtra(EXTRA_OPEN, (Boolean) item.getContent()), MainActivity.START_OWE);
+                        });
+                        customMenu1.setDynamicSubMenus(items1, (item, subItems) -> {
+                            subItems.add(new CustomMenu.MenuItem(item.getName() + " & " + Owe.OWN_OR_OTHER.OWN.getName(), new Pair<>(item.getContent(), Owe.OWN_OR_OTHER.OWN)));
+                            subItems.add(new CustomMenu.MenuItem(item.getName() + " & " + Owe.OWN_OR_OTHER.OTHER.getName(), new Pair<>(item.getContent(), Owe.OWN_OR_OTHER.OTHER)));
+                        }, (customRecycler, itemView, item, index) -> {
+                            Pair<Boolean, Owe.OWN_OR_OTHER> contentPair = (Pair) item.getContent();
+                            context.startActivityForResult(new Intent(context, OweActivity.class).putExtra(EXTRA_OWN_OR_OTHER, contentPair.second)
+                                    .putExtra(EXTRA_OPEN, contentPair.first), MainActivity.START_OWE);
+                        });
+                    }));
                 })
-                .addSubOnClickListener(R.id.popup_standardList_clickable, (customRecycler0, itemView0, o0, index0) -> {
-                    CustomRecycler recycler = CustomRecycler.Builder(context)
-                            .setItemLayout(R.layout.popup_standard_list);
-                    if (o0.equals(ownOrOther))
-                        recycler.setObjectList(Arrays.asList(Owe.OWN_OR_OTHER.OWN, Owe.OWN_OR_OTHER.OTHER));
-                    else
-                        recycler.setObjectList(Arrays.asList(true, false));
-
-                    recycler
-                            .setShowDivider(false)
-                            .hideOverscroll()
-                            .setSetItemContent((itemView, o) -> {
-                                if (o instanceof Owe.OWN_OR_OTHER)
-                                    ((TextView) itemView.findViewById(R.id.popup_standardList_text)).setText(((Owe.OWN_OR_OTHER) o).getName());
-                                else
-                                    ((TextView) itemView.findViewById(R.id.popup_standardList_text)).setText((boolean) o ? "Offene" : "Abgeschlosene");
-                                itemView.findViewById(R.id.popup_standardList_sub).setVisibility(View.VISIBLE);
-                                itemView.findViewById(R.id.popup_standardList_divider).setVisibility(View.VISIBLE);
-                            })
-                            .addSubOnClickListener(R.id.popup_standardList_clickable, (customRecycler, itemView, o, index) -> {
-                                if (o instanceof Owe.OWN_OR_OTHER)
-                                    context.startActivityForResult(new Intent(context, OweActivity.class).putExtra(EXTRA_OWN_OR_OTHER, (Owe.OWN_OR_OTHER) o), MainActivity.START_OWE);
-                                else
-                                    context.startActivityForResult(new Intent(context, OweActivity.class).putExtra(EXTRA_OPEN, (Boolean) o), MainActivity.START_OWE);
-                            }, false)
-                            .addSubOnClickListener(R.id.popup_standardList_sub, (customRecycler, itemView, o, index) -> {
-                                String name;
-                                if (o instanceof Owe.OWN_OR_OTHER)
-                                    name = ((Owe.OWN_OR_OTHER) o).getName();
-                                else
-                                    name = (boolean) o ? "Offene" : "Abgeschlosene";
-                                CustomRecycler subRecycler = CustomRecycler.Builder(context)
-                                        .setItemLayout(R.layout.popup_standard_list);
-
-                                if (o instanceof Owe.OWN_OR_OTHER)
-                                    subRecycler.setObjectList(Arrays.asList(true, false));
-                                else
-                                    subRecycler.setObjectList(Arrays.asList(Owe.OWN_OR_OTHER.OWN, Owe.OWN_OR_OTHER.OTHER));
-
-                                subRecycler
-                                        .setShowDivider(false)
-                                        .hideOverscroll()
-                                        .setSetItemContent((itemView2, o2) -> {
-                                            if (o instanceof Owe.OWN_OR_OTHER)
-                                                ((TextView) itemView2.findViewById(R.id.popup_standardList_text)).setText(String.format("%s & %s", name, (boolean) o2 ? "Offene" : "Abgeschlosene"));
-                                            else
-                                                ((TextView) itemView2.findViewById(R.id.popup_standardList_text)).setText(String.format("%s & %s", name, ((Owe.OWN_OR_OTHER) o2).getName()));
-                                        })
-                                        .addSubOnClickListener(R.id.popup_standardList_clickable, (customRecycler2, itemView2, o2, index2) -> {
-                                            if (o instanceof Owe.OWN_OR_OTHER)
-                                                context.startActivityForResult(new Intent(context, OweActivity.class).putExtra(EXTRA_OWN_OR_OTHER, (Owe.OWN_OR_OTHER) o)
-                                                    .putExtra(EXTRA_OPEN, Boolean.valueOf((boolean) o2)), MainActivity.START_OWE);
-                                            else
-                                                context.startActivityForResult(new Intent(context, OweActivity.class).putExtra(EXTRA_OWN_OR_OTHER, (Owe.OWN_OR_OTHER) o2)
-                                                    .putExtra(EXTRA_OPEN, Boolean.valueOf((boolean) o)), MainActivity.START_OWE);
-                                        },false);
-
-                                Utility.showPopupwindow(context, itemView, subRecycler);
-
-                            }, false);
-                            Utility.showPopupwindow(context, itemView0, recycler);
-
-                }, false);
-
-        Utility.showPopupwindow(context, anchor.findViewById(R.id.main_owe_filter_label), baseRecycler);
+                .show();
     }
+//    public static void showPopupwindow(AppCompatActivity context, View anchor, boolean mip) {
+//        String ownOrOther = "Eigen/Fremd";
+//        String status = "Status";
+//        CustomRecycler baseRecycler = CustomRecycler.Builder(context)
+//                .setItemLayout(R.layout.popup_standard_list)
+//                .setObjectList(Arrays.asList(ownOrOther, status))
+//                .hideDivider()
+//                .hideOverscroll()
+//                .setSetItemContent((itemView0, o0) -> {
+//                    ((TextView) itemView0.findViewById(R.id.popup_standardList_text)).setText(o0.toString());
+//                    View popup_standardList_sub = itemView0.findViewById(R.id.popup_standardList_sub);
+//                    popup_standardList_sub.setVisibility(View.VISIBLE);
+//                    popup_standardList_sub.setClickable(false);
+//                    popup_standardList_sub.setForeground(null);
+//                })
+//                .setOnClickListener((customRecycler0, itemView0, o0, index0) -> {
+//                    CustomRecycler recycler = CustomRecycler.Builder(context)
+//                            .setItemLayout(R.layout.popup_standard_list);
+//                    if (o0.equals(ownOrOther))
+//                        recycler.setObjectList(Arrays.asList(Owe.OWN_OR_OTHER.OWN, Owe.OWN_OR_OTHER.OTHER));
+//                    else
+//                        recycler.setObjectList(Arrays.asList(true, false));
+//
+//                    recycler
+//                            .hideDivider()
+//                            .hideOverscroll()
+//                            .setSetItemContent((itemView, o) -> {
+//                                if (o instanceof Owe.OWN_OR_OTHER)
+//                                    ((TextView) itemView.findViewById(R.id.popup_standardList_text)).setText(((Owe.OWN_OR_OTHER) o).getName());
+//                                else
+//                                    ((TextView) itemView.findViewById(R.id.popup_standardList_text)).setText((boolean) o ? "Offene" : "Abgeschlosene");
+//                                itemView.findViewById(R.id.popup_standardList_sub).setVisibility(View.VISIBLE);
+//                                itemView.findViewById(R.id.popup_standardList_divider).setVisibility(View.VISIBLE);
+//                            })
+//                            .setOnClickListener((customRecycler, itemView, o, index) -> {
+//                                if (o instanceof Owe.OWN_OR_OTHER)
+//                                    context.startActivityForResult(new Intent(context, OweActivity.class).putExtra(EXTRA_OWN_OR_OTHER, (Owe.OWN_OR_OTHER) o), MainActivity.START_OWE);
+//                                else
+//                                    context.startActivityForResult(new Intent(context, OweActivity.class).putExtra(EXTRA_OPEN, (Boolean) o), MainActivity.START_OWE);
+//                            })
+//                            .addSubOnClickListener(R.id.popup_standardList_sub, (customRecycler, itemView, o, index) -> {
+//                                String name;
+//                                if (o instanceof Owe.OWN_OR_OTHER)
+//                                    name = ((Owe.OWN_OR_OTHER) o).getName();
+//                                else
+//                                    name = (boolean) o ? "Offene" : "Abgeschlosene";
+//                                CustomRecycler subRecycler = CustomRecycler.Builder(context)
+//                                        .setItemLayout(R.layout.popup_standard_list);
+//
+//                                if (o instanceof Owe.OWN_OR_OTHER)
+//                                    subRecycler.setObjectList(Arrays.asList(true, false));
+//                                else
+//                                    subRecycler.setObjectList(Arrays.asList(Owe.OWN_OR_OTHER.OWN, Owe.OWN_OR_OTHER.OTHER));
+//
+//                                subRecycler
+//                                        .hideDivider()
+//                                        .hideOverscroll()
+//                                        .setSetItemContent((itemView2, o2) -> {
+//                                            if (o instanceof Owe.OWN_OR_OTHER)
+//                                                ((TextView) itemView2.findViewById(R.id.popup_standardList_text)).setText(String.format("%s & %s", name, (boolean) o2 ? "Offene" : "Abgeschlosene"));
+//                                            else
+//                                                ((TextView) itemView2.findViewById(R.id.popup_standardList_text)).setText(String.format("%s & %s", name, ((Owe.OWN_OR_OTHER) o2).getName()));
+//                                        })
+//                                        .setOnClickListener((customRecycler2, itemView2, o2, index2) -> {
+//                                            if (o instanceof Owe.OWN_OR_OTHER)
+//                                                context.startActivityForResult(new Intent(context, OweActivity.class).putExtra(EXTRA_OWN_OR_OTHER, (Owe.OWN_OR_OTHER) o)
+//                                                    .putExtra(EXTRA_OPEN, Boolean.valueOf((boolean) o2)), MainActivity.START_OWE);
+//                                            else
+//                                                context.startActivityForResult(new Intent(context, OweActivity.class).putExtra(EXTRA_OWN_OR_OTHER, (Owe.OWN_OR_OTHER) o2)
+//                                                    .putExtra(EXTRA_OPEN, Boolean.valueOf((boolean) o)), MainActivity.START_OWE);
+//                                        });
+//
+//                                Utility.showPopupWindow(context, itemView, subRecycler.generate());
+//
+//                            }, false);
+//                            Utility.showPopupWindow(context, itemView0, recycler.generate());
+//
+//                });
+//
+//        Utility.showPopupWindow(context, anchor.findViewById(R.id.main_owe_filter_label), baseRecycler.generate());
+//    }
 
     public static void showTradeOffDialog(AppCompatActivity activity, View view) {
         Database database = Database.getInstance();
@@ -964,8 +1017,8 @@ public class OweActivity extends AppCompatActivity {
         CustomRecycler tradeOff_customRecycler = CustomRecycler.Builder(activity)
                 .setItemLayout(R.layout.list_item_trade_off)
                 .setObjectList(list)
-                .setShowDivider(false)
-                .setUseCustomRipple(true)
+                .hideDivider()
+                .useCustomRipple()
                 .setSetItemContent((CustomRecycler.SetItemContent<Utility.Triple<Person, Double, Double>>)(itemView, triple) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_tradeOff_name)).setText(triple.first.getName());
                     ((TextView) itemView.findViewById(R.id.listItem_tradeOff_own)).setText(Utility.formatToEuro(triple.second));
@@ -1016,7 +1069,7 @@ public class OweActivity extends AppCompatActivity {
                 .setTitle("Ausgleiche Verfügbar Für")
                 .setView(tradeOff_customRecycler.generate())
                 .show();
-//        Utility.showPopupwindow(activity, view.findViewById(R.id.main_owe_tradeOff_label), tradeOff_customRecycler);
+//        Utility.showPopupWindow(activity, view.findViewById(R.id.main_owe_tradeOff_label), tradeOff_customRecycler);
     }
 
 }

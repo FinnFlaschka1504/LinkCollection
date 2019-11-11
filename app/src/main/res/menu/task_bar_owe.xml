@@ -26,10 +26,10 @@
                     android:title="Nach Eigen/Fremd" />
                 <item
                     android:id="@+id/taskBar_owe_sortByStatus"
+                    android:checked="true"
                     android:title="Status" />
                 <item
                     android:id="@+id/taskBar_owe_sortByLatest"
-                    android:checked="true"
                     android:title="Nach Datum" />
             </group>
             <group android:id="@+id/g2">

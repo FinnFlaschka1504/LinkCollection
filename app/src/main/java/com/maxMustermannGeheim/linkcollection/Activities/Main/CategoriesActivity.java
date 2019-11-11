@@ -6,7 +6,6 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Spannable;
-import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
@@ -248,14 +247,14 @@ public class CategoriesActivity extends AppCompatActivity {
                         ((TextView) itemView.findViewById(R.id.userlistItem_catigoryItem_count)).setText(String.valueOf(parentClassIntegerPair.second));
                 })
                 .setRowOrColumnCount(columnCount)
-                .setShowDivider(false)
+                .hideDivider()
                 .setOnClickListener((customRecycler, view, object, index) -> {
                     startActivityForResult(new Intent(this, catigory.getSearchIn())
                                     .putExtra(EXTRA_SEARCH, ((ParentClass) ((Pair) object).first).getName())
                                     .putExtra(EXTRA_SEARCH_CATEGORY, catigory),
                             START_CATIGORY_SEARCH);
                 })
-                .setUseCustomRipple(true)
+                .useCustomRipple()
                 .setOnLongClickListener((CustomRecycler.OnLongClickListener<Pair<ParentClass, Integer>>)(customRecycler, view, item, index) -> {
                     if (!Utility.isOnline(this))
                         return;

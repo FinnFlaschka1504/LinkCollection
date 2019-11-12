@@ -9,15 +9,20 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.ItemTouchHelper.Callback;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.maxMustermannGeheim.linkcollection.R;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +50,7 @@ public class CustomRecycler<T>{
     private RecyclerView recycler;
     private int itemView;
     private SetItemContent<T> setItemContent;
-    private List objectList;
+    private List objectList = new ArrayList();
     private int orientation = RecyclerView.VERTICAL;
     private OnLongClickListener onLongClickListener;
     private View.OnLongClickListener longClickListener = view -> {
@@ -64,12 +69,16 @@ public class CustomRecycler<T>{
         int index = recycler.getChildAdapterPosition(view);
         onClickListener.runOnClickListener(this, view, objectList.get(index), index);
     };
-    Map<Integer, Pair<OnClickListener, Boolean>> idSubOnClickListenerMap = new HashMap<>();
-    Map<Integer, Pair<OnClickListener, Boolean>> idSubOnLongClickListenerMap = new HashMap<>();
+    private Map<Integer, Pair<OnClickListener, Boolean>> idSubOnClickListenerMap = new HashMap<>();
+    private Map<Integer, Pair<OnClickListener, Boolean>> idSubOnLongClickListenerMap = new HashMap<>();
     private SELECTION_MODE selectionMode = SELECTION_MODE.SINGLE_SELECTION;
     private boolean useActiveObjectList;
-    GetActiveObjectList getActiveObjectList;
+    private GetActiveObjectList getActiveObjectList;
     private boolean hideOverscroll;
+    private MyAdapter mAdapter;
+    private boolean dragAndDrop = false;
+    private OnDragAndDrop onDragAndDrop;
+
 
     public CustomRecycler(Context context) {
         this.context = context;
@@ -111,13 +120,17 @@ public class CustomRecycler<T>{
         return this;
     }
 
+    public List getObjectList() {
+        return objectList;
+    }
+
     public interface GetActiveObjectList<T>{
         List<T> runGetActiveObjectList();
     }
 
     public CustomRecycler setGetActiveObjectList(GetActiveObjectList getActiveObjectList) {
         this.getActiveObjectList = getActiveObjectList;
-        objectList = getActiveObjectList.runGetActiveObjectList();
+        objectList.addAll(getActiveObjectList.runGetActiveObjectList());
         useActiveObjectList = true;
         return this;
     }
@@ -217,7 +230,42 @@ public class CustomRecycler<T>{
         return this;
     }
 
+    public CustomRecycler enableDragAndDrop(OnDragAndDrop onDragAndDrop) {
+        this.onDragAndDrop = onDragAndDrop;
+        dragAndDrop = true;
+        return this;
+    }
 
+    private void applyDragAndDrop() {
+        ItemTouchHelper.Callback itemTouchHelperCallback = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder dragged, @NonNull RecyclerView.ViewHolder target) {
+
+                int posDragged = dragged.getAdapterPosition();
+                int posTarget = target.getAdapterPosition();
+
+                Collections.swap(objectList, posDragged, posTarget);
+                mAdapter.notifyItemMoved(posDragged, posTarget);
+
+                onDragAndDrop.runOnDragAndDrop(objectList);
+
+                return true;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                String BREAKPOINT = null;
+            }
+        };
+        ItemTouchHelper helper = new ItemTouchHelper(itemTouchHelperCallback);
+        helper.attachToRecyclerView(recycler);
+    }
+
+    public interface OnDragAndDrop {
+        void runOnDragAndDrop(List objectList);
+    }
+
+//  ----- Adapter ----->
     public class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> {
         private List dataset;
         private List<ViewHolder> viewHolders = new ArrayList<>();
@@ -339,10 +387,15 @@ public class CustomRecycler<T>{
 //                }
             }
         }
+
+        public List getDataset() {
+            return dataset;
+        }
     }
+//  <----- Adapter -----
 
 
-
+//  ----- Generate ----->
     public Pair<CustomRecycler, RecyclerView> generatePair() {
         RecyclerView recyclerView = generate();
         return new Pair<>(this, recyclerView);
@@ -364,7 +417,7 @@ public class CustomRecycler<T>{
             layoutManager = new LinearLayoutManager(context, orientation, false);
         recycler.setLayoutManager(layoutManager);
 
-        RecyclerView.Adapter mAdapter = new MyAdapter(objectList);
+        mAdapter = new MyAdapter(objectList);
         recycler.setAdapter(mAdapter);
 
         if (showDivider) {
@@ -403,19 +456,48 @@ public class CustomRecycler<T>{
         if (hideOverscroll)
             recycler.setOverScrollMode(View.OVER_SCROLL_NEVER);
 
+        if (dragAndDrop)
+            applyDragAndDrop();
+
+        return recycler;
+    }
+
+    public RecyclerView update() {
+        if (useActiveObjectList)
+            objectList.addAll(getActiveObjectList.runGetActiveObjectList());
+        mAdapter.notifyDataSetChanged();
         return recycler;
     }
 
     public RecyclerView reload() {
-        if (useActiveObjectList)
-            objectList = getActiveObjectList.runGetActiveObjectList();
-        this.recycler.setAdapter(new MyAdapter(objectList));
+        if (useActiveObjectList) {
+            objectList.clear();
+            objectList.addAll(getActiveObjectList.runGetActiveObjectList());
+        }
+//        else{
+//            mAdapter.getDataset().clear();
+//            mAdapter.getDataset().addAll(objectList);
+//        }
+        mAdapter.notifyDataSetChanged();
         return recycler;
     }
 
+
+
+    public RecyclerView update(Integer... index) {
+        if (useActiveObjectList)
+            objectList.addAll(getActiveObjectList.runGetActiveObjectList());
+        Arrays.asList(index).forEach(mAdapter::notifyItemChanged);
+        return recycler;
+    }
+
+
     public RecyclerView reloadNew() {
-        this.recycler.setAdapter(new MyAdapter(objectList));
+        mAdapter = new MyAdapter(objectList);
+        this.recycler.setAdapter(mAdapter);
         generate();
         return recycler;
     }
+//  <----- Generate -----
+
 }

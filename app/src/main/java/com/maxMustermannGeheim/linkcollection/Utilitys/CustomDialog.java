@@ -15,6 +15,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -480,6 +481,11 @@ public class CustomDialog {
         return this;
     }
 
+    public CustomDialog show_custom() {
+        show();
+        return this;
+    }
+
     public Dialog show() {
         TextView dialog_custom_title = dialog.findViewById(R.id.dialog_custom_title);
         TextView dialog_custom_text = dialog.findViewById(R.id.dialog_custom_text);
@@ -503,7 +509,7 @@ public class CustomDialog {
             dialog.findViewById(R.id.dialog_custom_layout_edit).setVisibility(View.GONE);
 
         if (view != null)
-            ((LinearLayout) dialog.findViewById(R.id.dialog_custom_layout_view_interface)).addView(view);
+            ((ScrollView) dialog.findViewById(R.id.dialog_custom_layout_view_interface)).addView(view);
         else
             dialog.findViewById(R.id.dialog_custom_layout_view).setVisibility(View.GONE);
 
@@ -536,10 +542,6 @@ public class CustomDialog {
             dialog.findViewById(R.id.dialog_custom_divider6).setVisibility(dividerVisibility ? View.VISIBLE : View.GONE);
         }
 
-//        if (view != null && view.getClass() == RecyclerView.class)
-//            dialog.findViewById(R.id.dialog_custom_divider6).setVisibility(View.GONE);
-
-
 
         setDialogLayoutParameters(dialog, dimensions.first, dimensions.second);
         setButtons();
@@ -560,6 +562,20 @@ public class CustomDialog {
         return dialog;
     }
 
+    public Dialog reloadView() {
+        setViewContent.runSetViewContent(this, view);
+        return dialog;
+    }
+
+    public CustomDialog dismiss() {
+        dialog.dismiss();
+        return this;
+    }
+
+    public View findViewById(int id) {
+        return dialog.findViewById(id);
+    }
+
     static void setDialogLayoutParameters(Dialog dialog, boolean width, boolean height) {
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
         lp.copyFrom(dialog.getWindow().getAttributes());
@@ -576,6 +592,14 @@ public class CustomDialog {
     }
 
     public static String getEditText(Dialog dialog) {
+        EditText editText = dialog.findViewById(R.id.dialog_custom_edit);
+        if (editText == null)
+            return null;
+        else
+            return editText.getText().toString().trim();
+    }
+
+    public String getEditText() {
         EditText editText = dialog.findViewById(R.id.dialog_custom_edit);
         if (editText == null)
             return null;

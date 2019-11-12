@@ -39,6 +39,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
@@ -66,7 +67,7 @@ public class VideoActivity extends AppCompatActivity {
     List<Video> filterdVideoList = new ArrayList<>();
 
     private Dialog[] addOrEditDialog = new Dialog[]{null};
-    private Pair<Dialog, Video> dialogVideoPair;
+    private CustomDialog detailDialog;
 
     private CustomRecycler customRecycler_VideoList;
     FloatingActionButton videos_confirmDelete;
@@ -303,7 +304,7 @@ public class VideoActivity extends AppCompatActivity {
                     }
                 })
                 .addSubOnClickListener(R.id.listItem_video_details, (customRecycler, view, object, index) -> {
-                    dialogVideoPair = new Pair<>(showDetailDialog(object), (Video) object);
+                    detailDialog = showDetailDialog((Video) object);
                 }, false)
                 .setOnLongClickListener((customRecycler, view, object, index) -> {
                     addOrEditDialog[0] = showEditOrNewDialog(object);
@@ -314,32 +315,28 @@ public class VideoActivity extends AppCompatActivity {
 
     private void reLoadVideoRecycler() {
         sortList(filterdVideoList);
-        customRecycler_VideoList.setObjectList(filterdVideoList).reload();
+        customRecycler_VideoList.reload();
     }
 
-    private Dialog showDetailDialog(Object object) {
+    private CustomDialog showDetailDialog(Video video) {
         setResult(RESULT_OK);
-        Video video = (Video) object;
-        List<String> darstellerNames = new ArrayList<>();
-        video.getDarstellerList().forEach(uuid -> darstellerNames.add(database.darstellerMap.get(uuid).getName()));
-        List<String> studioNames = new ArrayList<>();
-        video.getStudioList().forEach(uuid -> studioNames.add(database.studioMap.get(uuid).getName()));
-        List<String> genreNames = new ArrayList<>();
-        video.getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
-        Dialog returnDialog = CustomDialog.Builder(this)
+        CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle("Deteil Ansicht")
                 .setView(R.layout.dialog_detail_video)
                 .setButtonType(CustomDialog.ButtonType.CUSTOM)
                 .addButton("Bearbeiten", (customDialog, dialog) ->
-                        addOrEditDialog[0] = showEditOrNewDialog(object), false)
-                .addButton("Öffnen mit...", (customDialog, dialog) -> openUrl(((Video) object).getUrl(), true), false)
+                        addOrEditDialog[0] = showEditOrNewDialog(video), false)
+                .addButton("Öffnen mit...", (customDialog, dialog) -> openUrl(((Video) video).getUrl(), true), false)
                 .setSetViewContent((customDialog, view) -> {
                     ((TextView) view.findViewById(R.id.dialog_video_Titel)).setText(video.getName());
-                    ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(String.join(", ", darstellerNames));
+                    ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(
+                            video.getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                     view.findViewById(R.id.dialog_video_Darsteller).setSelected(true);
-                    ((TextView) view.findViewById(R.id.dialog_video_Studio)).setText(String.join(", ", studioNames));
+                    ((TextView) view.findViewById(R.id.dialog_video_Studio)).setText(
+                            video.getStudioList().stream().map(uuid -> database.studioMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                     view.findViewById(R.id.dialog_video_Studio).setSelected(true);
-                    ((TextView) view.findViewById(R.id.dialog_video_Genre)).setText(String.join(", ", genreNames));
+                    ((TextView) view.findViewById(R.id.dialog_video_Genre)).setText(
+                            video.getGenreList().stream().map(uuid -> database.genreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                     view.findViewById(R.id.dialog_video_Genre).setSelected(true);
                     view.findViewById(R.id.dialog_video_details).setVisibility(View.VISIBLE);
                     ((TextView) view.findViewById(R.id.dialog_video_Url)).setText(video.getUrl());
@@ -364,14 +361,14 @@ public class VideoActivity extends AppCompatActivity {
                     });
 
                     view.findViewById(R.id.dialog_video_editViews).setOnClickListener(view1 ->
-                            showCalenderDialog(Arrays.asList(video), dialogVideoPair));
+                            showCalenderDialog(Arrays.asList(video), detailDialog));
                 })
-                .show();
-        returnDialog.setOnDismissListener(dialogInterface -> dialogVideoPair = null);
+                .setOnDialogDismiss(customDialog -> detailDialog = null);
+        returnDialog.show();
         return returnDialog;
     }
 
-    public void showCalenderDialog(List<Video> videoList, Pair<Dialog, Video> dialogVideoPair) {
+    public void showCalenderDialog(List<Video> videoList, CustomDialog detailDialog) {
         CustomDialog.Builder(this)
                 .setTitle("Ansichten Bearbeiten")
                 .setView(R.layout.dialog_edit_views)
@@ -384,7 +381,7 @@ public class VideoActivity extends AppCompatActivity {
                     Utility.setupCalender(this, calendarView, ((LinearLayout) view), videoList, false);
                 })
                 .show().setOnDismissListener(dialogInterface -> {
-                    ((TextView) dialogVideoPair.first.findViewById(R.id.dialog_video_views))
+                    ((TextView) detailDialog.findViewById(R.id.dialog_video_views))
                             .setText(String.valueOf(videoList.get(0).getDateList().size()));
                     this.reLoadVideoRecycler();
                 });
@@ -512,11 +509,8 @@ public class VideoActivity extends AppCompatActivity {
 
         Utility.showCenterdToast(this, "Video gespeichert" + (addedYesterday ? "\nAutomatisch für gestern eingetragen" : ""));
 
-        if (dialogVideoPair == null)
-            return;
-
-        dialogVideoPair.first.dismiss();
-        dialogVideoPair = new Pair<>(showDetailDialog(object), dialogVideoPair.second);
+        if (detailDialog != null)
+            detailDialog.reloadView();
 
     }
 

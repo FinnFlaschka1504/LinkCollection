@@ -65,7 +65,7 @@ public class KnowledgeActivity extends AppCompatActivity {
     private SearchView videos_search;
     private ArrayList<Knowledge> allKnowledgeList;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.CATEGORY, FILTER_TYPE.CONTENT));
-    private Dialog detailDialog;
+    private CustomDialog detailDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -284,11 +284,11 @@ public class KnowledgeActivity extends AppCompatActivity {
         return returnDialog.getDialog();
     }
 
-    private Dialog showDetailDialog(Knowledge knowledge) {
+    private CustomDialog showDetailDialog(Knowledge knowledge) {
         setResult(RESULT_OK);
         List<String> categoriesNames = new ArrayList<>();
         knowledge.getCategoryIdList().forEach(uuid -> categoriesNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
-        Dialog returnDialog = CustomDialog.Builder(this)
+        CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle("Deteil Ansicht")
                 .setView(R.layout.dialog_detail_knowledge)
                 .setButtonType(CustomDialog.ButtonType.CUSTOM)
@@ -308,8 +308,8 @@ public class KnowledgeActivity extends AppCompatActivity {
                         showSourcesDialog(knowledge, view.findViewById(R.id.dialog_detailKnowledge_sources),false);
                     });
                 })
-                .show();
-        returnDialog.setOnDismissListener(dialogInterface -> detailDialog = null);
+                .setOnDialogDismiss(customDialog -> detailDialog = null);
+        returnDialog.show();
         return returnDialog;
     }
 
@@ -333,12 +333,8 @@ public class KnowledgeActivity extends AppCompatActivity {
 
         Utility.showCenterdToast(this, "Wissen gespeichert");
 
-        if (detailDialog == null)
-            return;
-
-        detailDialog.dismiss();
-        detailDialog = showDetailDialog(knowledge);
-
+        if (detailDialog != null)
+            detailDialog.reloadView();
     }
 
     private void showRandomDialog() {

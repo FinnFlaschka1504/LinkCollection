@@ -7,6 +7,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Pair;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -14,10 +15,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.akexorcist.roundcornerprogressbar.RoundCornerProgressBar;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
+import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
@@ -25,6 +28,7 @@ import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,6 +51,7 @@ public class Settings extends AppCompatActivity {
     public static final String SETTING_OTHERS_USER = "SETTING_OTHERS_USER";
     public static final String SETTING_OTHERS_DARK_MODE = "SETTING_OTHERS_DARK_MODE";
     public static final String SETTING_SPACE_SHOWN_ = "SETTING_SPACE_SHOWN_";
+    public static final String SETTING_SPACE_ORDER = "SETTING_SPACE_ORDER";
     public static Map<String, String> settingsMap = new HashMap<>();
 
     static Database database = Database.getInstance();
@@ -60,6 +65,7 @@ public class Settings extends AppCompatActivity {
 
     Database.DatabaseReloadListener databaseReloadListener;
     CustomRecycler spaceRecycler_customRecycler;
+    private boolean spaceOrderChanged;
 
     //  ----- Static ----->
     public static void startSettings_ifNeeded(Context context) {
@@ -129,7 +135,7 @@ public class Settings extends AppCompatActivity {
         if (!allSpaces.isEmpty())
             return;
 
-        allSpaces.add(new Space(context.getString(R.string.bottomMenu_video)).setActivity(VideoActivity.class).setItemId(Space.SPACE_VIDEO).setIconId(R.drawable.ic_videos).setLayoutId(R.layout.main_fragment_videos)
+        allSpaces.add(new Space(context.getString(R.string.bottomMenu_video), context.getString(R.string.bottomMenu_videos)).setActivity(VideoActivity.class).setItemId(Space.SPACE_VIDEO).setIconId(R.drawable.ic_videos).setLayoutId(R.layout.main_fragment_videos)
                 .setSetLayout(view -> {
                     ((TextView) view.findViewById(R.id.main_videoCount)).setText(String.valueOf(database.videoMap.size()));
                     ((TextView) view.findViewById(R.id.main_darstellerCount)).setText(String.valueOf(database.darstellerMap.size()));
@@ -140,22 +146,28 @@ public class Settings extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.main_daysCount)).setText(String.valueOf(dateSet.size()));
                     ((TextView) view.findViewById(R.id.main_watchLaterCount)).setText(String.valueOf(database.watchLaterList.size()));
                 }));
-        allSpaces.add(new Space(context.getString(R.string.bottomMenu_knowledge)).setActivity(KnowledgeActivity.class).setItemId(Space.SPACE_KNOWLEDGE).setIconId(R.drawable.ic_knowledge).setLayoutId(R.layout.main_fragment_knowledge)
+        allSpaces.add(new Space(context.getString(R.string.bottomMenu_knowledge), context.getString(R.string.bottomMenu_knowledge)).setActivity(KnowledgeActivity.class).setItemId(Space.SPACE_KNOWLEDGE).setIconId(R.drawable.ic_knowledge).setLayoutId(R.layout.main_fragment_knowledge)
                 .setSetLayout(view -> {
-                    ((TextView) view.findViewById(R.id.main_knowledgeCount)).setText(String.valueOf(database.knowledgeMap.size()));
-                    ((TextView) view.findViewById(R.id.main_categoryCount)).setText(String.valueOf(database.knowledgeCategoryMap.size()));
+                    ((TextView) view.findViewById(R.id.main_knowledge_Count)).setText(String.valueOf(database.knowledgeMap.size()));
+                    ((TextView) view.findViewById(R.id.main_knowledge_categoryCount)).setText(String.valueOf(database.knowledgeCategoryMap.size()));
                 }));
-        allSpaces.add(new Space(context.getString(R.string.bottomMenu_owe)).setActivity(OweActivity.class).setItemId(Space.SPACE_OWE).setIconId(R.drawable.ic_euro).setLayoutId(R.layout.main_fragment_owe)
+        allSpaces.add(new Space(context.getString(R.string.bottomMenu_owe), context.getString(R.string.bottomMenu_owe)).setActivity(OweActivity.class).setItemId(Space.SPACE_OWE).setIconId(R.drawable.ic_euro).setLayoutId(R.layout.main_fragment_owe)
                 .setSetLayout(view -> {
 //                    RoundCornerProgressBar main_owe_progressBarOwn = view.findViewById(R.id.main_owe_progressBarOwn);
 //                    main_owe_progressBarOwn.setProgress(70);
 //                    main_owe_progressBarOwn.setMax(100);
-                    RoundCornerProgressBar main_owe_progressBarOthers = view.findViewById(R.id.main_owe_progressBarOthers);
-                    main_owe_progressBarOthers.setProgress(30);
-                    main_owe_progressBarOthers.setMax(100);
-                    ((TextView) view.findViewById(R.id.main_owe_countAll)).setText(String.valueOf(database.oweMap.size()));
+//                    RoundCornerProgressBar main_owe_progressBarOthers = view.findViewById(R.id.main_owe_progressBarOthers);
+//                    main_owe_progressBarOthers.setProgress(30);
+//                    main_owe_progressBarOthers.setMax(100);
+                    ((TextView) view.findViewById(R.id.main_owe_countAll)).setText(String.valueOf(database.oweMap.values().stream().filter(Owe::isOpen).count()));
                     ((TextView) view.findViewById(R.id.main_owe_countPerson)).setText(String.valueOf(database.personMap.size()));
                 }));
+        allSpaces.add(new Space(context.getString(R.string.bottomMenu_joke), context.getString(R.string.bottomMenu_jokes)).setActivity(JokeActivity.class).setItemId(Space.SPACE_JOKE).setIconId(R.drawable.ic_jokes).setLayoutId(R.layout.main_fragment_joke)
+                .setSetLayout(view -> {
+                    ((TextView) view.findViewById(R.id.main_joke_Count)).setText(String.valueOf(database.jokeMap.size()));
+                    ((TextView) view.findViewById(R.id.main_joke_categoryCount)).setText(String.valueOf(database.jokeCategoryMap.size()));
+                }));
+
 
         for (Space space : allSpaces) {
             settingsMap.put(SETTING_SPACE_SHOWN_ + space.getName().toUpperCase(), String.valueOf(space.isShown()));
@@ -166,7 +178,22 @@ public class Settings extends AppCompatActivity {
             String key = SETTING_SPACE_SHOWN_ + space.getName().toUpperCase();
             space.setShown(Boolean.parseBoolean(settingsMap.get(key)));
         }
-        // ToDo: settingseintrag verändern
+        String spaceOrder_string = mySPR_settings.getString(SETTING_SPACE_ORDER, null);
+        if (spaceOrder_string != null) {
+            Map<Integer,Integer> spaceOrder = Arrays.stream(spaceOrder_string.split(";")).map(s -> {
+                String[] strings = s.split(":");
+                return new Pair<>(Integer.parseInt(strings[0]), Integer.parseInt(strings[1]));
+            }).collect(Collectors.toMap(pair -> pair.first, pair -> pair.second));
+            allSpaces.sort((space1, space2) -> {
+                Integer pos1 = spaceOrder.get(space1.getItemId());
+                Integer pos2 = spaceOrder.get(space2.getItemId());
+
+                if (pos1 == null || pos2 == null)
+                    return 0;
+                else
+                    return pos1.compareTo(pos2);
+            });
+        }
     }
 
 
@@ -208,7 +235,7 @@ public class Settings extends AppCompatActivity {
                 .setRecycler(spaceRecycler)
                 .setItemLayout(R.layout.list_item_space_setting)
                 .setGetActiveObjectList(() -> allSpaces.stream().filter(Space::isShown).collect(Collectors.toList()))
-                .setSetItemContent((CustomRecycler.SetItemContent<Space>) (itemView, space) -> ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getName()))
+                .setSetItemContent((CustomRecycler.SetItemContent<Space>) (itemView, space) -> ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getPlural()))
                 .removeLastDivider()
                 .generateCustomRecycler();
 
@@ -222,6 +249,22 @@ public class Settings extends AppCompatActivity {
     }
 
     private void setListeners() {
+        settings_others_changeDatabaseCode.setOnClickListener(v -> {
+            int okButtonId = View.generateViewId();
+            CustomDialog.Builder(this)
+                    .setTitle("Datenbank-Code Ändern")
+                    .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
+                    .setEdit(new CustomDialog.EditBuilder().setText(Database.databaseCode).setFireButtonOnOK(okButtonId))
+                    .addButton(CustomDialog.OK_BUTTON, (customDialog, dialog) -> {
+                        String code = CustomDialog.getEditText(dialog).trim();
+                        SharedPreferences mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
+                        mySPR_daten.edit().putString(Database.DATABASE_CODE, code).commit();
+                        Database.getInstance(mySPR_daten, database1 -> {}, false);
+                    }, okButtonId)
+                    .setOnDialogDismiss(customDialog -> settings_others_databaseCode.setText(CustomDialog.getEditText(customDialog.getDialog())))
+                    .show();
+        });
+
         settings_others_spaceSelector.setOnClickListener(v -> {
             CustomDialog.Builder(this)
                     .setTitle("Bereiche Auswählen")
@@ -229,7 +272,7 @@ public class Settings extends AppCompatActivity {
                             .setItemLayout(R.layout.list_item_space_shown)
                             .setObjectList(allSpaces)
                             .setSetItemContent((CustomRecycler.SetItemContent<Space>)(itemView, space) -> {
-                                ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getName());
+                                ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getPlural());
 
                                 ((CheckBox) itemView.findViewById(R.id.list_spaceSetting_shown)).setChecked(space.isShown());
                             })
@@ -251,25 +294,13 @@ public class Settings extends AppCompatActivity {
                                 );
                                 setResult(RESULT_OK);
                             })
+                            .enableDragAndDrop(objectList -> {
+                                spaceOrderChanged = true;
+                                setResult(RESULT_OK);
+                            })
                             .generate())
                     .show()
                     .setOnDismissListener(dialog -> updateSpaceStatusSettings());
-        });
-
-        settings_others_changeDatabaseCode.setOnClickListener(v -> {
-            int okButtonId = View.generateViewId();
-            CustomDialog.Builder(this)
-                    .setTitle("Datenbank-Code Ändern")
-                    .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
-                    .setEdit(new CustomDialog.EditBuilder().setText(Database.databaseCode).setFireButtonOnOK(okButtonId))
-                    .addButton(CustomDialog.OK_BUTTON, (customDialog, dialog) -> {
-                        String code = CustomDialog.getEditText(dialog).trim();
-                        SharedPreferences mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
-                        mySPR_daten.edit().putString(Database.DATABASE_CODE, code).commit();
-                        Database.getInstance(mySPR_daten, database1 -> {}, false);
-                    }, okButtonId)
-                    .setOnDialogDismiss(customDialog -> settings_others_databaseCode.setText(CustomDialog.getEditText(customDialog.getDialog())))
-                    .show();
         });
     }
 
@@ -278,7 +309,9 @@ public class Settings extends AppCompatActivity {
         public static final int SPACE_VIDEO = 1;
         public static final int SPACE_KNOWLEDGE = 2;
         public static final int SPACE_OWE = 3;
+        public static final int SPACE_JOKE = 4;
 
+        private String plural;
         private int itemId;
         private boolean shown = true;
         private int iconId;
@@ -287,8 +320,18 @@ public class Settings extends AppCompatActivity {
         private SetLayout setLayout;
         private Class activity;
 
-        public Space(String name) {
+        public Space(String name, String plural) {
             this.name = name;
+            this.plural = plural;
+        }
+
+        public String getPlural() {
+            return plural;
+        }
+
+        public Space setPlural(String plural) {
+            this.plural = plural;
+            return this;
         }
 
         public boolean isShown() {
@@ -383,12 +426,26 @@ public class Settings extends AppCompatActivity {
         for (Space space : allSpaces) {
             changeSetting(SETTING_SPACE_SHOWN_ + space.getName().toUpperCase(), String.valueOf(space.isShown()));
         }
+
+        settings_others_aktiveSpaces.setText(
+                allSpaces.stream().filter(Space::isShown).map(ParentClass::getName).collect(Collectors.joining(", ")));
     }
 
     @Override
     public boolean onSupportNavigateUp() {
         finish();
         return true;
+    }
+
+    @Override
+    protected void onPause() {
+        if (spaceOrderChanged) {
+            List<String> spaceOrder = new ArrayList<>();
+            for (Space space : allSpaces)
+                spaceOrder.add(space.getItemId() + ":" + allSpaces.indexOf(space));
+            mySPR_settings.edit().putString(SETTING_SPACE_ORDER, String.join(";", spaceOrder)).apply();
+        }
+        super.onPause();
     }
 
     @Override

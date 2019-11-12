@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
@@ -48,11 +49,13 @@ public class MainActivity extends AppCompatActivity {
     public static final int START_GENRE = 4;
     public static final int START_VIDEO_FROM_CALENDER = 5;
     public static final int START_WATCH_LATER = 6;
-    public static final int START_KNOWLEDGE = 7;
     public static final int START_SETTINGS = 8;
+    public static final int START_KNOWLEDGE = 7;
     public static final int START_KNOWLEDGE_CATEGORY = 9;
     public static final int START_OWE = 10;
     public static final int START_PERSON = 11;
+    public static final int START_JOKE = 7;
+    public static final int START_JOKE_CATEGORY = 9;
 
     Database database;
     SharedPreferences mySPR_daten;
@@ -60,27 +63,6 @@ public class MainActivity extends AppCompatActivity {
     private Dialog calenderDialog;
     private boolean firstTime;
 
-//    private enum  FRAGMENT_TYPE {
-//        VIDEOS(VIDEO_INT), KNOWLEDGE(KNOWLEDGE_INT);
-//
-//        private int id;
-//
-//        FRAGMENT_TYPE(int id) {
-//            this.id = id;
-//        }
-//
-//        public int getId() {
-//            return id;
-//        }
-//        static FRAGMENT_TYPE getType(int id) {
-//            for (FRAGMENT_TYPE fragmentType : FRAGMENT_TYPE.values()) {
-//                if (fragmentType.id == id)
-//                    return fragmentType;
-//            }
-//            return null;
-//        }
-//    }
-//    private FRAGMENT_TYPE currentSpaceType;
     private static Settings.Space currentSpace;
 
     // ToDo: serien (als expandeble Layout)
@@ -169,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (count == 4)
                 break;
-            bottomNavigationView.getMenu().add(Menu.NONE, space.getItemId(), Menu.NONE, space.getName()).setIcon(space.getIconId());
+            bottomNavigationView.getMenu().add(Menu.NONE, space.getItemId(), Menu.NONE, space.getPlural()).setIcon(space.getIconId());
             count++;
         }
 
@@ -183,9 +165,6 @@ public class MainActivity extends AppCompatActivity {
         if (!currentSpace.hasFragment())
             currentSpace.setFragment(new SpaceFragment(currentSpace.getLayoutId()));
         SpaceFragment.currentSpace = currentSpace;
-//        getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container
-//                , currentSpace.getFragment()
-//        ).runOnCommit(this::setCounts).commitAllowingStateLoss();
         bottomNavigationView.setOnNavigationItemSelectedListener(onNavigationItemSelectedListener);
         bottomNavigationView.setSelectedItemId(currentSpace.getItemId());
     }
@@ -329,6 +308,24 @@ public class MainActivity extends AppCompatActivity {
         OweActivity.showTradeOffDialog(this, view);
     }
 //  <----- Owe -----
+
+
+//  ----- Joke ----->
+    public void openJokeActivity(View view) {
+        if (!Database.isReady())
+            return;
+        Intent intent = new Intent(this, JokeActivity.class);
+        startActivityForResult(intent, START_JOKE);
+    }
+
+    public void openJokeCategoryActivity(View view) {
+        if (!Database.isReady())
+            return;
+        Intent intent = new Intent(this, CategoriesActivity.class);
+        intent.putExtra(EXTRA_CATEGORY, CategoriesActivity.CATEGORIES.JOKE_CATEGORIES);
+        startActivityForResult(intent, START_JOKE_CATEGORY);
+    }
+//  <----- Joke -----
 
     public static void setCounts() {
         if (currentSpace != null)

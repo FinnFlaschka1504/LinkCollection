@@ -69,7 +69,7 @@
                             android:textStyle="bold" />
 
                         <TextView
-                            android:id="@+id/main_knowledgeCount"
+                            android:id="@+id/main_knowledge_Count"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="–" />
@@ -128,7 +128,7 @@
                             android:textStyle="bold" />
 
                         <TextView
-                            android:id="@+id/main_categoryCount"
+                            android:id="@+id/main_knowledge_categoryCount"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="–" />

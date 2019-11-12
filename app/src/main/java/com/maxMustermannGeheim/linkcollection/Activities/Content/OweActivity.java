@@ -81,7 +81,7 @@ public class OweActivity extends AppCompatActivity {
     private ArrayList<Owe> allOweList;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.DESCRIPTION, FILTER_TYPE.PERSON, FILTER_TYPE.OWN, FILTER_TYPE.OTHER
             , FILTER_TYPE.OPEN, FILTER_TYPE.CLOSED));
-    private Dialog detailDialog;
+    private CustomDialog detailDialog;
     private boolean fireSearch;
 
     @Override
@@ -370,9 +370,9 @@ public class OweActivity extends AppCompatActivity {
         return returnDialog.getDialog();
     }
 
-    private Dialog showDetailDialog(Owe owe) {
+    private CustomDialog showDetailDialog(Owe owe) {
         setResult(RESULT_OK);
-        Dialog returnDialog = CustomDialog.Builder(this)
+        CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle("Deteil Ansicht")
                 .setView(R.layout.dialog_detail_owe)
                 .setButtonType(CustomDialog.ButtonType.CUSTOM)
@@ -390,8 +390,8 @@ public class OweActivity extends AppCompatActivity {
                         showItemsDialog(owe, view.findViewById(R.id.dialog_detail_owe_items),false);
                     });
                 })
-                .show();
-        returnDialog.setOnDismissListener(dialogInterface -> detailDialog = null);
+                .setOnDialogDismiss(customDialog -> detailDialog = null)
+                .show_custom();
         return returnDialog;
     }
 
@@ -413,12 +413,8 @@ public class OweActivity extends AppCompatActivity {
 
         Utility.showCenterdToast(this, "Schulden gespeichert");
 
-        if (detailDialog == null)
-            return;
-
-        detailDialog.dismiss();
-        detailDialog = showDetailDialog(owe);
-
+        if (detailDialog != null)
+            detailDialog.reloadView();
     }
 
 //    private void showRandomDialog() {
@@ -765,8 +761,7 @@ public class OweActivity extends AppCompatActivity {
                             String personId = database.personMap.values().stream().filter(person -> person.getName().equals(personName)).findFirst().get().getUuid();
                             Owe.Item newItem = new Owe.Item(personId, Double.parseDouble(amount_text));
                             owe.getItemList().add(newItem);
-                        }
-                        else {
+                        } else {
                             String personName = dialog_items_name.getEditText().getText().toString().trim();
                             String personId = database.personMap.values().stream().filter(person -> person.getName().equals(personName)).findFirst().get().getUuid();
                             currentItem[0].setPersonId(personId);

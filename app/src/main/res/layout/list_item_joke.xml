@@ -37,23 +37,26 @@
                     android:orientation="horizontal">
 
                     <TextView
+                        android:id="@+id/listItem_joke_title_label"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginRight="8dp"
-                        android:text="Titel:"
+                        android:text="Aufbau:"
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/listItem_knowledge_title"
+                        android:id="@+id/listItem_joke_title"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:fadingEdge="horizontal"
                         android:maxLines="2"
                         tools:text="Test" />
                 </LinearLayout>
 
                 <LinearLayout
-                    android:id="@+id/listItem_knowledge_rating_layout"
+                    android:id="@+id/listItem_joke_rating_layout"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:orientation="horizontal"
@@ -69,7 +72,7 @@
                         android:background="?android:attr/listDivider" />
 
                     <TextView
-                        android:id="@+id/listItem_knowledge_rating"
+                        android:id="@+id/listItem_joke_rating"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="2.5" />
@@ -83,6 +86,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/listItem_joke_punchLine_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
@@ -91,11 +95,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginRight="8dp"
-                    android:text="Inhalt:"
+                    android:text="Punch-Line:"
                     android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/listItem_knowledge_content"
+                    android:id="@+id/listItem_joke_punchLine"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -125,7 +129,7 @@
                         android:textStyle="bold" />
 
                     <TextView
-                        android:id="@+id/listItem_knowledge_categories"
+                        android:id="@+id/listItem_joke_categories"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -142,7 +146,7 @@
         </LinearLayout>
 
         <ImageView
-            android:id="@+id/listItem_knowledge_details"
+            android:id="@+id/listItem_joke_details"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"

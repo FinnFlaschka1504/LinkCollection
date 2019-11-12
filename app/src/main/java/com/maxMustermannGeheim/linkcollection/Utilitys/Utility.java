@@ -23,11 +23,14 @@ import android.widget.Toast;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
+import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
@@ -224,6 +227,23 @@ public class Utility {
     }
     //  <----- ... in Owe -----
 
+    //  ----- ... in Joke ----->
+    public static boolean containedInJoke(String query, Joke joke, HashSet<JokeActivity.FILTER_TYPE> filterTypeSet) {
+        if (filterTypeSet.contains(JokeActivity.FILTER_TYPE.NAME) && joke.getName().toLowerCase().contains(query))
+            return true;
+        if (filterTypeSet.contains(JokeActivity.FILTER_TYPE.PUNCHLINE) && joke.getPunchLine().toLowerCase().contains(query))
+            return true;
+        if (filterTypeSet.contains(JokeActivity.FILTER_TYPE.CATEGORY)) {
+            for (String categoryId : joke.getCategoryIdList()) {
+                if (getObjectFromDatabase(CategoriesActivity.CATEGORIES.JOKE_CATEGORIES, categoryId).getName().toLowerCase().contains(query))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+    //  <----- ... in Joke -----
+
 //  <----- Filter -----
 
     public static void setupCalender(Context context, CompactCalendarView calendarView, LinearLayout layout, List<Video> videoList, boolean openVideo) {
@@ -381,6 +401,9 @@ public class Utility {
             case KNOWLEDGE_CATEGORIES:
                 allObjectsList = new ArrayList<>(database.knowledgeCategoryMap.values());
                 break;
+            case JOKE_CATEGORIES:
+                allObjectsList = new ArrayList<>(database.jokeCategoryMap.values());
+                break;
         }
 
         int saveButtonId = View.generateViewId();
@@ -411,6 +434,9 @@ public class Utility {
                                         break;
                                     case KNOWLEDGE_CATEGORIES:
                                         database.knowledgeCategoryMap.put(parentClass.getUuid(), (KnowledgeCategory) parentClass);
+                                        break;
+                                    case JOKE_CATEGORIES:
+                                        database.jokeCategoryMap.put(parentClass.getUuid(), (JokeCategory) parentClass);
                                         break;
                                 }
                                 selectedUuidList.add(parentClass.getUuid());
@@ -449,6 +475,11 @@ public class Utility {
                             selectedUuidList.forEach(uuid -> nameList.add(database.knowledgeCategoryMap.get(uuid).getName()));
                             ((TextView) addOrEditDialog[0].findViewById(R.id.dialog_editOrAddKnowledge_categories)).setText(String.join(", ", nameList));
                             break;
+                        case JOKE_CATEGORIES:
+                            ((Joke) o).setCategoryIdList(selectedUuidList);
+                            selectedUuidList.forEach(uuid -> nameList.add(database.jokeCategoryMap.get(uuid).getName()));
+                            ((TextView) addOrEditDialog[0].findViewById(R.id.dialog_editOrAddJoke_categories)).setText(String.join(", ", nameList));
+                            break;
                     }
                 }, saveButtonId)
                 .show();
@@ -462,25 +493,6 @@ public class Utility {
                 .hideDivider()
                 .setSetItemContent((CustomRecycler.SetItemContent<String>)(itemView, uuid) -> {
                     ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(getObjectFromDatabase(category, uuid).getName());
-//                    switch (category){
-//                        case DARSTELLER:
-//                            Darsteller darsteller = database.darstellerMap.get(uuid);
-//                            ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(darsteller.getName());
-//                            break;
-//                        case STUDIOS:
-//                            Studio studio = database.studioMap.get(uuid);
-//                            ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(studio.getName());
-//                            break;
-//                        case GENRE:
-//                            Genre genre = database.genreMap.get(uuid);
-//                            ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(genre.getName());
-//                            break;
-//                        case KNOWLEDGE_CATEGORIES:
-//                            Knowledge knowledge = database.knowledgeMap.get(uuid);
-//                            ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(knowledge.getName());
-//                            break;
-//                    }
-
                     dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_nothingSelected).setVisibility(View.GONE);
                 })
                 .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
@@ -510,23 +522,11 @@ public class Utility {
                 .setMultiClickEnabled(true)
                 .setGetActiveObjectList(() -> {
                     if (searchQuerry[0].equals("")) {
+                        allObjectsList.sort((o1, o2) -> o1.getName().compareTo(o2.getName()));
                         return allObjectsList;
                     }
                     return getMapFromDatabase(category).values().stream().filter(parentClass -> parentClass.getName().toLowerCase().contains(searchQuerry[0].toLowerCase()))
                             .sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList());
-//                    switch (category){
-//                        case DARSTELLER:
-//                            return database.darstellerMap.values().stream().filter(parentClass -> parentClass.getName().toLowerCase().contains(searchQuerry[0].toLowerCase()))
-//                                    .sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList());
-//                        case STUDIOS:
-//                            return database.studioMap.values().stream().filter(parentClass -> parentClass.getName().toLowerCase().contains(searchQuerry[0].toLowerCase()))
-//                                    .sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList());
-//                        case GENRE:
-//                            return database.genreMap.values().stream().filter(parentClass -> parentClass.getName().toLowerCase().contains(searchQuerry[0].toLowerCase()))
-//                                    .sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList());
-//                    }
-//                    return new ArrayList();
-//                    sortedAllObjectIdList
                 })
                 .setSetItemContent((itemView, object) -> {
                     ParentClass parentClass = (ParentClass) object;
@@ -589,6 +589,8 @@ public class Utility {
                 return database.genreMap;
             case KNOWLEDGE_CATEGORIES:
                 return database.knowledgeCategoryMap;
+            case JOKE_CATEGORIES:
+                return database.jokeCategoryMap;
         }
         return null;
     }

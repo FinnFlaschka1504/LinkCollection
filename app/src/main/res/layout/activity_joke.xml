@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".Activities.Content.KnowledgeActivity"
+    tools:context=".Activities.Content.JokeActivity"
     android:orientation="vertical">
 
     <SearchView
@@ -26,6 +26,12 @@
         android:layout_height="1dp"
         android:background="?android:attr/listDivider"
         app:layout_constraintTop_toBottomOf="@id/search" />
+
+<!--    <Button-->
+<!--        android:id="@+id/importJokes"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="Witze Importieren"/>-->
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler"

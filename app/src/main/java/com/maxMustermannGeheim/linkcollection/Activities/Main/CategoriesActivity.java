@@ -20,9 +20,11 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
@@ -53,7 +55,7 @@ public class CategoriesActivity extends AppCompatActivity {
         VIDEO("Video", "Videos", VideoActivity.class), DARSTELLER("Darsteller", "Darsteller", VideoActivity.class)
         , STUDIOS("Studio", "Studios", VideoActivity.class), GENRE("Genre", "Genres", VideoActivity.class)
         , WATCH_LATER("WATCH_LATER", "WATCH_LATER", VideoActivity.class), KNOWLEDGE_CATEGORIES("Kategorie", "Kategorien", KnowledgeActivity.class)
-        , PERSON("Person", "Personen", OweActivity.class);
+        , PERSON("Person", "Personen", OweActivity.class) , JOKE_CATEGORIES("Witz", "Witze", JokeActivity.class);
 
         private String singular;
         private String plural;
@@ -206,6 +208,17 @@ public class CategoriesActivity extends AppCompatActivity {
                     pairList.add(new Pair<>(parentClass, count[0]));
                 }
                 break;
+            case JOKE_CATEGORIES:
+                for (ParentClass parentClass : database.jokeCategoryMap.values()) {
+                    int count = 0;
+                    for (Joke joke : database.jokeMap.values()) {
+                        if (joke.getCategoryIdList().contains(parentClass.getUuid()))
+                            count++;
+                    }
+                    pairList.add(new Pair<>(parentClass, count));
+                }
+                break;
+
         }
         allDatenObjektPairList = pairList;
     }
@@ -325,6 +338,13 @@ public class CategoriesActivity extends AppCompatActivity {
                     owe.setItemList(owe.getItemList().stream().filter(item1 -> !item1.getPersonId().equals(parentClass.getUuid())).collect(Collectors.toList()));
                 }
                 break;
+            case JOKE_CATEGORIES:
+                database.jokeCategoryMap.remove(parentClass.getUuid());
+                for (Joke joke : database.jokeMap.values()) {
+                    joke.getCategoryIdList().remove(parentClass.getUuid());
+                }
+                break;
+
         }
         Database.saveAll();
         setResult(RESULT_OK);

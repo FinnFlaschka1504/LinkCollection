@@ -10,8 +10,10 @@
     <string name="action_settings">Settings</string>
 
     <string name="bottomMenu_video">Video</string>
+    <string name="bottomMenu_videos">Videos</string>
     <string name="bottomMenu_knowledge">Wissen</string>
     <string name="bottomMenu_owe">Schulden</string>
+    <string name="bottomMenu_joke">Witz</string>
     <string name="bottomMenu_jokes">Witze</string>
 
     <string-array name="ownOrOther">

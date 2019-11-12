@@ -91,12 +91,17 @@
             android:layout_height="1dp"
             android:background="@color/colorDdivider" />
 
-        <LinearLayout
+        <ScrollView
             android:id="@+id/dialog_custom_layout_view_interface"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:orientation="vertical"></LinearLayout>
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+<!--            <LinearLayout-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="match_parent"-->
+<!--                android:orientation="vertical"/>-->
+        </ScrollView>
 
         <View
             android:id="@+id/dialog_custom_divider6"

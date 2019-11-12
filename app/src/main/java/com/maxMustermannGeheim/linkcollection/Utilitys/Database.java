@@ -14,6 +14,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
+import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
@@ -75,23 +77,33 @@ public class Database {
     public static final String PERSON_MAP = "PERSON_MAP";
     public Map<String, Owe> oweMap = new HashMap<>();
     public Map<String, Person> personMap = new HashMap<>();
-    
+
+    public static final String JOKE = "JOKE";
+    public static final String JOKE_MAP = "JOKE_MAP";
+    public static final String JOKE_CATEGORY_MAP = "JOKE_CATEGORY_MAP";
+    public Map<String, Joke> jokeMap = new HashMap<>();
+    public Map<String, JokeCategory> jokeCategoryMap = new HashMap<>();
+
+
     private List<Content> contentList;
     {
-        Content databaseCode_Content = new Content<String, String>(String.class, "databaseCode", DATABASE_CODE).setSaveOnline(false);
+        Content databaseCode_content = new Content<String, String>(String.class, "databaseCode", DATABASE_CODE).setSaveOnline(false);
         contentList = Arrays.asList(
-                databaseCode_Content
-                , new Content<Map,Video>(Video.class, videoMap, databaseCode_Content, VIDEOS, VIDEO_MAP)
-                , new Content<Map,Studio>(Studio.class, studioMap, databaseCode_Content, VIDEOS, STUDIO_MAP)
-                , new Content<Map,Darsteller>(Darsteller.class, darstellerMap, databaseCode_Content, VIDEOS, DARSTELLER_MAP)
-                , new Content<Map,Genre>(Genre.class, genreMap, databaseCode_Content, VIDEOS, GENRE_MAP)
-                , new Content<List,String>(String.class, watchLaterList, databaseCode_Content, VIDEOS, WATCH_LATER_LIST)
+                databaseCode_content
+                , new Content<Map,Video>(Video.class, videoMap, databaseCode_content, VIDEOS, VIDEO_MAP)
+                , new Content<Map,Studio>(Studio.class, studioMap, databaseCode_content, VIDEOS, STUDIO_MAP)
+                , new Content<Map,Darsteller>(Darsteller.class, darstellerMap, databaseCode_content, VIDEOS, DARSTELLER_MAP)
+                , new Content<Map,Genre>(Genre.class, genreMap, databaseCode_content, VIDEOS, GENRE_MAP)
+                , new Content<List,String>(String.class, watchLaterList, databaseCode_content, VIDEOS, WATCH_LATER_LIST)
 
-                , new Content<Map, Knowledge>(Knowledge.class, knowledgeMap, databaseCode_Content, KNOWLEDGE, KNOWLEDGE_MAP)
-                , new Content<Map, KnowledgeCategory>(KnowledgeCategory.class, knowledgeCategoryMap, databaseCode_Content, KNOWLEDGE, KNOWLEDGE_CATEGORY_MAP)
+                , new Content<Map, Knowledge>(Knowledge.class, knowledgeMap, databaseCode_content, KNOWLEDGE, KNOWLEDGE_MAP)
+                , new Content<Map, KnowledgeCategory>(KnowledgeCategory.class, knowledgeCategoryMap, databaseCode_content, KNOWLEDGE, KNOWLEDGE_CATEGORY_MAP)
 
-                , new Content<Map, Owe>(Owe.class, oweMap, databaseCode_Content, OWE, OWE_MAP)
-                , new Content<Map, Person>(Person.class, personMap, databaseCode_Content, OWE, PERSON_MAP)
+                , new Content<Map, Owe>(Owe.class, oweMap, databaseCode_content, OWE, OWE_MAP)
+                , new Content<Map, Person>(Person.class, personMap, databaseCode_content, OWE, PERSON_MAP)
+
+                , new Content<Map, Joke>(Joke.class, jokeMap, databaseCode_content, JOKE, JOKE_MAP)
+                , new Content<Map, JokeCategory>(JokeCategory.class, jokeCategoryMap, databaseCode_content, JOKE, JOKE_CATEGORY_MAP)
         );
     }
 //  <----- Content deklaration -----

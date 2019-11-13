@@ -5,6 +5,7 @@ import android.app.Dialog;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Color;
 import android.net.Uri;
 import android.view.Gravity;
@@ -13,6 +14,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.CheckBox;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
@@ -20,6 +22,9 @@ import android.widget.RelativeLayout;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
@@ -246,7 +251,7 @@ public class Utility {
 
 //  <----- Filter -----
 
-    public static void setupCalender(Context context, CompactCalendarView calendarView, LinearLayout layout, List<Video> videoList, boolean openVideo) {
+    public static void setupCalender(Context context, CompactCalendarView calendarView, FrameLayout layout, List<Video> videoList, boolean openVideo) {
         calendarView.removeAllEvents();
         TextView calender_month = layout.findViewById(R.id.fragmentCalender_month);
         ImageView calender_previousMonth = layout.findViewById(R.id.fragmentCalender_previousMonth);
@@ -341,18 +346,22 @@ public class Utility {
         });
     }
 
-    private static void setButtons(LinearLayout layout, int size) {
+    private static void setButtons(FrameLayout layout, int size) {
         layout.findViewById(R.id.dialog_editViews_add).setVisibility(size == 0 ? View.VISIBLE : View.GONE);
         layout.findViewById(R.id.dialog_editViews_remove).setVisibility(size != 0 ? View.VISIBLE : View.GONE);
     }
 
-    private static void loadVideoList(List<Event> eventList, LinearLayout layout, CustomRecycler customRecycler) {
+    private static void loadVideoList(List<Event> eventList, FrameLayout layout, CustomRecycler customRecycler) {
         TextView calender_noTrips = layout.findViewById(R.id.fragmentCalender_noTrips);
+        RecyclerView calender_videoList = layout.findViewById(R.id.fragmentCalender_videoList);
 
-        if (eventList.isEmpty())
+        if (eventList.isEmpty()) {
+            calender_videoList.setVisibility(View.GONE);
             calender_noTrips.setVisibility(View.VISIBLE);
-        else
+        } else {
+            calender_videoList.setVisibility(View.VISIBLE);
             calender_noTrips.setVisibility(View.GONE);
+        }
 
         customRecycler
                 .setObjectList(eventList)
@@ -596,11 +605,12 @@ public class Utility {
     }
 
 //  ----- PopupWindow ----->
-    public static void showPopupWindow(Context context, View anchor, View view) {
+    public static PopupWindow showPopupWindow(Context context, View anchor, View view) {
     PopupWindow popupWindow = new PopupWindow(view, RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT, true);
     popupWindow.showAsDropDown(anchor, 0, 0);
 
     dimBehind(popupWindow);
+    return popupWindow;
 }
 
     public static void dimBehind(PopupWindow popupWindow) {
@@ -619,6 +629,7 @@ public class Utility {
     }
 //  <----- PopupWindow -----
 
+
     public static class Triple<A,B,C> {
         public A first;
         public B second;
@@ -631,4 +642,41 @@ public class Utility {
         }
     }
 
+    public static class Quadruple<A,B,C,D> {
+        public A first;
+        public B second;
+        public C third;
+        public D fourth;
+
+        public Quadruple(A first, B second, C third, D fourth) {
+            this.first = first;
+            this.second = second;
+            this.third = third;
+            this.fourth = fourth;
+        }
+    }
+
+
+//  ----- Pixels ----->
+    public static int pxToDp(int px) {
+        return (int) (px / Resources.getSystem().getDisplayMetrics().density);
+    }
+
+    public static int dpToPx(int dp) {
+        return (int) (dp * Resources.getSystem().getDisplayMetrics().density);
+    }
+//  <----- Pixels -----
+
+
+    public static void sendText(AppCompatActivity activity, String text) {
+        Intent waIntent = new Intent(Intent.ACTION_SEND);
+        waIntent.setType("text/plain");
+        if (waIntent != null) {
+            waIntent.putExtra(Intent.EXTRA_TEXT, text);//
+            activity.startActivity(Intent.createChooser(waIntent, "App auswählen"));
+        } else {
+            Toast.makeText(activity, "WhatsApp not found", Toast.LENGTH_SHORT).show();
+        }
+
+    }
 }

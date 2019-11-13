@@ -474,15 +474,15 @@ public class CustomRecycler<T>{
             objectList.clear();
             objectList.addAll(getActiveObjectList.runGetActiveObjectList());
         }
-//        else{
-//            mAdapter.getDataset().clear();
-//            mAdapter.getDataset().addAll(objectList);
-//        }
         mAdapter.notifyDataSetChanged();
         return recycler;
     }
 
-
+    public RecyclerView reload(List objectList) {
+        mAdapter.dataset = objectList;
+        mAdapter.notifyDataSetChanged();
+        return recycler;
+    }
 
     public RecyclerView update(Integer... index) {
         if (useActiveObjectList)

@@ -22,6 +22,7 @@ public class Video extends ParentClass {
     private Float rating = -1f;
     private List<Date> dateList = new ArrayList<>();
     private List<String> genreList = new ArrayList<>();
+    private Date release;
 
     public Video(String name) {
         uuid = "video_" + UUID.randomUUID().toString();
@@ -112,6 +113,22 @@ public class Video extends ParentClass {
         return this;
     }
 
+    public Date getRelease() {
+        return release;
+    }
+
+    public Video setRelease(Date release) {
+        this.release = release;
+        return this;
+    }
+
+    public boolean isUpcomming() {
+        if (release != null)
+            return new Date().before(release);
+        else
+            return false;
+    }
+
     public Video cloneVideo() {
         Video video = new Video();
         video.name = this.name;
@@ -122,6 +139,7 @@ public class Video extends ParentClass {
         video.genreList = new ArrayList<>(this.genreList);
         video.studioList = this.studioList;
         video.url = this.url;
+        video.release = this.release;
         return video;
     }
 

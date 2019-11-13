@@ -11,6 +11,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewStub;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
@@ -49,13 +50,14 @@ public class MainActivity extends AppCompatActivity {
     public static final int START_GENRE = 4;
     public static final int START_VIDEO_FROM_CALENDER = 5;
     public static final int START_WATCH_LATER = 6;
+    public static final int START_UPCOMING = 7;
     public static final int START_SETTINGS = 8;
-    public static final int START_KNOWLEDGE = 7;
-    public static final int START_KNOWLEDGE_CATEGORY = 9;
-    public static final int START_OWE = 10;
-    public static final int START_PERSON = 11;
-    public static final int START_JOKE = 7;
-    public static final int START_JOKE_CATEGORY = 9;
+    public static final int START_KNOWLEDGE = 9;
+    public static final int START_KNOWLEDGE_CATEGORY = 10;
+    public static final int START_OWE = 11;
+    public static final int START_PERSON = 12;
+    public static final int START_JOKE = 13;
+    public static final int START_JOKE_CATEGORY = 14;
 
     Database database;
     SharedPreferences mySPR_daten;
@@ -112,14 +114,12 @@ public class MainActivity extends AppCompatActivity {
 
         if (Database.getInstance(mySPR_daten, onInstanceFinishedLoading, createNew) == null) {
             getDatabaseCode(databaseCode -> {
-                        mySPR_daten.edit()
-                                .putString(Database.DATABASE_CODE, databaseCode).commit();
+                        mySPR_daten.edit().putString(Database.DATABASE_CODE, databaseCode).commit();
                         loadDatabase(true);
                     }
             );
         }
     }
-
 
     private void setLayout() {
         BottomNavigationView bottomNavigationView = findViewById(R.id.main_bottom_navigation);
@@ -251,17 +251,14 @@ public class MainActivity extends AppCompatActivity {
                     stub_groups.inflate();
                     CompactCalendarView calendarView = view.findViewById(R.id.fragmentCalender_calendar);
                     calendarView.setFirstDayOfWeek(Calendar.MONDAY);
-                    Utility.setupCalender(this, calendarView, ((LinearLayout) view), new ArrayList<>(database.videoMap.values()), true);
+                    Utility.setupCalender(this, calendarView, ((FrameLayout) view), new ArrayList<>(database.videoMap.values()), true);
                 })
+                .disableScroll()
                 .show();
     }
 
-    public void showWatchLater(View view) {
-        if (!Database.isReady())
-            return;
-        startActivityForResult(new  Intent(this, VideoActivity.class)
-                .putExtra(CategoriesActivity.EXTRA_SEARCH, VideoActivity.WATCH_LATER_SEARCH)
-                .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.WATCH_LATER), START_WATCH_LATER);
+    public void showLaterMenu(View view) {
+        VideoActivity.showLaterMenu(this, view);
     }
 //  <----- VIDEO -----
 
@@ -374,7 +371,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        mySPR_settings.edit().putInt(SETTING_LAST_OPEN_SPACE, currentSpace.getItemId()).apply();
+        if (currentSpace != null)
+            mySPR_settings.edit().putInt(SETTING_LAST_OPEN_SPACE, currentSpace.getItemId()).apply();
         super.onDestroy();
     }
 

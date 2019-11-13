@@ -54,7 +54,7 @@ public class CategoriesActivity extends AppCompatActivity {
     public enum CATEGORIES {
         VIDEO("Video", "Videos", VideoActivity.class), DARSTELLER("Darsteller", "Darsteller", VideoActivity.class)
         , STUDIOS("Studio", "Studios", VideoActivity.class), GENRE("Genre", "Genres", VideoActivity.class)
-        , WATCH_LATER("WATCH_LATER", "WATCH_LATER", VideoActivity.class), KNOWLEDGE_CATEGORIES("Kategorie", "Kategorien", KnowledgeActivity.class)
+        , KNOWLEDGE_CATEGORIES("Kategorie", "Kategorien", KnowledgeActivity.class)
         , PERSON("Person", "Personen", OweActivity.class) , JOKE_CATEGORIES("Witz", "Witze", JokeActivity.class);
 
         private String singular;

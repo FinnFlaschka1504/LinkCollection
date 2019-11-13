@@ -1,6 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Utilitys;
 
 import android.view.View;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -8,10 +9,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.maxMustermannGeheim.linkcollection.R;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class CustomMenu {
+    private PopupWindow popupWindow;
     private AppCompatActivity context;
     private View anchor;
     private List<MenuItem> menus = new ArrayList<>();
@@ -20,6 +21,10 @@ public class CustomMenu {
         void runOnClickListener(CustomRecycler customRecycler, View itemView, MenuItem item, int index);
     }
     private CustomRecycler customRecycler;
+    private boolean dismissOnClick;
+    private static boolean dismissAllOnClick;
+    private static boolean dismissAll_onLongClick = true;
+    private MenuItem parent;
 
 
     public static CustomMenu Builder(AppCompatActivity context, View anchor) {
@@ -79,6 +84,22 @@ public class CustomMenu {
         return this;
     }
 
+    public CustomMenu dismissOnClick() {
+        dismissOnClick = true;
+        return this;
+    }
+
+    public CustomMenu dismissAllOnClick() {
+        dismissAllOnClick = true;
+        return this;
+    }
+
+    public CustomMenu disable_dismissAll_onLongClick() {
+        dismissAll_onLongClick = false;
+        return this;
+    }
+
+
     public CustomMenu show() {
         customRecycler = new CustomRecycler<MenuItem>(context)
                 .setItemLayout(R.layout.popup_standard_list)
@@ -86,7 +107,7 @@ public class CustomMenu {
                 .hideDivider()
                 .hideOverscroll()
                 .useCustomRipple()
-                .setSetItemContent((CustomRecycler.SetItemContent<MenuItem>)(itemView, item) -> {
+                .setSetItemContent((CustomRecycler.SetItemContent<MenuItem>) (itemView, item) -> {
                     ((TextView) itemView.findViewById(R.id.popup_standardList_text)).setText(item.getName());
                     if (onClickListener == null && item.getChild() != null) {
                         View popup_standardList_sub = itemView.findViewById(R.id.popup_standardList_sub);
@@ -98,24 +119,47 @@ public class CustomMenu {
                         itemView.findViewById(R.id.popup_standardList_divider).setVisibility(View.VISIBLE);
                     }
                 })
-                .setOnClickListener((CustomRecycler.OnClickListener<MenuItem>)(customRecycler1, itemView, item, index) -> {
+                .setOnClickListener((CustomRecycler.OnClickListener<MenuItem>) (customRecycler1, itemView, item, index) -> {
                     if (onClickListener == null && item.getChild() != null) {
                         item.getChild().setAnchor(itemView).show();
-                    } else if (onClickListener != null)
+                    } else if (onClickListener != null) {
                         onClickListener.runOnClickListener(customRecycler1, itemView, item, index);
+
+                        if (dismissOnClick || dismissAllOnClick) {
+                            dismissPopupWindow(this);
+                        }
+                    }
+                })
+                .setOnLongClickListener((CustomRecycler.OnLongClickListener<MenuItem>) (customRecycler1, view, item, index) -> {
+                    if (dismissAll_onLongClick) {
+                        dismissAllOnClick = true;
+                        dismissPopupWindow(item.getParent());
+                    }
                 })
                 .addSubOnClickListener(R.id.popup_standardList_sub, (CustomRecycler.OnClickListener<MenuItem>) (customRecycler, itemView, item, index) -> {
                     item.getChild().setAnchor(itemView).show();
                 }, false);
 
-        Utility.showPopupWindow(context, anchor, customRecycler.generate());
+        popupWindow = Utility.showPopupWindow(context, anchor, customRecycler.generate());
         return this;
+    }
 
+    private void dismissPopupWindow(CustomMenu customMenu) {
+        customMenu.dismiss();
+
+        if (dismissAllOnClick && customMenu.parent != null)
+            dismissPopupWindow(customMenu.parent.parent);
+        else
+            dismissAllOnClick = false;
+    }
+
+    public CustomMenu dismiss() {
+        popupWindow.dismiss();
+        return this;
     }
 
     public static class MenuItem {
         String name;
-//        List<MenuItem> subMenus = new ArrayList<>();
         CustomMenu parent;
         CustomMenu child;
 //        OnClickListener<MenuItem> onClickListener;
@@ -145,6 +189,7 @@ public class CustomMenu {
         public MenuItem setSubMenus(CustomMenu parent, SetSubMenus setSubMenus) {
             List<MenuItem> subMenus = new ArrayList<>();
             child = CustomMenu.Builder(parent.context);
+            child.parent = this;
             setSubMenus.runSetSubMenus(child, subMenus);
             subMenus.forEach(item -> item.setParent(parent));
             child.setMenus((customMenu, items) -> items.addAll(subMenus));

@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Pair;
@@ -14,7 +15,7 @@ import android.view.View;
 import android.view.ViewStub;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.LinearLayout;
+import android.widget.FrameLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.TextView;
@@ -27,10 +28,13 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
+import com.mikhaellopez.lazydatepicker.LazyDatePicker;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -38,13 +42,17 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import ru.slybeaver.slycalendarview.SlyCalendarDialog;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
 public class VideoActivity extends AppCompatActivity {
     public static final String WATCH_LATER_SEARCH = "WATCH_LATER_SEARCH";
+    public static final String UPCOMING_SEARCH = "UPCOMING_SEARCH";
 
     enum SORT_TYPE{
         NAME, VIEWS, RATING, LATEST
@@ -111,8 +119,33 @@ public class VideoActivity extends AppCompatActivity {
 
     }
 
+    public static void showLaterMenu(AppCompatActivity activity, View view){
+        if (!Database.isReady())
+            return;
+        CustomMenu.Builder(activity, view.findViewById(R.id.main_watchLaterCount_label))
+                .setMenus((customMenu, items) -> {
+                    items.add(new CustomMenu.MenuItem("Später ansehen", new Pair<>(new Intent(activity, VideoActivity.class)
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH, WATCH_LATER_SEARCH)
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO), MainActivity.START_WATCH_LATER)));
+                    items.add(new CustomMenu.MenuItem("Bevorstehende", new Pair<>(new Intent(activity, VideoActivity.class)
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH, UPCOMING_SEARCH)
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO), MainActivity.START_UPCOMING)));
+                })
+                .setOnClickListener((customRecycler, itemView, item, index) -> {
+                    Pair<Intent,Integer> pair = (Pair<Intent, Integer>) item.getContent();
+                    activity.startActivityForResult(pair.first, pair.second);
+                })
+                .dismissOnClick()
+                .show();
+    }
+
     private void loadDatabase() {
         @SuppressLint("RestrictedApi") Runnable whenLoaded = () -> {
+            for (Video video : database.videoMap.values()) {
+                if (video.getDateList().isEmpty() && !video.isUpcomming() && !database.watchLaterList.contains(video.getUuid()))
+                    database.watchLaterList.add(video.getUuid());
+            }
+
             setContentView(R.layout.activity_video);
             allVideoList = new ArrayList<>(database.videoMap.values());
             sortList(allVideoList);
@@ -175,6 +208,11 @@ public class VideoActivity extends AppCompatActivity {
                                         })
                                         .show();
                             }
+                            reLoadVideoRecycler();
+                            return true;
+                        }
+                        if (s.trim().equals(UPCOMING_SEARCH)) {
+                            filterdVideoList = allVideoList.stream().filter(Video::isUpcomming).collect(Collectors.toList());
                             reLoadVideoRecycler();
                             return true;
                         }
@@ -265,7 +303,7 @@ public class VideoActivity extends AppCompatActivity {
                     } else
                         itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.GONE);
 
-                    itemView.findViewById(R.id.listItem_video_later).setVisibility(database.watchLaterList.contains(video.getUuid()) ? View.VISIBLE : View.GONE);
+                    itemView.findViewById(R.id.listItem_video_later).setVisibility(database.watchLaterList.contains(video.getUuid()) || video.isUpcomming() ? View.VISIBLE : View.GONE);
 
                     List<String> darstellerNames = new ArrayList<>();
                     video.getDarstellerList().forEach(uuid -> darstellerNames.add(database.darstellerMap.get(uuid).getName()));
@@ -315,7 +353,7 @@ public class VideoActivity extends AppCompatActivity {
 
     private void reLoadVideoRecycler() {
         sortList(filterdVideoList);
-        customRecycler_VideoList.reload();
+        customRecycler_VideoList.reload(filterdVideoList);
     }
 
     private CustomDialog showDetailDialog(Video video) {
@@ -341,6 +379,7 @@ public class VideoActivity extends AppCompatActivity {
                     view.findViewById(R.id.dialog_video_details).setVisibility(View.VISIBLE);
                     ((TextView) view.findViewById(R.id.dialog_video_Url)).setText(video.getUrl());
                     ((TextView) view.findViewById(R.id.dialog_video_views)).setText(String.valueOf(video.getDateList().size()));
+                    ((TextView) view.findViewById(R.id.dialog_video_release)).setText(video.getRelease() != null ? new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(video.getRelease()) : "");
                     ((RatingBar) view.findViewById(R.id.dialog_video_rating)).setRating(video.getRating());
 
                     final boolean[] isInWatchLater = {database.watchLaterList.contains(video.getUuid())};
@@ -378,8 +417,9 @@ public class VideoActivity extends AppCompatActivity {
                     stub_groups.inflate();
                     CompactCalendarView calendarView = view.findViewById(R.id.fragmentCalender_calendar);
                     calendarView.setFirstDayOfWeek(Calendar.MONDAY);
-                    Utility.setupCalender(this, calendarView, ((LinearLayout) view), videoList, false);
+                    Utility.setupCalender(this, calendarView, ((FrameLayout) view), videoList, false);
                 })
+                .disableScroll()
                 .show().setOnDismissListener(dialogInterface -> {
                     ((TextView) detailDialog.findViewById(R.id.dialog_video_views))
                             .setText(String.valueOf(videoList.get(0).getDateList().size()));
@@ -440,6 +480,8 @@ public class VideoActivity extends AppCompatActivity {
                         ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_Genre)).setText(String.join(", ", genreNames));
                         view.findViewById(R.id.dialog_editOrAddVideo_Genre).setSelected(true);
                         ((EditText) view.findViewById(R.id.dialog_editOrAddVideo_Url)).setText(video[0].getUrl());
+                        if (video[0].getRelease() != null)
+                            ((LazyDatePicker) view.findViewById(R.id.dialog_editOrAddVideo_datePicker)).setDate(video[0].getRelease());
                         ((RatingBar) view.findViewById(R.id.dialog_editOrAddVideo_rating)).setRating(video[0].getRating());
                     }
                     else {
@@ -454,7 +496,42 @@ public class VideoActivity extends AppCompatActivity {
                             Utility.showEditItemDialog(this, addOrEditDialog, video[0] == null ? null : video[0].getStudioList(), video[0], CategoriesActivity.CATEGORIES.STUDIOS ));
                     view.findViewById(R.id.dialog_editOrAddVideo_editGenre).setOnClickListener(view1 ->
                             Utility.showEditItemDialog(this, addOrEditDialog, video[0] == null ? null : video[0].getGenreList(), video[0], CategoriesActivity.CATEGORIES.GENRE));
+//                    view.findViewById(R.id.dialog_editOrAddVideo_releasePicker).setOnClickListener(view1 -> {
+//                        SlyCalendarDialog slyCalendarDialog = new SlyCalendarDialog();
+//                        slyCalendarDialog
+//                                .setStartDate(video[0].getRelease())
+//                                .setHeaderColor(getColor(R.color.colorPrimary))
+//                                .setTextColor(getColor(R.color.colorText))
+//                                .setSelectedColor(getColor(R.color.colorPrimary))
+//                                .setBackgroundColor(getColor(R.color.colorTileBackground))
+//                                .setSelectedTextColor(getColor(R.color.colorTileBackground))
+////                                .setHeaderTextColor(getColor(R.color.colorText))
+//                                .setCallback(new SlyCalendarDialog.Callback() {
+//                                    @Override
+//                                    public void onCancelled() {
+//
+//                                    }
+//
+//                                    @Override
+//                                    public void onDataSelected(Calendar firstDate, Calendar secondDate, int hours, int minutes) {
+//                                        if (firstDate == null) return;
+//
+//                                        video[0].setRelease(Utility.removeTime(firstDate.getTime()));
+//                                        ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(video[0].getRelease()));
+//
+//                                    }
+//                                })
+//                                .show(getSupportFragmentManager(), "TAG_SLYCALENDAR");
+//                        String BREAKPOINT = null;
+//                    });
+//                    LazyDatePicker lazyDatePicker = view.findViewById(R.id.dialog_editOrAddVideo_datePicker);
+//                    lazyDatePicker.setOnDatePickListener(dateSelected -> video[0].setRelease(dateSelected));
+//                    lazyDatePicker.setOnDateSelectedListener(dateSelected -> video[0].setRelease(dateSelected));
                 })
+//                .setOnDialogDismiss(customDialog -> {
+//                    Utility.changeWindowKeyboard(customDialog.getDialog().getWindow(), false);
+//                    Utility.changeWindowKeyboard(this, customDialog.getDialog().findViewById(R.id.dialog_editOrAddVideo_datePicker), false);
+//                })
                 .show();
 //        DialogInterface.OnKeyListener keylistener = (dialog, keyCode, KEvent) -> {
 //            int keyaction = KEvent.getAction();
@@ -489,6 +566,7 @@ public class VideoActivity extends AppCompatActivity {
         videoNeu.setGenreList(video[0].getGenreList());
         videoNeu.setUrl(url);
         videoNeu.setRating(((RatingBar) dialog.findViewById(R.id.dialog_editOrAddVideo_rating)).getRating());
+        videoNeu.setRelease(((LazyDatePicker) dialog.findViewById(R.id.dialog_editOrAddVideo_datePicker)).getDate());
 
         boolean addedYesterday = false;
         if (checked)

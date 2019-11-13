@@ -161,6 +161,53 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="8dp"
+                android:text="Release:"
+                android:textStyle="bold" />
+
+<!--            <FrameLayout-->
+<!--                android:layout_width="0dp"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_weight="1">-->
+
+<!--                <TextView-->
+<!--                    android:id="@+id/dialog_editOrAddVideo_release"-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_marginEnd="8dp"-->
+<!--                    tools:text="13.11.2019"-->
+<!--                    android:visibility="invisible"/>-->
+
+                <com.mikhaellopez.lazydatepicker.LazyDatePicker
+                    android:id="@+id/dialog_editOrAddVideo_datePicker"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:ldp_text_color="@color/colorText"
+                    app:ldp_hint_color="@color/colorTileBackground"
+                    app:ldp_date_format="dd-mm-yyyy"
+                    android:paddingVertical="8dp"/>
+<!--            </FrameLayout>-->
+
+<!--            <ImageView-->
+<!--                android:id="@+id/dialog_editOrAddVideo_releasePicker"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:clickable="true"-->
+<!--                android:foreground="@drawable/ripple"-->
+<!--                android:padding="5dp"-->
+<!--                app:srcCompat="@drawable/ic_kallendar_grey" />-->
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="8dp"
                 android:text="Bewerting:"
                 android:textStyle="bold" />
 

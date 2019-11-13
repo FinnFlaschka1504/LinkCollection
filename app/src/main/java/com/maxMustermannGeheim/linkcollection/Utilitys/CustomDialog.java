@@ -52,6 +52,7 @@ public class CustomDialog {
     private SetViewContent setViewContent;
     private Object objectExtra;
     private OnDialogDismiss onDialogDismiss;
+    private boolean scroll = true;
 
     private List<Boolean> dismissDialogList = new ArrayList<>();
     private List<Pair<String, OnClick>> pairList = new ArrayList<>();
@@ -481,6 +482,11 @@ public class CustomDialog {
         return this;
     }
 
+    public CustomDialog disableScroll() {
+        scroll = false;
+        return this;
+    }
+
     public CustomDialog show_custom() {
         show();
         return this;
@@ -508,10 +514,14 @@ public class CustomDialog {
         if (!showEdit)
             dialog.findViewById(R.id.dialog_custom_layout_edit).setVisibility(View.GONE);
 
-        if (view != null)
-            ((ScrollView) dialog.findViewById(R.id.dialog_custom_layout_view_interface)).addView(view);
-        else
+        if (view != null) {
+            if (scroll)
+                ((ScrollView) dialog.findViewById(R.id.dialog_custom_layout_view_interface)).addView(view);
+            else
+                ((LinearLayout) dialog.findViewById(R.id.dialog_custom_layout_view_interface_restrained)).addView(view);
+        } else {
             dialog.findViewById(R.id.dialog_custom_layout_view).setVisibility(View.GONE);
+        }
 
         if (text != null && showEdit)
             dialog.findViewById(R.id.dialog_custom_divider3).setVisibility(View.INVISIBLE);

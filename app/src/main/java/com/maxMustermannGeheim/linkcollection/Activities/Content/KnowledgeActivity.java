@@ -10,10 +10,12 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -292,9 +294,38 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .setTitle("Deteil Ansicht")
                 .setView(R.layout.dialog_detail_knowledge)
                 .setButtonType(CustomDialog.ButtonType.CUSTOM)
+                .addButton("Teilen", (customDialog, dialog) -> {
+                    CustomDialog.Builder(this)
+                            .setTitle("Teilen")
+                            .setView(R.layout.dialog_share_knowledge)
+                            .setSetViewContent((customDialog1, view) -> {
+                                ((EditText) view.findViewById(R.id.dialog_shareKnowledge_title)).setText(knowledge.getName());
+                                ((EditText) view.findViewById(R.id.dialog_shareKnowledge_content)).setText(knowledge.getContent());
+                                ((TextView) view.findViewById(R.id.dialog_shareKnowledge_categories)).setText(knowledge.getCategoryIdList().stream()
+                                        .map(uuid -> database.knowledgeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                                ((TextView) view.findViewById(R.id.dialog_shareKnowledge_sources)).setText(knowledge.getSources().stream()
+                                        .map(nameUrlPair -> nameUrlPair.get(0)).collect(Collectors.joining(", ")));
+                            })
+                            .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
+                            .addButton(CustomDialog.OK_BUTTON, (customDialog1, dialog1) -> {
+                                boolean format = ((Switch) dialog1.findViewById(R.id.dialog_shareKnowledge_format)).isChecked();
+                                List<String> textList = new ArrayList<>();
+                                if (((CheckBox) dialog1.findViewById(R.id.dialog_shareKnowledge_title_check)).isChecked())
+                                    textList.add(String.format((format ? "*Titel*:\n%s" : "Titel:\n%s"), ((EditText) dialog1.findViewById(R.id.dialog_shareKnowledge_title)).getText()));
+                                if (((CheckBox) dialog1.findViewById(R.id.dialog_shareKnowledge_content_check)).isChecked())
+                                    textList.add(String.format((format ? "*Inhalt*:\n%s" : "Inhalt:\n%s"), ((EditText) dialog1.findViewById(R.id.dialog_shareKnowledge_content)).getText()));
+                                if (((CheckBox) dialog1.findViewById(R.id.dialog_shareKnowledge_categories_check)).isChecked())
+                                    textList.add(String.format((format ? "*Kategorien*:\n%s" : "Kategorien:\n%s"), knowledge.getCategoryIdList().stream()
+                                            .map(uuid -> database.knowledgeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", "))));
+                                if (((CheckBox) dialog1.findViewById(R.id.dialog_shareKnowledge_sources_check)).isChecked())
+                                    textList.add(String.format((format ? "*Quellen*:\n%s" : "Quellen:\n%s"), knowledge.getSources().stream()
+                                            .map(nameUrlPair -> String.format((format ? "_*%s*_:\n%s" : "%s:\n%s"), nameUrlPair.get(0), nameUrlPair.get(1))).collect(Collectors.joining("\n"))));
+                                Utility.sendText(this, String.join("\n\n", textList));
+                            })
+                            .show();
+                }, false)
                 .addButton("Bearbeiten", (customDialog, dialog) ->
                         addOrEditDialog[0] = showEditOrNewDialog(knowledge), false)
-//                .addButton("Öffnen mit...", dialog -> openUrl(knowledge, true), false)
                 .setSetViewContent((customDialog, view) -> {
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_title)).setText(knowledge.getName());
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_content)).setText(knowledge.getContent());

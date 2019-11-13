@@ -14,7 +14,7 @@
         android:layout_marginTop="12dp"
         android:layout_marginRight="16dp"
         android:layout_marginBottom="12dp"
-        android:text="title"
+        tools:text="title"
         android:textAlignment="center"
         android:textColor="@color/colorPrimaryDark"
         android:textSize="20sp"
@@ -39,7 +39,7 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="16dp"
             android:layout_marginRight="16dp"
-            android:text="text" />
+            tools:text="text" />
 
         <View
             android:id="@+id/dialog_custom_divider2"
@@ -68,7 +68,7 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="12dp"
             android:ems="10"
-            android:inputType="textPersonName"/>
+            android:inputType="textPersonName" />
 
         <View
             android:id="@+id/dialog_custom_divider4"
@@ -94,14 +94,16 @@
         <ScrollView
             android:id="@+id/dialog_custom_layout_view_interface"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1">
+            android:layout_height="wrap_content">
 
-<!--            <LinearLayout-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="match_parent"-->
-<!--                android:orientation="vertical"/>-->
         </ScrollView>
+
+        <LinearLayout
+            android:id="@+id/dialog_custom_layout_view_interface_restrained"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
 
         <View
             android:id="@+id/dialog_custom_divider6"
@@ -117,7 +119,7 @@
         style="@style/Widget.AppCompat.Button.Borderless.Colored"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Beispiel Button"
+        tools:text="Beispiel Button"
         android:visibility="gone"
         tools:visibility="visible" />
 

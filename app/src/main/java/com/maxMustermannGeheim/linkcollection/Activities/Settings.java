@@ -288,7 +288,7 @@ public class Settings extends AppCompatActivity {
 
                                 list_spaceSetting_shown.setChecked(!checked);
                                 space.setShown(!checked);
-                                spaceRecycler_customRecycler.reload();
+//                                spaceRecycler_customRecycler.reload();
                                 settings_others_aktiveSpaces.setText(
                                         allSpaces.stream().filter(Space::isShown).map(ParentClass::getName).collect(Collectors.joining(", "))
                                 );
@@ -429,6 +429,8 @@ public class Settings extends AppCompatActivity {
 
         settings_others_aktiveSpaces.setText(
                 allSpaces.stream().filter(Space::isShown).map(ParentClass::getName).collect(Collectors.joining(", ")));
+
+        spaceRecycler_customRecycler.reload();
     }
 
     @Override

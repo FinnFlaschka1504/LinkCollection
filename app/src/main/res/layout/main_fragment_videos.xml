@@ -343,7 +343,7 @@
                     android:elevation="3dp"
                     android:foreground="@drawable/ripple"
                     android:gravity="center"
-                    android:onClick="showWatchLater"
+                    android:onClick="showLaterMenu"
                     android:orientation="vertical">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
@@ -375,10 +375,12 @@
                             app:layout_constraintTop_toTopOf="parent">
 
                             <TextView
+                                android:id="@+id/main_watchLaterCount_label"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginBottom="8dp"
                                 android:text="Später"
+                                android:textAlignment="center"
                                 android:textSize="24sp"
                                 android:textStyle="bold" />
 
@@ -386,7 +388,8 @@
                                 android:id="@+id/main_watchLaterCount"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="–" />
+                                android:text="–"
+                                android:visibility="gone" />
                         </LinearLayout>
                     </androidx.constraintlayout.widget.ConstraintLayout>
 

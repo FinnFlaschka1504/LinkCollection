@@ -10,6 +10,7 @@ import android.util.Pair;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
@@ -18,6 +19,9 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.core.view.ViewCompat;
+import androidx.core.widget.NestedScrollView;
 
 import com.maxMustermannGeheim.linkcollection.R;
 
@@ -53,6 +57,7 @@ public class CustomDialog {
     private Object objectExtra;
     private OnDialogDismiss onDialogDismiss;
     private boolean scroll = true;
+    private int childRecyclerId;
 
     private List<Boolean> dismissDialogList = new ArrayList<>();
     private List<Pair<String, OnClick>> pairList = new ArrayList<>();
@@ -487,6 +492,11 @@ public class CustomDialog {
         return this;
     }
 
+    public CustomDialog onlyScrollChildRecycler(int recyclerId) {
+        childRecyclerId = recyclerId;
+        return this;
+    }
+
     public CustomDialog show_custom() {
         show();
         return this;
@@ -515,10 +525,21 @@ public class CustomDialog {
             dialog.findViewById(R.id.dialog_custom_layout_edit).setVisibility(View.GONE);
 
         if (view != null) {
-            if (scroll)
-                ((ScrollView) dialog.findViewById(R.id.dialog_custom_layout_view_interface)).addView(view);
-            else
-                ((LinearLayout) dialog.findViewById(R.id.dialog_custom_layout_view_interface_restrained)).addView(view);
+            ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT);
+            if (scroll) {
+                LockableScrollView dialog_custom_layout_view_interface = dialog.findViewById(R.id.dialog_custom_layout_view_interface);
+                dialog_custom_layout_view_interface.addView(view, layoutParams);
+                dialog_custom_layout_view_interface.setVisibility(View.VISIBLE);
+//                dialog_custom_layout_view_interface.setScrollable(false);
+//                dialog_custom_layout_view_interface.scroll
+//                dialog_custom_layout_view_interface.setNestedScrollingEnabled(false);
+            } else {
+                LinearLayout dialog_custom_layout_view_interface_restrained = dialog.findViewById(R.id.dialog_custom_layout_view_interface_restrained);
+                dialog_custom_layout_view_interface_restrained.addView(view, layoutParams);
+                dialog_custom_layout_view_interface_restrained.setVisibility(View.VISIBLE);
+            }
         } else {
             dialog.findViewById(R.id.dialog_custom_layout_view).setVisibility(View.GONE);
         }

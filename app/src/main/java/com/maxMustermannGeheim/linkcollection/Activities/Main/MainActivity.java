@@ -17,6 +17,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.ViewCompat;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -252,8 +253,11 @@ public class MainActivity extends AppCompatActivity {
                     CompactCalendarView calendarView = view.findViewById(R.id.fragmentCalender_calendar);
                     calendarView.setFirstDayOfWeek(Calendar.MONDAY);
                     Utility.setupCalender(this, calendarView, ((FrameLayout) view), new ArrayList<>(database.videoMap.values()), true);
+//                    ViewCompat.setNestedScrollingEnabled(view.findViewById(R.id.fragmentCalender_videoList), false);
+
                 })
                 .disableScroll()
+                .setDimensions(true, true)
                 .show();
     }
 

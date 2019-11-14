@@ -420,6 +420,7 @@ public class VideoActivity extends AppCompatActivity {
                     Utility.setupCalender(this, calendarView, ((FrameLayout) view), videoList, false);
                 })
                 .disableScroll()
+                .setDimensions(true, true)
                 .show().setOnDismissListener(dialogInterface -> {
                     ((TextView) detailDialog.findViewById(R.id.dialog_video_views))
                             .setText(String.valueOf(videoList.get(0).getDateList().size()));

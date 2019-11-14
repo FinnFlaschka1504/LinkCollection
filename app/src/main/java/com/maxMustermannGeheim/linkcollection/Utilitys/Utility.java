@@ -293,7 +293,7 @@ public class Utility {
             customRecycler.setOnClickListener((customRecycler1, view, object, index) ->
                     ((MainActivity) context).startActivityForResult(new Intent(context, VideoActivity.class)
                             .putExtra(CategoriesActivity.EXTRA_SEARCH, ((ParentClass) ((Event) object).getData()).getUuid())
-                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO.name()), ((MainActivity) context).START_VIDEO_FROM_CALENDER));
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO), MainActivity.START_VIDEO_FROM_CALENDER));
 
         for (Video video : videoList) {
             for (Date date : video.getDateList()) {
@@ -425,6 +425,7 @@ public class Utility {
                 .setButtonType(CustomDialog.ButtonType.CUSTOM)
                 .setView(R.layout.dialog_edit_item)
                 .setDimensions(true, true)
+                .disableScroll()
                 .addButton("Hinzufügen", (customDialog, dialog) -> {
                     CustomDialog.Builder(context)
                             .setTitle(finalEditType_string + " Hinzufügen")

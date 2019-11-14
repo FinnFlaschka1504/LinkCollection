@@ -81,7 +81,7 @@
     <LinearLayout
         android:id="@+id/dialog_custom_layout_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
         android:layout_weight="1"
         android:orientation="vertical">
 
@@ -91,18 +91,23 @@
             android:layout_height="1dp"
             android:background="@color/colorDdivider" />
 
-        <ScrollView
+        <com.maxMustermannGeheim.linkcollection.Utilitys.LockableScrollView
             android:id="@+id/dialog_custom_layout_view_interface"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true"
+            android:visibility="gone">
 
-        </ScrollView>
+        </com.maxMustermannGeheim.linkcollection.Utilitys.LockableScrollView>
 
         <LinearLayout
             android:id="@+id/dialog_custom_layout_view_interface_restrained"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:visibility="gone" />
 
 
         <View

@@ -14,7 +14,6 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.akexorcist.roundcornerprogressbar.RoundCornerProgressBar;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -136,7 +135,9 @@ public class Settings extends AppCompatActivity {
             return;
 
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_video), context.getString(R.string.bottomMenu_videos)).setActivity(VideoActivity.class).setItemId(Space.SPACE_VIDEO).setIconId(R.drawable.ic_videos).setLayoutId(R.layout.main_fragment_videos)
-                .setSetLayout(view -> {
+                .setSetLayout((space, view) -> {
+                    ((TextView) view.findViewById(R.id.main_label)).setText(space.getPlural());
+
                     ((TextView) view.findViewById(R.id.main_videoCount)).setText(String.valueOf(database.videoMap.size()));
                     ((TextView) view.findViewById(R.id.main_darstellerCount)).setText(String.valueOf(database.darstellerMap.size()));
                     ((TextView) view.findViewById(R.id.main_genreCount)).setText(String.valueOf(database.genreMap.size()));
@@ -145,14 +146,23 @@ public class Settings extends AppCompatActivity {
                     database.videoMap.values().forEach(video -> dateSet.addAll(video.getDateList()));
                     ((TextView) view.findViewById(R.id.main_daysCount)).setText(String.valueOf(dateSet.size()));
                     ((TextView) view.findViewById(R.id.main_watchLaterCount)).setText(String.valueOf(database.watchLaterList.size()));
+                })
+                .setSettingsDialog(context, new Space.BuildSettingsDialog() {
+                    @Override
+                    public CustomDialog runBuildSettingsDialog(Context context, Space space) {
+                        return null;
+                    }
                 }));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_knowledge), context.getString(R.string.bottomMenu_knowledge)).setActivity(KnowledgeActivity.class).setItemId(Space.SPACE_KNOWLEDGE).setIconId(R.drawable.ic_knowledge).setLayoutId(R.layout.main_fragment_knowledge)
-                .setSetLayout(view -> {
+                .setSetLayout((space, view) -> {
+                    ((TextView) view.findViewById(R.id.main_knowledge_label)).setText(space.getPlural());
                     ((TextView) view.findViewById(R.id.main_knowledge_Count)).setText(String.valueOf(database.knowledgeMap.size()));
                     ((TextView) view.findViewById(R.id.main_knowledge_categoryCount)).setText(String.valueOf(database.knowledgeCategoryMap.size()));
                 }));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_owe), context.getString(R.string.bottomMenu_owe)).setActivity(OweActivity.class).setItemId(Space.SPACE_OWE).setIconId(R.drawable.ic_euro).setLayoutId(R.layout.main_fragment_owe)
-                .setSetLayout(view -> {
+                .setSetLayout((space, view) -> {
+                    ((TextView) view.findViewById(R.id.main_owe_label)).setText(space.getPlural());
+
 //                    RoundCornerProgressBar main_owe_progressBarOwn = view.findViewById(R.id.main_owe_progressBarOwn);
 //                    main_owe_progressBarOwn.setProgress(70);
 //                    main_owe_progressBarOwn.setMax(100);
@@ -163,19 +173,21 @@ public class Settings extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.main_owe_countPerson)).setText(String.valueOf(database.personMap.size()));
                 }));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_joke), context.getString(R.string.bottomMenu_jokes)).setActivity(JokeActivity.class).setItemId(Space.SPACE_JOKE).setIconId(R.drawable.ic_jokes).setLayoutId(R.layout.main_fragment_joke)
-                .setSetLayout(view -> {
+                .setSetLayout((space, view) -> {
+                    ((TextView) view.findViewById(R.id.main_joke_label)).setText(space.getPlural());
+
                     ((TextView) view.findViewById(R.id.main_joke_Count)).setText(String.valueOf(database.jokeMap.size()));
                     ((TextView) view.findViewById(R.id.main_joke_categoryCount)).setText(String.valueOf(database.jokeCategoryMap.size()));
                 }));
 
 
         for (Space space : allSpaces) {
-            settingsMap.put(SETTING_SPACE_SHOWN_ + space.getName().toUpperCase(), String.valueOf(space.isShown()));
+            settingsMap.put(SETTING_SPACE_SHOWN_ + space.getItemId(), String.valueOf(space.isShown()));
         }
     }
     private static void updateSpaces() {
         for (Space space : allSpaces) {
-            String key = SETTING_SPACE_SHOWN_ + space.getName().toUpperCase();
+            String key = SETTING_SPACE_SHOWN_ + space.getItemId();
             space.setShown(Boolean.parseBoolean(settingsMap.get(key)));
         }
         String spaceOrder_string = mySPR_settings.getString(SETTING_SPACE_ORDER, null);
@@ -237,6 +249,8 @@ public class Settings extends AppCompatActivity {
                 .setGetActiveObjectList(() -> allSpaces.stream().filter(Space::isShown).collect(Collectors.toList()))
                 .setSetItemContent((CustomRecycler.SetItemContent<Space>) (itemView, space) -> ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getPlural()))
                 .removeLastDivider()
+                .setOnClickListener((customRecycler, itemView, o, index) -> {})
+                .setDividerMargin_inDp(16)
                 .generateCustomRecycler();
 
 
@@ -298,6 +312,7 @@ public class Settings extends AppCompatActivity {
                                 spaceOrderChanged = true;
                                 setResult(RESULT_OK);
                             })
+                            .setDividerMargin_inDp(16)
                             .generate())
                     .show()
                     .setOnDismissListener(dialog -> updateSpaceStatusSettings());
@@ -319,6 +334,8 @@ public class Settings extends AppCompatActivity {
         private Fragment fragment;
         private SetLayout setLayout;
         private Class activity;
+        private Context context;
+        BuildSettingsDialog buildSettingsDialog;
 
         public Space(String name, String plural) {
             this.name = name;
@@ -384,11 +401,11 @@ public class Settings extends AppCompatActivity {
         }
 
         private interface SetLayout {
-            void runSetLayout(View view);
+            void runSetLayout(Space space, View view);
         }
 
         public void setLayout() {
-            setLayout.runSetLayout(fragment.getView());
+            setLayout.runSetLayout(this, fragment.getView());
         }
 
         public Space setSetLayout(SetLayout setLayout) {
@@ -403,6 +420,21 @@ public class Settings extends AppCompatActivity {
 
         public Class getActivity() {
             return activity;
+        }
+
+        public interface BuildSettingsDialog {
+            default CustomDialog runBuildSettingsDialog(Context context, Space space){
+                CustomDialog settingsDialog  = CustomDialog.Builder(context)
+                        .setTitle(space.getPlural() + "-Einstellungen")
+                        .setText("Test");
+                return settingsDialog;
+            }
+        }
+
+        public Space setSettingsDialog(Context context, BuildSettingsDialog buildSettingsDialog) {
+            this.context = context;
+            buildSettingsDialog.runBuildSettingsDialog(context, this);
+            return this;
         }
 
         // ------------------
@@ -424,7 +456,7 @@ public class Settings extends AppCompatActivity {
 
     void updateSpaceStatusSettings() {
         for (Space space : allSpaces) {
-            changeSetting(SETTING_SPACE_SHOWN_ + space.getName().toUpperCase(), String.valueOf(space.isShown()));
+            changeSetting(SETTING_SPACE_SHOWN_ + space.getItemId(), String.valueOf(space.isShown()));
         }
 
         settings_others_aktiveSpaces.setText(

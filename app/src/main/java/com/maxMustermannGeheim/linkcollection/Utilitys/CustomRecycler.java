@@ -14,7 +14,6 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.ItemTouchHelper;
-import androidx.recyclerview.widget.ItemTouchHelper.Callback;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -78,6 +77,7 @@ public class CustomRecycler<T>{
     private MyAdapter mAdapter;
     private boolean dragAndDrop = false;
     private OnDragAndDrop onDragAndDrop;
+    private int dividerMargin;
 
 
     public CustomRecycler(Context context) {
@@ -265,7 +265,12 @@ public class CustomRecycler<T>{
         void runOnDragAndDrop(List objectList);
     }
 
-//  ----- Adapter ----->
+    public CustomRecycler setDividerMargin_inDp(int dividerMargin_inDp) {
+        this.dividerMargin = Utility.dpToPx(dividerMargin_inDp);
+        return this;
+    }
+
+    //  ----- Adapter ----->
     public class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> {
         private List dataset;
         private List<ViewHolder> viewHolders = new ArrayList<>();
@@ -427,8 +432,8 @@ public class CustomRecycler<T>{
                 dividerItemDecoration = new DividerItemDecoration(context, orientation) {
                     @Override
                     public void onDraw(Canvas canvas, RecyclerView parent, RecyclerView.State state) {
-                        int dividerLeft = parent.getPaddingLeft();
-                        int dividerRight = parent.getWidth() - parent.getPaddingRight();
+                        int dividerLeft = parent.getPaddingLeft() + dividerMargin;
+                        int dividerRight = parent.getWidth() - parent.getPaddingRight() - dividerMargin;
 
                         int childCount = parent.getChildCount();
                         for (int i = 0; i <= childCount - 2; i++) {

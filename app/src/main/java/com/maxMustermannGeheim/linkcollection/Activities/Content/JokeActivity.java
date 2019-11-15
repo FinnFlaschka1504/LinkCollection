@@ -116,7 +116,7 @@ public class JokeActivity extends AppCompatActivity {
 //                CustomDialog.Builder(this)
 //                        .setTitle("Videos Importieren")
 //                        .setEdit(new CustomDialog.EditBuilder().setHint("Witze einfügen"))
-//                        .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
+//                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
 //                        .addButton(CustomDialog.OK_BUTTON, (customDialog, dialog) -> {
 //                            String text = customDialog.getEditText();
 //                            List<Pair<String,String>> witzeList = Arrays.stream(text.split("-{2,}")).map(s -> {
@@ -274,7 +274,7 @@ public class JokeActivity extends AppCompatActivity {
 //                        CustomDialog.Builder(this)
 //                                .setTitle("Ohne Inhalt speichern?")
 //                                .setText("Möchtest du wirklich ohne einen Inhalt speichern")
-//                                .setButtonType(CustomDialog.ButtonType.YES_NO)
+//                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
 //                                .addButton(CustomDialog.YES_BUTTON, (customDialog1, dialog1) ->
 //                                        saveJoke(dialog, titel, content, newJoke, joke))
 //                                .show();
@@ -603,7 +603,7 @@ public class JokeActivity extends AppCompatActivity {
 //                        CustomDialog.Builder(this)
 //                                .setTitle("Quelle Löschen")
 //                                .setText("Willst du wirklich die Quelle '" + currentSource[0].get(0) + "' löschen?")
-//                                .setButtonType(CustomDialog.ButtonType.YES_NO)
+//                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
 //                                .addButton(CustomDialog.YES_BUTTON, (customDialog1, dialog) -> {
 //                                    joke.getSources().remove(currentSource[0]);
 //                                    hideEdit.run();
@@ -632,7 +632,7 @@ public class JokeActivity extends AppCompatActivity {
 //                        currentSource[0] = null;
 //                    });
 //                })
-//                .setButtonType(CustomDialog.ButtonType.CUSTOM)
+//                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
 //                .addButton("Hinzufügen", (customDialog, dialog) -> {
 //                    dialog.findViewById(R.id.dialog_sources_editLayout).setVisibility(View.VISIBLE);
 //                    dialog.findViewById(buttonId_add).setVisibility(View.GONE);

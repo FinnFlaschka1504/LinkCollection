@@ -11,6 +11,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewStub;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
@@ -26,6 +27,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog_new;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
@@ -95,6 +97,16 @@ public class MainActivity extends AppCompatActivity {
             setLayout();
         });
 
+
+        CustomDialog_new.Builder(this)
+                .setTitle("Test")
+                .setView(new Button(this))
+                .addButton("MöP", customDialog -> Toast.makeText(this, "Möp", Toast.LENGTH_SHORT).show())
+                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.SAVE_CANCEL);
+//                .addButton(CustomDialog_new.BUTTON_TYPE.SAVE_BUTTON)
+//                .addButton(CustomDialog_new.BUTTON_TYPE.BACK_BUTTON)
+//                .disableButtonAllCaps()
+//                .show();
     }
 
     void loadDatabase(boolean createNew) {

@@ -430,7 +430,7 @@ public class OweActivity extends AppCompatActivity {
 //        CustomDialog.Builder(this)
 //                .setTitle("Zufällige Schulden")
 //                .setView(R.layout.dialog_detail_knowledge)
-//                .setButtonType(CustomDialog.ButtonType.CUSTOM)
+//                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
 //                .addButton("Nochmal", (customDialog, dialog) -> {
 //                    Toast.makeText(this, "Neu", Toast.LENGTH_SHORT).show();
 //                    randomOwe[0] = filterdOweList.get((int) (Math.random() * filterdOweList.size()));

@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.Dialog;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -25,6 +26,7 @@ import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
+import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,13 +45,14 @@ public class Settings extends AppCompatActivity {
 
     public static final String SHARED_PREFERENCES_SETTINGS = "SHARED_PREFERENCES_SETTINGS";
 
-    public static final String SETTING_SHOPPING_LIST_SORT = "SETTING_SHOPPING_LIST_SORT";
-    public static final String SETTING_SHOPPING_LIST_HIERARCHY = "SETTING_SHOPPING_LIST_HIERARCHY";
-    public static final String SETTING_FINANCES_SWAP_LABLES = "SETTING_FINANCES_SWAP_LABLES";
-    public static final String LAST_VERSION = "LAST_VERSION";
-    public static final String SETTING_OTHERS_USER = "SETTING_OTHERS_USER";
-    public static final String SETTING_OTHERS_DARK_MODE = "SETTING_OTHERS_DARK_MODE";
+//    public static final String SETTING_SHOPPING_LIST_SORT = "SETTING_SHOPPING_LIST_SORT";
+//    public static final String SETTING_SHOPPING_LIST_HIERARCHY = "SETTING_SHOPPING_LIST_HIERARCHY";
+//    public static final String SETTING_FINANCES_SWAP_LABLES = "SETTING_FINANCES_SWAP_LABLES";
+//    public static final String LAST_VERSION = "LAST_VERSION";
+//    public static final String SETTING_OTHERS_USER = "SETTING_OTHERS_USER";
+//    public static final String SETTING_OTHERS_DARK_MODE = "SETTING_OTHERS_DARK_MODE";
     public static final String SETTING_SPACE_SHOWN_ = "SETTING_SPACE_SHOWN_";
+    public static final String SETTING_SPACE_NAMES_ = "SETTING_SPACE_NAMES_";
     public static final String SETTING_SPACE_ORDER = "SETTING_SPACE_ORDER";
     public static Map<String, String> settingsMap = new HashMap<>();
 
@@ -59,7 +62,7 @@ public class Settings extends AppCompatActivity {
     RecyclerView spaceRecycler;
     TextView settings_others_databaseCode;
     Button settings_others_changeDatabaseCode;
-    TextView settings_others_aktiveSpaces;
+    TextView settings_others_activeSpaces;
     Button settings_others_spaceSelector;
 
     Database.DatabaseReloadListener databaseReloadListener;
@@ -134,7 +137,7 @@ public class Settings extends AppCompatActivity {
         if (!allSpaces.isEmpty())
             return;
 
-        allSpaces.add(new Space(context.getString(R.string.bottomMenu_video), context.getString(R.string.bottomMenu_videos)).setActivity(VideoActivity.class).setItemId(Space.SPACE_VIDEO).setIconId(R.drawable.ic_videos).setLayoutId(R.layout.main_fragment_videos)
+        allSpaces.add(new Space(context.getString(R.string.bottomMenu_video), context.getString(R.string.bottomMenu_videos)).setActivity(VideoActivity.class).setItemId(Space.SPACE_VIDEO).setIconId(R.drawable.ic_videos).setFragmentLayoutId(R.layout.main_fragment_videos)
                 .setSetLayout((space, view) -> {
                     ((TextView) view.findViewById(R.id.main_label)).setText(space.getPlural());
 
@@ -147,19 +150,15 @@ public class Settings extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.main_daysCount)).setText(String.valueOf(dateSet.size()));
                     ((TextView) view.findViewById(R.id.main_watchLaterCount)).setText(String.valueOf(database.watchLaterList.size()));
                 })
-                .setSettingsDialog(context, new Space.BuildSettingsDialog() {
-                    @Override
-                    public CustomDialog runBuildSettingsDialog(Context context, Space space) {
-                        return null;
-                    }
-                }));
-        allSpaces.add(new Space(context.getString(R.string.bottomMenu_knowledge), context.getString(R.string.bottomMenu_knowledge)).setActivity(KnowledgeActivity.class).setItemId(Space.SPACE_KNOWLEDGE).setIconId(R.drawable.ic_knowledge).setLayoutId(R.layout.main_fragment_knowledge)
+                .setSettingsDialog(null));
+        allSpaces.add(new Space(context.getString(R.string.bottomMenu_knowledge), context.getString(R.string.bottomMenu_knowledge)).setActivity(KnowledgeActivity.class).setItemId(Space.SPACE_KNOWLEDGE).setIconId(R.drawable.ic_knowledge).setFragmentLayoutId(R.layout.main_fragment_knowledge)
                 .setSetLayout((space, view) -> {
                     ((TextView) view.findViewById(R.id.main_knowledge_label)).setText(space.getPlural());
                     ((TextView) view.findViewById(R.id.main_knowledge_Count)).setText(String.valueOf(database.knowledgeMap.size()));
                     ((TextView) view.findViewById(R.id.main_knowledge_categoryCount)).setText(String.valueOf(database.knowledgeCategoryMap.size()));
-                }));
-        allSpaces.add(new Space(context.getString(R.string.bottomMenu_owe), context.getString(R.string.bottomMenu_owe)).setActivity(OweActivity.class).setItemId(Space.SPACE_OWE).setIconId(R.drawable.ic_euro).setLayoutId(R.layout.main_fragment_owe)
+                })
+                .setSettingsDialog(null));
+        allSpaces.add(new Space(context.getString(R.string.bottomMenu_owe), context.getString(R.string.bottomMenu_owe)).setActivity(OweActivity.class).setItemId(Space.SPACE_OWE).setIconId(R.drawable.ic_euro).setFragmentLayoutId(R.layout.main_fragment_owe)
                 .setSetLayout((space, view) -> {
                     ((TextView) view.findViewById(R.id.main_owe_label)).setText(space.getPlural());
 
@@ -171,24 +170,34 @@ public class Settings extends AppCompatActivity {
 //                    main_owe_progressBarOthers.setMax(100);
                     ((TextView) view.findViewById(R.id.main_owe_countAll)).setText(String.valueOf(database.oweMap.values().stream().filter(Owe::isOpen).count()));
                     ((TextView) view.findViewById(R.id.main_owe_countPerson)).setText(String.valueOf(database.personMap.size()));
-                }));
-        allSpaces.add(new Space(context.getString(R.string.bottomMenu_joke), context.getString(R.string.bottomMenu_jokes)).setActivity(JokeActivity.class).setItemId(Space.SPACE_JOKE).setIconId(R.drawable.ic_jokes).setLayoutId(R.layout.main_fragment_joke)
+                })
+                .setSettingsDialog(null));
+        allSpaces.add(new Space(context.getString(R.string.bottomMenu_joke), context.getString(R.string.bottomMenu_jokes)).setActivity(JokeActivity.class).setItemId(Space.SPACE_JOKE).setIconId(R.drawable.ic_jokes).setFragmentLayoutId(R.layout.main_fragment_joke)
                 .setSetLayout((space, view) -> {
                     ((TextView) view.findViewById(R.id.main_joke_label)).setText(space.getPlural());
 
                     ((TextView) view.findViewById(R.id.main_joke_Count)).setText(String.valueOf(database.jokeMap.size()));
                     ((TextView) view.findViewById(R.id.main_joke_categoryCount)).setText(String.valueOf(database.jokeCategoryMap.size()));
-                }));
+                })
+                .setSettingsDialog(null));
 
 
         for (Space space : allSpaces) {
             settingsMap.put(SETTING_SPACE_SHOWN_ + space.getItemId(), String.valueOf(space.isShown()));
+            settingsMap.put(SETTING_SPACE_NAMES_ + space.getItemId(), space.getName() + "|" + space.getPlural());
         }
     }
     private static void updateSpaces() {
         for (Space space : allSpaces) {
             String key = SETTING_SPACE_SHOWN_ + space.getItemId();
             space.setShown(Boolean.parseBoolean(settingsMap.get(key)));
+
+            String spaceNames_string = mySPR_settings.getString(SETTING_SPACE_NAMES_ + space.getItemId(), null);
+            if (spaceNames_string != null) {
+                String[] singPlur = spaceNames_string.split("\\|");
+                space.setPlural(singPlur[1]).setName(singPlur[0]);
+            }
+
         }
         String spaceOrder_string = mySPR_settings.getString(SETTING_SPACE_ORDER, null);
         if (spaceOrder_string != null) {
@@ -238,18 +247,17 @@ public class Settings extends AppCompatActivity {
         spaceRecycler = findViewById(R.id.settings_spaces_recycler);
         settings_others_databaseCode = findViewById(R.id.settings_others_databaseCode);
         settings_others_changeDatabaseCode = findViewById(R.id.settings_others_changeDatabaseCode);
-        settings_others_aktiveSpaces = findViewById(R.id.settings_others_aktiveSpaces);
+        settings_others_activeSpaces = findViewById(R.id.settings_others_activeSpaces);
         settings_others_spaceSelector = findViewById(R.id.settings_others_spaceSelector);
     }
 
     private void setSettings() {
-        spaceRecycler_customRecycler = CustomRecycler.Builder(this)
-                .setRecycler(spaceRecycler)
+        spaceRecycler_customRecycler = CustomRecycler.Builder(this, spaceRecycler)
                 .setItemLayout(R.layout.list_item_space_setting)
                 .setGetActiveObjectList(() -> allSpaces.stream().filter(Space::isShown).collect(Collectors.toList()))
                 .setSetItemContent((CustomRecycler.SetItemContent<Space>) (itemView, space) -> ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getPlural()))
                 .removeLastDivider()
-                .setOnClickListener((customRecycler, itemView, o, index) -> {})
+                .setOnClickListener((CustomRecycler.OnClickListener<Space>)(customRecycler, itemView, space, index) -> space.showSettingsDialog(this))
                 .setDividerMargin_inDp(16)
                 .generateCustomRecycler();
 
@@ -257,7 +265,7 @@ public class Settings extends AppCompatActivity {
         settings_others_databaseCode.setText(Database.databaseCode);
 
 
-        settings_others_aktiveSpaces.setText(
+        settings_others_activeSpaces.setText(
                 allSpaces.stream().filter(Space::isShown).map(ParentClass::getName).collect(Collectors.joining(", "))
         );
     }
@@ -303,7 +311,7 @@ public class Settings extends AppCompatActivity {
                                 list_spaceSetting_shown.setChecked(!checked);
                                 space.setShown(!checked);
 //                                spaceRecycler_customRecycler.reload();
-                                settings_others_aktiveSpaces.setText(
+                                settings_others_activeSpaces.setText(
                                         allSpaces.stream().filter(Space::isShown).map(ParentClass::getName).collect(Collectors.joining(", "))
                                 );
                                 setResult(RESULT_OK);
@@ -330,11 +338,10 @@ public class Settings extends AppCompatActivity {
         private int itemId;
         private boolean shown = true;
         private int iconId;
-        private int layoutId;
+        private int fragmentLayoutId;
         private Fragment fragment;
         private SetLayout setLayout;
         private Class activity;
-        private Context context;
         BuildSettingsDialog buildSettingsDialog;
 
         public Space(String name, String plural) {
@@ -369,12 +376,12 @@ public class Settings extends AppCompatActivity {
             return this;
         }
 
-        public int getLayoutId() {
-            return layoutId;
+        public int getFragmentLayoutId() {
+            return fragmentLayoutId;
         }
 
-        public Space setLayoutId(int layoutId) {
-            this.layoutId = layoutId;
+        public Space setFragmentLayoutId(int fragmentLayoutId) {
+            this.fragmentLayoutId = fragmentLayoutId;
             return this;
         }
 
@@ -422,22 +429,60 @@ public class Settings extends AppCompatActivity {
             return activity;
         }
 
+        //  ----- SettingsDialog ----->
         public interface BuildSettingsDialog {
-            default CustomDialog runBuildSettingsDialog(Context context, Space space){
-                CustomDialog settingsDialog  = CustomDialog.Builder(context)
-                        .setTitle(space.getPlural() + "-Einstellungen")
-                        .setText("Test");
-                return settingsDialog;
-            }
+            CustomDialog runBuildSettingsDialog(Settings settings, Space space);
         }
 
-        public Space setSettingsDialog(Context context, BuildSettingsDialog buildSettingsDialog) {
-            this.context = context;
-            buildSettingsDialog.runBuildSettingsDialog(context, this);
+        public Space setSettingsDialog(Utility.Triple<Integer, SetViewContent, OnClick> id_SetViewContent_OnClick_quadruple) {
+            buildSettingsDialog = (context1, space) -> {
+                CustomDialog customDialog = CustomDialog.Builder(context1).setButtonType(CustomDialog.ButtonType.OK_CANCEL)
+                        .setTitle(space.getPlural() + "-Einstellungen")
+                        .setEdit(new CustomDialog.EditBuilder().setHint("Singular|Plural").setText(space.getName() + "|" + space.getPlural()));
+                if (id_SetViewContent_OnClick_quadruple != null)
+                    customDialog.setView(id_SetViewContent_OnClick_quadruple.first)
+                            .setSetViewContent((customDialog1, view) -> id_SetViewContent_OnClick_quadruple.second.runSetViewContent(customDialog1, view, this))
+                            .addButton(CustomDialog.OK_BUTTON, (customDialog1, dialog) -> id_SetViewContent_OnClick_quadruple.third.runOnClick(customDialog1, dialog, this));
+                else
+                    customDialog.addButton(CustomDialog.OK_BUTTON, (customDialog1, dialog) -> {
+                        new OnClick() {}.runOnClick(customDialog1, dialog, this);
+                        context1.spaceRecycler_customRecycler.reload();
+                        context1.setResult(RESULT_OK);
+                        Settings.changeSetting(SETTING_SPACE_NAMES_ + space.getItemId(), space.getName() + "|" + space.getPlural());
+                    }, false);
+                return customDialog;
+            };
+
             return this;
         }
 
-        // ------------------
+        public interface SetViewContent{
+            void runSetViewContent(CustomDialog customDialog, View view, Space space);
+        }
+
+        public interface OnClick {
+            default void runOnClick(CustomDialog customDialog, Dialog dialog, Space space){
+                String text = customDialog.getEditText();
+                if (text.isEmpty())
+                    return;
+
+                String[] singPlur = text.split("\\|");
+                if (singPlur.length != 2)
+                    return;
+
+                space.setPlural(singPlur[1].trim()).setName(singPlur[0].trim());
+                customDialog.dismiss();
+
+            }
+        }
+
+        public CustomDialog showSettingsDialog(Settings settings) {
+            if (buildSettingsDialog == null) {
+                return null;
+            }
+            return buildSettingsDialog.runBuildSettingsDialog(settings, this).show_custom();
+        }
+        //  <----- SettingsDialog -----
 
         public static Space getSpaceById(int id){
             for (Space space : allSpaces) {
@@ -459,7 +504,7 @@ public class Settings extends AppCompatActivity {
             changeSetting(SETTING_SPACE_SHOWN_ + space.getItemId(), String.valueOf(space.isShown()));
         }
 
-        settings_others_aktiveSpaces.setText(
+        settings_others_activeSpaces.setText(
                 allSpaces.stream().filter(Space::isShown).map(ParentClass::getName).collect(Collectors.joining(", ")));
 
         spaceRecycler_customRecycler.reload();

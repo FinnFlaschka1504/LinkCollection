@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:gravity="right"
     android:orientation="vertical">
 
@@ -31,7 +32,7 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginBottom="16dp"
-            android:background="@color/colorDdivider" />
+            android:background="@color/colorDivider" />
 
         <TextView
             android:id="@+id/dialog_custom_text"
@@ -46,7 +47,7 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginTop="16dp"
-            android:background="@color/colorDdivider" />
+            android:background="@color/colorDivider" />
     </LinearLayout>
 
     <LinearLayout
@@ -60,7 +61,25 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginBottom="10dp"
-            android:background="@color/colorDdivider" />
+            android:background="@color/colorDivider" />
+
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/dialog_settings_size"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            app:errorEnabled="true">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="12dp"
+                android:inputType="textCapSentences"
+                android:selectAllOnFocus="true"
+                android:singleLine="true"
+                tools:hint="Hint.." />
+        </com.google.android.material.textfield.TextInputLayout>
 
         <EditText
             android:id="@+id/dialog_custom_edit"
@@ -75,7 +94,7 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginTop="16dp"
-            android:background="@color/colorDdivider" />
+            android:background="@color/colorDivider" />
     </LinearLayout>
 
     <LinearLayout
@@ -89,17 +108,15 @@
             android:id="@+id/dialog_custom_divider5"
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="@color/colorDdivider" />
+            android:background="@color/colorDivider" />
 
-        <com.maxMustermannGeheim.linkcollection.Utilitys.LockableScrollView
+        <ScrollView
             android:id="@+id/dialog_custom_layout_view_interface"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
             android:fillViewport="true"
-            android:visibility="gone">
-
-        </com.maxMustermannGeheim.linkcollection.Utilitys.LockableScrollView>
+            android:visibility="gone"/>
 
         <LinearLayout
             android:id="@+id/dialog_custom_layout_view_interface_restrained"
@@ -114,7 +131,7 @@
             android:id="@+id/dialog_custom_divider6"
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="@color/colorDdivider" />
+            android:background="@color/colorDivider" />
 
 
     </LinearLayout>
@@ -133,7 +150,7 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginTop="8dp"
-        android:background="@color/colorDdivider"
+        android:background="@color/colorDivider"
         android:visibility="gone"
         tools:visibility="visible" />
 

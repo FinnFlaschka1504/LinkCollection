@@ -12,12 +12,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewStub;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.ViewCompat;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -32,7 +30,6 @@ import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
@@ -43,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String EXTRA_CATEGORY = "EXTRA_CATEGORY";
     public static final String SETTING_LAST_OPEN_SPACE = "SETTING_LAST_OPEN_SPACE";
     public static final String ACTION_ADD = "ACTION_ADD";
+    public static final String EXTRA_SPACE_NAMES = "EXTRA_SPACE_NAMES";
 
 
     public static final int START_VIDEOS = 1;
@@ -164,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView.setVisibility(bottomNavigationView.getMenu().size() == 1 ? View.GONE : View.VISIBLE);
 
         if (!currentSpace.hasFragment())
-            currentSpace.setFragment(new SpaceFragment(currentSpace.getLayoutId()));
+            currentSpace.setFragment(new SpaceFragment(currentSpace.getFragmentLayoutId()));
         SpaceFragment.currentSpace = currentSpace;
         bottomNavigationView.setOnNavigationItemSelectedListener(onNavigationItemSelectedListener);
         bottomNavigationView.setSelectedItemId(currentSpace.getItemId());
@@ -182,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
             selectedSpace = Settings.Space.getFirstShown();
 
         if (!selectedSpace.hasFragment())
-            selectedSpace.setFragment(new SpaceFragment(selectedSpace.getLayoutId()));
+            selectedSpace.setFragment(new SpaceFragment(selectedSpace.getFragmentLayoutId()));
         SpaceFragment.currentSpace = selectedSpace;
         getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container, selectedSpace.getFragment()).runOnCommit(MainActivity::setCounts).commitAllowingStateLoss();
         currentSpace = selectedSpace;
@@ -211,7 +209,7 @@ public class MainActivity extends AppCompatActivity {
     public void openVideoActivity(View view) {
         if (!Database.isReady())
             return;
-        Intent intent = new Intent(this, VideoActivity.class);
+        Intent intent = new Intent(this, VideoActivity.class).putExtra(EXTRA_SPACE_NAMES, currentSpace.getName() + "|" + currentSpace.getPlural());
         startActivityForResult(intent, START_VIDEOS);
     }
 

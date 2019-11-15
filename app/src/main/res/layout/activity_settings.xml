@@ -279,7 +279,7 @@
                             android:textSize="12sp" />
 
                         <TextView
-                            android:id="@+id/settings_others_aktiveSpaces"
+                            android:id="@+id/settings_others_activeSpaces"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:textSize="12sp"

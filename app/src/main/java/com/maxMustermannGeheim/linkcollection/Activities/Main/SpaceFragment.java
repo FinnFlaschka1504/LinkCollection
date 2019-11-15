@@ -19,7 +19,7 @@ public class SpaceFragment extends Fragment {
     public SpaceFragment() {
         if (currentSpace == null)
             return;
-        layoutId = currentSpace.getLayoutId();
+        layoutId = currentSpace.getFragmentLayoutId();
     }
 
     public SpaceFragment(int layoutId) {

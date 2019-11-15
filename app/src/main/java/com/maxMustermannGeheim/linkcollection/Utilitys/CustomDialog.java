@@ -37,6 +37,17 @@ public class CustomDialog {
     public enum ButtonType {
         YES_NO, SAVE_CANCEL, BACK, OK, OK_CANCEL, CUSTOM;
     }
+
+    public enum BUTTON {
+        YES_BUTTON("YES_BUTTON"), NO_BUTTON("NO_BUTTON"), SAVE_BUTTON("SAVE_BUTTON"), CANCEL_BUTTON("CANCEL_BUTTON"), BACK_BUTTON("BACK_BUTTON")
+        , OK_BUTTON("OK_BUTTON");
+
+        String code;
+
+        BUTTON(String code) {
+            this.code = code;
+        }
+    }
     // ToDo: EditText zum standard hinzufügen
 
     private EditBuilder editBuilder;
@@ -57,7 +68,7 @@ public class CustomDialog {
     private Object objectExtra;
     private OnDialogDismiss onDialogDismiss;
     private boolean scroll = true;
-    private int childRecyclerId;
+//    private int childRecyclerId;
 
     private List<Boolean> dismissDialogList = new ArrayList<>();
     private List<Pair<String, OnClick>> pairList = new ArrayList<>();
@@ -180,6 +191,18 @@ public class CustomDialog {
     }
 
     public static class EditBuilder {
+        public enum INPUT_TYPE {
+            TEXT(0x00000001), NUMBER(0x00000002), NUMBER_DECIMAL(0x00002002), CAP_SENTENCES(0x00004001),
+            CAPS_LOCK(0x00001001), CAPS_WORD(0x00002001),MULTI_LINE(0x00040001), E_MAIL(0x00000021)
+            , PASSWORD(0x00000081), NUMBER_PASSWORD(0x00000012), DATE_TIME(0x00000004)
+            , DATE(0x00000014), TIME(0x00000024);
+
+            int code;
+
+            INPUT_TYPE(int code) {
+                this.code = code;
+            }
+        }
         private String text;
         private String hint;
         private boolean showKeyboard = true;
@@ -188,7 +211,7 @@ public class CustomDialog {
         private boolean fireButtonOnOK = false;
         private int buttonId;
         private String regEx = ".*";
-        private int inputType = InputType.TYPE_TEXT_VARIATION_PERSON_NAME;
+        private INPUT_TYPE inputType = INPUT_TYPE.CAP_SENTENCES;
 
         public EditBuilder setText(String text) {
             this.text = text;
@@ -215,7 +238,7 @@ public class CustomDialog {
             return this;
         }
 
-        public EditBuilder setInputType(int inputType) {
+        public EditBuilder setInputType(INPUT_TYPE inputType) {
             this.inputType = inputType;
             return this;
         }
@@ -231,6 +254,10 @@ public class CustomDialog {
             this.fireButtonOnOK = true;
             return this;
         }
+    }
+
+    public static class TextBuilder{
+
     }
 
     private void setButtons() {
@@ -449,7 +476,7 @@ public class CustomDialog {
             });
         }
 
-        editText.setInputType(editBuilder.inputType);
+        editText.setInputType(editBuilder.inputType.code);
         if (editBuilder.fireButtonOnOK) {
             editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
             editText.setOnEditorActionListener((v, actionId, event) -> {
@@ -492,10 +519,10 @@ public class CustomDialog {
         return this;
     }
 
-    public CustomDialog onlyScrollChildRecycler(int recyclerId) {
-        childRecyclerId = recyclerId;
-        return this;
-    }
+//    public CustomDialog onlyScrollChildRecycler(int recyclerId) {
+//        childRecyclerId = recyclerId;
+//        return this;
+//    }
 
     public CustomDialog show_custom() {
         show();
@@ -529,7 +556,7 @@ public class CustomDialog {
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT);
             if (scroll) {
-                LockableScrollView dialog_custom_layout_view_interface = dialog.findViewById(R.id.dialog_custom_layout_view_interface);
+                ScrollView dialog_custom_layout_view_interface = dialog.findViewById(R.id.dialog_custom_layout_view_interface);
                 dialog_custom_layout_view_interface.addView(view, layoutParams);
                 dialog_custom_layout_view_interface.setVisibility(View.VISIBLE);
 //                dialog_custom_layout_view_interface.setScrollable(false);
@@ -638,7 +665,7 @@ public class CustomDialog {
             return editText.getText().toString().trim();
     }
 
-    public static void changeText(Dialog dialog, String text) {
+    public static void changeText(Dialog dialog, CharSequence text) {
         ((TextView) dialog.findViewById(R.id.dialog_custom_text)).setText(text);
     }
 

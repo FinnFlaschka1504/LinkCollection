@@ -60,16 +60,18 @@ public class VideoActivity extends AppCompatActivity {
     public enum FILTER_TYPE{
         NAME, ACTOR, GENRE, STUDIO
     }
-    Database database;
-    SharedPreferences mySPR_daten;
+    private Database database;
+    private SharedPreferences mySPR_daten;
     private boolean delete = false;
     private List<String> toDelete = new ArrayList<>();
-    Video randomVideo;
+    private Video randomVideo;
     private boolean scrolling = true;
     private SORT_TYPE sort_type = SORT_TYPE.LATEST;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.ACTOR, FILTER_TYPE.GENRE, FILTER_TYPE.STUDIO));
-    SearchView.OnQueryTextListener textListener;
+    private SearchView.OnQueryTextListener textListener;
     private boolean reverse = false;
+    private String singular;
+    private String plural;
 
     List<Video> allVideoList = new ArrayList<>();
     List<Video> filterdVideoList = new ArrayList<>();
@@ -84,8 +86,17 @@ public class VideoActivity extends AppCompatActivity {
     @SuppressLint("RestrictedApi")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
+
+        String stringExtra = getIntent().getStringExtra(MainActivity.EXTRA_SPACE_NAMES);
+        if (stringExtra != null) {
+            String[] singPlur = stringExtra.split("\\|");
+
+            singular = singPlur[0];
+            plural = singPlur[1];
+            setTitle(plural);
+        }
+
         database = Database.getInstance();
         if (database == null)
             setContentView(R.layout.loading_screen);
@@ -165,7 +176,7 @@ public class VideoActivity extends AppCompatActivity {
                 setResult(RESULT_OK);
 
                 Database.saveAll();
-                Toast.makeText(this, toDelete.size() + (toDelete.size() == 1 ? " Video" : " Videos") + " gelöscht", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, toDelete.size() + (toDelete.size() == 1 ? " " + singular : " " + plural) + " gelöscht", Toast.LENGTH_SHORT).show();
             });
             loadVideoRecycler();
 
@@ -196,7 +207,7 @@ public class VideoActivity extends AppCompatActivity {
                             if (!unableToFindList.isEmpty()) {
                                 CustomDialog.Builder(that)
                                         .setTitle("Problem beim Laden der Liste!")
-                                        .setText((unableToFindList.size() == 1 ? "Ein Video konnte" : unableToFindList.size() + " Videos konnten") + " nicht gefunden werden")
+                                        .setText((unableToFindList.size() == 1 ? "Ein " + singular + " konnte" : unableToFindList.size() + " " + plural + " konnten") + " nicht gefunden werden")
                                         .setObjectExtra(unableToFindList)
                                         .setButtonType(CustomDialog.ButtonType.CUSTOM)
                                         .addButton("Ignorieren", (customDialog, dialog) -> {})
@@ -446,7 +457,7 @@ public class VideoActivity extends AppCompatActivity {
             video[0].getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
         }
         Dialog returnDialog =  CustomDialog.Builder(this)
-                .setTitle(object == null ? "Neues Video" : "Video Bearbeiten")
+                .setTitle(object == null ? "Neue: " + singular : singular + " Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
                 .setButtonType(CustomDialog.ButtonType.SAVE_CANCEL)
                 .addButton(CustomDialog.SAVE_BUTTON, (customDialog, dialog) -> {
@@ -461,7 +472,7 @@ public class VideoActivity extends AppCompatActivity {
                     if (url.equals("") && !checked){
                         CustomDialog.Builder(this)
                         .setTitle("Ohne URL speichern?")
-                        .setText("Möchtest du wirklich das Video ohne URL speichern")
+                        .setText("Möchtest du wirklich das " + singular + " ohne URL speichern")
                         .setButtonType(CustomDialog.ButtonType.YES_NO)
                         .addButton(CustomDialog.YES_BUTTON, (customDialog1, dialog1) ->
                                 saveVideo(dialog, object, titel, url, false, video))
@@ -586,7 +597,7 @@ public class VideoActivity extends AppCompatActivity {
 
         Database.saveAll();
 
-        Utility.showCenterdToast(this, "Video gespeichert" + (addedYesterday ? "\nAutomatisch für gestern eingetragen" : ""));
+        Utility.showCenterdToast(this, singular + " gespeichert" + (addedYesterday ? "\nAutomatisch für gestern eingetragen" : ""));
 
         if (detailDialog != null)
             detailDialog.reloadView();
@@ -633,7 +644,7 @@ public class VideoActivity extends AppCompatActivity {
                 break;
             case R.id.taskBar_video_delete:
                 if (database.videoMap.isEmpty()) {
-                    Toast.makeText(this, "Keine Videos", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Keine " + plural, Toast.LENGTH_SHORT).show();
                     return true;
                 }
                 if (delete) {
@@ -729,7 +740,7 @@ public class VideoActivity extends AppCompatActivity {
 
     private void showRandomDialog() {
         if (filterdVideoList.isEmpty()) {
-            Toast.makeText(this, "Keine Videos", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Keine " + plural, Toast.LENGTH_SHORT).show();
             return;
         }
         randomVideo = filterdVideoList.get((int) (Math.random() * filterdVideoList.size()));
@@ -741,7 +752,7 @@ public class VideoActivity extends AppCompatActivity {
         randomVideo.getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
 
         CustomDialog.Builder(this)
-                .setTitle("Zufälliges Video")
+                .setTitle("Zufällig")
                 .setView(R.layout.dialog_detail_video)
                 .setButtonType(CustomDialog.ButtonType.CUSTOM)
                 .addButton("Nochmal", (customDialog, dialog) -> {

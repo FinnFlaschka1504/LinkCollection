@@ -59,7 +59,7 @@
         android:id="@+id/divider2"
         android:layout_width="match_parent"
         android:layout_height="3dp"
-        android:background="@color/colorDdivider" />
+        android:background="@color/colorDivider" />
 
     <TextView
         android:id="@+id/fragmentCalender_noTrips"

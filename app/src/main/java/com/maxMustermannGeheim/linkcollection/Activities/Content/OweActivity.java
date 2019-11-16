@@ -40,7 +40,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Person;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog_new;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
@@ -81,7 +81,7 @@ public class OweActivity extends AppCompatActivity {
     private ArrayList<Owe> allOweList;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.DESCRIPTION, FILTER_TYPE.PERSON, FILTER_TYPE.OWN, FILTER_TYPE.OTHER
             , FILTER_TYPE.OPEN, FILTER_TYPE.CLOSED));
-    private CustomDialog detailDialog;
+    private CustomDialog_new detailDialog;
     private boolean fireSearch;
 
     @Override
@@ -309,43 +309,43 @@ public class OweActivity extends AppCompatActivity {
         if (owe != null) {
             newOwe[0] = owe.cloneOwe();
         }
-        CustomDialog returnDialog =  CustomDialog.Builder(this)
+        CustomDialog_new returnDialog =  CustomDialog_new.Builder(this)
                 .setTitle(owe == null ? "Neue Schulden" : "Schulden Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_owe)
-                .setButtonType(CustomDialog.ButtonType.CUSTOM);
+                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.CUSTOM);
 
         if (owe != null)
-            returnDialog.addButton("Löschen", (customDialog, dialog) -> {
+            returnDialog.addButton("Löschen", customDialog -> {
                 if (!Utility.isOnline(this))
                     return;
 
-                CustomDialog.Builder(this)
+                CustomDialog_new.Builder(this)
                         .setTitle("Löschen")
                         .setText("Willst du wirklich '" + owe.getName() + "' löschen?")
-                        .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
-                        .addButton(CustomDialog.OK_BUTTON, (customDialog1, dialog1) -> {
+                        .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.OK_CANCEL)
+                        .addButton(CustomDialog_new.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
                             database.oweMap.remove(owe.getUuid());
                             Database.saveAll();
                             reLoadRecycler();
-                            dialog.dismiss();
+                            customDialog1.dismiss();
                             setResult(RESULT_OK);
                         })
                         .show();
             }, false);
 
         returnDialog
-                .addButton("Abbrechen", (customDialog, dialog) -> {})
-                .addButton("Speichern", (customDialog, dialog) -> {
-                    String title = ((EditText) dialog.findViewById(R.id.dialog_editOrAdd_owe_Title)).getText().toString().trim();
+                .addButton("Abbrechen", customDialog -> {})
+                .addButton("Speichern", customDialog -> {
+                    String title = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_owe_Title)).getText().toString().trim();
                     if (title.isEmpty()) {
                         Toast.makeText(this, "Einen Titel eingeben", Toast.LENGTH_SHORT).show();
                         return;
                     }
                     newOwe[0].setName(title);
-                    newOwe[0].setDescription(((EditText) dialog.findViewById(R.id.dialog_editOrAdd_owe_description)).getText().toString().trim());
+                    newOwe[0].setDescription(((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_owe_description)).getText().toString().trim());
 
-                    newOwe[0].setOwnOrOther(((Spinner) dialog.findViewById(R.id.dialog_editOrAdd_owe_ownOrOther)).getSelectedItemPosition() == 0 ? Owe.OWN_OR_OTHER.OTHER : Owe.OWN_OR_OTHER.OWN);
-                  saveOwe(dialog, newOwe, owe);
+                    newOwe[0].setOwnOrOther(((Spinner) customDialog.findViewById(R.id.dialog_editOrAdd_owe_ownOrOther)).getSelectedItemPosition() == 0 ? Owe.OWN_OR_OTHER.OTHER : Owe.OWN_OR_OTHER.OWN);
+                  saveOwe(customDialog, newOwe, owe);
 
                 }, false)
                 .setSetViewContent((customDialog, view) -> {
@@ -370,13 +370,13 @@ public class OweActivity extends AppCompatActivity {
         return returnDialog.getDialog();
     }
 
-    private CustomDialog showDetailDialog(Owe owe) {
+    private CustomDialog_new showDetailDialog(Owe owe) {
         setResult(RESULT_OK);
-        CustomDialog returnDialog = CustomDialog.Builder(this)
+        CustomDialog_new returnDialog = CustomDialog_new.Builder(this)
                 .setTitle("Deteil Ansicht")
                 .setView(R.layout.dialog_detail_owe)
-                .setButtonType(CustomDialog.ButtonType.CUSTOM)
-                .addButton("Bearbeiten", (customDialog, dialog) ->
+                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.CUSTOM)
+                .addButton("Bearbeiten", customDialog ->
                         addOrEditDialog[0] = showEditOrNewDialog(owe), false)
 //                .addButton("Öffnen mit...", dialog -> openUrl(owe, true), false)
                 .setSetViewContent((customDialog, view) -> {
@@ -391,11 +391,11 @@ public class OweActivity extends AppCompatActivity {
                     });
                 })
                 .setOnDialogDismiss(customDialog -> detailDialog = null)
-                .show_custom();
+                .show();
         return returnDialog;
     }
 
-    private void saveOwe(Dialog dialog, Owe[] newOwe, Owe owe) {
+    private void saveOwe(CustomDialog_new dialog, Owe[] newOwe, Owe owe) {
 
         if (owe == null)
             owe = newOwe[0];
@@ -427,11 +427,11 @@ public class OweActivity extends AppCompatActivity {
 //        List<String> categoryNames = new ArrayList<>();
 //        randomOwe[0].getCategoryIdList().forEach(uuid -> categoryNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
 //
-//        CustomDialog.Builder(this)
+//        CustomDialog_new.Builder(this)
 //                .setTitle("Zufällige Schulden")
 //                .setView(R.layout.dialog_detail_knowledge)
-//                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
-//                .addButton("Nochmal", (customDialog, dialog) -> {
+//                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.CUSTOM)
+//                .addButton("Nochmal", customDialog -> {
 //                    Toast.makeText(this, "Neu", Toast.LENGTH_SHORT).show();
 //                    randomOwe[0] = filterdOweList.get((int) (Math.random() * filterdOweList.size()));
 //                    ((TextView) dialog.findViewById(R.id.dialog_detailOwe_title)).setText(randomOwe[0].getName());
@@ -443,7 +443,7 @@ public class OweActivity extends AppCompatActivity {
 //
 //
 //                }, false)
-////                .addButton("Öffnen", (customDialog, dialog) -> openUrl(randomOwe[0], false), false)
+////                .addButton("Öffnen", customDialog -> openUrl(randomOwe[0], false), false)
 //                .setSetViewContent((customDialog, view) -> {
 //                    ((TextView) view.findViewById(R.id.dialog_detailOwe_title)).setText(randomOwe[0].getName());
 //                    ((TextView) view.findViewById(R.id.dialog_detailOwe_content)).setText(randomOwe[0].getContent());
@@ -636,7 +636,7 @@ public class OweActivity extends AppCompatActivity {
 
         };
         final Owe.Item[] currentItem = new Owe.Item[]{null};
-        Dialog sourcesDialog = CustomDialog.Builder(this)
+        CustomDialog_new sourcesDialog = CustomDialog_new.Builder(this)
                 .setTitle("Einträge")
                 .setView(R.layout.dialog_items)
                 .setSetViewContent((customDialog, view) -> {
@@ -739,11 +739,11 @@ public class OweActivity extends AppCompatActivity {
                             .generateCustomRecycler();
 
                     view.findViewById(R.id.dialog_items_delete).setOnClickListener(v -> {
-                        CustomDialog.Builder(this)
+                        CustomDialog_new.Builder(this)
                                 .setTitle("Eintrag Löschen")
                                 .setText("Willst du wirklich den Eintrag von '" + database.personMap.get(currentItem[0].getPersonId()).getName() + "' löschen?")
-                                .setButtonType(CustomDialog.ButtonType.YES_NO)
-                                .addButton(CustomDialog.YES_BUTTON, (customDialog1, dialog) -> {
+                                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.YES_NO)
+                                .addButton(CustomDialog_new.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
                                     owe.getItemList().remove(currentItem[0]);
                                     hideEdit.run();
                                     sources_customRecycler.reload();
@@ -785,13 +785,12 @@ public class OweActivity extends AppCompatActivity {
                     }
 
                     dialog_items_addNames.setOnClickListener(v -> {
-                        int saveButtonId = View.generateViewId();
-                        CustomDialog.Builder(this)
+                        CustomDialog_new.Builder(this)
                                 .setTitle("Person Hinzufügen")
-                                .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
-                                .setEdit(new CustomDialog.EditBuilder().setText(autoCompleteName.getText().toString()).setHint("Personen-Name").setFireButtonOnOK(saveButtonId))
-                                .addButton(CustomDialog.OK_BUTTON, (customDialog1, dialog) -> {
-                                    String name = CustomDialog.getEditText(dialog).trim();
+                                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.OK_CANCEL)
+                                .setEdit(new CustomDialog_new.EditBuilder().setText(autoCompleteName.getText().toString()).setHint("Personen-Name"))
+                                .addButton(CustomDialog_new.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                                    String name = customDialog.getEditText().trim();
                                     if (nameList.contains(name)) {
                                         Toast.makeText(this, "Keine zwei Personen dürfen gleich heißen", Toast.LENGTH_SHORT).show();
                                         return;
@@ -801,23 +800,23 @@ public class OweActivity extends AppCompatActivity {
                                     Database.saveAll();
                                     nameList.add(name);
                                     adapter.add(name);
-                                    dialog.dismiss();
+                                    customDialog1.dismiss();
                                     validation(nameValidation, urlValidation, dialog_items_name, dialog_items_amount, true, false, dialog_items_save);
-                                }, saveButtonId, false)
+                                }, false)
                                 .show();
                     });
                 })
-                .setButtonType(CustomDialog.ButtonType.CUSTOM)
-                .addButton("Hinzufügen", (customDialog, dialog) -> {
-                    dialog.findViewById(R.id.dialog_items_editLayout).setVisibility(View.VISIBLE);
-                    dialog.findViewById(buttonId_add).setVisibility(View.GONE);
-                    dialog.findViewById(R.id.dialog_items_delete).setVisibility(View.GONE);
-                    AutoCompleteTextView dialog_items_name_edit = (AutoCompleteTextView) ((TextInputLayout) dialog.findViewById(R.id.dialog_items_name)).getEditText();
+                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.CUSTOM)
+                .addButton("Hinzufügen", customDialog -> {
+                    customDialog.findViewById(R.id.dialog_items_editLayout).setVisibility(View.VISIBLE);
+                    customDialog.findViewById(buttonId_add).setVisibility(View.GONE);
+                    customDialog.findViewById(R.id.dialog_items_delete).setVisibility(View.GONE);
+                    AutoCompleteTextView dialog_items_name_edit = (AutoCompleteTextView) ((TextInputLayout) customDialog.findViewById(R.id.dialog_items_name)).getEditText();
                     dialog_items_name_edit.requestFocus();
                     Utility.changeWindowKeyboard(this, dialog_items_name_edit, true);
                     dialog_items_name_edit.showDropDown();
                 }, buttonId_add, false)
-                .addButton("Zurück", (customDialog, dialog) -> {})
+                .addButton("Zurück", customDialog -> {})
                 .setObjectExtra(sourcesText)
                 .setOnDialogDismiss(customDialog -> {
                     setItemText((TextView) customDialog.getObjectExtra(), owe);
@@ -1008,7 +1007,7 @@ public class OweActivity extends AppCompatActivity {
             Toast.makeText(activity, "Es gibt nix zum Ausgleichen", Toast.LENGTH_SHORT).show();
             return;
         }
-        CustomDialog tradeOff_customDialog = CustomDialog.Builder(activity);
+        CustomDialog_new tradeOff_customDialog = CustomDialog_new.Builder(activity);
         CustomRecycler tradeOff_customRecycler = CustomRecycler.Builder(activity)
                 .setItemLayout(R.layout.list_item_trade_off)
                 .setObjectList(list)
@@ -1027,14 +1026,14 @@ public class OweActivity extends AppCompatActivity {
                 .setOnClickListener((CustomRecycler.OnClickListener<Utility.Triple<Person, Double, Double>>)(customRecycler, itemView, triple, index) -> {
                     double difference = triple.second - triple.third;
                     SpannableStringBuilder builder = new SpannableStringBuilder();
-                    CustomDialog.Builder(activity)
+                    CustomDialog_new.Builder(activity)
                             .setTitle("Ausgleich Erstellen")
                             .setText(builder.append("Einen Ausgleich für '").append(triple.first.getName(), new StyleSpan(Typeface.BOLD), Spannable.SPAN_COMPOSING).append("' anlegen?")
                                     .append("\nRestbetrag: ").append(Utility.formatToEuro(Math.abs(difference))
                                             , (difference == 0 ? null : new ForegroundColorSpan(difference < 0 ? activity.getColor(R.color.colorGreen) : Color.RED )), Spannable.SPAN_EXCLUSIVE_INCLUSIVE)
                                     .append(difference < 0 ? " (Fremd)" : difference > 0 ? " (Eigen)" : "", new StyleSpan(Typeface.ITALIC), Spannable.SPAN_COMPOSING))
-                            .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
-                            .addButton(CustomDialog.OK_BUTTON, (customDialog, dialog) -> {
+                            .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.OK_CANCEL)
+                            .addButton(CustomDialog_new.BUTTON_TYPE.OK_BUTTON, customDialog -> {
                                 Owe newOwe = new Owe("Ausgleich: " + triple.first.getName())
                                         .setDate(new Date())
                                         .setDescription("Eigene: " + Utility.formatToEuro(triple.second) + "\nFremde: " + Utility.formatToEuro(triple.third)

@@ -48,7 +48,7 @@ public class CustomRecycler<T>{
     private Context context;
     private RecyclerView recycler;
     private int itemView;
-    private SetItemContent<T> setItemContent;
+    private SetItemContent<? super T> setItemContent;
     private List objectList = new ArrayList();
     private int orientation = RecyclerView.VERTICAL;
     private OnLongClickListener onLongClickListener;
@@ -198,11 +198,11 @@ public class CustomRecycler<T>{
         return this;
     }
 
-    public interface SetItemContent<T> {
-        void runSetCellContent(View itemView, T t);
+    public interface SetItemContent<E> {
+        void runSetCellContent(View itemView, E e);
     }
 
-    public CustomRecycler setSetItemContent(SetItemContent setItemContent) {
+    public CustomRecycler setSetItemContent(SetItemContent<? super T> setItemContent) {
         this.setItemContent = setItemContent;
         return this;
     }

@@ -4,7 +4,6 @@ import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Typeface;
 import android.text.Editable;
-import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.Pair;
 import android.view.KeyEvent;
@@ -20,9 +19,6 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.core.view.ViewCompat;
-import androidx.core.widget.NestedScrollView;
-
 import com.maxMustermannGeheim.linkcollection.R;
 
 import org.apmem.tools.layouts.FlowLayout;
@@ -34,7 +30,7 @@ import java.util.Map;
 
 public class CustomDialog {
 
-    public enum ButtonType {
+    public enum BUTTON_CONFIGURATION {
         YES_NO, SAVE_CANCEL, BACK, OK, OK_CANCEL, CUSTOM;
     }
 
@@ -58,7 +54,7 @@ public class CustomDialog {
     private String title;
     private CharSequence text;
     private View view;
-    private ButtonType buttonType = ButtonType.BACK;
+    private BUTTON_CONFIGURATION buttonConfiguration = BUTTON_CONFIGURATION.BACK;
     private Pair<Boolean, Boolean> dimensions = new Pair<>(true, false);
     private boolean dividerVisibility = true;
     private boolean isDividerVisibilityCustom = false;
@@ -122,8 +118,8 @@ public class CustomDialog {
         return this;
     }
 
-    public CustomDialog setButtonType(ButtonType buttonType) {
-        this.buttonType = buttonType;
+    public CustomDialog setButtonConfiguration(BUTTON_CONFIGURATION buttonConfiguration) {
+        this.buttonConfiguration = buttonConfiguration;
         return this;
     }
 
@@ -261,7 +257,7 @@ public class CustomDialog {
     }
 
     private void setButtons() {
-        switch (buttonType) {
+        switch (buttonConfiguration) {
             case YES_NO:
                 addNewButton("Nein");
                 addNewButton("Ja");
@@ -303,7 +299,7 @@ public class CustomDialog {
         Map<String, OnClick> stringOnClickMap = new HashMap<>();
         for (Pair<String, OnClick> pair : pairList) stringOnClickMap.put(pair.first, pair.second);
 
-        switch (buttonType) {
+        switch (buttonConfiguration) {
             case YES_NO:
                 if (stringOnClickMap.keySet().contains(NO_BUTTON)) {
                     int index = nameList.indexOf(NO_BUTTON);

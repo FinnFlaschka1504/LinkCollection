@@ -1,7 +1,6 @@
 package com.maxMustermannGeheim.linkcollection.Utilitys;
 
 import android.app.AlarmManager;
-import android.app.Dialog;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -16,7 +15,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.SearchView;
@@ -386,7 +384,7 @@ public class Utility {
         toast.show();
     }
 
-    public static Dialog showEditItemDialog(Context context, Dialog[] addOrEditDialog, List<String> preSelectedUuidList, Object o, CategoriesActivity.CATEGORIES category) {
+    public static CustomDialog_new showEditItemDialog(Context context, CustomDialog_new[] addOrEditDialog, List<String> preSelectedUuidList, Object o, CategoriesActivity.CATEGORIES category) {
         Database database = Database.getInstance();
         
         if (preSelectedUuidList == null)
@@ -416,22 +414,20 @@ public class Utility {
         }
 
         int saveButtonId = View.generateViewId();
-        int saveButtonId_add = View.generateViewId();
-
 
         String finalEditType_string = editType_string;
-        Dialog dialog_AddActorOrGenre = CustomDialog.Builder(context)
+        CustomDialog_new dialog_AddActorOrGenre = CustomDialog_new.Builder(context)
                 .setTitle(editType_string + " Bearbeiten")
-                .setButtonType(CustomDialog.ButtonType.CUSTOM)
+                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.CUSTOM)
                 .setView(R.layout.dialog_edit_item)
                 .setDimensions(true, true)
                 .disableScroll()
-                .addButton("Hinzufügen", (customDialog, dialog) -> {
-                    CustomDialog.Builder(context)
+                .addButton("Hinzufügen", customDialog -> {
+                    CustomDialog_new.Builder(context)
                             .setTitle(finalEditType_string + " Hinzufügen")
-                            .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
-                            .addButton(CustomDialog.OK_BUTTON, (customDialog1, dialog1) -> {
-                                ParentClass parentClass = ParentClass.newCategoy(category, CustomDialog.getEditText(dialog1));
+                            .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.OK_CANCEL)
+                            .addButton(CustomDialog_new.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                                ParentClass parentClass = ParentClass.newCategoy(category, customDialog1.getEditText());
                                 switch (category){
                                     case DARSTELLER:
                                         database.darstellerMap.put(parentClass.getUuid(), (Darsteller) parentClass);
@@ -450,19 +446,18 @@ public class Utility {
                                         break;
                                 }
                                 selectedUuidList.add(parentClass.getUuid());
-                                dialog.dismiss();
+                                customDialog1.dismiss();
                                 showEditItemDialog(context, addOrEditDialog,selectedUuidList, o, category);
                                 Database.saveAll();
-                            }, saveButtonId_add)
-                            .setEdit(new CustomDialog.EditBuilder()
-                                    .setFireButtonOnOK(saveButtonId_add)
+                            })
+                            .setEdit(new CustomDialog_new.EditBuilder()
                                     .setHint(finalEditType_string + "-Name")
-                                    .setText(((SearchView) dialog.findViewById(R.id.dialogAddPassenger_search)).getQuery().toString()))
+                                    .setText(((SearchView) customDialog.findViewById(R.id.dialogAddPassenger_search)).getQuery().toString()))
                             .show();
 
                 }, false)
-                .addButton("Abbrechen", (customDialog, dialog) -> {})
-                .addButton("Speichern", (customDialog, dialog) -> {
+                .addButton("Abbrechen", customDialog -> {})
+                .addButton("Speichern", customDialog -> {
                     List<String> nameList = new ArrayList<>();
                     switch (category){
                         case DARSTELLER:

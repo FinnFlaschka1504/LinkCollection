@@ -1,10 +1,5 @@
 package com.maxMustermannGeheim.linkcollection.Activities;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.RecyclerView;
-
-import android.app.Dialog;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -15,6 +10,10 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -23,7 +22,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog_new;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
@@ -272,25 +271,24 @@ public class Settings extends AppCompatActivity {
 
     private void setListeners() {
         settings_others_changeDatabaseCode.setOnClickListener(v -> {
-            int okButtonId = View.generateViewId();
-            CustomDialog.Builder(this)
+            CustomDialog_new.Builder(this)
                     .setTitle("Datenbank-Code Ändern")
-                    .setButtonType(CustomDialog.ButtonType.OK_CANCEL)
-                    .setEdit(new CustomDialog.EditBuilder().setText(Database.databaseCode).setFireButtonOnOK(okButtonId))
-                    .addButton(CustomDialog.OK_BUTTON, (customDialog, dialog) -> {
-                        String code = CustomDialog.getEditText(dialog).trim();
+                    .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.OK_CANCEL)
+                    .setEdit(new CustomDialog_new.EditBuilder().setText(Database.databaseCode).setHint("Datenbank-Code"))
+                    .addButton(CustomDialog_new.BUTTON_TYPE.OK_BUTTON, customDialog -> {
+                        String code = customDialog.getEditText().trim();
                         SharedPreferences mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
                         mySPR_daten.edit().putString(Database.DATABASE_CODE, code).commit();
                         Database.getInstance(mySPR_daten, database1 -> {}, false);
-                    }, okButtonId)
-                    .setOnDialogDismiss(customDialog -> settings_others_databaseCode.setText(CustomDialog.getEditText(customDialog.getDialog())))
+                    })
+                    .setOnDialogDismiss(customDialog -> settings_others_databaseCode.setText(customDialog.getEditText()))
                     .show();
         });
 
         settings_others_spaceSelector.setOnClickListener(v -> {
-            CustomDialog.Builder(this)
+            CustomDialog_new.Builder(this)
                     .setTitle("Bereiche Auswählen")
-                    .setView(CustomRecycler.Builder(this)
+                    .setView(new CustomRecycler<Space>(this)
                             .setItemLayout(R.layout.list_item_space_shown)
                             .setObjectList(allSpaces)
                             .setSetItemContent((CustomRecycler.SetItemContent<Space>)(itemView, space) -> {
@@ -322,8 +320,9 @@ public class Settings extends AppCompatActivity {
                             })
                             .setDividerMargin_inDp(16)
                             .generate())
-                    .show()
-                    .setOnDismissListener(dialog -> updateSpaceStatusSettings());
+                    .setOnDialogDismiss(dialog -> updateSpaceStatusSettings())
+                    .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.BACK)
+                    .show();
         });
     }
 
@@ -431,21 +430,21 @@ public class Settings extends AppCompatActivity {
 
         //  ----- SettingsDialog ----->
         public interface BuildSettingsDialog {
-            CustomDialog runBuildSettingsDialog(Settings settings, Space space);
+            CustomDialog_new runBuildSettingsDialog(Settings settings, Space space);
         }
 
         public Space setSettingsDialog(Utility.Triple<Integer, SetViewContent, OnClick> id_SetViewContent_OnClick_quadruple) {
             buildSettingsDialog = (context1, space) -> {
-                CustomDialog customDialog = CustomDialog.Builder(context1).setButtonType(CustomDialog.ButtonType.OK_CANCEL)
+                CustomDialog_new customDialog = CustomDialog_new.Builder(context1).setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.OK_CANCEL)
                         .setTitle(space.getPlural() + "-Einstellungen")
-                        .setEdit(new CustomDialog.EditBuilder().setHint("Singular|Plural").setText(space.getName() + "|" + space.getPlural()));
+                        .setEdit(new CustomDialog_new.EditBuilder().setHint("Singular|Plural").setText(space.getName() + "|" + space.getPlural()).setValidation("\\w+\\|\\w+"));
                 if (id_SetViewContent_OnClick_quadruple != null)
                     customDialog.setView(id_SetViewContent_OnClick_quadruple.first)
                             .setSetViewContent((customDialog1, view) -> id_SetViewContent_OnClick_quadruple.second.runSetViewContent(customDialog1, view, this))
-                            .addButton(CustomDialog.OK_BUTTON, (customDialog1, dialog) -> id_SetViewContent_OnClick_quadruple.third.runOnClick(customDialog1, dialog, this));
+                            .addButton(CustomDialog_new.BUTTON_TYPE.OK_BUTTON, customDialog1 -> id_SetViewContent_OnClick_quadruple.third.runOnClick(customDialog1, this));
                 else
-                    customDialog.addButton(CustomDialog.OK_BUTTON, (customDialog1, dialog) -> {
-                        new OnClick() {}.runOnClick(customDialog1, dialog, this);
+                    customDialog.addButton(CustomDialog_new.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                        new OnClick() {}.runOnClick(customDialog1, this);
                         context1.spaceRecycler_customRecycler.reload();
                         context1.setResult(RESULT_OK);
                         Settings.changeSetting(SETTING_SPACE_NAMES_ + space.getItemId(), space.getName() + "|" + space.getPlural());
@@ -457,11 +456,11 @@ public class Settings extends AppCompatActivity {
         }
 
         public interface SetViewContent{
-            void runSetViewContent(CustomDialog customDialog, View view, Space space);
+            void runSetViewContent(CustomDialog_new customDialog, View view, Space space);
         }
 
         public interface OnClick {
-            default void runOnClick(CustomDialog customDialog, Dialog dialog, Space space){
+            default void runOnClick(CustomDialog_new customDialog, Space space){
                 String text = customDialog.getEditText();
                 if (text.isEmpty())
                     return;
@@ -476,11 +475,11 @@ public class Settings extends AppCompatActivity {
             }
         }
 
-        public CustomDialog showSettingsDialog(Settings settings) {
+        public CustomDialog_new showSettingsDialog(Settings settings) {
             if (buildSettingsDialog == null) {
                 return null;
             }
-            return buildSettingsDialog.runBuildSettingsDialog(settings, this).show_custom();
+            return buildSettingsDialog.runBuildSettingsDialog(settings, this).show();
         }
         //  <----- SettingsDialog -----
 

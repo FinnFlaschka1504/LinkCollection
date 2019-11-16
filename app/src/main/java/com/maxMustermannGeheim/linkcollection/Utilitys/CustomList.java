@@ -67,18 +67,32 @@ public class CustomList<E> extends ArrayList<E> {
             return get(indexOf(e) + 1);
     }
 
-    public void forEachCount(ForEachCount<E> forEachCount) {
+
+//  ----- forEach ----->
+    public void forEachCount(ForEachCount_breakable<E> forEachCount_breakable) {
         int count = 0;
         for (E e : this) {
-            if (forEachCount.runForeEachCount(e, count)) {
+            if (forEachCount_breakable.runForeEachCount(e, count)) {
                 break;
             }
             count++;
         }
     }
-    public interface ForEachCount<E> {
+    public interface ForEachCount_breakable<E> {
         boolean runForeEachCount(E e, int count);
     }
+
+    public void forEachCount(ForEachCount<E> forEachCount) {
+        int count = 0;
+        for (E e : this) {
+            forEachCount.runForeEachCount(e, count);
+            count++;
+        }
+    }
+    public interface ForEachCount<E> {
+        void runForeEachCount(E e, int count);
+    }
+//  <----- forEach -----
 
     public Integer indexOf(Predicate<? super E> predicate) {
         final Integer[] foundAt = new Integer[1];

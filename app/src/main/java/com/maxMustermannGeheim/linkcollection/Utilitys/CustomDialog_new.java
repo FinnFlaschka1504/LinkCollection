@@ -2,10 +2,7 @@ package com.maxMustermannGeheim.linkcollection.Utilitys;
 
 import android.app.Dialog;
 import android.content.Context;
-import android.graphics.Color;
-import android.graphics.Typeface;
 import android.util.Pair;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,9 +13,12 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.R;
 
 import org.apmem.tools.layouts.FlowLayout;
+
+import java.util.Optional;
 
 public class CustomDialog_new {
 
@@ -45,7 +45,6 @@ public class CustomDialog_new {
     private BUTTON_CONFIGURATION buttonConfiguration = BUTTON_CONFIGURATION.CUSTOM;
     private Pair<Boolean, Boolean> dimensions = new Pair<>(true, false);
     private boolean dividerVisibility = true;
-    private boolean isDividerVisibilityCustom = false;
     private Object objectExtra;
     private boolean scroll = true;
     private EditBuilder editBuilder;
@@ -71,7 +70,7 @@ public class CustomDialog_new {
     }
     
 
-//  ----- Getters & Setters ----->
+    //  ----- Getters & Setters ----->
     public CustomDialog_new setContext(Context context) {
         this.context = context;
         return this;
@@ -113,15 +112,20 @@ public class CustomDialog_new {
         return this;
     }
 
-    public CustomDialog_new setDividerVisibility(boolean dividerVisibility) {
-        this.dividerVisibility = dividerVisibility;
-        isDividerVisibilityCustom = true;
+    public CustomDialog_new hideDividers() {
+        this.dividerVisibility = false;
+//        isDividerVisibilityCustom = true;
         return this;
     }
 
     public CustomDialog_new setEdit(EditBuilder editBuilder) {
         this.showEdit = true;
         this.editBuilder = editBuilder;
+        return this;
+    }
+
+    public CustomDialog_new standardEdit() {
+        showEdit = true;
         return this;
     }
 
@@ -152,10 +156,10 @@ public class CustomDialog_new {
         buttonLabelAllCaps = false;
         return this;
     }
-//  <----- Getters & Setters -----
+    //  <----- Getters & Setters -----
     
     
-//  ----- Interfaces ----->
+    //  ----- Interfaces ----->
     public interface OnClick {
         void runOnClick(CustomDialog_new customDialog);
     }
@@ -167,89 +171,85 @@ public class CustomDialog_new {
     public interface OnDialogDismiss {
         void runOnDialogDismiss(CustomDialog_new customDialog);
     }
-//  <----- Interfaces -----
+    //  <----- Interfaces -----
     
 
-//  ----- Builder ----->
+    //  ----- Builder ----->
     public static class EditBuilder {
-    public enum INPUT_TYPE {
-        TEXT(0x00000001), NUMBER(0x00000002), NUMBER_DECIMAL(0x00002002), CAP_SENTENCES(0x00004001),
-        CAPS_LOCK(0x00001001), CAPS_WORD(0x00002001),MULTI_LINE(0x00040001), E_MAIL(0x00000021)
-        , PASSWORD(0x00000081), NUMBER_PASSWORD(0x00000012), DATE_TIME(0x00000004)
-        , DATE(0x00000014), TIME(0x00000024);
+        private String text = "";
+        private String hint = "";
+        private boolean showKeyboard = true;
+        private boolean selectAll = true;
+        private boolean disableButtonByDefault;
+        private boolean allowEmpty;
+        private String regEx = "";
 
-        int code;
+        private Helpers.TextInputHelper.INPUT_TYPE inputType = Helpers.TextInputHelper.INPUT_TYPE.CAP_SENTENCES;
+        Helpers.TextInputHelper.TextValidation textValidation;
 
-        INPUT_TYPE(int code) {
-            this.code = code;
+        public EditBuilder setText(String text) {
+            this.text = text;
+            return this;
+        }
+
+        public EditBuilder setHint(String hint) {
+            this.hint = hint;
+            return this;
+        }
+
+        public EditBuilder setShowKeyboard(boolean showKeyboard) {
+            this.showKeyboard = showKeyboard;
+            return this;
+        }
+
+        public EditBuilder disableSelectAll() {
+            this.selectAll = false;
+            return this;
+        }
+
+        public EditBuilder setInputType(Helpers.TextInputHelper.INPUT_TYPE inputType) {
+            this.inputType = inputType;
+            return this;
+        }
+
+        public EditBuilder setValidation(Helpers.TextInputHelper.TextValidation textValidation) {
+            this.textValidation = textValidation;
+            return this;
+        }
+        public EditBuilder setValidation(String regEx) {
+            this.regEx = regEx;
+            return this;
+        }
+
+        public EditBuilder disableButtonByDefault() {
+            this.disableButtonByDefault = true;
+            return this;
+        }
+
+        public EditBuilder allowEmpty() {
+            this.allowEmpty = true;
+            return this;
+        }
+
+        public EditBuilder setRegEx(String regEx) {
+            this.regEx = regEx;
+            return this;
         }
     }
-    private String text;
-    private String hint;
-    private boolean showKeyboard = true;
-    private boolean selectAll = true;
-    private boolean disableWhenEmpty = true;
-    private boolean fireButtonOnOK = false;
-    private int buttonId;
-    private String regEx = ".*";
-    private CustomDialog_new.EditBuilder.INPUT_TYPE inputType = CustomDialog_new.EditBuilder.INPUT_TYPE.CAP_SENTENCES;
-//
-//    public CustomDialog_new.EditBuilder setText(String text) {
-//        this.text = text;
-//        return this;
-//    }
-//
-//    public CustomDialog_new.EditBuilder setHint(String hint) {
-//        this.hint = hint;
-//        return this;
-//    }
-//
-//    public CustomDialog_new.EditBuilder setShowKeyboard(boolean showKeyboard) {
-//        this.showKeyboard = showKeyboard;
-//        return this;
-//    }
-//
-//    public CustomDialog_new.EditBuilder setSelectAll(boolean selectAll) {
-//        this.selectAll = selectAll;
-//        return this;
-//    }
-//
-//    public CustomDialog_new.EditBuilder setDiableButtonWhenEmpty(int buttonId) {
-//        this.buttonId = buttonId;
-//        return this;
-//    }
-//
-//    public CustomDialog_new.EditBuilder setInputType(CustomDialog_new.EditBuilder.INPUT_TYPE inputType) {
-//        this.inputType = inputType;
-//        return this;
-//    }
-//
-//    public CustomDialog_new.EditBuilder setCheckRegEx(int buttonId, String regEx) {
-//        this.buttonId = buttonId;
-//        this.regEx = regEx;
-//        return this;
-//    }
-//
-//    public CustomDialog_new.EditBuilder setFireButtonOnOK(int buttonId) {
-//        this.buttonId = buttonId;
-//        this.fireButtonOnOK = true;
-//        return this;
-//    }
-}
 
     public static class TextBuilder{
 
     }
-//  <----- Builder -----
+    //  <----- Builder -----
     
     
-//  ----- Convenience ----->
+    //  ----- Convenience ----->
     public CustomDialog_new dismiss() {
     dialog.dismiss();
     return this;
 }
 
-    public View findViewById(int id) {
+    public <T extends View> T findViewById(int id) {
         return dialog.findViewById(id);
     }
 
@@ -261,13 +261,13 @@ public class CustomDialog_new {
             return editText.getText().toString().trim();
     }
 
-    public static void changeText(Dialog dialog, CharSequence text) {
-        ((TextView) dialog.findViewById(R.id.dialog_custom_text)).setText(text);
+    public static void changeText(CustomDialog_new customDialog_new, CharSequence text) {
+        ((TextView) customDialog_new.findViewById(R.id.dialog_custom_text)).setText(text);
     }
-//  <----- Convenience -----
+    //  <----- Convenience -----
 
 
-//  ----- Buttons ----->
+    //  ----- Buttons ----->
     class ButtonHelper {
         private Integer id;
         private String label;
@@ -307,6 +307,10 @@ public class CustomDialog_new {
 
             if (id != null)
                 button.setId(id);
+            else {
+                id = View.generateViewId();
+                button.setId(id);
+            }
 
             if (!buttonLabelAllCaps)
                 button.setAllCaps(false);
@@ -392,30 +396,30 @@ public class CustomDialog_new {
 //  <----- Buttons -----
     
     
-//  ----- Actions ----->
+    //  ----- Actions ----->
     public Dialog show_dialog() {
     show();
     return dialog;
 }
 
     public CustomDialog_new show() {
-        TextView dialog_custom_title = dialog.findViewById(R.id.dialog_custom_title);
         TextView dialog_custom_text = dialog.findViewById(R.id.dialog_custom_text);
 
         // ToDo: TextBuilder
 
-        if (title != null)
-            dialog_custom_title.setText(this.title);
-        else
-            dialog_custom_title.setVisibility(View.GONE);
+        if (title != null) {
+            ((TextView) dialog.findViewById(R.id.dialog_custom_title)).setText(this.title);
+            dialog.findViewById(R.id.dialog_custom_title_layout).setVisibility(View.VISIBLE);
+        }
 
-        if (text != null)
+        if (text != null) {
             dialog_custom_text.setText(this.text);
-        else
-            dialog.findViewById(R.id.dialog_custom_layout_text).setVisibility(View.GONE);
+            dialog.findViewById(R.id.dialog_custom_text_layout).setVisibility(View.VISIBLE);
+        }
 
-        if (!showEdit)
-            dialog.findViewById(R.id.dialog_custom_layout_edit).setVisibility(View.GONE);
+        if (showEdit) {
+            dialog.findViewById(R.id.dialog_custom_edit_layout).setVisibility(View.VISIBLE);
+        }
 
         if (view != null) {
             ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(
@@ -430,11 +434,15 @@ public class CustomDialog_new {
                 dialog_custom_layout_view_interface_restrained.addView(view, layoutParams);
                 dialog_custom_layout_view_interface_restrained.setVisibility(View.VISIBLE);
             }
-        } else {
-            dialog.findViewById(R.id.dialog_custom_layout_view).setVisibility(View.GONE);
+            dialog.findViewById(R.id.dialog_custom_layout_view).setVisibility(View.VISIBLE);
         }
 
-        // ToDo: Divider
+        if (!dividerVisibility) {
+            dialog.findViewById(R.id.dialog_custom_dividerTitle).setVisibility(View.GONE);
+            dialog.findViewById(R.id.dialog_custom_dividerText).setVisibility(View.GONE);
+            dialog.findViewById(R.id.dialog_custom_dividerEdit).setVisibility(View.GONE);
+            dialog.findViewById(R.id.dialog_custom_dividerView).setVisibility(View.GONE);
+        }
 
         switch (buttonConfiguration) {
             case BACK:
@@ -486,9 +494,19 @@ public class CustomDialog_new {
         buttonHelperList.forEach(ButtonHelper::generateButton);
 
         // ToDo: EditBuilder
+        if (showEdit) {
+            applyEdit();
+        }
+
+        if (setViewContent != null)
+            setViewContent.runSetViewContent(this, view);
+
+        if (onDialogDismiss != null)
+            dialog.setOnDismissListener(dialog1 -> onDialogDismiss.runOnDialogDismiss(this));
 
         setDialogLayoutParameters(dialog, dimensions.first, dimensions.second);
         dialog.show();
+
         return this;
     }
 
@@ -496,7 +514,65 @@ public class CustomDialog_new {
         setViewContent.runSetViewContent(this, view);
         return this;
     }
-//  <----- Actions -----
+    //  <----- Actions -----
+
+    private void applyEdit() {
+        TextInputLayout textInputLayout = dialog.findViewById(R.id.dialog_custom_edit_editLayout);
+        TextInputEditText textInputEditText = dialog.findViewById(R.id.dialog_custom_edit);
+
+        Button button = null;
+        Optional<ButtonHelper> optional = buttonHelperList.stream()
+                .filter(buttonHelper -> (buttonHelper.buttonType == BUTTON_TYPE.OK_BUTTON || buttonHelper.buttonType == BUTTON_TYPE.SAVE_BUTTON || buttonHelper.buttonType == BUTTON_TYPE.YES_BUTTON))
+                .findFirst();
+        if (optional.isPresent())
+            button = dialog.findViewById(optional.get().id);
+
+        Button finalButton = button;
+        Helpers.TextInputHelper.OnValidationResult onValidationResult = result -> {
+            if (finalButton != null)
+                finalButton.setEnabled(result);
+        };
+        Helpers.TextInputHelper textInputHelper = new Helpers.TextInputHelper(onValidationResult, textInputLayout);
+
+
+        if (editBuilder != null) {
+            if (editBuilder.showKeyboard) {
+                textInputEditText.requestFocus();
+                Utility.changeWindowKeyboard(dialog.getWindow(), true);
+            }
+
+            if (!editBuilder.text.isEmpty())
+                textInputEditText.setText(editBuilder.text);
+
+            textInputLayout.setHint(editBuilder.hint);
+
+            if (editBuilder.selectAll)
+                textInputEditText.selectAll();
+            else
+                textInputEditText.setSelection(editBuilder.text.length());
+
+            if (!editBuilder.regEx.isEmpty())
+                textInputHelper.changeValidation(textInputLayout, editBuilder.regEx);
+            else if (editBuilder.textValidation != null)
+                textInputHelper.changeValidation(textInputLayout, editBuilder.textValidation);
+
+            if (editBuilder.inputType != null)
+                textInputHelper.setInputType(textInputLayout, editBuilder.inputType);
+
+            if (editBuilder.allowEmpty)
+                textInputHelper.allowEmpty(textInputLayout);
+        } else {
+            textInputEditText.requestFocus();
+            Utility.changeWindowKeyboard(dialog.getWindow(), true);
+        }
+        textInputHelper.addActionListener(textInputLayout, (textInputHelper1, textInputLayout1, actionId) -> {
+            if (textInputHelper1.isValid() && finalButton != null)
+                finalButton.callOnClick();
+        });
+        textInputHelper.validate();
+        if (editBuilder != null && editBuilder.disableButtonByDefault)
+            button.setEnabled(false);
+    }
 
     static void setDialogLayoutParameters(Dialog dialog, boolean width, boolean height) {
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();

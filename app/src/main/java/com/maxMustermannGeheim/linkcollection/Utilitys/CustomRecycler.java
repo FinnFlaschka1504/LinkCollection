@@ -48,10 +48,10 @@ public class CustomRecycler<T>{
     private Context context;
     private RecyclerView recycler;
     private int itemView;
-    private SetItemContent<? super T> setItemContent;
-    private List objectList = new ArrayList();
+    private SetItemContent<T> setItemContent;
+    private List<T> objectList = new ArrayList<>();
     private int orientation = RecyclerView.VERTICAL;
-    private OnLongClickListener onLongClickListener;
+    private OnLongClickListener<T> onLongClickListener;
     private View.OnLongClickListener longClickListener = view -> {
         if ((lastClickTime > System.currentTimeMillis() - multipleClickDelay) && !isMultiClickEnabled)
             return false;
@@ -60,7 +60,7 @@ public class CustomRecycler<T>{
         onLongClickListener.runOnLongClickListener(this, view, objectList.get(index), index);
         return true;
     };
-    private OnClickListener onClickListener;
+    private OnClickListener<T> onClickListener;
     private View.OnClickListener clickListener = view -> {
         if ((lastClickTime > System.currentTimeMillis() - multipleClickDelay) && !isMultiClickEnabled)
             return;
@@ -72,11 +72,11 @@ public class CustomRecycler<T>{
     private Map<Integer, Pair<OnClickListener, Boolean>> idSubOnLongClickListenerMap = new HashMap<>();
     private SELECTION_MODE selectionMode = SELECTION_MODE.SINGLE_SELECTION;
     private boolean useActiveObjectList;
-    private GetActiveObjectList getActiveObjectList;
+    private GetActiveObjectList<T> getActiveObjectList;
     private boolean hideOverscroll;
     private MyAdapter mAdapter;
     private boolean dragAndDrop = false;
-    private OnDragAndDrop onDragAndDrop;
+    private OnDragAndDrop<T> onDragAndDrop;
     private int dividerMargin;
 
 
@@ -84,15 +84,15 @@ public class CustomRecycler<T>{
         this.context = context;
     }
 
-    public static CustomRecycler Builder(Context context) {
-        return new CustomRecycler<>(context);
-    }
+//    public static CustomRecycler Builder(Context context) {
+//        return new CustomRecycler<>(context);
+//    }
 
-    public static CustomRecycler Builder(Context context, RecyclerView recycler) {
-        CustomRecycler customRecycler = new CustomRecycler<>(context);
-        customRecycler.recycler = recycler;
-        return customRecycler;
-    }
+//    public static CustomRecycler Builder(Context context, RecyclerView recycler) {
+//        CustomRecycler customRecycler = new CustomRecycler<>(context);
+//        customRecycler.recycler = recycler;
+//        return customRecycler;
+//    }
 
     public CustomRecycler (Context context, RecyclerView recycler) {
         this.context = context;
@@ -110,12 +110,12 @@ public class CustomRecycler<T>{
         return recycler;
     }
 
-    public CustomRecycler setItemLayout(int layoutId) {
+    public CustomRecycler<T> setItemLayout(int layoutId) {
         this.itemView = layoutId;
         return this;
     }
 
-    public CustomRecycler setObjectList(List objectList) {
+    public CustomRecycler<T> setObjectList(List<T> objectList) {
         this.objectList = objectList;
         return this;
     }
@@ -128,14 +128,14 @@ public class CustomRecycler<T>{
         List<T> runGetActiveObjectList();
     }
 
-    public CustomRecycler setGetActiveObjectList(GetActiveObjectList getActiveObjectList) {
+    public CustomRecycler<T> setGetActiveObjectList(GetActiveObjectList<T> getActiveObjectList) {
         this.getActiveObjectList = getActiveObjectList;
         objectList.addAll(getActiveObjectList.runGetActiveObjectList());
         useActiveObjectList = true;
         return this;
     }
 
-    public CustomRecycler setOrientation(ORIENTATION orientation) {
+    public CustomRecycler<T> setOrientation(ORIENTATION orientation) {
         switch (orientation) {
             case VERTICAL: this.orientation = RecyclerView.VERTICAL; break;
             case HORIZONTAL: this.orientation = RecyclerView.HORIZONTAL; break;
@@ -143,57 +143,57 @@ public class CustomRecycler<T>{
         return this;
     }
 
-    public CustomRecycler useCustomRipple() {
+    public CustomRecycler<T> useCustomRipple() {
         this.useCustomRipple = true;
         return this;
     }
 
-    public CustomRecycler hideDivider() {
+    public CustomRecycler<T> hideDivider() {
         this.showDivider = false;
         return this;
     }
 
-    public CustomRecycler removeLastDivider() {
+    public CustomRecycler<T> removeLastDivider() {
         this.hideLastDivider = true;
         return this;
     }
 
-    public CustomRecycler setSelectionMode(SELECTION_MODE selectionMode) {
+    public CustomRecycler<T> setSelectionMode(SELECTION_MODE selectionMode) {
         this.selectionMode = selectionMode;
         return this;
     }
 
-    public CustomRecycler setMultipleClickDelay(long multipleClickDelay) {
+    public CustomRecycler<T> setMultipleClickDelay(long multipleClickDelay) {
         this.multipleClickDelay = multipleClickDelay;
         return this;
     }
 
-    public CustomRecycler setMultiClickEnabled(boolean multiClickEnabled) {
+    public CustomRecycler<T> setMultiClickEnabled(boolean multiClickEnabled) {
         isMultiClickEnabled = multiClickEnabled;
         return this;
     }
 
-    public CustomRecycler addSubOnClickListener(int viewId, OnClickListener onClickListener, boolean ripple) {
+    public CustomRecycler<T> addSubOnClickListener(int viewId, OnClickListener onClickListener, boolean ripple) {
         idSubOnClickListenerMap.put(viewId, new Pair<>(onClickListener, ripple));
         return this;
     }
 
-    public CustomRecycler addSubOnClickListener(int viewId, OnClickListener onClickListener) {
+    public CustomRecycler<T> addSubOnClickListener(int viewId, OnClickListener onClickListener) {
         idSubOnClickListenerMap.put(viewId, new Pair<>(onClickListener, true));
         return this;
     }
 
-    public CustomRecycler addSubOnLongClickListener(int viewId, OnClickListener onClickListener, boolean ripple) {
+    public CustomRecycler<T> addSubOnLongClickListener(int viewId, OnClickListener onClickListener, boolean ripple) {
         idSubOnLongClickListenerMap.put(viewId, new Pair<>(onClickListener, ripple));
         return this;
     }
 
-    public CustomRecycler addSubOnLongClickListener(int viewId, OnClickListener onClickListener) {
+    public CustomRecycler<T> addSubOnLongClickListener(int viewId, OnClickListener onClickListener) {
         idSubOnLongClickListenerMap.put(viewId, new Pair<>(onClickListener, true));
         return this;
     }
 
-    public CustomRecycler setRowOrColumnCount(int rowOrColumnCount) {
+    public CustomRecycler<T> setRowOrColumnCount(int rowOrColumnCount) {
         this.rowOrColumnCount = rowOrColumnCount;
         return this;
     }
@@ -202,7 +202,7 @@ public class CustomRecycler<T>{
         void runSetCellContent(View itemView, E e);
     }
 
-    public CustomRecycler setSetItemContent(SetItemContent<? super T> setItemContent) {
+    public CustomRecycler<T> setSetItemContent(SetItemContent<T> setItemContent) {
         this.setItemContent = setItemContent;
         return this;
     }
@@ -211,7 +211,7 @@ public class CustomRecycler<T>{
         void runOnClickListener(CustomRecycler customRecycler, View itemView, T t, int index);
     }
 
-    public CustomRecycler setOnClickListener(OnClickListener onClickListener) {
+    public CustomRecycler<T> setOnClickListener(OnClickListener<T> onClickListener) {
         this.onClickListener = onClickListener;
         return this;
     }
@@ -220,17 +220,17 @@ public class CustomRecycler<T>{
         void runOnLongClickListener(CustomRecycler customRecycler, View view, T t, int index);
     }
 
-    public CustomRecycler setOnLongClickListener(OnLongClickListener onLongClickListener) {
+    public CustomRecycler<T> setOnLongClickListener(OnLongClickListener<T> onLongClickListener) {
         this.onLongClickListener = onLongClickListener;
         return this;
     }
 
-    public CustomRecycler hideOverscroll() {
+    public CustomRecycler<T> hideOverscroll() {
         hideOverscroll = true;
         return this;
     }
 
-    public CustomRecycler enableDragAndDrop(OnDragAndDrop onDragAndDrop) {
+    public CustomRecycler<T> enableDragAndDrop(OnDragAndDrop<T> onDragAndDrop) {
         this.onDragAndDrop = onDragAndDrop;
         dragAndDrop = true;
         return this;
@@ -261,11 +261,11 @@ public class CustomRecycler<T>{
         helper.attachToRecyclerView(recycler);
     }
 
-    public interface OnDragAndDrop {
-        void runOnDragAndDrop(List objectList);
+    public interface OnDragAndDrop<O> {
+        void runOnDragAndDrop(List<O> objectList);
     }
 
-    public CustomRecycler setDividerMargin_inDp(int dividerMargin_inDp) {
+    public CustomRecycler<T> setDividerMargin_inDp(int dividerMargin_inDp) {
         this.dividerMargin = Utility.dpToPx(dividerMargin_inDp);
         return this;
     }
@@ -397,16 +397,16 @@ public class CustomRecycler<T>{
             return dataset;
         }
     }
-//  <----- Adapter -----
+    //  <----- Adapter -----
 
 
-//  ----- Generate ----->
+    //  ----- Generate ----->
     public Pair<CustomRecycler, RecyclerView> generatePair() {
         RecyclerView recyclerView = generate();
         return new Pair<>(this, recyclerView);
     }
 
-    public CustomRecycler generateCustomRecycler() {
+    public CustomRecycler<T> generateCustomRecycler() {
         this.recycler = generate();
         return this;
     }
@@ -503,6 +503,6 @@ public class CustomRecycler<T>{
         generate();
         return recycler;
     }
-//  <----- Generate -----
+    //  <----- Generate -----
 
 }

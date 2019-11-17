@@ -1,7 +1,6 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Content;
 
 import android.annotation.SuppressLint;
-import android.app.Dialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.Menu;
@@ -19,8 +18,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog_new;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog_new;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
@@ -52,14 +50,14 @@ public class JokeActivity extends AppCompatActivity {
     private SORT_TYPE sort_type = SORT_TYPE.LATEST;
     Database database = Database.getInstance();
     private CustomRecycler customRecycler_List;
-    private CustomDialog_new[] addOrEditDialog = new CustomDialog_new[]{null};
+    private CustomDialog[] addOrEditDialog = new CustomDialog[]{null};
     private String searchQuery = "";
     private SharedPreferences mySPR_daten;
     private SearchView.OnQueryTextListener textListener;
     private SearchView videos_search;
     private ArrayList<Joke> allJokeList;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.CATEGORY, FILTER_TYPE.PUNCHLINE));
-    private CustomDialog_new detailDialog;
+    private CustomDialog detailDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -114,11 +112,11 @@ public class JokeActivity extends AppCompatActivity {
                 showEditOrNewDialog(null);
 
 //            findViewById(R.id.importJokes).setOnClickListener(v -> {
-//                CustomDialog_new.Builder(this)
+//                CustomDialog.Builder(this)
 //                        .setTitle("Videos Importieren")
-//                        .setEdit(new CustomDialog_new.EditBuilder().setHint("Witze einfügen"))
-//                        .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.OK_CANCEL)
-//                        .addButton(CustomDialog_new.OK_BUTTON, (customDialog, dialog) -> {
+//                        .setEdit(new CustomDialog.EditBuilder().setHint("Witze einfügen"))
+//                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+//                        .addButton(CustomDialog.OK_BUTTON, (customDialog, dialog) -> {
 //                            String text = customDialog.getEditText();
 //                            List<Pair<String,String>> witzeList = Arrays.stream(text.split("-{2,}")).map(s -> {
 //                                String[] parts = s.split("\\?|-|\\.{2,3}", 2);
@@ -149,7 +147,7 @@ public class JokeActivity extends AppCompatActivity {
     }
 
     private void loadRecycler() {
-        customRecycler_List = CustomRecycler.Builder(this, findViewById(R.id.recycler))
+        customRecycler_List = new CustomRecycler<Joke>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_joke)
                 .setGetActiveObjectList(() -> {
                     if (searchQuery.equals("")) {
@@ -159,7 +157,7 @@ public class JokeActivity extends AppCompatActivity {
                     else
                         return filterList(allJokeList);
                 })
-                .setSetItemContent((CustomRecycler.SetItemContent<Joke>) (itemView, joke) -> {
+                .setSetItemContent((itemView, joke) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_joke_title_label)).setText(joke.getPunchLine() == null || joke.getPunchLine().isEmpty() ? "Witz:" : "Aufbau:");
                     itemView.findViewById(R.id.listItem_joke_punchLine_layout).setVisibility(joke.getPunchLine() == null || joke.getPunchLine().isEmpty() ? View.GONE : View.VISIBLE);
 
@@ -197,7 +195,7 @@ public class JokeActivity extends AppCompatActivity {
                 })
                 .addSubOnClickListener(R.id.listItem_joke_details, (customRecycler, view, object, index) -> detailDialog = showDetailDialog((Joke) object), false)
                 .setOnLongClickListener((customRecycler, view, object, index) -> {
-                    addOrEditDialog[0] = showEditOrNewDialog((Joke) object);
+                    addOrEditDialog[0] = showEditOrNewDialog(object);
                 })
                 .hideDivider()
                 .generateCustomRecycler();
@@ -228,7 +226,7 @@ public class JokeActivity extends AppCompatActivity {
         customRecycler_List.reload();
     }
 
-    private CustomDialog_new showEditOrNewDialog(Joke joke) {
+    private CustomDialog showEditOrNewDialog(Joke joke) {
         if (!Utility.isOnline(this))
             return null;
         setResult(RESULT_OK);
@@ -241,18 +239,18 @@ public class JokeActivity extends AppCompatActivity {
             newJoke[0].getCategoryIdList().forEach(uuid -> categoriesNames.add(database.jokeCategoryMap.get(uuid).getName()));
 //            newJoke[0].getSources().forEach(nameUrlPair  -> sourcesNames.add(nameUrlPair.get(0)));
         }
-        CustomDialog_new returnDialog =  CustomDialog_new.Builder(this)
+        CustomDialog returnDialog =  CustomDialog.Builder(this)
                 .setTitle(joke == null ? "Neuer Witz" : "Witz Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_joke)
-                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.CUSTOM);
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM);
 
         if (joke != null)
             returnDialog.addButton("Löschen", customDialog -> {
-                CustomDialog_new.Builder(this)
+                CustomDialog.Builder(this)
                         .setTitle("Löschen")
                         .setText("Willst du wirklich '" + joke.getName() + "' löschen?")
-                        .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.OK_CANCEL)
-                        .addButton(CustomDialog_new.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                        .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
                             database.jokeMap.remove(joke.getUuid());
                             Database.saveAll();
                             reLoadRecycler();
@@ -272,11 +270,11 @@ public class JokeActivity extends AppCompatActivity {
                     String content = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddJoke_punchLine)).getText().toString().trim();
 //
 //                    if (content.equals("")){
-//                        CustomDialog_new.Builder(this)
+//                        CustomDialog.Builder(this)
 //                                .setTitle("Ohne Inhalt speichern?")
 //                                .setText("Möchtest du wirklich ohne einen Inhalt speichern")
-//                                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.YES_NO)
-//                                .addButton(CustomDialog_new.YES_BUTTON, (customDialog1, dialog1) ->
+//                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+//                                .addButton(CustomDialog.YES_BUTTON, (customDialog1, dialog1) ->
 //                                        saveJoke(dialog, titel, content, newJoke, joke))
 //                                .show();
 //                    }
@@ -305,12 +303,12 @@ public class JokeActivity extends AppCompatActivity {
         return returnDialog;
     }
 
-    private CustomDialog_new showDetailDialog(Joke joke) {
+    private CustomDialog showDetailDialog(Joke joke) {
         setResult(RESULT_OK);
-        CustomDialog_new returnDialog = CustomDialog_new.Builder(this)
+        CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle("Deteil Ansicht")
                 .setView(R.layout.dialog_detail_joke)
-                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.CUSTOM)
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Bearbeiten", customDialog -> addOrEditDialog[0] = showEditOrNewDialog(joke), false)
                 .setSetViewContent((customDialog, view) -> {
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_title_label)).setText(joke.getPunchLine() == null || joke.getPunchLine().isEmpty() ? "Witz:" : "Aufbau:");
@@ -328,7 +326,7 @@ public class JokeActivity extends AppCompatActivity {
         return returnDialog;
     }
 
-    private void saveJoke(CustomDialog_new customDialog, String titel, String punchLine, Joke[] newJoke, Joke joke) {
+    private void saveJoke(CustomDialog customDialog, String titel, String punchLine, Joke[] newJoke, Joke joke) {
 
         if (joke == null)
             joke = newJoke[0];
@@ -361,10 +359,10 @@ public class JokeActivity extends AppCompatActivity {
         List<String> categoryNames = new ArrayList<>();
         randomJoke[0].getCategoryIdList().forEach(uuid -> categoryNames.add(database.jokeCategoryMap.get(uuid).getName()));
 
-        CustomDialog_new.Builder(this)
+        CustomDialog.Builder(this)
                 .setTitle("Zufälliger Witz")
                 .setView(R.layout.dialog_detail_joke)
-                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.CUSTOM)
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Nochmal", customDialog -> {
                     Toast.makeText(this, "Neu", Toast.LENGTH_SHORT).show();
                     randomJoke[0] = filterdJokeList.get((int) (Math.random() * filterdJokeList.size()));
@@ -509,7 +507,7 @@ public class JokeActivity extends AppCompatActivity {
 //
 //        };
 //        final List<String>[] currentSource = new List[]{null};
-//        Dialog sourcesDialog = CustomDialog_new.Builder(this)
+//        Dialog sourcesDialog = CustomDialog.Builder(this)
 //                .setTitle("Quellen")
 //                .setView(R.layout.dialog_sources)
 //                .setSetViewContent((customDialog, view) -> {
@@ -575,7 +573,7 @@ public class JokeActivity extends AppCompatActivity {
 //
 //                    view.findViewById(R.id.dialog_sources_cancel).setOnClickListener(v -> hideEdit.run());
 //
-//                    CustomRecycler sources_customRecycler = CustomRecycler.Builder(this, view.findViewById(R.id.dialog_sources_sources))
+//                    CustomRecycler sources_customRecycler = new CustomRecycler<>(this, view.findViewById(R.id.dialog_sources_sources))
 //                            .setItemLayout(R.layout.list_item_source_or_item)
 //                            .setGetActiveObjectList(() -> {
 ////                                List<List<String>> sources = joke.getSources();
@@ -601,11 +599,11 @@ public class JokeActivity extends AppCompatActivity {
 //                            .generateCustomRecycler();
 //
 //                    view.findViewById(R.id.dialog_sources_delete).setOnClickListener(v -> {
-//                        CustomDialog_new.Builder(this)
+//                        CustomDialog.Builder(this)
 //                                .setTitle("Quelle Löschen")
 //                                .setText("Willst du wirklich die Quelle '" + currentSource[0].get(0) + "' löschen?")
-//                                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.YES_NO)
-//                                .addButton(CustomDialog_new.YES_BUTTON, (customDialog1, dialog) -> {
+//                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+//                                .addButton(CustomDialog.YES_BUTTON, (customDialog1, dialog) -> {
 //                                    joke.getSources().remove(currentSource[0]);
 //                                    hideEdit.run();
 //                                    sources_customRecycler.reload();
@@ -633,7 +631,7 @@ public class JokeActivity extends AppCompatActivity {
 //                        currentSource[0] = null;
 //                    });
 //                })
-//                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.CUSTOM)
+//                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
 //                .addButton("Hinzufügen", (customDialog, dialog) -> {
 //                    dialog.findViewById(R.id.dialog_sources_editLayout).setVisibility(View.VISIBLE);
 //                    dialog.findViewById(buttonId_add).setVisibility(View.GONE);

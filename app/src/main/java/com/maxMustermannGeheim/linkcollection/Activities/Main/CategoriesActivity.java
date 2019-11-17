@@ -30,7 +30,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog_new;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
@@ -272,18 +272,18 @@ public class CategoriesActivity extends AppCompatActivity {
                     if (!Utility.isOnline(this))
                         return;
                     ParentClass parentClass = item.first;
-                    CustomDialog_new.Builder(this)
+                    CustomDialog.Builder(this)
                             .setTitle(catigory.getSingular() + " Umbenennen, oder Löschen")
-                            .setEdit(new CustomDialog_new.EditBuilder()
+                            .setEdit(new CustomDialog.EditBuilder()
                                     .setText(parentClass.getName())
                                     .setHint("Name"))
-                            .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.CUSTOM)
+                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                             .addButton("Löschen", customDialog -> {
-                                CustomDialog_new.Builder(this)
+                                CustomDialog.Builder(this)
                                         .setTitle("Löschen")
                                         .setText("Wirklich '" + item.first.getName() + "' löschen?")
-                                        .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.YES_NO)
-                                        .addButton(CustomDialog_new.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
+                                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                        .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
                                             customDialog1.dismiss();
                                             removeCatigory(item);
                                         })
@@ -362,13 +362,13 @@ public class CategoriesActivity extends AppCompatActivity {
             return;
         }
         final Pair<ParentClass, Integer>[] randomPair = new Pair[]{filterdDatenObjektPairList.get((int) (Math.random() * filterdDatenObjektPairList.size()))};
-        CustomDialog_new.Builder(this)
+        CustomDialog.Builder(this)
                 .setTitle("Zufall")
                 .setText(randomPair[0].first.getName() + " (" + randomPair[0].second + ")")
-                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.CUSTOM)
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Nochmal", customDialog -> {
                             randomPair[0] = filterdDatenObjektPairList.get((int) (Math.random() * filterdDatenObjektPairList.size()));
-                            CustomDialog_new.changeText(customDialog, randomPair[0].first.getName() + " (" + randomPair[0].second + ")");
+                            CustomDialog.changeText(customDialog, randomPair[0].first.getName() + " (" + randomPair[0].second + ")");
                         },
                         false)
                 .addButton("Suchen", customDialog -> {

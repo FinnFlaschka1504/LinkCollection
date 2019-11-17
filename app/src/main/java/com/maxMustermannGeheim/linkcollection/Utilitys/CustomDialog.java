@@ -2,31 +2,23 @@ package com.maxMustermannGeheim.linkcollection.Utilitys;
 
 import android.app.Dialog;
 import android.content.Context;
-import android.graphics.Typeface;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Pair;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.R;
 
 import org.apmem.tools.layouts.FlowLayout;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 public class CustomDialog {
 
@@ -34,50 +26,37 @@ public class CustomDialog {
         YES_NO, SAVE_CANCEL, BACK, OK, OK_CANCEL, CUSTOM;
     }
 
-    public enum BUTTON {
-        YES_BUTTON("YES_BUTTON"), NO_BUTTON("NO_BUTTON"), SAVE_BUTTON("SAVE_BUTTON"), CANCEL_BUTTON("CANCEL_BUTTON"), BACK_BUTTON("BACK_BUTTON")
-        , OK_BUTTON("OK_BUTTON");
+    public enum BUTTON_TYPE {
+        YES_BUTTON("Ja"), NO_BUTTON("Nein"), SAVE_BUTTON("Speichern")
+        , CANCEL_BUTTON("Abbrechen"), BACK_BUTTON("Zurück"), OK_BUTTON("Ok");
 
-        String code;
+        String label;
 
-        BUTTON(String code) {
-            this.code = code;
+        BUTTON_TYPE(String label) {
+            this.label = label;
         }
     }
-    // ToDo: EditText zum standard hinzufügen
 
-    private EditBuilder editBuilder;
-    private boolean showKeyboard = false;
-    private boolean showEdit;
-    private Context context;
     private Dialog dialog;
-    private String title;
+    private Context context;
+    private CharSequence title;
     private CharSequence text;
     private View view;
-    private BUTTON_CONFIGURATION buttonConfiguration = BUTTON_CONFIGURATION.BACK;
+    private BUTTON_CONFIGURATION buttonConfiguration = BUTTON_CONFIGURATION.CUSTOM;
     private Pair<Boolean, Boolean> dimensions = new Pair<>(true, false);
     private boolean dividerVisibility = true;
-    private boolean isDividerVisibilityCustom = false;
-    private int titleTextAlignment = View.TEXT_ALIGNMENT_CENTER;
-    private boolean isTextBold = false;
-    private SetViewContent setViewContent;
     private Object objectExtra;
-    private OnDialogDismiss onDialogDismiss;
     private boolean scroll = true;
-//    private int childRecyclerId;
+    private EditBuilder editBuilder;
+    private boolean showEdit;
+    private boolean buttonLabelAllCaps = true;
 
-    private List<Boolean> dismissDialogList = new ArrayList<>();
-    private List<Pair<String, OnClick>> pairList = new ArrayList<>();
-    private List<String> nameList = new ArrayList<>();
-    private List<Button> buttonList = new ArrayList<>();
-    private List<Integer> buttonIdList = new ArrayList<>();
+    private SetViewContent setViewContent;
+    private OnDialogDismiss onDialogDismiss;
 
-    public static final String YES_BUTTON = "YES_BUTTON";
-    public static final String NO_BUTTON = "NO_BUTTON";
-    public static final String SAVE_BUTTON = "SAVE_BUTTON";
-    public static final String CANCEL_BUTTON = "CANCEL_BUTTON";
-    public static final String BACK_BUTTON = "BACK_BUTTON";
-    public static final String OK_BUTTON = "OK_BUTTON";
+    private CustomList<ButtonHelper> buttonHelperList = new CustomList<>();
+
+
 
     public CustomDialog(Context context) {
         this.context = context;
@@ -89,9 +68,9 @@ public class CustomDialog {
         CustomDialog customDialog = new CustomDialog(context);
         return customDialog;
     }
+    
 
-
-
+    //  ----- Getters & Setters ----->
     public CustomDialog setContext(Context context) {
         this.context = context;
         return this;
@@ -123,38 +102,7 @@ public class CustomDialog {
         return this;
     }
 
-    public CustomDialog addButton(String buttonName, OnClick onClick) {
-        return addButton_complete(buttonName, onClick, -1, true);
-    }
-    public CustomDialog addButton(String buttonName, OnClick onClick, int buttonId) {
-        return addButton_complete(buttonName, onClick, buttonId, true);
-    }
-
-    public CustomDialog addButton(String buttonName, OnClick onClick, boolean dismissDialog){
-        return addButton_complete(buttonName, onClick, -1, dismissDialog);
-    }
-    public CustomDialog addButton(String buttonName, OnClick onClick, int buttonId, boolean dismissDialog){
-        return addButton_complete(buttonName, onClick, buttonId, dismissDialog);
-    }
-
-    private CustomDialog addButton_complete(String buttonName, OnClick onClick, int buttonId, boolean dismissDialog) {
-        Pair<String, OnClick> pair = new Pair<>(buttonName, onClick);
-        dismissDialogList.add(dismissDialog);
-        pairList.add(pair);
-        nameList.add(pair.first);
-        buttonIdList.add(buttonId);
-        return this;
-    }
-
-    public interface OnClick {
-        void runOnClick(CustomDialog customDialog, Dialog dialog);
-    }
-
-    public interface SetViewContent{
-        void runSetViewContent(CustomDialog customDialog, View view);
-    }
-
-    public CustomDialog setSetViewContent(SetViewContent setViewContent) {
+    public CustomDialog setSetViewContent(CustomDialog.SetViewContent setViewContent) {
         this.setViewContent = setViewContent;
         return this;
     }
@@ -164,19 +112,9 @@ public class CustomDialog {
         return this;
     }
 
-    public CustomDialog setDividerVisibility(boolean dividerVisibility) {
-        this.dividerVisibility = dividerVisibility;
-        isDividerVisibilityCustom = true;
-        return this;
-    }
-
-    public CustomDialog setTitleTextAlignment(int titleTextAlignment) {
-        this.titleTextAlignment = titleTextAlignment;
-        return this;
-    }
-
-    public CustomDialog setTextBold(boolean textBold) {
-        isTextBold = textBold;
+    public CustomDialog hideDividers() {
+        this.dividerVisibility = false;
+//        isDividerVisibilityCustom = true;
         return this;
     }
 
@@ -186,28 +124,68 @@ public class CustomDialog {
         return this;
     }
 
+    public CustomDialog standardEdit() {
+        showEdit = true;
+        return this;
+    }
+
+    public Dialog getDialog() {
+        return dialog;
+    }
+
+    public Object getObjectExtra() {
+        return objectExtra;
+    }
+
+    public CustomDialog setObjectExtra(Object objectExtra) {
+        this.objectExtra = objectExtra;
+        return this;
+    }
+
+    public CustomDialog setOnDialogDismiss(OnDialogDismiss onDialogDismiss) {
+        this.onDialogDismiss = onDialogDismiss;
+        return this;
+    }
+
+    public CustomDialog disableScroll() {
+        scroll = false;
+        return this;
+    }
+
+    public CustomDialog disableButtonAllCaps() {
+        buttonLabelAllCaps = false;
+        return this;
+    }
+    //  <----- Getters & Setters -----
+    
+    
+    //  ----- Interfaces ----->
+    public interface OnClick {
+        void runOnClick(CustomDialog customDialog);
+    }
+
+    public interface SetViewContent{
+        void runSetViewContent(CustomDialog customDialog, View view);
+    }
+
+    public interface OnDialogDismiss {
+        void runOnDialogDismiss(CustomDialog customDialog);
+    }
+    //  <----- Interfaces -----
+    
+
+    //  ----- Builder ----->
     public static class EditBuilder {
-        public enum INPUT_TYPE {
-            TEXT(0x00000001), NUMBER(0x00000002), NUMBER_DECIMAL(0x00002002), CAP_SENTENCES(0x00004001),
-            CAPS_LOCK(0x00001001), CAPS_WORD(0x00002001),MULTI_LINE(0x00040001), E_MAIL(0x00000021)
-            , PASSWORD(0x00000081), NUMBER_PASSWORD(0x00000012), DATE_TIME(0x00000004)
-            , DATE(0x00000014), TIME(0x00000024);
-
-            int code;
-
-            INPUT_TYPE(int code) {
-                this.code = code;
-            }
-        }
-        private String text;
-        private String hint;
+        private String text = "";
+        private String hint = "";
         private boolean showKeyboard = true;
         private boolean selectAll = true;
-        private boolean disableWhenEmpty = true;
-        private boolean fireButtonOnOK = false;
-        private int buttonId;
-        private String regEx = ".*";
-        private INPUT_TYPE inputType = INPUT_TYPE.CAP_SENTENCES;
+        private boolean disableButtonByDefault;
+        private boolean allowEmpty;
+        private String regEx = "";
+
+        private Helpers.TextInputHelper.INPUT_TYPE inputType = Helpers.TextInputHelper.INPUT_TYPE.CAP_SENTENCES;
+        Helpers.TextInputHelper.TextValidation textValidation;
 
         public EditBuilder setText(String text) {
             this.text = text;
@@ -224,30 +202,37 @@ public class CustomDialog {
             return this;
         }
 
-        public EditBuilder setSelectAll(boolean selectAll) {
-            this.selectAll = selectAll;
+        public EditBuilder disableSelectAll() {
+            this.selectAll = false;
             return this;
         }
 
-        public EditBuilder setDiableButtonWhenEmpty(int buttonId) {
-            this.buttonId = buttonId;
-            return this;
-        }
-
-        public EditBuilder setInputType(INPUT_TYPE inputType) {
+        public EditBuilder setInputType(Helpers.TextInputHelper.INPUT_TYPE inputType) {
             this.inputType = inputType;
             return this;
         }
 
-        public EditBuilder setCheckRegEx(int buttonId, String regEx) {
-            this.buttonId = buttonId;
+        public EditBuilder setValidation(Helpers.TextInputHelper.TextValidation textValidation) {
+            this.textValidation = textValidation;
+            return this;
+        }
+        public EditBuilder setValidation(String regEx) {
             this.regEx = regEx;
             return this;
         }
 
-        public EditBuilder setFireButtonOnOK(int buttonId) {
-            this.buttonId = buttonId;
-            this.fireButtonOnOK = true;
+        public EditBuilder disableButtonByDefault() {
+            this.disableButtonByDefault = true;
+            return this;
+        }
+
+        public EditBuilder allowEmpty() {
+            this.allowEmpty = true;
+            return this;
+        }
+
+        public EditBuilder setRegEx(String regEx) {
+            this.regEx = regEx;
             return this;
         }
     }
@@ -255,297 +240,202 @@ public class CustomDialog {
     public static class TextBuilder{
 
     }
+    //  <----- Builder -----
+    
+    
+    //  ----- Convenience ----->
+    public CustomDialog dismiss() {
+    dialog.dismiss();
+    return this;
+}
 
-    private void setButtons() {
-        switch (buttonConfiguration) {
-            case YES_NO:
-                addNewButton("Nein");
-                addNewButton("Ja");
-                break;
-            case SAVE_CANCEL:
-                addNewButton("Abbrechen");
-                addNewButton("Speichern");
-                break;
-            case BACK:
-                addNewButton("Zurück");
-                break;
-            case OK:
-                addNewButton("OK");
-                break;
-            case OK_CANCEL:
-                addNewButton("Abbrechen");
-                addNewButton("OK");
-                break;
-            case CUSTOM:
-                for (Pair<String, OnClick> pair : pairList) {
-                    addNewButton(pair.first).setId(buttonIdList.get(pairList.indexOf(pair)));
-                }
-                break;
-        }
-
+    public <T extends View> T findViewById(int id) {
+        return dialog.findViewById(id);
     }
 
-    private Button addNewButton(String text) {
-        Button button = new Button(context);
-        button.setBackground(dialog.findViewById(R.id.dialog_custom_Button1).getBackground().getConstantState().newDrawable());
-        button.setTextColor(((Button)dialog.findViewById(R.id.dialog_custom_Button1)).getTextColors());
-        button.setText(text);
-        ((FlowLayout) dialog.findViewById(R.id.dialog_custom_buttonLayout)).addView(button);
-        buttonList.add(button);
-        return button;
+    public String getEditText() {
+        TextInputEditText editText = dialog.findViewById(R.id.dialog_custom_edit);
+        if (editText == null)
+            return null;
+        else
+            return editText.getText().toString().trim();
     }
 
-    private void setOnClickListeners() {
-        Map<String, OnClick> stringOnClickMap = new HashMap<>();
-        for (Pair<String, OnClick> pair : pairList) stringOnClickMap.put(pair.first, pair.second);
-
-        switch (buttonConfiguration) {
-            case YES_NO:
-                if (stringOnClickMap.keySet().contains(NO_BUTTON)) {
-                    int index = nameList.indexOf(NO_BUTTON);
-                    buttonList.get(0).setId(buttonIdList.get(index));
-                    buttonList.get(0).setOnClickListener(view1 -> {
-                        if (dismissDialogList.get(index))
-                            dialog.dismiss();
-                        pairList.get(index).second.runOnClick(this, dialog);
-                    });
-                }
-                else
-                    buttonList.get(0).setOnClickListener(view -> {
-//                        Toast.makeText(context, "Keine Funktion zugewisen", Toast.LENGTH_SHORT).show();
-                        dialog.dismiss();
-                    });
-
-                if (stringOnClickMap.keySet().contains(YES_BUTTON)) {
-                    int index = nameList.indexOf(YES_BUTTON);
-                    buttonList.get(1).setId(buttonIdList.get(index));
-                    buttonList.get(1).setOnClickListener(view1 -> {
-                        if (dismissDialogList.get(index))
-                            dialog.dismiss();
-                        pairList.get(index).second.runOnClick(this, dialog);
-                    });
-                }
-                else
-                    buttonList.get(1).setOnClickListener(view -> {
-                        Toast.makeText(context, "Keine Funktion zugewisen", Toast.LENGTH_SHORT).show();
-                        dialog.dismiss();
-                    });
-                return;
-
-            case SAVE_CANCEL:
-                if (stringOnClickMap.keySet().contains(CANCEL_BUTTON)) {
-                    int index = nameList.indexOf(CANCEL_BUTTON);
-                    buttonList.get(0).setId(buttonIdList.get(index));
-                    buttonList.get(0).setOnClickListener(view1 -> {
-                        if (dismissDialogList.get(index))
-                            dialog.dismiss();
-                        pairList.get(index).second.runOnClick(this, dialog);
-                    });
-                }
-                else
-                    buttonList.get(0).setOnClickListener(view -> {
-                        dialog.dismiss();
-                    });
-
-                if (stringOnClickMap.keySet().contains(SAVE_BUTTON)) {
-                    int index = nameList.indexOf(SAVE_BUTTON);
-                    buttonList.get(1).setId(buttonIdList.get(index));
-                    buttonList.get(1).setOnClickListener(view1 -> {
-                        if (dismissDialogList.get(index))
-                            dialog.dismiss();
-                        pairList.get(index).second.runOnClick(this, dialog);
-                    });
-                }
-                else
-                    buttonList.get(1).setOnClickListener(view -> {
-                        Toast.makeText(context, "Keine Funktion zugewisen", Toast.LENGTH_SHORT).show();
-                        dialog.dismiss();
-                    });
-                return;
-
-            case BACK:
-                if (stringOnClickMap.keySet().contains(BACK_BUTTON)) {
-                    int index = nameList.indexOf(BACK_BUTTON);
-                    buttonList.get(0).setId(buttonIdList.get(index));
-                    buttonList.get(0).setOnClickListener(view1 -> {
-                        if (dismissDialogList.get(index))
-                            dialog.dismiss();
-                        pairList.get(index).second.runOnClick(this, dialog);
-                    });
-                }
-                else
-                    buttonList.get(0).setOnClickListener(view -> {
-                        dialog.dismiss();
-                    });
-                return;
-
-            case OK_CANCEL:
-                if (stringOnClickMap.keySet().contains(CANCEL_BUTTON)) {
-                    int index = nameList.indexOf(CANCEL_BUTTON);
-                    buttonList.get(0).setId(buttonIdList.get(index));
-                    buttonList.get(0).setOnClickListener(view1 -> {
-                        if (dismissDialogList.get(index))
-                            dialog.dismiss();
-                        pairList.get(index).second.runOnClick(this, dialog);
-                    });
-                }
-                else
-                    buttonList.get(0).setOnClickListener(view -> {
-                        dialog.dismiss();
-                    });
-
-                if (stringOnClickMap.keySet().contains(OK_BUTTON)) {
-                    int index = nameList.indexOf(OK_BUTTON);
-                    buttonList.get(1).setId(buttonIdList.get(index));
-                    buttonList.get(1).setOnClickListener(view1 -> {
-                        if (dismissDialogList.get(index))
-                            dialog.dismiss();
-                        pairList.get(index).second.runOnClick(this, dialog);
-                    });
-                }
-                else
-                    buttonList.get(1).setOnClickListener(view -> {
-                        Toast.makeText(context, "Keine Funktion zugewisen", Toast.LENGTH_SHORT).show();
-                        dialog.dismiss();
-                    });
-                return;
-
-            case OK:
-                if (stringOnClickMap.keySet().contains(OK_BUTTON)) {
-                    int index = nameList.indexOf(OK_BUTTON);
-                    buttonList.get(0).setId(buttonIdList.get(index));
-                    buttonList.get(0).setOnClickListener(view1 -> {
-                        if (dismissDialogList.get(index))
-                            dialog.dismiss();
-                        pairList.get(index).second.runOnClick(this, dialog);
-                    });
-                }
-                else
-                    buttonList.get(0).setOnClickListener(view -> {
-                        Toast.makeText(context, "Keine Funktion zugewisen", Toast.LENGTH_SHORT).show();
-                        dialog.dismiss();
-                    });
-                return;
-        }
-
-        int count = 0;
-        for (Pair<String, OnClick> pair : pairList) {
-            int finalCount = count;
-            buttonList.get(count).setOnClickListener(view1 -> {
-                if (dismissDialogList.get(finalCount))
-                    dialog.dismiss();
-                pair.second.runOnClick(this, dialog);
-            });
-            count++;
-        }
+    public static void changeText(CustomDialog customDialog, CharSequence text) {
+        ((TextView) customDialog.findViewById(R.id.dialog_custom_text)).setText(text);
     }
+    //  <----- Convenience -----
 
-    private void applySetEdit() {
-        EditText editText = dialog.findViewById(R.id.dialog_custom_edit);
-        if (editBuilder.text != null)
-            editText.setText(editBuilder.text);
-        if (editBuilder.hint != null)
-            editText.setHint(editBuilder.hint);
-        editText.setSelectAllOnFocus(editBuilder.selectAll);
-        this.showKeyboard = editBuilder.showKeyboard;
-        Button button = dialog.findViewById(editBuilder.buttonId);
-        if (button != null) {
-            if (editBuilder.disableWhenEmpty && editBuilder.text == null)
+
+    //  ----- Buttons ----->
+    class ButtonHelper {
+        private Integer id;
+        private String label;
+        private BUTTON_TYPE buttonType;
+        private OnClick onClick;
+        private boolean dismiss;
+        private Button button;
+        private boolean alignLeft;
+        private boolean disabled;
+        private boolean hidden;
+
+        public ButtonHelper(BUTTON_TYPE buttonType) {
+            this.buttonType = buttonType;
+            label = buttonType.label;
+            dismiss = true;
+            button = new Button(context);
+            button.setBackground(dialog.findViewById(R.id.dialog_custom_Button1).getBackground().getConstantState().newDrawable());
+            button.setTextColor(((Button)dialog.findViewById(R.id.dialog_custom_Button1)).getTextColors());
+        }
+
+        public ButtonHelper(String label, BUTTON_TYPE buttonType, OnClick onClick, Integer id, boolean dismiss) {
+            this.id = id;
+            this.label = label;
+            this.buttonType = buttonType;
+            this.onClick = onClick;
+            this.dismiss = dismiss;
+//            gravityLeft = true;
+        }
+
+        public Button generateButton() {
+            Button button = new Button(context);
+            button.setBackground(dialog.findViewById(R.id.dialog_custom_Button1).getBackground().getConstantState().newDrawable());
+            button.setTextColor(((Button)dialog.findViewById(R.id.dialog_custom_Button1)).getTextColors());
+
+            if (label != null)
+                button.setText(label);
+            else if (buttonType != null)
+                button.setText(buttonType.label);
+
+            if (id != null)
+                button.setId(id);
+            else {
+                id = View.generateViewId();
+                button.setId(id);
+            }
+
+            if (!buttonLabelAllCaps)
+                button.setAllCaps(false);
+
+//            if (gravityLeft) {
+//                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+//                params.gravity = Gravity.START;
+//
+//                button.setLayoutParams(params);
+//
+//                LinearLayout linearLayout = new LinearLayout(context);
+//
+//                params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+//                linearLayout.setLayoutParams(params);
+//                linearLayout.addView(button);
+//                linearLayout.setBackgroundColor(Color.RED);
+//                ((FlowLayout) dialog.findViewById(R.id.dialog_custom_buttonLayout)).addView(linearLayout);
+//
+//            }
+//            else
+            if (disabled)
                 button.setEnabled(false);
-            editText.addTextChangedListener(new TextWatcher() {
-                @Override
-                public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                }
 
-                @Override
-                public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-                    if (charSequence.toString().equals("") || !charSequence.toString().matches(editBuilder.regEx))
-                        button.setEnabled(false);
-                    else
-                        button.setEnabled(true);
-                }
+            if (hidden)
+                button.setVisibility(View.GONE);
 
-                @Override
-                public void afterTextChanged(Editable editable) {
+            if (alignLeft)
+                ((FlowLayout) dialog.findViewById(R.id.dialog_custom_buttonLayout_left)).addView(button);
+            else
+                ((FlowLayout) dialog.findViewById(R.id.dialog_custom_buttonLayout_right)).addView(button);
+//            ((FlowLayout) dialog.findViewById(R.id.dialog_custom_buttonLayout)).addView(button);
+            this.button = button;
 
-                }
+            button.setOnClickListener(v -> {
+                if (dismiss)
+                    dialog.dismiss();
+
+                if (onClick != null)
+                    onClick.runOnClick(CustomDialog.this);
             });
+            return button;
         }
-
-        editText.setInputType(editBuilder.inputType.code);
-        if (editBuilder.fireButtonOnOK) {
-            editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
-            editText.setOnEditorActionListener((v, actionId, event) -> {
-                if (actionId == EditorInfo.IME_ACTION_DONE || event.getAction() == KeyEvent.ACTION_DOWN || event.getAction() == KeyEvent.KEYCODE_ENTER) {
-                    Button button1 = dialog.findViewById(editBuilder.buttonId);
-                    if (button1.isEnabled())
-                        button1.callOnClick();
-                }
-                return true;
-            });
-
-        }
-
     }
 
-    public Dialog getDialog() {
-        return dialog;
+    public CustomDialog addButton(String buttonName) {
+        return addButton_complete(buttonName, null, null, null, true);
+    }
+    public CustomDialog addButton(String buttonName, OnClick onClick) {
+        return addButton_complete(buttonName, null, onClick, null, true);
+    }
+    public CustomDialog addButton(String buttonName, OnClick onClick, int buttonId) {
+        return addButton_complete(buttonName, null, onClick, buttonId, true);
+    }
+    public CustomDialog addButton(String buttonName, OnClick onClick, boolean dismissDialog){
+        return addButton_complete(buttonName, null, onClick, null, dismissDialog);
+    }
+    public CustomDialog addButton(String buttonName, OnClick onClick, int buttonId, boolean dismissDialog){
+        return addButton_complete(buttonName, null, onClick, buttonId, dismissDialog);
     }
 
-    public Object getObjectExtra() {
-        return objectExtra;
+    public CustomDialog addButton(BUTTON_TYPE button_type) {
+        return addButton_complete(null , button_type, null, null, true);
+    }
+    public CustomDialog addButton(BUTTON_TYPE button_type, OnClick onClick) {
+        return addButton_complete(null , button_type, onClick, null, true);
+    }
+    public CustomDialog addButton(BUTTON_TYPE button_type, OnClick onClick, int buttonId) {
+        return addButton_complete(null , button_type, onClick, buttonId, true);
+    }
+    public CustomDialog addButton(BUTTON_TYPE button_type, OnClick onClick, boolean dismissDialog){
+        return addButton_complete(null , button_type, onClick, null, dismissDialog);
+    }
+    public CustomDialog addButton(BUTTON_TYPE button_type, OnClick onClick, int buttonId, boolean dismissDialog){
+        return addButton_complete(null , button_type, onClick, buttonId, dismissDialog);
     }
 
-    public CustomDialog setObjectExtra(Object objectExtra) {
-        this.objectExtra = objectExtra;
+
+    private CustomDialog addButton_complete(String buttonName, BUTTON_TYPE button_type, OnClick onClick, Integer buttonId, boolean dismissDialog) {
+        ButtonHelper buttonHelper = new ButtonHelper(buttonName, button_type, onClick, buttonId, dismissDialog);
+        buttonHelperList.add(buttonHelper);
         return this;
     }
 
-    public interface OnDialogDismiss {
-        void runOnDialogDismiss(CustomDialog customDialog);
-    }
-
-    public CustomDialog setOnDialogDismiss(OnDialogDismiss onDialogDismiss) {
-        this.onDialogDismiss = onDialogDismiss;
+    public CustomDialog hideLastAddedButton(){
+        buttonHelperList.getLast().hidden = true;
         return this;
     }
-
-    public CustomDialog disableScroll() {
-        scroll = false;
+    public CustomDialog disableLastAddedButton(){
+        buttonHelperList.getLast().disabled = true;
         return this;
     }
-
-//    public CustomDialog onlyScrollChildRecycler(int recyclerId) {
-//        childRecyclerId = recyclerId;
-//        return this;
-//    }
-
-    public CustomDialog show_custom() {
-        show();
+    public CustomDialog alignPreviousButtonsLeft() {
+        buttonHelperList.forEach(buttonHelper -> buttonHelper.alignLeft = true);
         return this;
     }
+    // ToDo: mit LayoutGravity nach links verschieben
+//  <----- Buttons -----
+    
+    
+    //  ----- Actions ----->
+    public Dialog show_dialog() {
+    show();
+    return dialog;
+}
 
-    public Dialog show() {
-        TextView dialog_custom_title = dialog.findViewById(R.id.dialog_custom_title);
+    public CustomDialog show() {
         TextView dialog_custom_text = dialog.findViewById(R.id.dialog_custom_text);
 
-        dialog_custom_title.setTextAlignment(titleTextAlignment);
+        // ToDo: TextBuilder
 
-        if (title != null)
-            dialog_custom_title.setText(this.title);
-        else
-            dialog_custom_title.setVisibility(View.GONE);
+        if (title != null) {
+            ((TextView) dialog.findViewById(R.id.dialog_custom_title)).setText(this.title);
+            dialog.findViewById(R.id.dialog_custom_title_layout).setVisibility(View.VISIBLE);
+        }
 
         if (text != null) {
             dialog_custom_text.setText(this.text);
-            if (isTextBold)
-                dialog_custom_text.setTypeface(null, Typeface.BOLD);
+            dialog.findViewById(R.id.dialog_custom_text_layout).setVisibility(View.VISIBLE);
         }
-        else
-            dialog.findViewById(R.id.dialog_custom_layout_text).setVisibility(View.GONE);
 
-        if (!showEdit)
-            dialog.findViewById(R.id.dialog_custom_layout_edit).setVisibility(View.GONE);
+        if (showEdit) {
+            dialog.findViewById(R.id.dialog_custom_edit_layout).setVisibility(View.VISIBLE);
+        }
 
         if (view != null) {
             ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(
@@ -555,56 +445,81 @@ public class CustomDialog {
                 ScrollView dialog_custom_layout_view_interface = dialog.findViewById(R.id.dialog_custom_layout_view_interface);
                 dialog_custom_layout_view_interface.addView(view, layoutParams);
                 dialog_custom_layout_view_interface.setVisibility(View.VISIBLE);
-//                dialog_custom_layout_view_interface.setScrollable(false);
-//                dialog_custom_layout_view_interface.scroll
-//                dialog_custom_layout_view_interface.setNestedScrollingEnabled(false);
             } else {
                 LinearLayout dialog_custom_layout_view_interface_restrained = dialog.findViewById(R.id.dialog_custom_layout_view_interface_restrained);
                 dialog_custom_layout_view_interface_restrained.addView(view, layoutParams);
                 dialog_custom_layout_view_interface_restrained.setVisibility(View.VISIBLE);
             }
-        } else {
-            dialog.findViewById(R.id.dialog_custom_layout_view).setVisibility(View.GONE);
+            dialog.findViewById(R.id.dialog_custom_layout_view).setVisibility(View.VISIBLE);
         }
 
-        if (text != null && showEdit)
-            dialog.findViewById(R.id.dialog_custom_divider3).setVisibility(View.INVISIBLE);
-
-        if (text != null && view != null || showEdit && view != null) {
-            dialog.findViewById(R.id.dialog_custom_divider5).setVisibility(View.GONE);
+        if (!dividerVisibility) {
+            dialog.findViewById(R.id.dialog_custom_dividerTitle).setVisibility(View.GONE);
+            dialog.findViewById(R.id.dialog_custom_dividerText).setVisibility(View.GONE);
+            dialog.findViewById(R.id.dialog_custom_dividerEdit).setVisibility(View.GONE);
+            dialog.findViewById(R.id.dialog_custom_dividerView).setVisibility(View.GONE);
         }
 
-        if (text == null && view == null) {
-            if (isDividerVisibilityCustom && dividerVisibility)
-                dialog.findViewById(R.id.dialog_custom_divider).setVisibility(View.VISIBLE);
+        switch (buttonConfiguration) {
+            case BACK:
+                if (buttonHelperList.stream().noneMatch(buttonHelper -> buttonHelper.buttonType == BUTTON_TYPE.BACK_BUTTON))
+                    buttonHelperList.add(new ButtonHelper(BUTTON_TYPE.BACK_BUTTON));
+                break;
+            case OK:
+                if (buttonHelperList.stream().noneMatch(buttonHelper -> buttonHelper.buttonType == BUTTON_TYPE.OK_BUTTON))
+                    buttonHelperList.add(new ButtonHelper(BUTTON_TYPE.OK_BUTTON));
+                break;
+            case OK_CANCEL:
+                if (buttonHelperList.stream().anyMatch(buttonHelper -> buttonHelper.buttonType == BUTTON_TYPE.OK_BUTTON)
+                        && buttonHelperList.stream().noneMatch(buttonHelper -> buttonHelper.buttonType == BUTTON_TYPE.CANCEL_BUTTON)) {
+                    Integer index = buttonHelperList.indexOf(buttonHelper -> buttonHelper.buttonType == BUTTON_TYPE.OK_BUTTON);
+                    buttonHelperList.add(index, new ButtonHelper(BUTTON_TYPE.CANCEL_BUTTON));
+                    break;
+                }
+                if (buttonHelperList.stream().noneMatch(buttonHelper -> buttonHelper.buttonType == BUTTON_TYPE.CANCEL_BUTTON))
+                    buttonHelperList.add(new ButtonHelper(BUTTON_TYPE.CANCEL_BUTTON));
+                if (buttonHelperList.stream().noneMatch(buttonHelper -> buttonHelper.buttonType == BUTTON_TYPE.OK_BUTTON))
+                    buttonHelperList.add(new ButtonHelper(BUTTON_TYPE.OK_BUTTON));
+                break;
+            case YES_NO:
+                if (buttonHelperList.stream().anyMatch(buttonHelper -> buttonHelper.buttonType == BUTTON_TYPE.YES_BUTTON)
+                        && buttonHelperList.stream().noneMatch(buttonHelper -> buttonHelper.buttonType == BUTTON_TYPE.NO_BUTTON)) {
+                    Integer index = buttonHelperList.indexOf(buttonHelper -> buttonHelper.buttonType == BUTTON_TYPE.YES_BUTTON);
+                    buttonHelperList.add(index, new ButtonHelper(BUTTON_TYPE.NO_BUTTON));
+                    break;
+                }
+                if (buttonHelperList.stream().noneMatch(buttonHelper -> buttonHelper.buttonType == BUTTON_TYPE.NO_BUTTON))
+                    buttonHelperList.add(new ButtonHelper(BUTTON_TYPE.NO_BUTTON));
+                if (buttonHelperList.stream().noneMatch(buttonHelper -> buttonHelper.buttonType == BUTTON_TYPE.YES_BUTTON))
+                    buttonHelperList.add(new ButtonHelper(BUTTON_TYPE.YES_BUTTON));
+                break;
+            case SAVE_CANCEL:
+                if (buttonHelperList.stream().anyMatch(buttonHelper -> buttonHelper.buttonType == BUTTON_TYPE.SAVE_BUTTON)
+                        && buttonHelperList.stream().noneMatch(buttonHelper -> buttonHelper.buttonType == BUTTON_TYPE.CANCEL_BUTTON)) {
+                    Integer index = buttonHelperList.indexOf(buttonHelper -> buttonHelper.buttonType == BUTTON_TYPE.SAVE_BUTTON);
+                    buttonHelperList.add(index, new ButtonHelper(BUTTON_TYPE.CANCEL_BUTTON));
+                    break;
+                }
+                if (buttonHelperList.stream().noneMatch(buttonHelper -> buttonHelper.buttonType == BUTTON_TYPE.CANCEL_BUTTON))
+                    buttonHelperList.add(new ButtonHelper(BUTTON_TYPE.CANCEL_BUTTON));
+                if (buttonHelperList.stream().noneMatch(buttonHelper -> buttonHelper.buttonType == BUTTON_TYPE.SAVE_BUTTON))
+                    buttonHelperList.add(new ButtonHelper(BUTTON_TYPE.SAVE_BUTTON));
+                break;
         }
 
-        if (title == null && text != null)
-            dialog.findViewById(R.id.dialog_custom_divider1).setVisibility(View.INVISIBLE);
+        buttonHelperList.forEach(ButtonHelper::generateButton);
+        FlowLayout dialog_custom_buttonLayout_left = dialog.findViewById(R.id.dialog_custom_buttonLayout_left);
+        FlowLayout dialog_custom_buttonLayout_right = dialog.findViewById(R.id.dialog_custom_buttonLayout_right);
+        LinearLayout.LayoutParams layoutParams_left =
+                new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, dialog_custom_buttonLayout_right.getChildCount());
+        LinearLayout.LayoutParams layoutParams_right =
+                new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, dialog_custom_buttonLayout_left.getChildCount());
+        dialog_custom_buttonLayout_left.setLayoutParams(layoutParams_left);
+        dialog_custom_buttonLayout_right.setLayoutParams(layoutParams_right);
 
-        if (title == null && text == null && view != null)
-            dialog.findViewById(R.id.dialog_custom_divider5).setVisibility(View.GONE);
-
-        // ToDo: eventuell connectDown implementieren
-
-        if (isDividerVisibilityCustom) {
-            dialog.findViewById(R.id.dialog_custom_divider1).setVisibility(dividerVisibility ? View.VISIBLE : View.GONE);
-            dialog.findViewById(R.id.dialog_custom_divider2).setVisibility(dividerVisibility ? View.VISIBLE : View.GONE);
-            dialog.findViewById(R.id.dialog_custom_divider3).setVisibility(dividerVisibility ? View.VISIBLE : View.GONE);
-            dialog.findViewById(R.id.dialog_custom_divider4).setVisibility(dividerVisibility ? View.VISIBLE : View.GONE);
-            dialog.findViewById(R.id.dialog_custom_divider5).setVisibility(dividerVisibility ? View.VISIBLE : View.GONE);
-            dialog.findViewById(R.id.dialog_custom_divider6).setVisibility(dividerVisibility ? View.VISIBLE : View.GONE);
-        }
-
-
-        setDialogLayoutParameters(dialog, dimensions.first, dimensions.second);
-        setButtons();
-        setOnClickListeners();
-        if (showEdit)
-            applySetEdit();
-        if (showKeyboard) {
-            Utility.changeWindowKeyboard(dialog.getWindow(), true);
-            dialog.findViewById(R.id.dialog_custom_edit).requestFocus();
+        // ToDo: EditBuilder
+        if (showEdit) {
+            applyEdit();
         }
 
         if (setViewContent != null)
@@ -613,21 +528,74 @@ public class CustomDialog {
         if (onDialogDismiss != null)
             dialog.setOnDismissListener(dialog1 -> onDialogDismiss.runOnDialogDismiss(this));
 
-        return dialog;
-    }
+        setDialogLayoutParameters(dialog, dimensions.first, dimensions.second);
+        dialog.show();
 
-    public Dialog reloadView() {
-        setViewContent.runSetViewContent(this, view);
-        return dialog;
-    }
-
-    public CustomDialog dismiss() {
-        dialog.dismiss();
         return this;
     }
 
-    public View findViewById(int id) {
-        return dialog.findViewById(id);
+    public CustomDialog reloadView() {
+        setViewContent.runSetViewContent(this, view);
+        return this;
+    }
+    //  <----- Actions -----
+
+    private void applyEdit() {
+        TextInputLayout textInputLayout = dialog.findViewById(R.id.dialog_custom_edit_editLayout);
+        TextInputEditText textInputEditText = dialog.findViewById(R.id.dialog_custom_edit);
+
+        Button button = null;
+        Optional<ButtonHelper> optional = buttonHelperList.stream()
+                .filter(buttonHelper -> (buttonHelper.buttonType == BUTTON_TYPE.OK_BUTTON || buttonHelper.buttonType == BUTTON_TYPE.SAVE_BUTTON || buttonHelper.buttonType == BUTTON_TYPE.YES_BUTTON))
+                .findFirst();
+        if (optional.isPresent())
+            button = dialog.findViewById(optional.get().id);
+
+        Button finalButton = button;
+        Helpers.TextInputHelper.OnValidationResult onValidationResult = result -> {
+            if (finalButton != null)
+                finalButton.setEnabled(result);
+        };
+        Helpers.TextInputHelper textInputHelper = new Helpers.TextInputHelper(onValidationResult, textInputLayout);
+
+
+        if (editBuilder != null) {
+            if (editBuilder.showKeyboard) {
+                textInputEditText.requestFocus();
+                Utility.changeWindowKeyboard(dialog.getWindow(), true);
+            }
+
+            if (!editBuilder.text.isEmpty())
+                textInputEditText.setText(editBuilder.text);
+
+            textInputLayout.setHint(editBuilder.hint);
+
+            if (editBuilder.selectAll)
+                textInputEditText.selectAll();
+            else
+                textInputEditText.setSelection(editBuilder.text.length());
+
+            if (!editBuilder.regEx.isEmpty())
+                textInputHelper.changeValidation(textInputLayout, editBuilder.regEx);
+            else if (editBuilder.textValidation != null)
+                textInputHelper.changeValidation(textInputLayout, editBuilder.textValidation);
+
+            if (editBuilder.inputType != null)
+                textInputHelper.setInputType(textInputLayout, editBuilder.inputType);
+
+            if (editBuilder.allowEmpty)
+                textInputHelper.allowEmpty(textInputLayout);
+        } else {
+            textInputEditText.requestFocus();
+            Utility.changeWindowKeyboard(dialog.getWindow(), true);
+        }
+        textInputHelper.addActionListener(textInputLayout, (textInputHelper1, textInputLayout1, actionId) -> {
+            if (textInputHelper1.isValid() && finalButton != null)
+                finalButton.callOnClick();
+        });
+        textInputHelper.validate();
+        if (editBuilder != null && editBuilder.disableButtonByDefault)
+            button.setEnabled(false);
     }
 
     static void setDialogLayoutParameters(Dialog dialog, boolean width, boolean height) {
@@ -641,30 +609,7 @@ public class CustomDialog {
             lp.height = WindowManager.LayoutParams.MATCH_PARENT;
         else
             lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
-        dialog.show();
         dialog.getWindow().setAttributes(lp);
     }
 
-    public static String getEditText(Dialog dialog) {
-        EditText editText = dialog.findViewById(R.id.dialog_custom_edit);
-        if (editText == null)
-            return null;
-        else
-            return editText.getText().toString().trim();
-    }
-
-    public String getEditText() {
-        EditText editText = dialog.findViewById(R.id.dialog_custom_edit);
-        if (editText == null)
-            return null;
-        else
-            return editText.getText().toString().trim();
-    }
-
-    public static void changeText(Dialog dialog, CharSequence text) {
-        ((TextView) dialog.findViewById(R.id.dialog_custom_text)).setText(text);
-    }
-
 }
-
-

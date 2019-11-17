@@ -22,7 +22,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog_new;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
@@ -102,7 +102,7 @@ public class Settings extends AppCompatActivity {
     }
 
     public static String getSingleSetting(Context context, String key){
-        return context.getSharedPreferences(SHARED_PREFERENCES_SETTINGS, MODE_PRIVATE).getString(key, "");
+        return context.getSharedPreferences(SHARED_PREFERENCES_SETTINGS, MODE_PRIVATE).getString(key, null);
     }
 
     private static void saveSettings() {
@@ -251,12 +251,12 @@ public class Settings extends AppCompatActivity {
     }
 
     private void setSettings() {
-        spaceRecycler_customRecycler = CustomRecycler.Builder(this, spaceRecycler)
+        spaceRecycler_customRecycler = new CustomRecycler<Space>(this, spaceRecycler)
                 .setItemLayout(R.layout.list_item_space_setting)
                 .setGetActiveObjectList(() -> allSpaces.stream().filter(Space::isShown).collect(Collectors.toList()))
-                .setSetItemContent((CustomRecycler.SetItemContent<Space>) (itemView, space) -> ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getPlural()))
+                .setSetItemContent((itemView, space) -> ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getPlural()))
                 .removeLastDivider()
-                .setOnClickListener((CustomRecycler.OnClickListener<Space>)(customRecycler, itemView, space, index) -> space.showSettingsDialog(this))
+                .setOnClickListener((customRecycler, itemView, space, index) -> space.showSettingsDialog(this))
                 .setDividerMargin_inDp(16)
                 .generateCustomRecycler();
 
@@ -271,11 +271,11 @@ public class Settings extends AppCompatActivity {
 
     private void setListeners() {
         settings_others_changeDatabaseCode.setOnClickListener(v -> {
-            CustomDialog_new.Builder(this)
+            CustomDialog.Builder(this)
                     .setTitle("Datenbank-Code Ändern")
-                    .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.OK_CANCEL)
-                    .setEdit(new CustomDialog_new.EditBuilder().setText(Database.databaseCode).setHint("Datenbank-Code"))
-                    .addButton(CustomDialog_new.BUTTON_TYPE.OK_BUTTON, customDialog -> {
+                    .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                    .setEdit(new CustomDialog.EditBuilder().setText(Database.databaseCode).setHint("Datenbank-Code"))
+                    .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
                         String code = customDialog.getEditText().trim();
                         SharedPreferences mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
                         mySPR_daten.edit().putString(Database.DATABASE_CODE, code).commit();
@@ -286,18 +286,18 @@ public class Settings extends AppCompatActivity {
         });
 
         settings_others_spaceSelector.setOnClickListener(v -> {
-            CustomDialog_new.Builder(this)
+            CustomDialog.Builder(this)
                     .setTitle("Bereiche Auswählen")
                     .setView(new CustomRecycler<Space>(this)
                             .setItemLayout(R.layout.list_item_space_shown)
                             .setObjectList(allSpaces)
-                            .setSetItemContent((CustomRecycler.SetItemContent<Space>)(itemView, space) -> {
+                            .setSetItemContent((itemView, space) -> {
                                 ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getPlural());
 
                                 ((CheckBox) itemView.findViewById(R.id.list_spaceSetting_shown)).setChecked(space.isShown());
                             })
                             .removeLastDivider()
-                            .setOnClickListener((CustomRecycler.OnClickListener<Space>) (customRecycler, itemView, space, index) -> {
+                            .setOnClickListener((customRecycler, itemView, space, index) -> {
                                 CheckBox list_spaceSetting_shown = itemView.findViewById(R.id.list_spaceSetting_shown);
                                 boolean checked = list_spaceSetting_shown.isChecked();
 
@@ -314,14 +314,14 @@ public class Settings extends AppCompatActivity {
                                 );
                                 setResult(RESULT_OK);
                             })
-                            .enableDragAndDrop(objectList -> {
+                            .enableDragAndDrop(spaceList -> {
                                 spaceOrderChanged = true;
                                 setResult(RESULT_OK);
                             })
                             .setDividerMargin_inDp(16)
                             .generate())
                     .setOnDialogDismiss(dialog -> updateSpaceStatusSettings())
-                    .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.BACK)
+                    .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
                     .show();
         });
     }
@@ -430,20 +430,20 @@ public class Settings extends AppCompatActivity {
 
         //  ----- SettingsDialog ----->
         public interface BuildSettingsDialog {
-            CustomDialog_new runBuildSettingsDialog(Settings settings, Space space);
+            CustomDialog runBuildSettingsDialog(Settings settings, Space space);
         }
 
         public Space setSettingsDialog(Utility.Triple<Integer, SetViewContent, OnClick> id_SetViewContent_OnClick_quadruple) {
             buildSettingsDialog = (context1, space) -> {
-                CustomDialog_new customDialog = CustomDialog_new.Builder(context1).setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.OK_CANCEL)
+                CustomDialog customDialog = CustomDialog.Builder(context1).setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                         .setTitle(space.getPlural() + "-Einstellungen")
-                        .setEdit(new CustomDialog_new.EditBuilder().setHint("Singular|Plural").setText(space.getName() + "|" + space.getPlural()).setValidation("\\w+\\|\\w+"));
+                        .setEdit(new CustomDialog.EditBuilder().setHint("Singular|Plural").setText(space.getName() + "|" + space.getPlural()).setValidation("\\w+\\|\\w+"));
                 if (id_SetViewContent_OnClick_quadruple != null)
                     customDialog.setView(id_SetViewContent_OnClick_quadruple.first)
                             .setSetViewContent((customDialog1, view) -> id_SetViewContent_OnClick_quadruple.second.runSetViewContent(customDialog1, view, this))
-                            .addButton(CustomDialog_new.BUTTON_TYPE.OK_BUTTON, customDialog1 -> id_SetViewContent_OnClick_quadruple.third.runOnClick(customDialog1, this));
+                            .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> id_SetViewContent_OnClick_quadruple.third.runOnClick(customDialog1, this));
                 else
-                    customDialog.addButton(CustomDialog_new.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                    customDialog.addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
                         new OnClick() {}.runOnClick(customDialog1, this);
                         context1.spaceRecycler_customRecycler.reload();
                         context1.setResult(RESULT_OK);
@@ -456,11 +456,11 @@ public class Settings extends AppCompatActivity {
         }
 
         public interface SetViewContent{
-            void runSetViewContent(CustomDialog_new customDialog, View view, Space space);
+            void runSetViewContent(CustomDialog customDialog, View view, Space space);
         }
 
         public interface OnClick {
-            default void runOnClick(CustomDialog_new customDialog, Space space){
+            default void runOnClick(CustomDialog customDialog, Space space){
                 String text = customDialog.getEditText();
                 if (text.isEmpty())
                     return;
@@ -475,7 +475,7 @@ public class Settings extends AppCompatActivity {
             }
         }
 
-        public CustomDialog_new showSettingsDialog(Settings settings) {
+        public CustomDialog showSettingsDialog(Settings settings) {
             if (buildSettingsDialog == null) {
                 return null;
             }

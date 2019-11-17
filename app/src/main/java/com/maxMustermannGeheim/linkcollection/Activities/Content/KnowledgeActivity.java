@@ -26,8 +26,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog_new;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog_new;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
@@ -61,14 +60,14 @@ public class KnowledgeActivity extends AppCompatActivity {
     private SORT_TYPE sort_type = SORT_TYPE.LATEST;
     Database database = Database.getInstance();
     private CustomRecycler customRecycler_List;
-    private CustomDialog_new[] addOrEditDialog = new CustomDialog_new[]{null};
+    private CustomDialog[] addOrEditDialog = new CustomDialog[]{null};
     private String searchQuery = "";
     private SharedPreferences mySPR_daten;
     private SearchView.OnQueryTextListener textListener;
     private SearchView videos_search;
     private ArrayList<Knowledge> allKnowledgeList;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.CATEGORY, FILTER_TYPE.CONTENT));
-    private CustomDialog_new detailDialog;
+    private CustomDialog detailDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -135,7 +134,7 @@ public class KnowledgeActivity extends AppCompatActivity {
     }
 
     private void loadRecycler() {
-        customRecycler_List = CustomRecycler.Builder(this, findViewById(R.id.recycler))
+        customRecycler_List = new CustomRecycler<Knowledge>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_knowledge)
                 .setGetActiveObjectList(() -> {
                     if (searchQuery.equals("")) {
@@ -145,7 +144,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     else
                         return filterList(allKnowledgeList);
                 })
-                .setSetItemContent((CustomRecycler.SetItemContent<Knowledge>) (itemView, knowledge) -> {
+                .setSetItemContent((itemView, knowledge) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_knowledge_title)).setText(knowledge.getName());
                     ((TextView) itemView.findViewById(R.id.listItem_knowledge_content)).setText(knowledge.getContent());
 
@@ -176,7 +175,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                 })
                 .addSubOnClickListener(R.id.listItem_knowledge_details, (customRecycler, view, object, index) -> detailDialog = showDetailDialog((Knowledge) object), false)
                 .setOnLongClickListener((customRecycler, view, object, index) -> {
-                    addOrEditDialog[0] = showEditOrNewDialog((Knowledge) object);
+                    addOrEditDialog[0] = showEditOrNewDialog(object);
                 })
                 .hideDivider()
                 .generateCustomRecycler();
@@ -207,7 +206,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         customRecycler_List.reload();
     }
 
-    private CustomDialog_new showEditOrNewDialog(Knowledge knowledge) {
+    private CustomDialog showEditOrNewDialog(Knowledge knowledge) {
         if (!Utility.isOnline(this))
             return null;
         setResult(RESULT_OK);
@@ -220,18 +219,18 @@ public class KnowledgeActivity extends AppCompatActivity {
             newKnowledge[0].getCategoryIdList().forEach(uuid -> categoriesNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
             newKnowledge[0].getSources().forEach(nameUrlPair  -> sourcesNames.add(nameUrlPair.get(0)));
         }
-        CustomDialog_new returnDialog =  CustomDialog_new.Builder(this)
+        CustomDialog returnDialog =  CustomDialog.Builder(this)
                 .setTitle(knowledge == null ? "Neues Wissen" : "Wissen Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_knowledge)
-                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.CUSTOM);
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM);
 
         if (knowledge != null)
             returnDialog.addButton("Löschen", customDialog -> {
-                CustomDialog_new.Builder(this)
+                CustomDialog.Builder(this)
                         .setTitle("Löschen")
                         .setText("Willst du wirklich '" + knowledge.getName() + "' löschen?")
-                        .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.OK_CANCEL)
-                        .addButton(CustomDialog_new.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                        .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
                             database.knowledgeMap.remove(knowledge.getUuid());
                             Database.saveAll();
                             reLoadRecycler();
@@ -250,11 +249,11 @@ public class KnowledgeActivity extends AppCompatActivity {
                     String content = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddKnowledge_content)).getText().toString().trim();
 //
                     if (content.equals("")){
-                        CustomDialog_new.Builder(this)
+                        CustomDialog.Builder(this)
                                 .setTitle("Ohne Inhalt speichern?")
                                 .setText("Möchtest du wirklich ohne einen Inhalt speichern")
-                                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.YES_NO)
-                                .addButton(CustomDialog_new.BUTTON_TYPE.YES_BUTTON, customDialog1 ->
+                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 ->
                                         saveKnowledge(customDialog, titel, content, newKnowledge, knowledge))
                                 .show();
                     }
@@ -287,16 +286,16 @@ public class KnowledgeActivity extends AppCompatActivity {
         return returnDialog;
     }
 
-    private CustomDialog_new showDetailDialog(Knowledge knowledge) {
+    private CustomDialog showDetailDialog(Knowledge knowledge) {
         setResult(RESULT_OK);
         List<String> categoriesNames = new ArrayList<>();
         knowledge.getCategoryIdList().forEach(uuid -> categoriesNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
-        CustomDialog_new returnDialog = CustomDialog_new.Builder(this)
+        CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle("Deteil Ansicht")
                 .setView(R.layout.dialog_detail_knowledge)
-                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.CUSTOM)
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Teilen", customDialog -> {
-                    CustomDialog_new.Builder(this)
+                    CustomDialog.Builder(this)
                             .setTitle("Teilen")
                             .setView(R.layout.dialog_share_knowledge)
                             .setSetViewContent((customDialog1, view) -> {
@@ -307,8 +306,8 @@ public class KnowledgeActivity extends AppCompatActivity {
                                 ((TextView) view.findViewById(R.id.dialog_shareKnowledge_sources)).setText(knowledge.getSources().stream()
                                         .map(nameUrlPair -> nameUrlPair.get(0)).collect(Collectors.joining(", ")));
                             })
-                            .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.OK_CANCEL)
-                            .addButton(CustomDialog_new.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                            .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
                                 boolean format = ((Switch) customDialog1.findViewById(R.id.dialog_shareKnowledge_format)).isChecked();
                                 List<String> textList = new ArrayList<>();
                                 if (((CheckBox) customDialog1.findViewById(R.id.dialog_shareKnowledge_title_check)).isChecked())
@@ -345,7 +344,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         return returnDialog;
     }
 
-    private void saveKnowledge(CustomDialog_new dialog, String titel, String content, Knowledge[] newKnowledge, Knowledge knowledge) {
+    private void saveKnowledge(CustomDialog dialog, String titel, String content, Knowledge[] newKnowledge, Knowledge knowledge) {
 
         if (knowledge == null)
             knowledge = newKnowledge[0];
@@ -379,10 +378,10 @@ public class KnowledgeActivity extends AppCompatActivity {
         List<String> categoryNames = new ArrayList<>();
         randomKnowledge[0].getCategoryIdList().forEach(uuid -> categoryNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
 
-        CustomDialog_new.Builder(this)
+        CustomDialog.Builder(this)
                 .setTitle("Zufälliges Wissen")
                 .setView(R.layout.dialog_detail_knowledge)
-                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.CUSTOM)
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Nochmal", customDialog -> {
                     Toast.makeText(this, "Neu", Toast.LENGTH_SHORT).show();
                     randomKnowledge[0] = filterdKnowledgeList.get((int) (Math.random() * filterdKnowledgeList.size()));
@@ -529,7 +528,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 
         };
         final List<String>[] currentSource = new List[]{null};
-        CustomDialog_new sourcesDialog = CustomDialog_new.Builder(this)
+        CustomDialog sourcesDialog = CustomDialog.Builder(this)
                 .setTitle("Quellen")
                 .setView(R.layout.dialog_sources)
                 .setSetViewContent((customDialog, view) -> {
@@ -595,21 +594,21 @@ public class KnowledgeActivity extends AppCompatActivity {
 
                     view.findViewById(R.id.dialog_sources_cancel).setOnClickListener(v -> hideEdit.run());
 
-                    CustomRecycler sources_customRecycler = CustomRecycler.Builder(this, view.findViewById(R.id.dialog_sources_sources))
+                    CustomRecycler sources_customRecycler = new CustomRecycler<List<String>>(this, view.findViewById(R.id.dialog_sources_sources))
                             .setItemLayout(R.layout.list_item_source_or_item)
                             .setGetActiveObjectList(() -> {
                                 List<List<String>> sources = knowledge.getSources();
                                 view.findViewById(R.id.dialog_sources_noSources).setVisibility(sources.isEmpty() ? View.VISIBLE : View.GONE);
                                 return sources;
                             })
-                            .setSetItemContent((CustomRecycler.SetItemContent<List<String>>)(itemView, nameUrlPair) -> {
+                            .setSetItemContent((itemView, nameUrlPair) -> {
                                 ((TextView) itemView.findViewById(R.id.listItem_source_name)).setText(nameUrlPair.get(0));
                                 ((TextView) itemView.findViewById(R.id.listItem_source_content)).setText(nameUrlPair.get(1));
                             })
                             .hideDivider()
                             .useCustomRipple()
-                            .setOnClickListener((customRecycler, itemView, o, index) -> Utility.openUrl(this, ((List<String>) o).get(1), false))
-                            .setOnLongClickListener((CustomRecycler.OnLongClickListener<List<String>>)(customRecycler, view1, stringList, index) -> {
+                            .setOnClickListener((customRecycler, itemView, o, index) -> Utility.openUrl(this, o.get(1), false))
+                            .setOnLongClickListener((customRecycler, view1, stringList, index) -> {
                                 Dialog dialog = customDialog.getDialog();
                                 dialog.findViewById(R.id.dialog_sources_editLayout).setVisibility(View.VISIBLE);
                                 dialog.findViewById(buttonId_add).setVisibility(View.GONE);
@@ -621,11 +620,11 @@ public class KnowledgeActivity extends AppCompatActivity {
                             .generateCustomRecycler();
 
                     view.findViewById(R.id.dialog_sources_delete).setOnClickListener(v -> {
-                        CustomDialog_new.Builder(this)
+                        CustomDialog.Builder(this)
                                 .setTitle("Quelle Löschen")
                                 .setText("Willst du wirklich die Quelle '" + currentSource[0].get(0) + "' löschen?")
-                                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.YES_NO)
-                                .addButton(CustomDialog_new.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
+                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
                                     knowledge.getSources().remove(currentSource[0]);
                                     hideEdit.run();
                                     sources_customRecycler.reload();
@@ -653,7 +652,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                         currentSource[0] = null;
                     });
                 })
-                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.CUSTOM)
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Hinzufügen", customDialog -> {
                     customDialog.findViewById(R.id.dialog_sources_editLayout).setVisibility(View.VISIBLE);
                     customDialog.findViewById(buttonId_add).setVisibility(View.GONE);

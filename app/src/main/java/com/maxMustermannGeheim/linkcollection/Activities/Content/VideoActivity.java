@@ -3,7 +3,6 @@ package com.maxMustermannGeheim.linkcollection.Activities.Content;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
-import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -25,9 +24,10 @@ import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog_new;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
@@ -74,8 +74,8 @@ public class VideoActivity extends AppCompatActivity {
     List<Video> allVideoList = new ArrayList<>();
     List<Video> filterdVideoList = new ArrayList<>();
 
-    private CustomDialog_new[] addOrEditDialog = new CustomDialog_new[]{null};
-    private CustomDialog_new detailDialog;
+    private CustomDialog[] addOrEditDialog = new CustomDialog[]{null};
+    private CustomDialog detailDialog;
 
     private CustomRecycler customRecycler_VideoList;
     FloatingActionButton videos_confirmDelete;
@@ -86,7 +86,8 @@ public class VideoActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        String stringExtra = getIntent().getStringExtra(MainActivity.EXTRA_SPACE_NAMES);
+        Settings.startSettings_ifNeeded(this);
+        String stringExtra =Settings.getSingleSetting(this, Settings.SETTING_SPACE_NAMES_ + Settings.Space.SPACE_VIDEO) ;
         if (stringExtra != null) {
             String[] singPlur = stringExtra.split("\\|");
 
@@ -203,7 +204,7 @@ public class VideoActivity extends AppCompatActivity {
                                     filterdVideoList.add(video);
                             }
                             if (!unableToFindList.isEmpty()) {
-                                CustomDialog_new.Builder(that)
+                                CustomDialog.Builder(that)
                                         .setTitle("Problem beim Laden der Liste!")
                                         .setText((unableToFindList.size() == 1 ? "Ein " + singular + " konnte" : unableToFindList.size() + " " + plural + " konnten") + " nicht gefunden werden")
                                         .setObjectExtra(unableToFindList)
@@ -299,10 +300,10 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     private void loadVideoRecycler() {
-        customRecycler_VideoList = CustomRecycler.Builder(this, findViewById(R.id.videos_recycler))
+        customRecycler_VideoList = new CustomRecycler<Video>(this, findViewById(R.id.videos_recycler))
                 .setItemLayout(R.layout.list_item_video)
                 .setObjectList(filterdVideoList)
-                .setSetItemContent((CustomRecycler.SetItemContent<Video>) (itemView, video) -> {
+                .setSetItemContent((itemView, video) -> {
                     itemView.findViewById(R.id.listItem_video_deleteCheck).setVisibility(delete ? View.VISIBLE :View.GONE);
                     ((TextView) itemView.findViewById(R.id.listItem_video_Titel)).setText(video.getName());
                     if (!video.getDateList().isEmpty()) {
@@ -338,14 +339,14 @@ public class VideoActivity extends AppCompatActivity {
                 .useCustomRipple()
                 .setOnClickListener((customRecycler, view, object, index) -> {
                     if (!delete) {
-                        openUrl(((Video) object).getUrl(), false);
+                        openUrl(object.getUrl(), false);
                     } else {
                         CheckBox checkBox = view.findViewById(R.id.listItem_video_deleteCheck);
                         checkBox.setChecked(!checkBox.isChecked());
                         if (checkBox.isChecked())
-                            toDelete.add(((Video) object).getUuid());
+                            toDelete.add(object.getUuid());
                         else
-                            toDelete.remove(((Video) object).getUuid());
+                            toDelete.remove(object.getUuid());
                         String test = null;
                     }
                 })
@@ -361,12 +362,13 @@ public class VideoActivity extends AppCompatActivity {
 
     private void reLoadVideoRecycler() {
         sortList(filterdVideoList);
+//        customRecycler_VideoList.reload();
         customRecycler_VideoList.reload(filterdVideoList);
     }
 
-    private CustomDialog_new showDetailDialog(Video video) {
+    private CustomDialog showDetailDialog(Video video) {
         setResult(RESULT_OK);
-        CustomDialog_new returnDialog = CustomDialog_new.Builder(this)
+        CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle("Deteil Ansicht")
                 .setView(R.layout.dialog_detail_video)
                 .addButton("Bearbeiten", customDialog ->
@@ -414,8 +416,8 @@ public class VideoActivity extends AppCompatActivity {
         return returnDialog;
     }
 
-    public void showCalenderDialog(List<Video> videoList, CustomDialog_new detailDialog) {
-        CustomDialog_new.Builder(this)
+    public void showCalenderDialog(List<Video> videoList, CustomDialog detailDialog) {
+        CustomDialog.Builder(this)
                 .setTitle("Ansichten Bearbeiten")
                 .setView(R.layout.dialog_edit_views)
                 .setSetViewContent((customDialog, view) -> {
@@ -438,7 +440,7 @@ public class VideoActivity extends AppCompatActivity {
     }
 
 
-    private CustomDialog_new showEditOrNewDialog(Object object) {
+    private CustomDialog showEditOrNewDialog(Object object) {
         if (!Utility.isOnline(this))
             return null;
         setResult(RESULT_OK);
@@ -453,11 +455,11 @@ public class VideoActivity extends AppCompatActivity {
             video[0].getStudioList().forEach(uuid -> studioNames.add(database.studioMap.get(uuid).getName()));
             video[0].getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
         }
-        CustomDialog_new returnDialog =  CustomDialog_new.Builder(this)
-                .setTitle(object == null ? "Neue: " + singular : singular + " Bearbeiten")
+        CustomDialog returnDialog =  CustomDialog.Builder(this)
+                .setTitle(object == null ? "Neu: " + singular : singular + " Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
-                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.SAVE_CANCEL)
-                .addButton(CustomDialog_new.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     String titel = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_Titel)).getText().toString().trim();
                     if (titel.isEmpty()) {
                         Toast.makeText(this, "Einen Titel eingeben", Toast.LENGTH_SHORT).show();
@@ -467,11 +469,11 @@ public class VideoActivity extends AppCompatActivity {
                     boolean checked = ((CheckBox) customDialog.findViewById(R.id.dialog_editOrAddVideo_watchLater)).isChecked();
 
                     if (url.equals("") && !checked){
-                        CustomDialog_new.Builder(this)
+                        CustomDialog.Builder(this)
                         .setTitle("Ohne URL speichern?")
-                        .setText("Möchtest du wirklich das " + singular + " ohne URL speichern")
-                        .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.YES_NO)
-                        .addButton(CustomDialog_new.BUTTON_TYPE.YES_BUTTON, customDialog1 ->
+                        .setText("Möchtest du wirklich ohne URL speichern")
+                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                        .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 ->
                                 saveVideo(customDialog, object, titel, url, false, video))
                         .show();
                     }
@@ -561,7 +563,7 @@ public class VideoActivity extends AppCompatActivity {
         return returnDialog;
     }
 
-    private void saveVideo(CustomDialog_new dialog, Object object, String titel, String url, boolean checked, Video[] video) {
+    private void saveVideo(CustomDialog dialog, Object object, String titel, String url, boolean checked, Video[] video) {
         boolean neuesVideo = object == null;
         Video videoNeu;
         if (object == null)
@@ -748,10 +750,10 @@ public class VideoActivity extends AppCompatActivity {
         List<String> genreNames = new ArrayList<>();
         randomVideo.getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
 
-        CustomDialog_new.Builder(this)
+        CustomDialog.Builder(this)
                 .setTitle("Zufällig")
                 .setView(R.layout.dialog_detail_video)
-                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.CUSTOM)
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Nochmal", customDialog -> {
                     Toast.makeText(this, "Neu", Toast.LENGTH_SHORT).show();
                     randomVideo = filterdVideoList.get((int) (Math.random() * filterdVideoList.size()));

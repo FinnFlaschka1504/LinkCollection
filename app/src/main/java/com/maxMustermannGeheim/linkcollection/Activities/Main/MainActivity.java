@@ -1,6 +1,5 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Main;
 
-import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ShortcutInfo;
@@ -11,7 +10,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewStub;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
@@ -20,15 +18,13 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog_new;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog_new;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
@@ -44,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String EXTRA_CATEGORY = "EXTRA_CATEGORY";
     public static final String SETTING_LAST_OPEN_SPACE = "SETTING_LAST_OPEN_SPACE";
     public static final String ACTION_ADD = "ACTION_ADD";
-    public static final String EXTRA_SPACE_NAMES = "EXTRA_SPACE_NAMES";
+//    public static final String EXTRA_SPACE_NAMES = "EXTRA_SPACE_NAMES";
 
 
     public static final int START_VIDEOS = 1;
@@ -65,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
     Database database;
     SharedPreferences mySPR_daten;
     SharedPreferences mySPR_settings;
-    private CustomDialog_new calenderDialog;
+    private CustomDialog calenderDialog;
     private boolean firstTime;
 
     private static Settings.Space currentSpace;
@@ -100,23 +96,30 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-//        CustomDialog_new.Builder(this)
+//        int buttonId = View.generateViewId();
+//        CustomDialog.Builder(this)
 //                .setTitle("Test")
 ////                .setView(new Button(this))
-//                .setEdit(new CustomDialog_new.EditBuilder().disableSelectAll().setText("Text").disableButtonByDefault().setHint("Test").setInputType(Helpers.TextInputHelper.INPUT_TYPE.E_MAIL)
-////                        .allowEmpty()
-////                        .setValidation((validator, text) -> {
-////                            if (text.matches("(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])"))
-////                                validator.setValid();
-////
-////                        })
-//                )
-////                .standardEdit()
-////                .addButton("MöP", customDialog -> Toast.makeText(this, "Möp", Toast.LENGTH_SHORT).show())
-//                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.SAVE_CANCEL)
-//                .addButton(CustomDialog_new.BUTTON_TYPE.SAVE_BUTTON, customDialog -> Toast.makeText(this, customDialog.getEditText(), Toast.LENGTH_SHORT).show())
-////                .addButton(CustomDialog_new.BUTTON_TYPE.BACK_BUTTON)
-//                .disableButtonAllCaps()
+////                .setEdit(new CustomDialog.EditBuilder().disableSelectAll().setText("Text").disableButtonByDefault().setHint("Test").setInputType(Helpers.TextInputHelper.INPUT_TYPE.E_MAIL)
+//////                        .allowEmpty()
+//////                        .setValidation((validator, text) -> {
+//////                            if (text.matches("(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])"))
+//////                                validator.setValid();
+//////
+//////                        })
+////                )
+//                .standardEdit()
+////                .addButton("Zu viel")
+////                .addButton("Langer Text")
+//                .addButton("MöP", null, buttonId)
+//                .disableLastAddedButton()
+//                .alignPreviousButtonsLeft()
+//                .hideLastAddedButton()
+//                .addButton("Mehr!", customDialog -> customDialog.findViewById(buttonId).setVisibility(View.VISIBLE), false)
+//                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+//                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> Toast.makeText(this, customDialog.getEditText(), Toast.LENGTH_SHORT).show())
+////                .addButton(CustomDialog.BUTTON_TYPE.BACK_BUTTON)
+////                .disableButtonAllCaps()
 //                .show();
     }
 
@@ -216,10 +219,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void getDatabaseCode(OnDatabaseCodeFinish onFinish) {
-        CustomDialog_new.Builder(MainActivity.this)
+        CustomDialog.Builder(MainActivity.this)
                 .setTitle("DatenBank-Code Eingeben")
-                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.OK_CANCEL)
-                .addButton(CustomDialog_new.BUTTON_TYPE.OK_BUTTON, customDialog -> onFinish.runOndatabaseCodeFinish(customDialog.getEditText()))
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> onFinish.runOndatabaseCodeFinish(customDialog.getEditText()))
                 .standardEdit()
                 .show();
 
@@ -229,7 +232,7 @@ public class MainActivity extends AppCompatActivity {
     public void openVideoActivity(View view) {
         if (!Database.isReady())
             return;
-        Intent intent = new Intent(this, VideoActivity.class).putExtra(EXTRA_SPACE_NAMES, currentSpace.getName() + "|" + currentSpace.getPlural());
+        Intent intent = new Intent(this, VideoActivity.class);
         startActivityForResult(intent, START_VIDEOS);
     }
 
@@ -261,7 +264,7 @@ public class MainActivity extends AppCompatActivity {
         if (!Database.isReady())
             return;
 
-        calenderDialog = CustomDialog_new.Builder(this)
+        calenderDialog = CustomDialog.Builder(this)
                 .setTitle("Video Kalender")
                 .setView(R.layout.dialog_edit_views)
                 .setSetViewContent((customDialog, view) -> {

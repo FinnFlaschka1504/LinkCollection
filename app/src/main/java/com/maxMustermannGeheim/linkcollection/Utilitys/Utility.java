@@ -215,8 +215,7 @@ public class Utility {
         if (filterTypeSet.contains(OweActivity.FILTER_TYPE.DESCRIPTION) && owe.getDescription().toLowerCase().contains(query))
             return true;
 
-        if (filterTypeSet.contains(OweActivity.FILTER_TYPE.PERSON) && owe.getItemList().stream().anyMatch(item -> Database.getInstance().personMap.get(item.getPersonId()).getName().toLowerCase().contains(query)))
-            return true;
+        return filterTypeSet.contains(OweActivity.FILTER_TYPE.PERSON) && owe.getItemList().stream().anyMatch(item -> Database.getInstance().personMap.get(item.getPersonId()).getName().toLowerCase().contains(query));
 
 //        if (filterTypeSet.contains(KnowledgeActivity.FILTER_TYPE.CATEGORY)) {
 ////            for (ParentClass category : getMapFromDatabase(CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES).values()) {
@@ -225,8 +224,6 @@ public class Utility {
 //                    return true;
 //            }
 //        }
-
-        return false;
     }
     //  <----- ... in Owe -----
 
@@ -259,7 +256,7 @@ public class Utility {
         calender_nextMonth.setOnClickListener(view -> calendarView.scrollRight());
 
         Database database = Database.getInstance();
-        CustomRecycler customRecycler = CustomRecycler.Builder(context, layout.findViewById(R.id.fragmentCalender_videoList))
+        CustomRecycler customRecycler = new CustomRecycler<>(context, layout.findViewById(R.id.fragmentCalender_videoList))
                 .setItemLayout(R.layout.list_item_video)
                 .setSetItemContent((itemView, object) -> {
                     itemView.findViewById(R.id.listItem_video_details).setVisibility(View.GONE);
@@ -384,7 +381,7 @@ public class Utility {
         toast.show();
     }
 
-    public static CustomDialog_new showEditItemDialog(Context context, CustomDialog_new[] addOrEditDialog, List<String> preSelectedUuidList, Object o, CategoriesActivity.CATEGORIES category) {
+    public static CustomDialog showEditItemDialog(Context context, CustomDialog[] addOrEditDialog, List<String> preSelectedUuidList, Object o, CategoriesActivity.CATEGORIES category) {
         Database database = Database.getInstance();
         
         if (preSelectedUuidList == null)
@@ -416,17 +413,17 @@ public class Utility {
         int saveButtonId = View.generateViewId();
 
         String finalEditType_string = editType_string;
-        CustomDialog_new dialog_AddActorOrGenre = CustomDialog_new.Builder(context)
+        CustomDialog dialog_AddActorOrGenre = CustomDialog.Builder(context)
                 .setTitle(editType_string + " Bearbeiten")
-                .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.CUSTOM)
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .setView(R.layout.dialog_edit_item)
                 .setDimensions(true, true)
                 .disableScroll()
                 .addButton("Hinzufügen", customDialog -> {
-                    CustomDialog_new.Builder(context)
+                    CustomDialog.Builder(context)
                             .setTitle(finalEditType_string + " Hinzufügen")
-                            .setButtonConfiguration(CustomDialog_new.BUTTON_CONFIGURATION.OK_CANCEL)
-                            .addButton(CustomDialog_new.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                            .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
                                 ParentClass parentClass = ParentClass.newCategoy(category, customDialog1.getEditText());
                                 switch (category){
                                     case DARSTELLER:
@@ -450,7 +447,7 @@ public class Utility {
                                 showEditItemDialog(context, addOrEditDialog,selectedUuidList, o, category);
                                 Database.saveAll();
                             })
-                            .setEdit(new CustomDialog_new.EditBuilder()
+                            .setEdit(new CustomDialog.EditBuilder()
                                     .setHint(finalEditType_string + "-Name")
                                     .setText(((SearchView) customDialog.findViewById(R.id.dialogAddPassenger_search)).getQuery().toString()))
                             .show();
@@ -490,13 +487,13 @@ public class Utility {
                 .show();
 
 
-        CustomRecycler customRecycler_selectList = CustomRecycler.Builder(context, dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_selectPassengers));
+        CustomRecycler<ParentClass> customRecycler_selectList = new CustomRecycler<>(context, dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_selectPassengers));
 
-        CustomRecycler customRecycler_selectedList = CustomRecycler.Builder(context, dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_selectedPassengers))
+        CustomRecycler customRecycler_selectedList = new CustomRecycler<String>(context, dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_selectedPassengers))
                 .setItemLayout(R.layout.list_item_bubble)
                 .setObjectList(selectedUuidList)
                 .hideDivider()
-                .setSetItemContent((CustomRecycler.SetItemContent<String>)(itemView, uuid) -> {
+                .setSetItemContent((itemView, uuid) -> {
                     ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(getObjectFromDatabase(category, uuid).getName());
                     dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_nothingSelected).setVisibility(View.GONE);
                 })

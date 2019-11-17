@@ -312,10 +312,10 @@ public class OweActivity extends AppCompatActivity {
         CustomDialog returnDialog =  CustomDialog.Builder(this)
                 .setTitle(owe == null ? "Neue Schulden" : "Schulden Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_owe)
-                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM);
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL);
 
         if (owe != null)
-            returnDialog.addButton("Löschen", customDialog -> {
+            returnDialog.addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
                 if (!Utility.isOnline(this))
                     return;
 
@@ -331,11 +331,11 @@ public class OweActivity extends AppCompatActivity {
                             setResult(RESULT_OK);
                         })
                         .show();
-            }, false);
+            }, false)
+                    .alignPreviousButtonsLeft();
 
         returnDialog
-                .addButton("Abbrechen", customDialog -> {})
-                .addButton("Speichern", customDialog -> {
+                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     String title = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_owe_Title)).getText().toString().trim();
                     if (title.isEmpty()) {
                         Toast.makeText(this, "Einen Titel eingeben", Toast.LENGTH_SHORT).show();

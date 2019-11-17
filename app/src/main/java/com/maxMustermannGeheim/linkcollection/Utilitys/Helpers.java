@@ -52,11 +52,24 @@ public class Helpers {
             applyValidationListeners();
         }
 
+        public TextInputHelper setOnValidationResult(OnValidationResult onValidationResult) {
+            this.onValidationResult = onValidationResult;
+            return this;
+        }
+
+        public TextInputHelper defaultDialogValidation(CustomDialog customDialog) {
+            setOnValidationResult(customDialog.getActionButton()::setEnabled);
+            return this;
+        }
+
         //  ----- Validation ----->
         public boolean validate(TextInputLayout... layoutLists) {
+            boolean all = false;
+            if (layoutLists.length == 1 && layoutLists[0] == null)
+                all = true;
             List<TextInputLayout> inputLayoutList = new CustomList<>(layoutLists);
             for (Map.Entry<TextInputLayout, Validator> entry : inputValidationMap.entrySet()) {
-                if (!entry.getValue().validate(entry.getKey().getEditText().getText().toString().trim(), inputLayoutList.contains(entry.getKey()))) {
+                if (!entry.getValue().validate(entry.getKey().getEditText().getText().toString().trim(), inputLayoutList.contains(entry.getKey()) || all)) {
                     valid = false;
                     if (onValidationResult != null)
                         onValidationResult.runOnValidationResult(false);
@@ -77,6 +90,14 @@ public class Helpers {
         }
 
 //        public void addValidation (TextInputLayout textInputLayout, TextValidation textValidation)
+
+        public TextInputHelper addValidator(@NonNull TextInputLayout... textInputLayouts) {
+            for (TextInputLayout textInputLayout : textInputLayouts) {
+                inputValidationMap.put(textInputLayout, new Validator(textInputLayout));
+                applyValidationListerner(textInputLayout);
+            }
+            return this;
+        }
 
         public void applyValidationListeners(TextInputLayout... inputLayouts) {
             if (inputLayouts.length > 0) {

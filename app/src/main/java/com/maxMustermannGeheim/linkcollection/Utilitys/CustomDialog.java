@@ -23,12 +23,12 @@ import java.util.Optional;
 public class CustomDialog {
 
     public enum BUTTON_CONFIGURATION {
-        YES_NO, SAVE_CANCEL, BACK, OK, OK_CANCEL, CUSTOM;
+        YES_NO, SAVE_CANCEL, BACK, OK, OK_CANCEL, CUSTOM
     }
 
     public enum BUTTON_TYPE {
         YES_BUTTON("Ja"), NO_BUTTON("Nein"), SAVE_BUTTON("Speichern")
-        , CANCEL_BUTTON("Abbrechen"), BACK_BUTTON("Zurück"), OK_BUTTON("Ok");
+        , CANCEL_BUTTON("Abbrechen"), BACK_BUTTON("Zurück"), OK_BUTTON("Ok"), DELETE_BUTTON("Löschen");
 
         String label;
 
@@ -264,11 +264,18 @@ public class CustomDialog {
     public static void changeText(CustomDialog customDialog, CharSequence text) {
         ((TextView) customDialog.findViewById(R.id.dialog_custom_text)).setText(text);
     }
+
+    public ButtonHelper getActionButton() {
+        Optional<ButtonHelper> optional = buttonHelperList.stream()
+                .filter(buttonHelper -> (buttonHelper.buttonType == BUTTON_TYPE.OK_BUTTON || buttonHelper.buttonType == BUTTON_TYPE.SAVE_BUTTON || buttonHelper.buttonType == BUTTON_TYPE.YES_BUTTON))
+                .findFirst();
+        return optional.orElse(null);
+    }
     //  <----- Convenience -----
 
 
     //  ----- Buttons ----->
-    class ButtonHelper {
+    public class ButtonHelper {
         private Integer id;
         private String label;
         private BUTTON_TYPE buttonType;
@@ -355,6 +362,11 @@ public class CustomDialog {
             });
             return button;
         }
+
+        public ButtonHelper setEnabled(boolean enabled) {
+            button.setEnabled(enabled);
+            return this;
+        }
     }
 
     public CustomDialog addButton(String buttonName) {
@@ -408,8 +420,7 @@ public class CustomDialog {
         buttonHelperList.forEach(buttonHelper -> buttonHelper.alignLeft = true);
         return this;
     }
-    // ToDo: mit LayoutGravity nach links verschieben
-//  <----- Buttons -----
+    //  <----- Buttons -----
     
     
     //  ----- Actions ----->

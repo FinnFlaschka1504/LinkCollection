@@ -136,20 +136,21 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginHorizontal="8dp"
         android:orientation="horizontal">
 
         <org.apmem.tools.layouts.FlowLayout
             android:id="@+id/dialog_custom_buttonLayout_left"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"/>
+            android:layout_weight="1" />
 
         <org.apmem.tools.layouts.FlowLayout
             android:id="@+id/dialog_custom_buttonLayout_right"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:gravity="end"/>
+            android:gravity="end" />
 
     </LinearLayout>
 

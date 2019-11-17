@@ -233,19 +233,17 @@ public class JokeActivity extends AppCompatActivity {
 
         final Joke[] newJoke = {null};
         List<String> categoriesNames = new ArrayList<>();
-//        List<String> sourcesNames = new ArrayList<>();
         if (joke != null) {
             newJoke[0] = joke.cloneJoke();
             newJoke[0].getCategoryIdList().forEach(uuid -> categoriesNames.add(database.jokeCategoryMap.get(uuid).getName()));
-//            newJoke[0].getSources().forEach(nameUrlPair  -> sourcesNames.add(nameUrlPair.get(0)));
         }
         CustomDialog returnDialog =  CustomDialog.Builder(this)
                 .setTitle(joke == null ? "Neuer Witz" : "Witz Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_joke)
-                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM);
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL);
 
         if (joke != null)
-            returnDialog.addButton("Löschen", customDialog -> {
+            returnDialog.addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
                 CustomDialog.Builder(this)
                         .setTitle("Löschen")
                         .setText("Willst du wirklich '" + joke.getName() + "' löschen?")
@@ -257,11 +255,11 @@ public class JokeActivity extends AppCompatActivity {
                             returnDialog.getDialog().dismiss();
                         })
                         .show();
-            }, false);
+            }, false)
+                    .alignPreviousButtonsLeft();
 
         returnDialog
-                .addButton("Abbrechen", customDialog -> {})
-                .addButton("Speichern", customDialog -> {
+                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     String titel = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddJoke_Titel)).getText().toString().trim();
                     if (titel.isEmpty()) {
                         Toast.makeText(this, "Einen Titel eingeben", Toast.LENGTH_SHORT).show();

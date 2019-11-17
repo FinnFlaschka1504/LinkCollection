@@ -222,10 +222,10 @@ public class KnowledgeActivity extends AppCompatActivity {
         CustomDialog returnDialog =  CustomDialog.Builder(this)
                 .setTitle(knowledge == null ? "Neues Wissen" : "Wissen Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_knowledge)
-                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM);
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL);
 
         if (knowledge != null)
-            returnDialog.addButton("Löschen", customDialog -> {
+            returnDialog.addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
                 CustomDialog.Builder(this)
                         .setTitle("Löschen")
                         .setText("Willst du wirklich '" + knowledge.getName() + "' löschen?")
@@ -236,11 +236,11 @@ public class KnowledgeActivity extends AppCompatActivity {
                             reLoadRecycler();
                         })
                         .show();
-            }, false);
+                }, false)
+                    .alignPreviousButtonsLeft();
 
         returnDialog
-                .addButton("Abbrechen", customDialog -> {})
-                .addButton("Speichern", customDialog -> {
+                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     String titel = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddKnowledge_Titel)).getText().toString().trim();
                     if (titel.isEmpty()) {
                         Toast.makeText(this, "Einen Titel eingeben", Toast.LENGTH_SHORT).show();

@@ -224,10 +224,10 @@ public class CategoriesActivity extends AppCompatActivity {
     }
 
     private void loadRecycler() {
-        customRecycler = new CustomRecycler(this, findViewById(R.id.catigorys_recycler))
+        customRecycler = new CustomRecycler<Pair<ParentClass, Integer>>(this, findViewById(R.id.catigorys_recycler))
                 .setItemLayout(R.layout.list_item_catigory_item)
                 .setGetActiveObjectList(() -> sortList(filterList(allDatenObjektPairList)))
-                .setSetItemContent((CustomRecycler.SetItemContent<Pair<ParentClass, Integer>>)(itemView, parentClassIntegerPair) -> {
+                .setSetItemContent((itemView, parentClassIntegerPair) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_catigoryItem_name)).setText(parentClassIntegerPair.first.getName());
 
                     if (catigory == CATEGORIES.PERSON) {
@@ -263,12 +263,12 @@ public class CategoriesActivity extends AppCompatActivity {
                 .hideDivider()
                 .setOnClickListener((customRecycler, view, object, index) -> {
                     startActivityForResult(new Intent(this, catigory.getSearchIn())
-                                    .putExtra(EXTRA_SEARCH, ((ParentClass) ((Pair) object).first).getName())
+                                    .putExtra(EXTRA_SEARCH, object.first.getName())
                                     .putExtra(EXTRA_SEARCH_CATEGORY, catigory),
                             START_CATIGORY_SEARCH);
                 })
                 .useCustomRipple()
-                .setOnLongClickListener((CustomRecycler.OnLongClickListener<Pair<ParentClass, Integer>>)(customRecycler, view, item, index) -> {
+                .setOnLongClickListener((customRecycler, view, item, index) -> {
                     if (!Utility.isOnline(this))
                         return;
                     ParentClass parentClass = item.first;

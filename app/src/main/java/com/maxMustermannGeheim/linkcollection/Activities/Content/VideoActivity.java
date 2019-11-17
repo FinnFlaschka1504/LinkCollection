@@ -22,6 +22,8 @@ import android.widget.Toast;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
@@ -31,6 +33,7 @@ import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
+import com.maxMustermannGeheim.linkcollection.Utilitys.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 import com.mikhaellopez.lazydatepicker.LazyDatePicker;
 
@@ -455,6 +458,7 @@ public class VideoActivity extends AppCompatActivity {
             video[0].getStudioList().forEach(uuid -> studioNames.add(database.studioMap.get(uuid).getName()));
             video[0].getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
         }
+        Helpers.TextInputHelper inputHelper = new Helpers.TextInputHelper(null);
         CustomDialog returnDialog =  CustomDialog.Builder(this)
                 .setTitle(object == null ? "Neu: " + singular : singular + " Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
@@ -471,7 +475,7 @@ public class VideoActivity extends AppCompatActivity {
                     if (url.equals("") && !checked){
                         CustomDialog.Builder(this)
                         .setTitle("Ohne URL speichern?")
-                        .setText("Möchtest du wirklich ohne URL speichern")
+                        .setText("Möchtest du wirklich ohne URL speichern?")
                         .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
                         .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 ->
                                 saveVideo(customDialog, object, titel, url, false, video))
@@ -481,9 +485,12 @@ public class VideoActivity extends AppCompatActivity {
                         saveVideo(customDialog, object, titel, url, checked, video);
 
                 }, false)
+                .disableLastAddedButton()
                 .setSetViewContent((customDialog, view) -> {
+                    TextInputLayout dialog_editOrAddVideo_Titel_layout = view.findViewById(R.id.dialog_editOrAddVideo_Titel_layout);
+                    inputHelper.defaultDialogValidation(customDialog).addValidator(dialog_editOrAddVideo_Titel_layout);
                     if (video[0] != null) {
-                        ((EditText) view.findViewById(R.id.dialog_editOrAddVideo_Titel)).setText(video[0].getName());
+                        ((TextInputEditText) view.findViewById(R.id.dialog_editOrAddVideo_Titel)).setText(video[0].getName());
                         ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_Darsteller)).setText(String.join(", ", darstellerNames));
                         view.findViewById(R.id.dialog_editOrAddVideo_Darsteller).setSelected(true);
                         ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_Studio)).setText(String.join(", ", studioNames));

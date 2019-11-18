@@ -243,7 +243,6 @@ public class Utility {
         return false;
     }
     //  <----- ... in Joke -----
-
 //  <----- Filter -----
 
     public static void setupCalender(Context context, CompactCalendarView calendarView, FrameLayout layout, List<Video> videoList, boolean openVideo) {
@@ -360,7 +359,7 @@ public class Utility {
 
         customRecycler
                 .setObjectList(eventList)
-                .generate();
+                .generateRecyclerView();
 
     }
 
@@ -516,7 +515,7 @@ public class Utility {
                     customRecycler_selectList.reload();
                 })
                 .useCustomRipple()
-                .generateCustomRecycler();
+                .generate();
 
 
         customRecycler_selectList
@@ -553,7 +552,7 @@ public class Utility {
 
                     customRecycler_selectedList.reload();
                 })
-                .generateCustomRecycler();
+                .generate();
 
         SearchView searchView = dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_search);
         searchView.setQueryHint(category.getPlural() + " durchsuchen");

@@ -48,4 +48,5 @@ dependencies {
     implementation 'com.github.psinetron:slycalendarview:0.0.9'
 //    implementation 'com.github.kizitonwose:CalendarView:0.2.9'
     implementation 'com.mikhaellopez:lazydatepicker:1.0.5'
+    implementation 'com.android.volley:volley:1.1.1'
 }

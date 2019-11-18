@@ -2,7 +2,6 @@ package com.maxMustermannGeheim.linkcollection.Utilitys;
 
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Pair;
 import android.view.inputmethod.EditorInfo;
 
 import androidx.annotation.NonNull;
@@ -29,14 +28,18 @@ public class Helpers {
                 this.code = code;
             }
         }
-        public enum IME_ACTIONS{
+        public enum IME_ACTION {
             GO(0x00000002), SEARCH(0x00000003), SEND(0x00000004), NEXT(0x00000005)
             , DONE(0x00000006), PREVIOUS(0x00000007);
 
             int code;
 
-            IME_ACTIONS(int code) {
+            IME_ACTION(int code) {
                 this.code = code;
+            }
+
+            public int getCode() {
+                return code;
             }
         }
         private CustomList<TextInputLayout> layoutList;
@@ -52,14 +55,7 @@ public class Helpers {
             applyValidationListeners();
         }
 
-        public TextInputHelper setOnValidationResult(OnValidationResult onValidationResult) {
-            this.onValidationResult = onValidationResult;
-            return this;
-        }
-
-        public TextInputHelper defaultDialogValidation(CustomDialog customDialog) {
-            setOnValidationResult(customDialog.getActionButton()::setEnabled);
-            return this;
+        public TextInputHelper() {
         }
 
         //  ----- Validation ----->
@@ -287,37 +283,37 @@ public class Helpers {
 
 
         //  ----- Action ----->
-        public void addActionListener(TextInputLayout textInputLayout, OnAction onAction, IME_ACTIONS... actions) {
+        public void addActionListener(TextInputLayout textInputLayout, OnAction onAction, IME_ACTION... actions) {
             textInputLayout.getEditText().setOnEditorActionListener((v, actionId, event) -> {
                 boolean handled = false;
                 if (actions.length == 0) {
                     if (actionId == EditorInfo.IME_ACTION_DONE) {
-                        onAction.runOnAction(this, textInputLayout, actionId);
+                        onAction.runOnAction(this, textInputLayout, actionId, textInputLayout.getEditText().getText().toString());
                         handled = true;
                     }
                 } else {
-                    if (new CustomList<>(actions).contains(actionId)) {
-                        onAction.runOnAction(this, textInputLayout, actionId);
+                    if (new CustomList<IME_ACTION>(actions).map(IME_ACTION::getCode).contains(actionId)) {
+                        onAction.runOnAction(this, textInputLayout, actionId, textInputLayout.getEditText().getText().toString());
                         handled = true;
                     }
                 }
                 return handled;
             });
             if (actions.length == 0) {
-                textInputLayout.getEditText().setImeOptions(IME_ACTIONS.DONE.code);
+                textInputLayout.getEditText().setImeOptions(IME_ACTION.DONE.code);
             } else {
                 final int[] actionFlag = {actions[0].code};
-                new CustomList<Integer>(actions).forEachCount((integer, count) -> {
+                new CustomList<IME_ACTION>(actions).forEachCount((imeAction, count) -> {
                     if (count == 0) return;
 
-                    actionFlag[0] = actionFlag[0]| integer;
+                    actionFlag[0] = actionFlag[0]| imeAction.code;
                 });
                 textInputLayout.getEditText().setImeOptions(actionFlag[0]);
             }
         }
 
         public interface OnAction {
-            void runOnAction(TextInputHelper textInputHelper, TextInputLayout textInputLayout, int actionId);
+            void runOnAction(TextInputHelper textInputHelper, TextInputLayout textInputLayout, int actionId, String text);
         }
         //  <----- Action -----
 
@@ -331,6 +327,30 @@ public class Helpers {
         public TextInputHelper setInputType(TextInputLayout textInputLayout, INPUT_TYPE inputType) {
             textInputLayout.getEditText().setInputType(inputType.code);
             return this;
+        }
+
+        public TextInputHelper setOnValidationResult(OnValidationResult onValidationResult) {
+            this.onValidationResult = onValidationResult;
+            return this;
+        }
+
+        public TextInputHelper defaultDialogValidation(CustomDialog customDialog) {
+            setOnValidationResult(customDialog.getActionButton()::setEnabled);
+            return this;
+        }
+
+        public TextInputHelper setText(TextInputLayout textInputLayout, String text) {
+            if (textInputLayout.getEditText() != null) {
+                textInputLayout.getEditText().setText(text);
+            }
+            return this;
+        }
+
+        public String getText(TextInputLayout textInputLayout) {
+            if (textInputLayout.getEditText() != null) {
+                return textInputLayout.getEditText().getText().toString();
+            }
+            return null;
         }
         //  <----- Convenience -----
     }

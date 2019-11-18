@@ -29,6 +29,7 @@ import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
+import com.maxMustermannGeheim.linkcollection.Utilitys.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
 import java.text.SimpleDateFormat;
@@ -178,7 +179,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     addOrEditDialog[0] = showEditOrNewDialog(object);
                 })
                 .hideDivider()
-                .generateCustomRecycler();
+                .generate();
     }
 
     private List<Knowledge> filterList(ArrayList<Knowledge> allKnowledgeList) {
@@ -261,7 +262,9 @@ public class KnowledgeActivity extends AppCompatActivity {
                         saveKnowledge(customDialog, titel, content, newKnowledge, knowledge);
 
                 }, false)
+                .disableLastAddedButton()
                 .setSetViewContent((customDialog, view) -> {
+                    new Helpers.TextInputHelper().defaultDialogValidation(customDialog).addValidator(view.findViewById(R.id.dialog_editOrAddKnowledge_Titel_layout));
                     if (newKnowledge[0] != null) {
                         ((EditText) view.findViewById(R.id.dialog_editOrAddKnowledge_Titel)).setText(newKnowledge[0].getName());
                         ((EditText) view.findViewById(R.id.dialog_editOrAddKnowledge_content)).setText(knowledge.getContent());
@@ -299,12 +302,24 @@ public class KnowledgeActivity extends AppCompatActivity {
                             .setTitle("Teilen")
                             .setView(R.layout.dialog_share_knowledge)
                             .setSetViewContent((customDialog1, view) -> {
-                                ((EditText) view.findViewById(R.id.dialog_shareKnowledge_title)).setText(knowledge.getName());
-                                ((EditText) view.findViewById(R.id.dialog_shareKnowledge_content)).setText(knowledge.getContent());
-                                ((TextView) view.findViewById(R.id.dialog_shareKnowledge_categories)).setText(knowledge.getCategoryIdList().stream()
-                                        .map(uuid -> database.knowledgeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", ")));
-                                ((TextView) view.findViewById(R.id.dialog_shareKnowledge_sources)).setText(knowledge.getSources().stream()
-                                        .map(nameUrlPair -> nameUrlPair.get(0)).collect(Collectors.joining(", ")));
+                                if (!knowledge.getName().isEmpty()) {
+                                    ((EditText) view.findViewById(R.id.dialog_shareKnowledge_title)).setText(knowledge.getName());
+                                    ((CheckBox) customDialog1.findViewById(R.id.dialog_shareKnowledge_title_check)).setChecked(true);
+                                }
+                                if (!knowledge.getContent().isEmpty()) {
+                                    ((EditText) view.findViewById(R.id.dialog_shareKnowledge_content)).setText(knowledge.getContent());
+                                    ((CheckBox) customDialog1.findViewById(R.id.dialog_shareKnowledge_content_check)).setChecked(true);
+                                }
+                                if (!knowledge.getCategoryIdList().isEmpty()) {
+                                    ((TextView) view.findViewById(R.id.dialog_shareKnowledge_categories)).setText(knowledge.getCategoryIdList().stream()
+                                            .map(uuid -> database.knowledgeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                                    ((CheckBox) customDialog1.findViewById(R.id.dialog_shareKnowledge_categories_check)).setChecked(true);
+                                }
+                                if (!knowledge.getSources().isEmpty()) {
+                                    ((TextView) view.findViewById(R.id.dialog_shareKnowledge_sources)).setText(knowledge.getSources().stream()
+                                            .map(nameUrlPair -> nameUrlPair.get(0)).collect(Collectors.joining(", ")));
+                                    ((CheckBox) customDialog1.findViewById(R.id.dialog_shareKnowledge_sources_check)).setChecked(true);
+                                }
                             })
                             .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                             .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
@@ -617,7 +632,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                                 dialog_sources_url.getEditText().setText(stringList.get(1));
                                 currentSource[0] = stringList;
                             })
-                            .generateCustomRecycler();
+                            .generate();
 
                     view.findViewById(R.id.dialog_sources_delete).setOnClickListener(v -> {
                         CustomDialog.Builder(this)

@@ -107,7 +107,7 @@ public class CustomMenu {
                 .hideDivider()
                 .hideOverscroll()
                 .useCustomRipple()
-                .setSetItemContent((CustomRecycler.SetItemContent<MenuItem>) (itemView, item) -> {
+                .setSetItemContent((itemView, item) -> {
                     ((TextView) itemView.findViewById(R.id.popup_standardList_text)).setText(item.getName());
                     if (onClickListener == null && item.getChild() != null) {
                         View popup_standardList_sub = itemView.findViewById(R.id.popup_standardList_sub);
@@ -119,7 +119,7 @@ public class CustomMenu {
                         itemView.findViewById(R.id.popup_standardList_divider).setVisibility(View.VISIBLE);
                     }
                 })
-                .setOnClickListener((CustomRecycler.OnClickListener<MenuItem>) (customRecycler1, itemView, item, index) -> {
+                .setOnClickListener((customRecycler1, itemView, item, index) -> {
                     if (onClickListener == null && item.getChild() != null) {
                         item.getChild().setAnchor(itemView).show();
                     } else if (onClickListener != null) {
@@ -130,7 +130,7 @@ public class CustomMenu {
                         }
                     }
                 })
-                .setOnLongClickListener((CustomRecycler.OnLongClickListener<MenuItem>) (customRecycler1, view, item, index) -> {
+                .setOnLongClickListener((customRecycler1, view, item, index) -> {
                     if (dismissAll_onLongClick) {
                         dismissAllOnClick = true;
                         dismissPopupWindow(item.getParent());
@@ -138,9 +138,14 @@ public class CustomMenu {
                 })
                 .addSubOnClickListener(R.id.popup_standardList_sub, (CustomRecycler.OnClickListener<MenuItem>) (customRecycler, itemView, item, index) -> {
                     item.getChild().setAnchor(itemView).show();
+                }, false)
+                .addSubOnClickListener(R.id.popup_standardList_sub_layout, (CustomRecycler.OnClickListener<MenuItem>) (customRecycler, itemView, item, index) -> {
+                    View popup_standardList_sub = itemView.findViewById(R.id.popup_standardList_sub);
+                    popup_standardList_sub.setPressed(true);
+                    popup_standardList_sub.callOnClick();
                 }, false);
 
-        popupWindow = Utility.showPopupWindow(context, anchor, customRecycler.generate());
+        popupWindow = Utility.showPopupWindow(context, anchor, customRecycler.generateRecyclerView());
         return this;
     }
 

@@ -75,9 +75,11 @@ public class CustomRecycler<T>{
     private GetActiveObjectList<T> getActiveObjectList;
     private boolean hideOverscroll;
     private MyAdapter mAdapter;
-    private boolean dragAndDrop = false;
+//    private boolean dragAndDrop = false;
     private OnDragAndDrop<T> onDragAndDrop;
     private int dividerMargin;
+    private OnSwiped<T> onSwiped;
+    private Pair<Boolean,Boolean> leftRightSwipe_pair;
 
 
     public CustomRecycler(Context context) {
@@ -120,7 +122,7 @@ public class CustomRecycler<T>{
         return this;
     }
 
-    public List getObjectList() {
+    public List<T> getObjectList() {
         return objectList;
     }
 
@@ -232,12 +234,29 @@ public class CustomRecycler<T>{
 
     public CustomRecycler<T> enableDragAndDrop(OnDragAndDrop<T> onDragAndDrop) {
         this.onDragAndDrop = onDragAndDrop;
-        dragAndDrop = true;
+//        dragAndDrop = true;
         return this;
     }
 
-    private void applyDragAndDrop() {
-        ItemTouchHelper.Callback itemTouchHelperCallback = new ItemTouchHelper.SimpleCallback(ItemTouchHelper.UP | ItemTouchHelper.DOWN, 0) {
+    public CustomRecycler<T> enableSwiping(OnSwiped<T> onSwiped, boolean start, boolean end) {
+        this.onSwiped = onSwiped;
+        this.leftRightSwipe_pair = new Pair<>(start, end);
+//        dragAndDrop = true;
+        return this;
+    }
+
+    private void applyTouchActions() {
+        int dragFlags = 0;
+        int swipeFlags = 0;
+        if (onDragAndDrop != null)
+            dragFlags = ItemTouchHelper.UP | ItemTouchHelper.DOWN;
+        if (onSwiped != null) {
+            if (leftRightSwipe_pair.first)
+                swipeFlags += ItemTouchHelper.START;
+            if (leftRightSwipe_pair.second)
+                swipeFlags += ItemTouchHelper.END;
+        }
+        ItemTouchHelper.Callback itemTouchHelperCallback = new ItemTouchHelper.SimpleCallback(dragFlags, swipeFlags) {
             @Override
             public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder dragged, @NonNull RecyclerView.ViewHolder target) {
 
@@ -254,15 +273,24 @@ public class CustomRecycler<T>{
 
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
-                String BREAKPOINT = null;
+                int index = viewHolder.getAdapterPosition();
+
+                T t = objectList.remove(index);
+//                mAdapter.notifyItemRangeChanged(index, 1);
+                mAdapter.notifyDataSetChanged();
+                onSwiped.runSwyped(objectList, direction, t);
             }
         };
         ItemTouchHelper helper = new ItemTouchHelper(itemTouchHelperCallback);
         helper.attachToRecyclerView(recycler);
     }
 
-    public interface OnDragAndDrop<O> {
-        void runOnDragAndDrop(List<O> objectList);
+    public interface OnDragAndDrop<T> {
+        void runOnDragAndDrop(List<T> objectList);
+    }
+
+    public interface OnSwiped<T> {
+        void runSwyped(List<T> objectList, int direction, T t);
     }
 
     public CustomRecycler<T> setDividerMargin_inDp(int dividerMargin_inDp) {
@@ -270,14 +298,13 @@ public class CustomRecycler<T>{
         return this;
     }
 
+
     //  ----- Adapter ----->
     public class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> {
-        private List dataset;
-        private List<ViewHolder> viewHolders = new ArrayList<>();
-
+        private List dataSet;
 
         public MyAdapter(List list) {
-            dataset = list;
+            dataSet = list;
         }
 
         @Override
@@ -291,7 +318,7 @@ public class CustomRecycler<T>{
                     View view = v.findViewById(entry.getKey());
                     view.setOnClickListener(view2 -> {
                         int index = recycler.getChildAdapterPosition(v);
-                        entry.getValue().first.runOnClickListener(CustomRecycler.this, v, dataset.get(index), index);
+                        entry.getValue().first.runOnClickListener(CustomRecycler.this, v, dataSet.get(index), index);
                         view.setFocusable(true);
                         view.setClickable(true);
                         if (entry.getValue().second) {
@@ -308,7 +335,7 @@ public class CustomRecycler<T>{
                     View view = v.findViewById(entry.getKey());
                     view.setOnLongClickListener(view2 -> {
                         int index = recycler.getChildAdapterPosition(v);
-                        entry.getValue().first.runOnClickListener(CustomRecycler.this, v, dataset.get(index), index);
+                        entry.getValue().first.runOnClickListener(CustomRecycler.this, v, dataSet.get(index), index);
                         view.setFocusable(true);
                         view.setClickable(true);
                         if (entry.getValue().second) {
@@ -342,59 +369,37 @@ public class CustomRecycler<T>{
 
             ViewHolder viewHolder = new ViewHolder(v);
 
-            viewHolders.add(viewHolder);
-
             return viewHolder;
         }
 
         @Override
         public void onBindViewHolder(ViewHolder viewHolder, int position) {
-            setItemContent.runSetCellContent(viewHolder.itemView, (T) dataset.get(position));
+            setItemContent.runSetCellContent(viewHolder.itemView, (T) dataSet.get(position));
         }
 
         @Override
         public int getItemCount() {
-            return dataset.size();
+            return dataSet.size();
         }
 
         public void removeItemAt(int index) {
-            if (dataset.isEmpty())
+            if (dataSet.isEmpty())
                 return;
-            dataset.remove(index);
+            dataSet.remove(index);
 //                notifyDataSetChanged();
             notifyItemRemoved(index);
-            notifyItemRangeChanged(index, dataset.size());
-        }
-
-        public void addItem(Object object, int index) {
-            dataset.add(index, object);
-            notifyItemInserted(index);
-            notifyItemRangeChanged(index, dataset.size());
-        }
-
-        public void addItem(Object object) {
-            dataset.add(object);
-            notifyItemInserted(dataset.size() - 1);
-            notifyItemRangeChanged(dataset.size() - 1, dataset.size());
-        }
-
-        public List<ViewHolder> getViewHolders() {
-            return viewHolders;
+            notifyItemRangeChanged(index, dataSet.size());
         }
 
         public class ViewHolder extends RecyclerView.ViewHolder {
-//            Map<Integer, View> viewMap = new HashMap<>();
 
             public ViewHolder(View v) {
                 super(v);
-//                for (Integer id : viewIdList) {
-//                    viewMap.put(id, v.findViewById(id));
-//                }
             }
         }
 
-        public List getDataset() {
-            return dataset;
+        public List getDataSet() {
+            return dataSet;
         }
     }
     //  <----- Adapter -----
@@ -402,16 +407,16 @@ public class CustomRecycler<T>{
 
     //  ----- Generate ----->
     public Pair<CustomRecycler, RecyclerView> generatePair() {
-        RecyclerView recyclerView = generate();
+        RecyclerView recyclerView = generateRecyclerView();
         return new Pair<>(this, recyclerView);
     }
 
-    public CustomRecycler<T> generateCustomRecycler() {
-        this.recycler = generate();
+    public CustomRecycler<T> generate() {
+        this.recycler = generateRecyclerView();
         return this;
     }
 
-    public RecyclerView generate() {
+    public RecyclerView generateRecyclerView() {
         if (this.recycler == null)
             recycler = new RecyclerView(context);
 
@@ -461,16 +466,9 @@ public class CustomRecycler<T>{
         if (hideOverscroll)
             recycler.setOverScrollMode(View.OVER_SCROLL_NEVER);
 
-        if (dragAndDrop)
-            applyDragAndDrop();
+        if (onDragAndDrop != null || onSwiped != null)
+            applyTouchActions();
 
-        return recycler;
-    }
-
-    public RecyclerView update() {
-        if (useActiveObjectList)
-            objectList.addAll(getActiveObjectList.runGetActiveObjectList());
-        mAdapter.notifyDataSetChanged();
         return recycler;
     }
 
@@ -483,15 +481,17 @@ public class CustomRecycler<T>{
         return recycler;
     }
 
-    public RecyclerView reload(List objectList) {
-        mAdapter.dataset = objectList;
+    public RecyclerView reload(List<T> objectList) {
+        mAdapter.dataSet = objectList;
         mAdapter.notifyDataSetChanged();
         return recycler;
     }
 
     public RecyclerView update(Integer... index) {
-        if (useActiveObjectList)
+        if (useActiveObjectList) {
+            objectList.clear();
             objectList.addAll(getActiveObjectList.runGetActiveObjectList());
+        }
         Arrays.asList(index).forEach(mAdapter::notifyItemChanged);
         return recycler;
     }
@@ -500,7 +500,7 @@ public class CustomRecycler<T>{
     public RecyclerView reloadNew() {
         mAdapter = new MyAdapter(objectList);
         this.recycler.setAdapter(mAdapter);
-        generate();
+        generateRecyclerView();
         return recycler;
     }
     //  <----- Generate -----

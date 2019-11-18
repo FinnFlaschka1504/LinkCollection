@@ -21,6 +21,7 @@ import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
+import com.maxMustermannGeheim.linkcollection.Utilitys.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
 import java.text.SimpleDateFormat;
@@ -198,7 +199,7 @@ public class JokeActivity extends AppCompatActivity {
                     addOrEditDialog[0] = showEditOrNewDialog(object);
                 })
                 .hideDivider()
-                .generateCustomRecycler();
+                .generate();
     }
 
     private List<Joke> filterList(ArrayList<Joke> allJokeList) {
@@ -266,28 +267,17 @@ public class JokeActivity extends AppCompatActivity {
                         return;
                     }
                     String content = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddJoke_punchLine)).getText().toString().trim();
-//
-//                    if (content.equals("")){
-//                        CustomDialog.Builder(this)
-//                                .setTitle("Ohne Inhalt speichern?")
-//                                .setText("Möchtest du wirklich ohne einen Inhalt speichern")
-//                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
-//                                .addButton(CustomDialog.YES_BUTTON, (customDialog1, dialog1) ->
-//                                        saveJoke(dialog, titel, content, newJoke, joke))
-//                                .show();
-//                    }
-//                    else
                     saveJoke(customDialog, titel, content, newJoke, joke);
 
                 }, false)
+                .disableLastAddedButton()
                 .setSetViewContent((customDialog, view) -> {
+                    new Helpers.TextInputHelper().defaultDialogValidation(customDialog).addValidator(view.findViewById(R.id.dialog_editOrAddJoke_titel_layout));
                     if (newJoke[0] != null) {
                         ((EditText) view.findViewById(R.id.dialog_editOrAddJoke_Titel)).setText(newJoke[0].getName());
                         ((EditText) view.findViewById(R.id.dialog_editOrAddJoke_punchLine)).setText(joke.getPunchLine());
                         ((TextView) view.findViewById(R.id.dialog_editOrAddJoke_categories)).setText(String.join(", ", categoriesNames));
                         view.findViewById(R.id.dialog_editOrAddJoke_categories).setSelected(true);
-//                        ((TextView) view.findViewById(R.id.dialog_editOrAddJoke_sources)).setText(String.join(", ", sourcesNames));
-//                        view.findViewById(R.id.dialog_editOrAddJoke_sources).setSelected(true);
                         ((RatingBar) view.findViewById(R.id.dialog_editOrAddJoke_rating)).setRating(newJoke[0].getRating());
                     }
                     else
@@ -594,7 +584,7 @@ public class JokeActivity extends AppCompatActivity {
 //                                dialog_sources_url.getEditText().setText(stringList.get(1));
 //                                currentSource[0] = stringList;
 //                            })
-//                            .generateCustomRecycler();
+//                            .generate();
 //
 //                    view.findViewById(R.id.dialog_sources_delete).setOnClickListener(v -> {
 //                        CustomDialog.Builder(this)

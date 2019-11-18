@@ -44,6 +44,7 @@ import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
+import com.maxMustermannGeheim.linkcollection.Utilitys.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
 import java.text.SimpleDateFormat;
@@ -251,7 +252,7 @@ public class OweActivity extends AppCompatActivity {
                     addOrEditDialog[0] = showEditOrNewDialog(object);
                 })
                 .hideDivider()
-                .generateCustomRecycler();
+                .generate();
     }
 
     private List<Owe> filterList(ArrayList<Owe> allOweList) {
@@ -348,7 +349,9 @@ public class OweActivity extends AppCompatActivity {
                   saveOwe(customDialog, newOwe, owe);
 
                 }, false)
+                .disableLastAddedButton()
                 .setSetViewContent((customDialog, view) -> {
+                    new Helpers.TextInputHelper().defaultDialogValidation(customDialog).addValidator(view.findViewById(R.id.dialog_editOrAdd_owe_Title_layout));
                     if (newOwe[0] != null) {
                         ((EditText) view.findViewById(R.id.dialog_editOrAdd_owe_Title)).setText(newOwe[0].getName());
                         ((EditText) view.findViewById(R.id.dialog_editOrAdd_owe_description)).setText(owe.getDescription());
@@ -736,7 +739,7 @@ public class OweActivity extends AppCompatActivity {
                                 dialog_items_amount.getEditText().setText(String.valueOf(item.getAmount()));
                                 currentItem[0] = item;
                             })
-                            .generateCustomRecycler();
+                            .generate();
 
                     view.findViewById(R.id.dialog_items_delete).setOnClickListener(v -> {
                         CustomDialog.Builder(this)
@@ -972,14 +975,14 @@ public class OweActivity extends AppCompatActivity {
 //                                                    .putExtra(EXTRA_OPEN, Boolean.valueOf((boolean) o)), MainActivity.START_OWE);
 //                                        });
 //
-//                                Utility.showPopupWindow(context, itemView, subRecycler.generate());
+//                                Utility.showPopupWindow(context, itemView, subRecycler.generateRecyclerView());
 //
 //                            }, false);
-//                            Utility.showPopupWindow(context, itemView0, recycler.generate());
+//                            Utility.showPopupWindow(context, itemView0, recycler.generateRecyclerView());
 //
 //                });
 //
-//        Utility.showPopupWindow(context, anchor.findViewById(R.id.main_owe_filter_label), baseRecycler.generate());
+//        Utility.showPopupWindow(context, anchor.findViewById(R.id.main_owe_filter_label), baseRecycler.generateRecyclerView());
 //    }
 
     public static void showTradeOffDialog(AppCompatActivity activity, View view) {
@@ -1061,7 +1064,7 @@ public class OweActivity extends AppCompatActivity {
 
         tradeOff_customDialog
                 .setTitle("Ausgleiche Verfügbar Für")
-                .setView(tradeOff_customRecycler.generate())
+                .setView(tradeOff_customRecycler.generateRecyclerView())
                 .show();
 //        Utility.showPopupWindow(activity, view.findViewById(R.id.main_owe_tradeOff_label), tradeOff_customRecycler);
     }

@@ -258,7 +258,10 @@ public class Settings extends AppCompatActivity {
                 .removeLastDivider()
                 .setOnClickListener((customRecycler, itemView, space, index) -> space.showSettingsDialog(this))
                 .setDividerMargin_inDp(16)
-                .generateCustomRecycler();
+                .enableSwiping((objectList, direction, space) -> {
+                    Toast.makeText(this, space.getPlural(), Toast.LENGTH_SHORT).show();
+                }, true, false)
+                .generate();
 
 
         settings_others_databaseCode.setText(Database.databaseCode);
@@ -319,7 +322,7 @@ public class Settings extends AppCompatActivity {
                                 setResult(RESULT_OK);
                             })
                             .setDividerMargin_inDp(16)
-                            .generate())
+                            .generateRecyclerView())
                     .setOnDialogDismiss(dialog -> updateSpaceStatusSettings())
                     .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
                     .show();

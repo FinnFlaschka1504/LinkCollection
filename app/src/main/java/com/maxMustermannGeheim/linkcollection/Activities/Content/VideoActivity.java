@@ -12,6 +12,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewStub;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -20,16 +22,22 @@ import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
@@ -37,6 +45,11 @@ import com.maxMustermannGeheim.linkcollection.Utilitys.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 import com.mikhaellopez.lazydatepicker.LazyDatePicker;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,7 +59,9 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
@@ -360,7 +375,7 @@ public class VideoActivity extends AppCompatActivity {
                     addOrEditDialog[0] = showEditOrNewDialog(object);
                 })
                 .hideDivider()
-                .generateCustomRecycler();
+                .generate();
     }
 
     private void reLoadVideoRecycler() {
@@ -449,16 +464,9 @@ public class VideoActivity extends AppCompatActivity {
         setResult(RESULT_OK);
 
         final Video[] video = {(Video) object};
-        List<String> darstellerNames = new ArrayList<>();
-        List<String> studioNames = new ArrayList<>();
-        List<String> genreNames = new ArrayList<>();
         if (video[0] != null) {
             video[0] = ((Video) object).cloneVideo();
-            video[0].getDarstellerList().forEach(uuid -> darstellerNames.add(database.darstellerMap.get(uuid).getName()));
-            video[0].getStudioList().forEach(uuid -> studioNames.add(database.studioMap.get(uuid).getName()));
-            video[0].getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
         }
-        Helpers.TextInputHelper inputHelper = new Helpers.TextInputHelper(null);
         CustomDialog returnDialog =  CustomDialog.Builder(this)
                 .setTitle(object == null ? "Neu: " + singular : singular + " Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
@@ -488,14 +496,20 @@ public class VideoActivity extends AppCompatActivity {
                 .disableLastAddedButton()
                 .setSetViewContent((customDialog, view) -> {
                     TextInputLayout dialog_editOrAddVideo_Titel_layout = view.findViewById(R.id.dialog_editOrAddVideo_Titel_layout);
-                    inputHelper.defaultDialogValidation(customDialog).addValidator(dialog_editOrAddVideo_Titel_layout);
+                    new Helpers.TextInputHelper().defaultDialogValidation(customDialog).addValidator(dialog_editOrAddVideo_Titel_layout)
+                            .addActionListener(dialog_editOrAddVideo_Titel_layout, (textInputHelper, textInputLayout, actionId, text) -> {
+                                apiRequest(text, customDialog, video[0]);
+                            }, Helpers.TextInputHelper.IME_ACTION.SEARCH);
                     if (video[0] != null) {
-                        ((TextInputEditText) view.findViewById(R.id.dialog_editOrAddVideo_Titel)).setText(video[0].getName());
-                        ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_Darsteller)).setText(String.join(", ", darstellerNames));
+                        ((AutoCompleteTextView) view.findViewById(R.id.dialog_editOrAddVideo_Titel)).setText(video[0].getName());
+                        ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_Darsteller)).setText(
+                                video[0].getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                         view.findViewById(R.id.dialog_editOrAddVideo_Darsteller).setSelected(true);
-                        ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_Studio)).setText(String.join(", ", studioNames));
+                        ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_Studio)).setText(
+                                video[0].getStudioList().stream().map(uuid -> database.studioMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                         view.findViewById(R.id.dialog_editOrAddVideo_Studio).setSelected(true);
-                        ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_Genre)).setText(String.join(", ", genreNames));
+                        ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_Genre)).setText(
+                                video[0].getGenreList().stream().map(uuid -> database.genreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                         view.findViewById(R.id.dialog_editOrAddVideo_Genre).setSelected(true);
                         ((EditText) view.findViewById(R.id.dialog_editOrAddVideo_Url)).setText(video[0].getUrl());
                         if (video[0].getRelease() != null)
@@ -514,60 +528,84 @@ public class VideoActivity extends AppCompatActivity {
                             Utility.showEditItemDialog(this, addOrEditDialog, video[0] == null ? null : video[0].getStudioList(), video[0], CategoriesActivity.CATEGORIES.STUDIOS ));
                     view.findViewById(R.id.dialog_editOrAddVideo_editGenre).setOnClickListener(view1 ->
                             Utility.showEditItemDialog(this, addOrEditDialog, video[0] == null ? null : video[0].getGenreList(), video[0], CategoriesActivity.CATEGORIES.GENRE));
-//                    view.findViewById(R.id.dialog_editOrAddVideo_releasePicker).setOnClickListener(view1 -> {
-//                        SlyCalendarDialog slyCalendarDialog = new SlyCalendarDialog();
-//                        slyCalendarDialog
-//                                .setStartDate(video[0].getRelease())
-//                                .setHeaderColor(getColor(R.color.colorPrimary))
-//                                .setTextColor(getColor(R.color.colorText))
-//                                .setSelectedColor(getColor(R.color.colorPrimary))
-//                                .setBackgroundColor(getColor(R.color.colorTileBackground))
-//                                .setSelectedTextColor(getColor(R.color.colorTileBackground))
-////                                .setHeaderTextColor(getColor(R.color.colorText))
-//                                .setCallback(new SlyCalendarDialog.Callback() {
-//                                    @Override
-//                                    public void onCancelled() {
-//
-//                                    }
-//
-//                                    @Override
-//                                    public void onDataSelected(Calendar firstDate, Calendar secondDate, int hours, int minutes) {
-//                                        if (firstDate == null) return;
-//
-//                                        video[0].setRelease(Utility.removeTime(firstDate.getTime()));
-//                                        ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(video[0].getRelease()));
-//
-//                                    }
-//                                })
-//                                .show(getSupportFragmentManager(), "TAG_SLYCALENDAR");
-//                        String BREAKPOINT = null;
-//                    });
-//                    LazyDatePicker lazyDatePicker = view.findViewById(R.id.dialog_editOrAddVideo_datePicker);
-//                    lazyDatePicker.setOnDatePickListener(dateSelected -> video[0].setRelease(dateSelected));
-//                    lazyDatePicker.setOnDateSelectedListener(dateSelected -> video[0].setRelease(dateSelected));
                 })
-//                .setOnDialogDismiss(customDialog -> {
-//                    Utility.changeWindowKeyboard(customDialog.getDialog().getWindow(), false);
-//                    Utility.changeWindowKeyboard(this, customDialog.getDialog().findViewById(R.id.dialog_editOrAddVideo_datePicker), false);
-//                })
                 .show();
-//        DialogInterface.OnKeyListener keylistener = (dialog, keyCode, KEvent) -> {
-//            int keyaction = KEvent.getAction();
-//
-//            if(keyaction == KeyEvent.ACTION_DOWN)
-//            {
-//                int keycode = KEvent.getKeyCode();
-//                int keyunicode = KEvent.getUnicodeChar(KEvent.getMetaState() );
-//                char character = (char) keyunicode;
-////                    if(keycode== KeyCode.Enter){
-////
-////
-////                    }
-//            }
-//            return false;
-//        };
-//        returnDialog.setOnKeyListener(keylistener);
         return returnDialog;
+    }
+
+    private void apiRequest(String queue, CustomDialog customDialog, Video video) {
+        if (!Utility.isOnline(this))
+            return;
+
+        String requestUrl = "https://api.themoviedb.org/3/search/movie?api_key=09e015a2106437cbc33bf79eb512b32d&language=de&query=" +
+                queue +
+                "&page=1&include_adult=true";
+        RequestQueue requestQueue = Volley.newRequestQueue(this);
+
+        Toast.makeText(this, "Einen Moment bitte..", Toast.LENGTH_SHORT).show();
+
+        CustomList<Pair<String, JSONObject>> jsonObjectList = new CustomList<>();
+//        try {
+//            JSONObject jsonObject = new JSONObject("{\"page\":1,\"total_results\":16,\"total_pages\":1,\"results\":[{\"popularity\":46.912,\"id\":299534,\"video\":false,\"vote_count\":10216,\"vote_average\":8.3,\"title\":\"Avengers: Endgame\",\"release_date\":\"2019-04-24\",\"original_language\":\"en\",\"original_title\":\"Avengers: Endgame\",\"genre_ids\":[12,878,28],\"backdrop_path\":\"\\/7RyHsO4yDXtBv1zUU3mTpHeQ0d5.jpg\",\"adult\":false,\"overview\":\"Thanos hat also tatsächlich Wort gehalten, seinen Plan in die Tat umgesetzt und die Hälfte allen Lebens im Universum ausgelöscht. Die Avengers? Machtlos. Iron Man und Nebula sitzen auf dem Planeten Titan fest, während auf der Erde absolutes Chaos herrscht. Doch dann finden Captain America und die anderen überlebenden Helden auf der Erde heraus, dass Nick Fury vor den verheerenden Ereignissen gerade noch ein Notsignal absetzen konnte, um Verstärkung auf den Plan zu rufen. Die Superhelden-Gemeinschaft bekommt mit Captain Marvel kurzerhand tatkräftige Unterstützung im Kampf gegen ihren vermeintlich übermächtigen Widersacher. Und dann ist da auch noch Ant-Man, der wie aus dem Nichts auftaucht und sich der Truppe erneut anschließt, um die ganze Sache womöglich doch noch zu einem guten Ende zu bringen...\",\"poster_path\":\"\\/mrh5A3uIE9wDDzPSiBe70YSHvrK.jpg\"},{\"popularity\":8.698,\"vote_count\":190,\"video\":false,\"poster_path\":\"\\/fmDt68Pj9OiR3pfvNL9qkuhKvi2.jpg\",\"id\":12211,\"adult\":false,\"backdrop_path\":\"\\/xYdzbB3TksChZLuZ9qq7iq5fFux.jpg\",\"original_language\":\"en\",\"original_title\":\"Highlander: Endgame\",\"genre_ids\":[28,14],\"title\":\"Highlander: Endgame\",\"vote_average\":4.6,\"overview\":\"Heute: Auf der Suche nach seinem Vetter Connor MacLeod findet der unsterbliche Highlander Duncan MacLeod das geheime Refugium. Hier werden Unsterbliche, die des Lebens müde geworden sind, in einen künstlichen Schlaf versetzt. Das Refugium ist auch dafür da, dass der Kampf der Unsterblichen um die Weltherrschaft nie ein Ende finden kann, denn solange es noch mehr als einen gibt ist nichts entschieden. Auch darum ist der Standort des Refugiums geheim. Doch der kaltblütigste Unsterbliche hat es gefunden, zerstört, seine \\\"Einwohner\\\" geköpft. Nur Connor MacLeod hat er laufen lassen, nicht um ihn zu verschonen, sondern um sich an ihm zu rächen...\",\"release_date\":\"2000-09-01\"},{\"popularity\":3.429,\"id\":15102,\"video\":false,\"vote_count\":24,\"vote_average\":6.2,\"title\":\"Endgame\",\"release_date\":\"2009-01-18\",\"original_language\":\"en\",\"original_title\":\"Endgame\",\"genre_ids\":[80,18],\"backdrop_path\":\"\\/mVW8eCgXuWKHcBL9tRxboHtKNi.jpg\",\"adult\":false,\"overview\":\"Im Jahr 1985 hatten viele jede Hoffnung auf Frieden in Südafrika fast aufgegeben. Das weiße Apartheid-Regime wurde zunehmend brutaler bei den Versuchen, die schwarze Bevölkerung zu kontrollieren. Die Widerstandsbewegung wurde als Folge der Weigerung der Regierung, Nelson Mandela, Botschafter der friedlichen Opposition frei zu lassen zunehmend militant und militärisch. Das System der Apartheid war offensichtlich am Ende. Alles, was es noch mit dessen Vertretern zu besprechen gab, waren die Bedingungen, unter denen die Apartheid ein für alle Mal begraben sein würde.\",\"poster_path\":\"\\/btRzeSEX2KptiBFvfzXF3amutDK.jpg\"},{\"popularity\":8.098,\"id\":41135,\"video\":false,\"vote_count\":98,\"vote_average\":5.2,\"title\":\"Operation: Endgame\",\"release_date\":\"2010-07-20\",\"original_language\":\"en\",\"original_title\":\"Operation: Endgame\",\"genre_ids\":[12,28,35,53],\"backdrop_path\":\"\\/3bTXS5nwn1Qy49NZbvLIUZ0a5xo.jpg\",\"adult\":false,\"overview\":\"Zwei rivalisierende Teams von Regierungs-Agenten werden in einer geheimen Anlage trainert. Die Killer werden alle mit Decknamen aus einem Tarot-Kartenset benannt. Als “Der Narr” an seinem ersten Tag dort ankommt, stellt sich gleich schon heraus, dass der Boss unter mysteriösen Umständen umgebracht wurde. Nun muss der Mörder gefunden werden, bevor der ganze Laden hochgeht.\",\"poster_path\":\"\\/qYEcPpNbqSjlVF5qJIj2AmbFapp.jpg\"},{\"popularity\":7.312,\"id\":400605,\"video\":false,\"vote_count\":94,\"vote_average\":4.9,\"title\":\"Dead Rising: Endgame\",\"release_date\":\"2016-06-20\",\"original_language\":\"en\",\"original_title\":\"Dead Rising: Endgame\",\"genre_ids\":[28,27],\"backdrop_path\":\"\\/23KUOxHUD9oI0eesmgFNWWOnMcV.jpg\",\"adult\":false,\"overview\":\"Nachdem er den blutrünstigen Zombie-Horden von East Mission City entkommen ist, setzt der investigative Reporter Chase Carter alles daran, die Regierungsverschwörung öffentlich zu machen, die überhaupt erst zur Verbreitung des Zombie-Virus‘ geführt hat. Doch dazu muss er in die abgeriegelte und todbringende Quarantänezone zurückkehren. Dort bekommt er es aber nicht nur mit den gefährlichen Untoten, sondern auch mit dem gnadenlosen General Lyons zu tun, der die Beteiligung der Regierung und des US-Militärs an der Zombie-Seuche um jeden Preis vertuschen will und dafür auch über Leichen geht. Gemeinsam mit seinen Verbündeten muss sich Chase einmal mehr seinen blutigen Weg durch Zombies und Lügen bahnen, um schließlich die Wahrheit ans Licht zu bringen.\",\"poster_path\":\"\\/yWp0xCKFl2IGBsvyYR7GmI7VUdE.jpg\"},{\"popularity\":2.303,\"id\":51491,\"video\":false,\"vote_count\":8,\"vote_average\":4.8,\"title\":\"Endgame\",\"release_date\":\"2001-01-01\",\"original_language\":\"en\",\"original_title\":\"Endgame\",\"genre_ids\":[80,18,53],\"backdrop_path\":\"\\/9ZscJdBhYb5RWBG0qsJD3Cy07oH.jpg\",\"adult\":false,\"overview\":\"\",\"poster_path\":\"\\/52zpNbVVQpWem8rqHYaMWQjLB34.jpg\"},{\"popularity\":2.898,\"id\":28850,\"video\":false,\"vote_count\":15,\"vote_average\":5.3,\"title\":\"Endgame - Das letzte Spiel mit dem Tod\",\"release_date\":\"1983-11-05\",\"original_language\":\"it\",\"original_title\":\"Endgame - Bronx lotta finale\",\"genre_ids\":[878],\"backdrop_path\":\"\\/1jO21YbiYN7J4znNLZhgzdYmDcY.jpg\",\"adult\":false,\"overview\":\"Nach einem Atomkrieg ist die Erde verwüstet. Durch die Strahlung ist eine neue Menschenrasse entstanden: die Mutanten. Diese werden von den „normalen“ Menschen erbarmungslos gejagt. Um das Volk bei Laune zu halten, haben die neuen Diktatoren das „Endgame“ geschaffen, einen blutigen Gladiatorenkampf, bei dem nur der Stärkste überlebt. Bei einem dieser Kämpfe trifft der Favorit und mehrfache Sieger Shannon auf die hübsche Mutantin Lilith, die ihn bittet, sie und ihre Freunde aus der Stadt zu bringen. Nach anfänglichem Zögern willigt Shannon ein, denn Lilith verspricht ihm 50 Kg Gold als Belohnung. Zusammen mit einigen anderen unerschrockenen Kämpfern macht sich der Trupp auf den gefahrvollen Weg aus der Stadt.\",\"poster_path\":\"\\/97CnaUf0w8cXY4hkLyoYQzSVoF5.jpg\"},{\"popularity\":1.296,\"id\":376651,\"video\":false,\"vote_count\":4,\"vote_average\":5.8,\"title\":\"Endgame\",\"release_date\":\"2015-09-25\",\"original_language\":\"en\",\"original_title\":\"Endgame\",\"genre_ids\":[18],\"backdrop_path\":\"\\/cTROgsyfGK4IhMgsMa1YmzeinpC.jpg\",\"adult\":false,\"overview\":\"\",\"poster_path\":\"\\/lU76TBQbYMFKinr8eNi1cS2zLI6.jpg\"},{\"popularity\":0.6,\"id\":233407,\"video\":false,\"vote_count\":0,\"vote_average\":0,\"title\":\"Endgame\",\"release_date\":\"1989-01-01\",\"original_language\":\"en\",\"original_title\":\"Endgame\",\"genre_ids\":[],\"backdrop_path\":null,\"adult\":false,\"overview\":\"\",\"poster_path\":null},{\"popularity\":0.981,\"id\":68139,\"video\":false,\"vote_count\":3,\"vote_average\":6.7,\"title\":\"Endgame\",\"release_date\":\"2000-09-10\",\"original_language\":\"en\",\"original_title\":\"Endgame\",\"genre_ids\":[35,18,10770],\"backdrop_path\":\"\\/z0gor69sJrkAi60NUCtAVR6QRlG.jpg\",\"adult\":false,\"overview\":\"\",\"poster_path\":\"\\/fyIdFwCFnUhe6O9H5gXo0ksiRvr.jpg\"},{\"popularity\":3.943,\"id\":18312,\"video\":false,\"vote_count\":17,\"vote_average\":6.9,\"title\":\"Endgame: Blueprint for Global Enslavement\",\"release_date\":\"2007-11-01\",\"original_language\":\"en\",\"original_title\":\"Endgame: Blueprint for Global Enslavement\",\"genre_ids\":[99],\"backdrop_path\":\"\\/t4WxWKzEQ4L6g86XmIy4oNqtDBi.jpg\",\"adult\":false,\"overview\":\"\",\"poster_path\":\"\\/4NI59KbXWE0AaefHD8CG9KyuTD1.jpg\"},{\"popularity\":1.037,\"id\":353227,\"video\":false,\"vote_count\":2,\"vote_average\":1,\"title\":\"Horror 102: Endgame\",\"release_date\":\"2004-09-04\",\"original_language\":\"en\",\"original_title\":\"Horror 102: Endgame\",\"genre_ids\":[27],\"backdrop_path\":null,\"adult\":false,\"overview\":\"\",\"poster_path\":\"\\/fvPYC0pqmTr94JfZn9Vs7taFdkI.jpg\"},{\"popularity\":0.6,\"id\":401828,\"video\":false,\"vote_count\":0,\"vote_average\":0,\"title\":\"Endgame\",\"release_date\":\"2015-01-01\",\"original_language\":\"en\",\"original_title\":\"Endgame\",\"genre_ids\":[16],\"backdrop_path\":null,\"adult\":false,\"overview\":\"\",\"poster_path\":\"\\/jntVd28HefooS3ykVMADPAWgY8Q.jpg\"},{\"popularity\":0.6,\"id\":320200,\"video\":false,\"vote_count\":2,\"vote_average\":7,\"title\":\"Endgame\",\"release_date\":\"1999-12-01\",\"original_language\":\"en\",\"original_title\":\"Endgame\",\"genre_ids\":[],\"backdrop_path\":null,\"adult\":false,\"overview\":\"\",\"poster_path\":\"\\/bcGuIgKwafDNfbUIaawuug7o1CM.jpg\"},{\"popularity\":0.6,\"id\":545817,\"video\":false,\"vote_count\":0,\"vote_average\":0,\"title\":\"Britten's Endgame\",\"release_date\":\"2015-01-01\",\"original_language\":\"en\",\"original_title\":\"Britten's Endgame\",\"genre_ids\":[99,10402],\"backdrop_path\":null,\"adult\":false,\"overview\":\"\",\"poster_path\":\"\\/j94qqELDTsOxYxXZOpNKYWhwzdh.jpg\"},{\"popularity\":5.87,\"id\":256740,\"video\":false,\"vote_count\":54,\"vote_average\":5.6,\"title\":\"Wicked Blood\",\"release_date\":\"2014-03-04\",\"original_language\":\"en\",\"original_title\":\"Wicked Blood\",\"genre_ids\":[28,18,53],\"backdrop_path\":\"\\/se6pj7NARpwviPNjPrrtyIxINvV.jpg\",\"adult\":false,\"overview\":\"Für Hannah Lee ist das kriminelle Baton Rouge alltägliche Umgebung. Dennoch ist auch sie nicht vor Gefahr gefeit, als ihre ältere Schwester Amber sich ausgerechnet in Wild Bill verliebt, einen Konkurrent des rücksichtslosen Onkels Frank. Und so muss Hannah noch so manche bittere Erfahrung in Sachen Blutsbande machen…\",\"poster_path\":\"\\/dR4gPntr3aQEl9jUvg7WsAuYqr.jpg\"}]}");
+//            JSONArray results = jsonObject.getJSONArray("results");
+//            for (int i = 0; i < results.length(); i++) {
+//                JSONObject object = results.getJSONObject(i);
+//
+//                jsonObjectList.add(new Pair<>(object.getString("title"), object));
+//
+////                new Video(object.getString("title"))
+////                        .setRelease(new SimpleDateFormat("yyyy-MM-dd").parse(object.getString("release_date")))
+//            }
+//        } catch (JSONException ignored) {
+//        }
+        AutoCompleteTextView dialog_editOrAddVideo_Titel = customDialog.findViewById(R.id.dialog_editOrAddVideo_Titel);
+
+        dialog_editOrAddVideo_Titel.setOnItemClickListener((parent, view2, position, id) -> {
+            JSONObject jsonObject = jsonObjectList.get(position).second;
+            try {
+                video.setRelease(new SimpleDateFormat("yyyy-MM-dd", Locale.GERMANY).parse(jsonObject.getString("release_date"))).setName(jsonObject.getString("original_title"));
+                JSONArray genre_ids = jsonObject.getJSONArray("genre_ids");
+                CustomList<Integer> integerList = new CustomList<>();
+                for (int i = 0; i < genre_ids.length(); i++) {
+                    integerList.add(genre_ids.getInt(i));
+                }
+                Map<Integer,String> idUuidMap = database.genreMap.values().stream().collect(Collectors.toMap(Genre::getTmdbGenreId, ParentClass::getUuid));
+
+                CustomList uuidList = integerList.map((Function<Integer, Object>) idUuidMap::get).filter(Objects::nonNull);
+                video.setGenreList(uuidList);
+                String BREAKPOINT = null;
+                customDialog.reloadView();
+            } catch (JSONException | ParseException ignored) {
+            }
+        });
+
+        JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {
+            JSONArray results;
+            try {
+                results = response.getJSONArray("results");
+                for (int i = 0; i < results.length(); i++) {
+                    JSONObject object = results.getJSONObject(i);
+
+                    String release = object.getString("release_date");
+                    if (!release.isEmpty())
+                        release= String.format(" (%s)", release.substring(0, 4));
+                    jsonObjectList.add(new Pair<>(object.getString("original_title") + release, object));
+                }
+
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, jsonObjectList
+                        .map(stringJSONObjectPair -> stringJSONObjectPair.first));
+
+                dialog_editOrAddVideo_Titel.setAdapter(adapter);
+                dialog_editOrAddVideo_Titel.showDropDown();
+            } catch (JSONException ignored) {
+            }
+
+        }, error -> {
+            Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
+        });
+
+        requestQueue.add(jsonArrayRequest);
+
     }
 
     private void saveVideo(CustomDialog dialog, Object object, String titel, String url, boolean checked, Video[] video) {
@@ -587,10 +625,13 @@ public class VideoActivity extends AppCompatActivity {
         videoNeu.setRelease(((LazyDatePicker) dialog.findViewById(R.id.dialog_editOrAddVideo_datePicker)).getDate());
 
         boolean addedYesterday = false;
+        boolean upcomming = false;
         if (checked)
             database.watchLaterList.add(videoNeu.getUuid());
-        else if (neuesVideo)
-            addedYesterday = videoNeu.addDate(new Date(), true);
+        else if (neuesVideo) {
+            if (!(upcomming = videoNeu.isUpcomming()))
+                addedYesterday = videoNeu.addDate(new Date(), true);
+        }
 
         database.videoMap.put(videoNeu.getUuid(), videoNeu);
         reLoadVideoRecycler();
@@ -603,7 +644,7 @@ public class VideoActivity extends AppCompatActivity {
 
         Database.saveAll();
 
-        Utility.showCenterdToast(this, singular + " gespeichert" + (addedYesterday ? "\nAutomatisch für gestern eingetragen" : ""));
+        Utility.showCenterdToast(this, singular + " gespeichert" + (addedYesterday ? "\nAutomatisch für gestern eingetragen" : upcomming ? "\n(Bevorstehend)" : ""));
 
         if (detailDialog != null)
             detailDialog.reloadView();

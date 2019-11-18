@@ -35,8 +35,7 @@
             <CheckBox
                 android:id="@+id/dialog_shareKnowledge_title_check"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:checked="true" />
+                android:layout_height="match_parent" />
         </LinearLayout>
 
         <LinearLayout
@@ -61,8 +60,7 @@
             <CheckBox
                 android:id="@+id/dialog_shareKnowledge_content_check"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:checked="true" />
+                android:layout_height="match_parent" />
 
         </LinearLayout>
 
@@ -87,8 +85,7 @@
             <CheckBox
                 android:id="@+id/dialog_shareKnowledge_categories_check"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true" />
+                android:layout_height="wrap_content" />
         </LinearLayout>
 
         <LinearLayout
@@ -113,8 +110,7 @@
             <CheckBox
                 android:id="@+id/dialog_shareKnowledge_sources_check"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true" />
+                android:layout_height="wrap_content" />
 
         </LinearLayout>
 

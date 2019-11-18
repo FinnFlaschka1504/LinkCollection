@@ -277,21 +277,20 @@ public class CategoriesActivity extends AppCompatActivity {
                             .setEdit(new CustomDialog.EditBuilder()
                                     .setText(parentClass.getName())
                                     .setHint("Name"))
-                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
-                            .addButton("Löschen", customDialog -> {
+                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                            .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
                                 CustomDialog.Builder(this)
                                         .setTitle("Löschen")
                                         .setText("Wirklich '" + item.first.getName() + "' löschen?")
                                         .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
                                         .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
-                                            customDialog1.dismiss();
+                                            customDialog.dismiss();
                                             removeCatigory(item);
                                         })
                                         .show();
                             }, false)
-                            .addButton("Abbrechen", customDialog -> {
-                            })
-                            .addButton("OK", customDialog -> {
+                            .alignPreviousButtonsLeft()
+                            .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
                                 if (!Utility.isOnline(this))
                                     return;
                                 item.first.setName(customDialog.getEditText());
@@ -300,7 +299,7 @@ public class CategoriesActivity extends AppCompatActivity {
                             })
                             .show();
                 })
-                .generateCustomRecycler();
+                .generate();
 
     }
 

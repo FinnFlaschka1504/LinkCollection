@@ -157,8 +157,8 @@ public class CustomDialog {
         return this;
     }
     //  <----- Getters & Setters -----
-    
-    
+
+
     //  ----- Interfaces ----->
     public interface OnClick {
         void runOnClick(CustomDialog customDialog);
@@ -172,7 +172,7 @@ public class CustomDialog {
         void runOnDialogDismiss(CustomDialog customDialog);
     }
     //  <----- Interfaces -----
-    
+
 
     //  ----- Builder ----->
     public static class EditBuilder {
@@ -241,8 +241,8 @@ public class CustomDialog {
 
     }
     //  <----- Builder -----
-    
-    
+
+
     //  ----- Convenience ----->
     public CustomDialog dismiss() {
     dialog.dismiss();
@@ -421,8 +421,8 @@ public class CustomDialog {
         return this;
     }
     //  <----- Buttons -----
-    
-    
+
+
     //  ----- Actions ----->
     public Dialog show_dialog() {
     show();
@@ -600,7 +600,7 @@ public class CustomDialog {
             textInputEditText.requestFocus();
             Utility.changeWindowKeyboard(dialog.getWindow(), true);
         }
-        textInputHelper.addActionListener(textInputLayout, (textInputHelper1, textInputLayout1, actionId) -> {
+        textInputHelper.addActionListener(textInputLayout, (textInputHelper1, textInputLayout1, actionId, text) -> {
             if (textInputHelper1.isValid() && finalButton != null)
                 finalButton.callOnClick();
         });

@@ -7,7 +7,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CustomList<E> extends ArrayList<E> {
 
@@ -35,13 +38,13 @@ public class CustomList<E> extends ArrayList<E> {
     public E getLast() {
         if (isEmpty())
             return null;
-        return get(size() - 1);
+        return get(- 1);
     }
 
     @Override
     public E get(int index) {
         if (index < 0)
-            return super.get(size() - index);
+            return super.get(size() + index);
         else
             return super.get(index);
     }
@@ -105,4 +108,17 @@ public class CustomList<E> extends ArrayList<E> {
         });
         return foundAt[0];
     }
+
+
+    //  ----- Stream ----->
+    public <R> CustomList<R> map(Function<? super E, ? extends R> mapper) {
+        return stream().map(mapper).collect(Collectors.toCollection(CustomList::new));
+    }
+
+    public CustomList<E> filter(Predicate<? super E> mapper) {
+        return stream().filter(mapper).collect(Collectors.toCollection(CustomList::new));
+    }
+
+
+    //  <----- Stream -----
 }

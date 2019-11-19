@@ -13,9 +13,12 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".Activities.Content.JokeActivity"
-            android:label="Witze"
+        <activity android:name=".Activities.Content.ShowActivity"
             android:parentActivityName=".Activities.Main.MainActivity"/>
+        <activity
+            android:name=".Activities.Content.JokeActivity"
+            android:label="Witze"
+            android:parentActivityName=".Activities.Main.MainActivity" />
         <activity
             android:name=".Activities.Content.OweActivity"
             android:label="Schulden"

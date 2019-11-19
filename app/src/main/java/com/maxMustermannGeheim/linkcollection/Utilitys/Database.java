@@ -20,6 +20,8 @@ import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Person;
+import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
+import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
@@ -51,15 +53,17 @@ public class Database {
     private static boolean syncDatabaseToContentMap = true;
 
 
-//  ----- Content deklaration ----->
+    //  ----- Content deklaration ----->
+    public static final String DATABASE_CODE = "DATABASE_CODE";
+    public static String databaseCode;
+
+
     public static final String VIDEOS = "VIDEOS";
     public static final String VIDEO_MAP = "VIDEO_MAP";
     public static final String STUDIO_MAP = "STUDIO_MAP";
     public static final String DARSTELLER_MAP = "DARSTELLER_MAP";
     public static final String GENRE_MAP = "GENRE_MAP";
     public static final String WATCH_LATER_LIST = "WATCH_LATER_LIST";
-    public static final String DATABASE_CODE = "DATABASE_CODE";
-    public static String databaseCode;
     public Map<String, Video> videoMap = new HashMap<>();
     public Map<String, Darsteller> darstellerMap = new HashMap<>();
     public Map<String, Studio> studioMap = new HashMap<>();
@@ -84,29 +88,40 @@ public class Database {
     public Map<String, Joke> jokeMap = new HashMap<>();
     public Map<String, JokeCategory> jokeCategoryMap = new HashMap<>();
 
+    public static final String SHOWS = "SHOWS";
+    public static final String SHOW_MAP = "SHOW_MAP";
+    public static final String SHOW_GENRE_MAP = "SHOW_GENRE_MAP";
+    public static final String SHOW_WATCH_LATER_LIST = "WATCH_LATER_LIST";
+    public Map<String, Show> showMap = new HashMap<>();
+    public Map<String, ShowGenre> showGenreMap = new HashMap<>();
+    public List<String> showWatchLaterList = new ArrayList<>();
 
     private List<Content> contentList;
     {
         Content databaseCode_content = new Content<String, String>(String.class, "databaseCode", DATABASE_CODE).setSaveOnline(false);
         contentList = Arrays.asList(
-                databaseCode_content
-                , new Content<Map,Video>(Video.class, videoMap, databaseCode_content, VIDEOS, VIDEO_MAP)
-                , new Content<Map,Studio>(Studio.class, studioMap, databaseCode_content, VIDEOS, STUDIO_MAP)
-                , new Content<Map,Darsteller>(Darsteller.class, darstellerMap, databaseCode_content, VIDEOS, DARSTELLER_MAP)
-                , new Content<Map,Genre>(Genre.class, genreMap, databaseCode_content, VIDEOS, GENRE_MAP)
-                , new Content<List,String>(String.class, watchLaterList, databaseCode_content, VIDEOS, WATCH_LATER_LIST)
+                databaseCode_content,
+                new Content<Map,Video>(Video.class, videoMap, databaseCode_content, VIDEOS, VIDEO_MAP),
+                new Content<Map,Studio>(Studio.class, studioMap, databaseCode_content, VIDEOS, STUDIO_MAP),
+                new Content<Map,Darsteller>(Darsteller.class, darstellerMap, databaseCode_content, VIDEOS, DARSTELLER_MAP),
+                new Content<Map,Genre>(Genre.class, genreMap, databaseCode_content, VIDEOS, GENRE_MAP),
+                new Content<List,String>(String.class, watchLaterList, databaseCode_content, VIDEOS, WATCH_LATER_LIST),
 
-                , new Content<Map, Knowledge>(Knowledge.class, knowledgeMap, databaseCode_content, KNOWLEDGE, KNOWLEDGE_MAP)
-                , new Content<Map, KnowledgeCategory>(KnowledgeCategory.class, knowledgeCategoryMap, databaseCode_content, KNOWLEDGE, KNOWLEDGE_CATEGORY_MAP)
+                new Content<Map, Knowledge>(Knowledge.class, knowledgeMap, databaseCode_content, KNOWLEDGE, KNOWLEDGE_MAP),
+                new Content<Map, KnowledgeCategory>(KnowledgeCategory.class, knowledgeCategoryMap, databaseCode_content, KNOWLEDGE, KNOWLEDGE_CATEGORY_MAP),
 
-                , new Content<Map, Owe>(Owe.class, oweMap, databaseCode_content, OWE, OWE_MAP)
-                , new Content<Map, Person>(Person.class, personMap, databaseCode_content, OWE, PERSON_MAP)
+                new Content<Map, Owe>(Owe.class, oweMap, databaseCode_content, OWE, OWE_MAP),
+                new Content<Map, Person>(Person.class, personMap, databaseCode_content, OWE, PERSON_MAP),
 
-                , new Content<Map, Joke>(Joke.class, jokeMap, databaseCode_content, JOKE, JOKE_MAP)
-                , new Content<Map, JokeCategory>(JokeCategory.class, jokeCategoryMap, databaseCode_content, JOKE, JOKE_CATEGORY_MAP)
+                new Content<Map, Joke>(Joke.class, jokeMap, databaseCode_content, JOKE, JOKE_MAP),
+                new Content<Map, JokeCategory>(JokeCategory.class, jokeCategoryMap, databaseCode_content, JOKE, JOKE_CATEGORY_MAP),
+
+                new Content<Map, Show>(Show.class, showMap, databaseCode_content, SHOWS, SHOW_MAP),
+                new Content<Map, ShowGenre>(ShowGenre.class, showGenreMap, databaseCode_content, SHOWS, SHOW_GENRE_MAP),
+                new Content<List,String>(String.class, showWatchLaterList, databaseCode_content, SHOWS, SHOW_WATCH_LATER_LIST)
         );
     }
-//  <----- Content deklaration -----
+    //  <----- Content deklaration -----
 
     private static Map<String, Content> contentMap = new HashMap<>();
     {for (Content content : contentList) contentMap.put(content.key, content);}

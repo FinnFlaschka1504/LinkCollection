@@ -175,22 +175,22 @@ public class CustomRecycler<T>{
         return this;
     }
 
-    public CustomRecycler<T> addSubOnClickListener(int viewId, OnClickListener onClickListener, boolean ripple) {
+    public CustomRecycler<T> addSubOnClickListener(int viewId, OnClickListener<T> onClickListener, boolean ripple) {
         idSubOnClickListenerMap.put(viewId, new Pair<>(onClickListener, ripple));
         return this;
     }
 
-    public CustomRecycler<T> addSubOnClickListener(int viewId, OnClickListener onClickListener) {
+    public CustomRecycler<T> addSubOnClickListener(int viewId, OnClickListener<T> onClickListener) {
         idSubOnClickListenerMap.put(viewId, new Pair<>(onClickListener, true));
         return this;
     }
 
-    public CustomRecycler<T> addSubOnLongClickListener(int viewId, OnClickListener onClickListener, boolean ripple) {
+    public CustomRecycler<T> addSubOnLongClickListener(int viewId, OnClickListener<T> onClickListener, boolean ripple) {
         idSubOnLongClickListenerMap.put(viewId, new Pair<>(onClickListener, ripple));
         return this;
     }
 
-    public CustomRecycler<T> addSubOnLongClickListener(int viewId, OnClickListener onClickListener) {
+    public CustomRecycler<T> addSubOnLongClickListener(int viewId, OnClickListener<T> onClickListener) {
         idSubOnLongClickListenerMap.put(viewId, new Pair<>(onClickListener, true));
         return this;
     }

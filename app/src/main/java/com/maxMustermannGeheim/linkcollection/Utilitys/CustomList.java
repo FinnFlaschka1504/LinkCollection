@@ -118,7 +118,5 @@ public class CustomList<E> extends ArrayList<E> {
     public CustomList<E> filter(Predicate<? super E> mapper) {
         return stream().filter(mapper).collect(Collectors.toCollection(CustomList::new));
     }
-
-
     //  <----- Stream -----
 }

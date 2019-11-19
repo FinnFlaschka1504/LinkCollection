@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
@@ -148,6 +149,14 @@ public class Settings extends AppCompatActivity {
                     database.videoMap.values().forEach(video -> dateSet.addAll(video.getDateList()));
                     ((TextView) view.findViewById(R.id.main_daysCount)).setText(String.valueOf(dateSet.size()));
                     ((TextView) view.findViewById(R.id.main_watchLaterCount)).setText(String.valueOf(database.watchLaterList.size()));
+                })
+                .setSettingsDialog(null));
+        allSpaces.add(new Space(context.getString(R.string.bottomMenu_show), context.getString(R.string.bottomMenu_shows)).setActivity(ShowActivity.class).setItemId(Space.SPACE_SHOW).setIconId(R.drawable.ic_shows).setFragmentLayoutId(R.layout.main_fragment_shows)
+                .setSetLayout((space, view) -> {
+                    ((TextView) view.findViewById(R.id.main_shows_label)).setText(space.getPlural());
+
+                    ((TextView) view.findViewById(R.id.main_shows_count)).setText(String.valueOf(database.showMap.size()));
+                    ((TextView) view.findViewById(R.id.main_shows_genreCount)).setText(String.valueOf(database.showGenreMap.size()));
                 })
                 .setSettingsDialog(null));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_knowledge), context.getString(R.string.bottomMenu_knowledge)).setActivity(KnowledgeActivity.class).setItemId(Space.SPACE_KNOWLEDGE).setIconId(R.drawable.ic_knowledge).setFragmentLayoutId(R.layout.main_fragment_knowledge)
@@ -335,6 +344,7 @@ public class Settings extends AppCompatActivity {
         public static final int SPACE_KNOWLEDGE = 2;
         public static final int SPACE_OWE = 3;
         public static final int SPACE_JOKE = 4;
+        public static final int SPACE_SHOW = 5;
 
         private String plural;
         private int itemId;

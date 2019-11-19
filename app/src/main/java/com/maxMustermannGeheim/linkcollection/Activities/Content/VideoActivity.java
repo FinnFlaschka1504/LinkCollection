@@ -523,11 +523,11 @@ public class VideoActivity extends AppCompatActivity {
 
 
                     view.findViewById(R.id.dialog_editOrAddVideo_editActor).setOnClickListener(view1 ->
-                            Utility.showEditItemDialog(this, addOrEditDialog, video[0] == null ? null : video[0].getDarstellerList(), video[0], CategoriesActivity.CATEGORIES.DARSTELLER));
+                            Utility.showEditItemDialog(this, addOrEditDialog[0], video[0] == null ? null : video[0].getDarstellerList(), video[0], CategoriesActivity.CATEGORIES.DARSTELLER));
                     view.findViewById(R.id.dialog_editOrAddVideo_editStudio).setOnClickListener(view1 ->
-                            Utility.showEditItemDialog(this, addOrEditDialog, video[0] == null ? null : video[0].getStudioList(), video[0], CategoriesActivity.CATEGORIES.STUDIOS ));
+                            Utility.showEditItemDialog(this, addOrEditDialog[0], video[0] == null ? null : video[0].getStudioList(), video[0], CategoriesActivity.CATEGORIES.STUDIOS ));
                     view.findViewById(R.id.dialog_editOrAddVideo_editGenre).setOnClickListener(view1 ->
-                            Utility.showEditItemDialog(this, addOrEditDialog, video[0] == null ? null : video[0].getGenreList(), video[0], CategoriesActivity.CATEGORIES.GENRE));
+                            Utility.showEditItemDialog(this, addOrEditDialog[0], video[0] == null ? null : video[0].getGenreList(), video[0], CategoriesActivity.CATEGORIES.GENRE));
                 })
                 .show();
         return returnDialog;
@@ -586,9 +586,12 @@ public class VideoActivity extends AppCompatActivity {
                 for (int i = 0; i < results.length(); i++) {
                     JSONObject object = results.getJSONObject(i);
 
-                    String release = object.getString("release_date");
-                    if (!release.isEmpty())
-                        release= String.format(" (%s)", release.substring(0, 4));
+                    String release = "";
+                    if (object.has("release_date")) {
+                        release = object.getString("release_date");
+                        if (!release.isEmpty())
+                            release = String.format(" (%s)", release.substring(0, 4));
+                    }
                     jsonObjectList.add(new Pair<>(object.getString("original_title") + release, object));
                 }
 

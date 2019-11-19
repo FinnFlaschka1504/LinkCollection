@@ -285,7 +285,7 @@ public class JokeActivity extends AppCompatActivity {
 
 
                     view.findViewById(R.id.dialog_editOrAddJoke_editCategories).setOnClickListener(view1 ->
-                            Utility.showEditItemDialog(this, addOrEditDialog, newJoke[0].getCategoryIdList(), newJoke[0], CategoriesActivity.CATEGORIES.JOKE_CATEGORIES));
+                            Utility.showEditItemDialog(this, addOrEditDialog[0], newJoke[0].getCategoryIdList(), newJoke[0], CategoriesActivity.CATEGORIES.JOKE_CATEGORIES));
                 })
                 .show();
         return returnDialog;

@@ -21,8 +21,10 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
@@ -40,7 +42,6 @@ public class MainActivity extends AppCompatActivity {
     public static final String EXTRA_CATEGORY = "EXTRA_CATEGORY";
     public static final String SETTING_LAST_OPEN_SPACE = "SETTING_LAST_OPEN_SPACE";
     public static final String ACTION_ADD = "ACTION_ADD";
-//    public static final String EXTRA_SPACE_NAMES = "EXTRA_SPACE_NAMES";
 
 
     public static final int START_VIDEOS = 1;
@@ -57,6 +58,9 @@ public class MainActivity extends AppCompatActivity {
     public static final int START_PERSON = 12;
     public static final int START_JOKE = 13;
     public static final int START_JOKE_CATEGORY = 14;
+    public static final int START_SHOW = 15;
+    public static final int START_SHOW_CATEGORY = 16;
+    public static final int START_SHOW_GENRE = 16;
 
     Database database;
     SharedPreferences mySPR_daten;
@@ -174,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
         for (Settings.Space space : Settings.Space.allSpaces) {
             if (!space.isShown()) continue;
 
-            if (count == 4)
+            if (count == 4 && Settings.Space.allSpaces.size() > 5)
                 break;
             bottomNavigationView.getMenu().add(Menu.NONE, space.getItemId(), Menu.NONE, space.getPlural()).setIcon(space.getIconId());
             count++;
@@ -348,6 +352,28 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(intent, START_JOKE_CATEGORY);
     }
 //  <----- Joke -----
+
+
+    //  ----- Shows ----->
+    public void openShowActivity(View view) {
+        if (!Database.isReady())
+            return;
+        startActivityForResult(new Intent(this, ShowActivity.class), START_SHOW);
+    }
+
+    public void openShowGenreActivity(View view) {
+        if (!Database.isReady())
+            return;
+        Intent intent = new Intent(this, CategoriesActivity.class);
+        intent.putExtra(EXTRA_CATEGORY, CategoriesActivity.CATEGORIES.SHOW_GENRES);
+        startActivityForResult(intent, START_SHOW_GENRE);
+    }
+
+    public void showLaterMenu_show(View view) {
+        ShowActivity.showLaterMenu(this, view);
+    }
+    //  <----- Shows -----
+
 
     public static void setCounts() {
         if (currentSpace != null)

@@ -3,6 +3,7 @@ package com.maxMustermannGeheim.linkcollection.Daten;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
+import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
@@ -44,6 +45,8 @@ public class ParentClass {
                 return new KnowledgeCategory(name);
             case JOKE_CATEGORIES:
                 return new JokeCategory(name);
+            case SHOW_GENRES:
+                return new ShowGenre(name);
         }
         return null;
     }

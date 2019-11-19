@@ -23,11 +23,13 @@ import androidx.core.content.ContextCompat;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
@@ -55,7 +57,8 @@ public class CategoriesActivity extends AppCompatActivity {
         VIDEO("Video", "Videos", VideoActivity.class), DARSTELLER("Darsteller", "Darsteller", VideoActivity.class)
         , STUDIOS("Studio", "Studios", VideoActivity.class), GENRE("Genre", "Genres", VideoActivity.class)
         , KNOWLEDGE_CATEGORIES("Kategorie", "Kategorien", KnowledgeActivity.class)
-        , PERSON("Person", "Personen", OweActivity.class) , JOKE_CATEGORIES("Witz", "Witze", JokeActivity.class);
+        , PERSON("Person", "Personen", OweActivity.class) , JOKE_CATEGORIES("Witz", "Witze", JokeActivity.class)
+        , SHOW_GENRES("Genre", "Genres", ShowActivity.class), SHOW("Serie", "Serien", ShowActivity.class);
 
         private String singular;
         private String plural;
@@ -218,6 +221,16 @@ public class CategoriesActivity extends AppCompatActivity {
                     pairList.add(new Pair<>(parentClass, count));
                 }
                 break;
+            case SHOW_GENRES:
+                for (ParentClass parentClass : database.showGenreMap.values()) {
+                    int count = 0;
+                    for (Show show : database.showMap.values()) {
+                        if (show.getGenreIdList().contains(parentClass.getUuid()))
+                            count++;
+                    }
+                    pairList.add(new Pair<>(parentClass, count));
+                }
+                break;
 
         }
         allDatenObjektPairList = pairList;
@@ -343,7 +356,12 @@ public class CategoriesActivity extends AppCompatActivity {
                     joke.getCategoryIdList().remove(parentClass.getUuid());
                 }
                 break;
-
+            case SHOW_GENRES:
+                database.showGenreMap.remove(parentClass.getUuid());
+                for (Show show : database.showMap.values()) {
+                    show.getGenreIdList().remove(parentClass.getUuid());
+                }
+                break;
         }
         Database.saveAll();
         setResult(RESULT_OK);

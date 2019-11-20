@@ -63,12 +63,20 @@ public class CustomList<E> extends ArrayList<E> {
         return get(i).equals(getLast());
     }
 
+    //  --------------- Recycle --------------->
     public E next(E e) {
         if (isLast(e))
             return get(0);
         else
             return get(indexOf(e) + 1);
     }
+    public E previous(E e) {
+//        if (get(0).equals(e))
+//            return getLast();
+//        else
+        return get(indexOf(e) - 1);
+    }
+    //  <--------------- Recycle ---------------
 
 
 //  ----- forEach ----->

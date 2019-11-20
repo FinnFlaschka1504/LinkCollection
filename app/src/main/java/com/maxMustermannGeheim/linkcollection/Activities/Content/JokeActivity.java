@@ -178,7 +178,6 @@ public class JokeActivity extends AppCompatActivity {
                     else
                         itemView.findViewById(R.id.listItem_joke_rating_layout).setVisibility(View.GONE);
                 })
-                .useCustomRipple()
                 .setOnClickListener((customRecycler, view, object, index) -> {
                     TextView listItem_joke_title = view.findViewById(R.id.listItem_joke_title);
                     TextView listItem_joke_content = view.findViewById(R.id.listItem_joke_punchLine);

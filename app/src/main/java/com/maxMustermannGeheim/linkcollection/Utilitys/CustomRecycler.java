@@ -21,6 +21,7 @@ import com.maxMustermannGeheim.linkcollection.R;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +30,7 @@ import java.util.Map;
 public class CustomRecycler<T>{
 
     // ToDo: ItemTouchHelper https://www.youtube.com/watch?v=dvDTmJtGE_I
-    //  holder.itemView.setTag
+    //  holder.layoutId.setTag
 
     public enum ORIENTATION {
         VERTICAL, HORIZONTAL
@@ -44,10 +45,10 @@ public class CustomRecycler<T>{
     private boolean isMultiClickEnabled = false;
     private boolean showDivider = true;
     private boolean hideLastDivider;
-    private boolean useCustomRipple = false;
+    private boolean useCustomRipple = true;
     private Context context;
     private RecyclerView recycler;
-    private int itemView;
+    private int layoutId;
     private SetItemContent<T> setItemContent;
     private List<T> objectList = new ArrayList<>();
     private int orientation = RecyclerView.VERTICAL;
@@ -113,12 +114,19 @@ public class CustomRecycler<T>{
     }
 
     public CustomRecycler<T> setItemLayout(int layoutId) {
-        this.itemView = layoutId;
+        this.layoutId = layoutId;
         return this;
     }
 
-    public CustomRecycler<T> setObjectList(List<T> objectList) {
-        this.objectList = objectList;
+    public int getLayoutId() {
+        return layoutId;
+    }
+
+    public CustomRecycler<T> setObjectList(Collection<T> objectCollection) {
+        if (objectCollection instanceof List)
+            this.objectList = (List<T>) objectCollection;
+        else
+            this.objectList = new ArrayList<>(objectCollection);
         return this;
     }
 
@@ -145,8 +153,8 @@ public class CustomRecycler<T>{
         return this;
     }
 
-    public CustomRecycler<T> useCustomRipple() {
-        this.useCustomRipple = true;
+    public CustomRecycler<T> deaktivateCustomRipple() {
+        this.useCustomRipple = false;
         return this;
     }
 
@@ -181,7 +189,7 @@ public class CustomRecycler<T>{
     }
 
     public CustomRecycler<T> addSubOnClickListener(int viewId, OnClickListener<T> onClickListener) {
-        idSubOnClickListenerMap.put(viewId, new Pair<>(onClickListener, true));
+        idSubOnClickListenerMap.put(viewId, new Pair<>(onClickListener, false));
         return this;
     }
 
@@ -310,7 +318,7 @@ public class CustomRecycler<T>{
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View v = LayoutInflater.from(parent.getContext())
-                    .inflate(itemView, parent, false);
+                    .inflate(layoutId, parent, false);
             v.setId(View.generateViewId());
 
             if (!idSubOnClickListenerMap.isEmpty()) {
@@ -505,4 +513,54 @@ public class CustomRecycler<T>{
     }
     //  <----- Generate -----
 
+    //  --------------- Convenience --------------->
+    public CustomRecycler<T> scrollTo(int index, boolean ripple) {
+        if (index > objectList.size() - 1)
+            return this;
+
+        int firstVisiblePosition = ((LinearLayoutManager) recycler.getLayoutManager()).findFirstVisibleItemPosition();
+        int lastVisiblePosition = ((LinearLayoutManager) recycler.getLayoutManager()).findLastVisibleItemPosition();
+//        int middlePosition = (lastVisiblePosition + firstVisiblePosition) / 2;
+//        int middleHeight = (lastVisiblePosition - firstVisiblePosition) / 2;
+
+//        if (index > middlePosition) {
+//            int diff = index - middlePosition;
+//            if (index + diff >= objectList.size())
+//                recycler.scrollToPosition(objectList.size() - 1);
+//            else
+//                recycler.scrollToPosition(index + diff);
+//            recycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
+//                @Override
+//                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+//                    recyclerView.getLayoutManager().findViewByPosition(index).setPressed(ripple);
+//                    recyclerView.clearOnScrollListeners();
+//                    super.onScrolled(recyclerView, dx, dy);
+//                }
+//            });
+//        }
+//        else
+//            recycler.getLayoutManager().findViewByPosition(index).setPressed(ripple);
+
+
+//        if (index + middleHeight >= objectList.size()) {
+//            middleHeight = 0;
+//            recycler.scrollToPosition(objectList.size() - 1);
+//        } else
+//            recycler.scrollToPosition(index + middleHeight);
+
+        recycler.scrollToPosition(index);
+        if (index >= firstVisiblePosition && index <= lastVisiblePosition)
+            recycler.getLayoutManager().findViewByPosition(index).setPressed(ripple);
+        else
+            recycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                @Override
+                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                    recyclerView.getLayoutManager().findViewByPosition(index).setPressed(ripple);
+                    recyclerView.clearOnScrollListeners();
+                    super.onScrolled(recyclerView, dx, dy);
+                }
+            });
+        return this;
+    }
+    //  <--------------- Convenience ---------------
 }

@@ -354,7 +354,6 @@ public class VideoActivity extends AppCompatActivity {
                     ((TextView) itemView.findViewById(R.id.listItem_video_Genre)).setText(String.join(", ", genreNames));
                     itemView.findViewById(R.id.listItem_video_Genre).setSelected(scrolling);
                 })
-                .useCustomRipple()
                 .setOnClickListener((customRecycler, view, object, index) -> {
                     if (!delete) {
                         openUrl(object.getUrl(), false);
@@ -369,7 +368,7 @@ public class VideoActivity extends AppCompatActivity {
                     }
                 })
                 .addSubOnClickListener(R.id.listItem_video_details, (customRecycler, view, object, index) -> {
-                    detailDialog = showDetailDialog((Video) object);
+                    detailDialog = showDetailDialog(object);
                 }, false)
                 .setOnLongClickListener((customRecycler, view, object, index) -> {
                     addOrEditDialog[0] = showEditOrNewDialog(object);
@@ -573,7 +572,6 @@ public class VideoActivity extends AppCompatActivity {
 
                 CustomList uuidList = integerList.map((Function<Integer, Object>) idUuidMap::get).filter(Objects::nonNull);
                 video.setGenreList(uuidList);
-                String BREAKPOINT = null;
                 customDialog.reloadView();
             } catch (JSONException | ParseException ignored) {
             }

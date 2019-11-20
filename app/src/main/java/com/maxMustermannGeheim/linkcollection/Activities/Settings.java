@@ -267,6 +267,7 @@ public class Settings extends AppCompatActivity {
                 .removeLastDivider()
                 .setOnClickListener((customRecycler, itemView, space, index) -> space.showSettingsDialog(this))
                 .setDividerMargin_inDp(16)
+                .deaktivateCustomRipple()
                 .enableSwiping((objectList, direction, space) -> {
                     Toast.makeText(this, space.getPlural(), Toast.LENGTH_SHORT).show();
                 }, true, false)
@@ -330,6 +331,7 @@ public class Settings extends AppCompatActivity {
                                 spaceOrderChanged = true;
                                 setResult(RESULT_OK);
                             })
+                            .deaktivateCustomRipple()
                             .setDividerMargin_inDp(16)
                             .generateRecyclerView())
                     .setOnDialogDismiss(dialog -> updateSpaceStatusSettings())

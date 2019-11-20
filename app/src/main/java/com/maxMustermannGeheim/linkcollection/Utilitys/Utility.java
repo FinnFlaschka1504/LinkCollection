@@ -16,6 +16,7 @@ import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.PopupWindow;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.SearchView;
 import android.widget.TextView;
@@ -301,7 +302,6 @@ public class Utility {
                     ((TextView) itemView.findViewById(R.id.listItem_video_Genre)).setText(String.join(", ", genreNames));
                     itemView.findViewById(R.id.listItem_video_Genre).setSelected(true);
                 })
-                .useCustomRipple()
                 .hideDivider();
 
         if (openVideo)
@@ -546,7 +546,6 @@ public class Utility {
 
                     customRecycler_selectList.reload();
                 })
-                .useCustomRipple()
                 .generate();
 
 
@@ -656,6 +655,11 @@ public class Utility {
         p.flags = WindowManager.LayoutParams.FLAG_DIM_BEHIND;
         p.dimAmount = 0.5f;
         wm.updateViewLayout(container, p);
+    }
+
+    public static PopupWindow showLoadingWindow(Context context, View anchor){
+        ProgressBar progressBar = new ProgressBar(context, null, android.R.attr.progressBarStyle);
+        return showPopupWindow(anchor, progressBar, true);
     }
 //  <----- PopupWindow -----
 

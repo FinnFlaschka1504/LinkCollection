@@ -234,7 +234,6 @@ public class OweActivity extends AppCompatActivity {
 //                    else
 //                        itemView.findViewById(R.id.listItem_owe_rating_layout).setVisibility(View.GONE);
                 })
-                .useCustomRipple()
 //                .setOnClickListener((customRecycler, view, object, index) -> {
 //                    TextView listItem_owe_content = view.findViewById(R.id.listItem_owe_description);
 //                    if (listItem_owe_content.isFocusable()) {
@@ -639,7 +638,7 @@ public class OweActivity extends AppCompatActivity {
 
         };
         final Owe.Item[] currentItem = new Owe.Item[]{null};
-        CustomDialog sourcesDialog = CustomDialog.Builder(this)
+        CustomDialog sourcesDialog = new CustomDialog(this)
                 .setTitle("Einträge")
                 .setView(R.layout.dialog_items)
                 .setSetViewContent((customDialog, view) -> {
@@ -724,7 +723,6 @@ public class OweActivity extends AppCompatActivity {
                                 itemView.findViewById(R.id.listItem_source_check).setVisibility(item.isOpen() ? View.GONE : View.VISIBLE);
                             })
                             .hideDivider()
-                            .useCustomRipple()
                             .setOnClickListener((customRecycler, itemView, item, index) -> {
                                 item.setOpen(!item.isOpen());
                                 Database.saveAll();
@@ -1015,7 +1013,6 @@ public class OweActivity extends AppCompatActivity {
                 .setItemLayout(R.layout.list_item_trade_off)
                 .setObjectList(list)
                 .hideDivider()
-                .useCustomRipple()
                 .setSetItemContent((itemView, triple) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_tradeOff_name)).setText(triple.first.getName());
                     ((TextView) itemView.findViewById(R.id.listItem_tradeOff_own)).setText(Utility.formatToEuro(triple.second));

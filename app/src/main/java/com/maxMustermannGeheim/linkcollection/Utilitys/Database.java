@@ -94,6 +94,7 @@ public class Database {
     public static final String SHOW_WATCH_LATER_LIST = "WATCH_LATER_LIST";
     public Map<String, Show> showMap = new HashMap<>();
     public Map<String, ShowGenre> showGenreMap = new HashMap<>();
+    public Map<Show,Map<Integer,Map<String, Show.Episode>>> tempShowSeasonEpisodeMap = new HashMap<>();
     public List<String> showWatchLaterList = new ArrayList<>();
 
     private List<Content> contentList;

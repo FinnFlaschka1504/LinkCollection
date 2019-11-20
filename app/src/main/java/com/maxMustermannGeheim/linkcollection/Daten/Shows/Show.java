@@ -4,7 +4,9 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class Show extends ParentClass {
@@ -134,7 +136,7 @@ public class Show extends ParentClass {
         private int tmdbId;
         private Date airDate;
         private int seasonNumber;
-        private List<Episode> episodeList = new ArrayList<>();
+        private Map<String,Episode> episodeMap = new HashMap<>();
 
         public Season(String name) {
             uuid = "season_" + UUID.randomUUID().toString();
@@ -180,17 +182,17 @@ public class Show extends ParentClass {
             return this;
         }
 
-        public List<Episode> getEpisodeList() {
-            return episodeList;
+        public Map<String,Episode> getEpisodeMap() {
+            return episodeMap;
         }
 
-        public Season setEpisodeList(List<Episode> episodeList) {
-            this.episodeList = episodeList;
+        public Season setEpisodeMap(Map<String,Episode> episodeMap) {
+            this.episodeMap = episodeMap;
             return this;
         }
     }
 
-    public class Episode extends ParentClass{
+    public static class Episode extends ParentClass{
         private int tmdbId;
         private Date airDate;
         private int episodeNumber;

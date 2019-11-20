@@ -106,7 +106,6 @@ public class CustomMenu {
                 .setObjectList(menus)
                 .hideDivider()
                 .hideOverscroll()
-                .useCustomRipple()
                 .setSetItemContent((itemView, item) -> {
                     ((TextView) itemView.findViewById(R.id.popup_standardList_text)).setText(item.getName());
                     if (onClickListener == null && item.getChild() != null) {
@@ -136,10 +135,10 @@ public class CustomMenu {
                         dismissPopupWindow(item.getParent());
                     }
                 })
-                .addSubOnClickListener(R.id.popup_standardList_sub, (CustomRecycler.OnClickListener<MenuItem>) (customRecycler, itemView, item, index) -> {
+                .addSubOnClickListener(R.id.popup_standardList_sub, (customRecycler, itemView, item, index) -> {
                     item.getChild().setAnchor(itemView).show();
                 }, false)
-                .addSubOnClickListener(R.id.popup_standardList_sub_layout, (CustomRecycler.OnClickListener<MenuItem>) (customRecycler, itemView, item, index) -> {
+                .addSubOnClickListener(R.id.popup_standardList_sub_layout, (customRecycler, itemView, item, index) -> {
                     View popup_standardList_sub = itemView.findViewById(R.id.popup_standardList_sub);
                     popup_standardList_sub.setPressed(true);
                     popup_standardList_sub.callOnClick();

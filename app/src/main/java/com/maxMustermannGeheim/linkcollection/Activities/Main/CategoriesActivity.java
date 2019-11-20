@@ -280,7 +280,6 @@ public class CategoriesActivity extends AppCompatActivity {
                                     .putExtra(EXTRA_SEARCH_CATEGORY, catigory),
                             START_CATIGORY_SEARCH);
                 })
-                .useCustomRipple()
                 .setOnLongClickListener((customRecycler, view, item, index) -> {
                     if (!Utility.isOnline(this))
                         return;

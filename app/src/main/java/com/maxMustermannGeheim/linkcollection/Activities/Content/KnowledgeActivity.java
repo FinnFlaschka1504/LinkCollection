@@ -161,7 +161,6 @@ public class KnowledgeActivity extends AppCompatActivity {
                     else
                         itemView.findViewById(R.id.listItem_knowledge_rating_layout).setVisibility(View.GONE);
                 })
-                .useCustomRipple()
                 .setOnClickListener((customRecycler, view, object, index) -> {
                     TextView listItem_knowledge_content = view.findViewById(R.id.listItem_knowledge_content);
                     if (listItem_knowledge_content.isFocusable()) {
@@ -543,7 +542,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 
         };
         final List<String>[] currentSource = new List[]{null};
-        CustomDialog sourcesDialog = CustomDialog.Builder(this)
+        CustomDialog sourcesDialog = new CustomDialog(this)
                 .setTitle("Quellen")
                 .setView(R.layout.dialog_sources)
                 .setSetViewContent((customDialog, view) -> {
@@ -621,7 +620,6 @@ public class KnowledgeActivity extends AppCompatActivity {
                                 ((TextView) itemView.findViewById(R.id.listItem_source_content)).setText(nameUrlPair.get(1));
                             })
                             .hideDivider()
-                            .useCustomRipple()
                             .setOnClickListener((customRecycler, itemView, o, index) -> Utility.openUrl(this, o.get(1), false))
                             .setOnLongClickListener((customRecycler, view1, stringList, index) -> {
                                 Dialog dialog = customDialog.getDialog();

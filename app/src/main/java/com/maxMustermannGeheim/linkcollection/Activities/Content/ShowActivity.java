@@ -13,26 +13,29 @@ import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewStub;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.PopupWindow;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
@@ -56,6 +59,7 @@ import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -71,6 +75,7 @@ import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivit
 public class ShowActivity extends AppCompatActivity {
     public static final String WATCH_LATER_SEARCH = "WATCH_LATER_SEARCH";
     public static final String UPCOMING_SEARCH = "UPCOMING_SEARCH";
+    public static final String EXTRA_EPISODE = "EXTRA_EPISODE";
 
     enum SORT_TYPE {
         NAME, VIEWS, RATING, LATEST
@@ -132,6 +137,14 @@ public class ShowActivity extends AppCompatActivity {
                 case SHOW_GENRES:
                     filterTypeSet.add(FILTER_TYPE.GENRE);
                     break;
+                case EPISODE:
+                    String episode_string = getIntent().getStringExtra(EXTRA_EPISODE);
+                    if (episode_string != null) {
+                        Show.Episode episode = new Gson().fromJson(episode_string, Show.Episode.class);
+                        showEpisodeDetailDialog(null,
+                                database.showMap.get(episode.getShowId()).getSeasonList().get(episode.getSeasonNumber())
+                                .getEpisodeMap().get(episode.getUuid()),true);
+                    }
             }
 
             String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
@@ -341,7 +354,7 @@ public class ShowActivity extends AppCompatActivity {
                 .setOnClickListener((customRecycler, view, show, index) -> {
                     showDetailDialog(show);
                 })
-                .addSubOnClickListener(R.id.listItem_show_list, (customRecycler, view, show, index) -> showSeasonDialog(show, /*view*/ null), false)
+                .addSubOnClickListener(R.id.listItem_show_list, (customRecycler, view, show, index) -> showSeasonDialog(show), false)
                 .setOnLongClickListener((customRecycler, view, show, index) -> {
                     showEditOrNewDialog(show);
                 })
@@ -392,12 +405,12 @@ public class ShowActivity extends AppCompatActivity {
 //                        Database.saveAll();
 //                    });
 
-                    view.findViewById(R.id.dialog_detailShow_list).setOnClickListener(view1 -> showSeasonDialog(show, null));
+                    view.findViewById(R.id.dialog_detailShow_list).setOnClickListener(view1 -> showSeasonDialog(show));
                 })
                 .show();
     }
 
-//    public void showCalenderDialog(List<Show> showList, CustomDialog detailDialog) {
+//    public void showFilmCalenderDialog(List<Show> showList, CustomDialog detailDialog) {
 //        CustomDialog.Builder(this)
 //                .setTitle("Ansichten Bearbeiten")
 //                .setView(R.layout.dialog_edit_views)
@@ -407,7 +420,7 @@ public class ShowActivity extends AppCompatActivity {
 //                    stub_groups.inflate();
 //                    CompactCalendarView calendarView = view.findViewById(R.id.fragmentCalender_calendar);
 //                    calendarView.setFirstDayOfWeek(Calendar.MONDAY);
-//                    Utility.setupCalender(this, calendarView, ((FrameLayout) view), showList, false);
+//                    Utility.setupFilmCalender(this, calendarView, ((FrameLayout) view), showList, false);
 //                })
 //                .disableScroll()
 //                .setDimensions(true, true)
@@ -426,7 +439,7 @@ public class ShowActivity extends AppCompatActivity {
         setResult(RESULT_OK);
 
 
-        final Show editShow = show == null ? new Show("") : show.cloneShow();
+        final Show editShow = show == null ? new Show("") : show.clone();
 
         return CustomDialog.Builder(this)
                 .setTitle(show == null ? "Neu: " + singular : singular + " Bearbeiten")
@@ -485,9 +498,41 @@ public class ShowActivity extends AppCompatActivity {
         return builder;
     }
 
+    private void saveShow(CustomDialog dialog, boolean checked, Show show, Show editShow) {
+        boolean neueShow = show == null;
+        if (show == null)
+            show = editShow;
+
+        show.setName(((AutoCompleteTextView) dialog.findViewById(R.id.dialog_editOrAdd_show_title)).getText().toString());
+        show.setStatus(editShow.getStatus());
+        show.setGenreIdList(editShow.getGenreIdList());
+        show.setSeasonList(editShow.getSeasonList());
+        show.setNextEpisodeAir(editShow.getNextEpisodeAir());
+        show.setFirstAirDate(((LazyDatePicker) dialog.findViewById(R.id.dialog_editOrAdd_show_datePicker)).getDate());
+        show.setAllEpisodesCount(editShow.getAllEpisodesCount());
+        show.setSeasonsCount(editShow.getSeasonsCount());
+        show.setInProduction(editShow.isInProduction());
+        show.setTmdbId(editShow.getTmdbId());
+
+        boolean upcomming = false;
+        if (checked || (neueShow && (upcomming = show.isUpcomming())))
+            database.showWatchLaterList.add(show.getUuid());
+
+        database.showMap.put(show.getUuid(), show);
+        reLoadRecycler();
+        dialog.dismiss();
+
+        Database.saveAll();
+
+        Utility.showCenterdToast(this, singular + " gespeichert" + (checked || upcomming ? "\n(Später ansehen)" : ""));
+
+        if (dialog.getObjectExtra() != null)
+            ((CustomDialog) dialog.getObjectExtra()).reloadView();
+
+    }
     //  --------------- Season & Episode --------------->
-    private void showSeasonDialog(Show show, View anchor) {
-        CustomDialog customDialog = anchor == null ? CustomDialog.Builder(this) : null;
+    private void showSeasonDialog(Show show) {
+        CustomDialog customDialog = CustomDialog.Builder(this);
 
         RecyclerView seasonRecycler = new CustomRecycler<Show.Season>(this)
                 .setObjectList(show.getSeasonList())
@@ -496,33 +541,45 @@ public class ShowActivity extends AppCompatActivity {
                     ((TextView) itemView.findViewById(R.id.listItem_season_number)).setText(String.valueOf(season.getSeasonNumber()));
                     ((TextView) itemView.findViewById(R.id.listItem_season_name)).setText(season.getName());
                     ((TextView) itemView.findViewById(R.id.listItem_season_release)).setText(new SimpleDateFormat("(yyyy)", Locale.getDefault()).format(season.getAirDate()));
-                    ((TextView) itemView.findViewById(R.id.listItem_season_episodes)).setText(String.valueOf(season.getEpisodesCount()));
+                    Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
+                    int size = (int) season.getEpisodeMap().values().stream().filter(Show.Episode::isWatched).count();
+                    if (size == 0) {
+                        helper.append("Folgen:  ", Helpers.SpannableStringHelper.SPAN_TYPE.BOLD_ITALIC).append(String.valueOf(season.getEpisodesCount()));
+                    } else {
+                        helper.append("Gesehen:  ", Helpers.SpannableStringHelper.SPAN_TYPE.BOLD_ITALIC);
+                        if (size < season.getEpisodesCount())
+                            helper.append(size + " / " + season.getEpisodesCount());
+                        else
+                            helper.appendColor("Alle", getColor(R.color.colorGreen));
+                    }
+                    ((TextView) itemView.findViewById(R.id.listItem_season_episodes)).setText(helper.get());
                 })
                 .setOnClickListener((customRecycler, itemView, season, index) -> {
                     Map<String, Show.Episode> episodeMap;
-                    Map<Integer,Map<String, Show.Episode>> seasonEpisodeMap;
+                    Map<Integer, Map<String, Show.Episode>> seasonEpisodeMap;
 
                     if ((seasonEpisodeMap = database.tempShowSeasonEpisodeMap.get(show)) != null && (episodeMap = seasonEpisodeMap.get(season.getSeasonNumber())) != null)
-                        showEpisodeDialog(season, episodeMap, anchor, show);
+                        showEpisodeDialog(season, episodeMap,customRecycler);
                     else
-                        apiSeasonRequest(show, season.getSeasonNumber(), customDialog != null ? customDialog.getView() : anchor, () -> {
-                            showEpisodeDialog(season, database.tempShowSeasonEpisodeMap.get(show).get(season.getSeasonNumber()), anchor, show);
+                        apiSeasonRequest(show, season.getSeasonNumber(), customDialog.getView(), () -> {
+                            showEpisodeDialog(season, database.tempShowSeasonEpisodeMap.get(show).get(season.getSeasonNumber()),customRecycler);
                         });
+                })
+                .setOnLongClickListener((CustomRecycler.OnLongClickListener<Show.Season>)(customRecycler, view, season, index) -> {
+                    String BREAKPOINT = null;
+                    showResetDialog(new CustomList<>(((Show.Season) season).getEpisodeMap().values()), season, null, customRecycler).setOnDialogDismiss(customDialog1 -> Database.saveAll());
                 })
                 .hideDivider()
                 .generateRecyclerView();
-        if (anchor == null) {
-            customDialog
-                    .setTitle("Staffeln")
-                    .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
-                    .setView(seasonRecycler)
-                    .disableScroll()
-                    .show();
-        }
-        else
-            Utility.showPopupWindow(anchor, seasonRecycler, true);
+        customDialog
+                .setTitle("Staffeln")
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
+                .setView(seasonRecycler)
+                .disableScroll()
+                .show();
     }
-    private void showEpisodeDialog(Show.Season season, Map<String, Show.Episode> episodeMap, View anchor, Show show) {
+
+    private void showEpisodeDialog(Show.Season season, Map<String, Show.Episode> episodeMap, CustomRecycler<Show.Season> seasonCustomRecycler) {
         CustomRecycler<Show.Episode> episodeRecycler = new CustomRecycler<Show.Episode>(this)
                 .setGetActiveObjectList(() -> {
                     episodeMap.putAll(season.getEpisodeMap());
@@ -543,11 +600,13 @@ public class ShowActivity extends AppCompatActivity {
                     if (episode.isWatched()) {
                         listItem_episode_seen.setColorFilter(getColor(R.color.colorGreen), PorterDuff.Mode.SRC_IN);
                         listItem_episode_seen.setAlpha(1f);
-//                        listItem_episode_seen.setClickable(false);
+                        listItem_episode_seen.setClickable(false);
+                        listItem_episode_seen.setForeground(null);
                     } else {
                         listItem_episode_seen.setColorFilter(getColor(R.color.colorDrawable), PorterDuff.Mode.SRC_IN);
                         listItem_episode_seen.setAlpha(0.2f);
                         listItem_episode_seen.setClickable(true);
+                        listItem_episode_seen.setForeground(ResourcesCompat.getDrawable(getResources(), R.drawable.ripple, null));
                     }
                 })
                 .addSubOnClickListener(R.id.listItem_episode_seen, (customRecycler, itemView, episode, index) -> {
@@ -562,63 +621,163 @@ public class ShowActivity extends AppCompatActivity {
                     customRecycler.reload();
                 })
                 .setOnClickListener((customRecycler, itemView, episode, index) -> {
-                    CustomDialog.Builder(this)
-                            .setTitle(episode.getName())
-                            .setView(R.layout.dialog_detail_episode)
-                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
-                            .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
-                                episode.setRating(((RatingBar) customDialog.findViewById(R.id.dialog_detailEpisode_rating)).getRating());
+                    showEpisodeDetailDialog(customRecycler, episode, false);
+                })
+                .setOnLongClickListener((customRecycler, view, episode, index) -> showResetDialog(Arrays.asList(episode), null, null, customRecycler))
+                .hideDivider();
+        int marHor = Utility.dpToPx(8);
+        int marVer = Utility.dpToPx(5);
+        CustomDialog.Builder(this)
+                .setTitle(season.getName() + " - Folgen")
+                .addGoToButton((CustomDialog.GoToFilter<Show.Episode>) (search, episode) -> {
+                    if (String.valueOf(episode.getEpisodeNumber()).equals(search)) {
+                        return true;
+                    }
+                    return episode.getName().toLowerCase().contains(search.toLowerCase());
+                }, (itemView, o) -> {
+                    FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
+                    params.setMargins(marHor, marVer, marHor, marVer);
+                    itemView.findViewById(R.id.listItem_episode_root).setLayoutParams(params);
+                    ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(((Show.Episode) o).getEpisodeNumber()));
+                    ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(((Show.Episode) o).getName());
+                    ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(((Show.Episode) o).getAirDate()));
+                    ((TextView) itemView.findViewById(R.id.listItem_episode_viewCount)).setText(((Show.Episode) o).getDateList().isEmpty() ? "" : "| " + ((Show.Episode) o).getDateList().size());
+                }, episodeRecycler)
+                .alignPreviousButtonsLeft()
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
+                .setView(episodeRecycler.generateRecyclerView())
+                .disableScroll()
+                .setOnDialogDismiss(customDialog -> {
+                    Database.saveAll();
+                    seasonCustomRecycler.reload();
+                })
+                .show();
+    }
 
-                                if (!episode.isWatched() && episode.getDateList().isEmpty()) {
-                                    episode.setWatched(true);
-                                    episode.getDateList().add(new Date());
+    private void showEpisodeDetailDialog(CustomRecycler customRecycler, Show.Episode episode, boolean startedDirectly) {
+        CustomDialog.Builder(this)
+                .setTitle(episode.getName())
+                .setView(R.layout.dialog_detail_episode)
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
+                    episode.setRating(((RatingBar) customDialog.findViewById(R.id.dialog_detailEpisode_rating)).getRating());
+
+                    if (!episode.isWatched() && episode.getDateList().isEmpty()) {
+                        episode.setWatched(true);
+                        episode.getDateList().add(new Date());
+                    }
+                })
+                .disableLastAddedButton()
+                .setSetViewContent((customDialog, view) -> {
+                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_title)).setText(episode.getName());
+                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_number)).setText(String.valueOf(episode.getEpisodeNumber()));
+                    Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
+                    helper.append(String.valueOf(episode.getDateList().size()));
+                    if (episode.isWatched())
+                        helper.appendColor("  ✓", getColor(R.color.colorGreen));
+                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_views)).setText(helper.get());
+                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode.getAirDate()));
+                    RatingBar dialog_detailEpisode_rating = view.findViewById(R.id.dialog_detailEpisode_rating);
+                    dialog_detailEpisode_rating.setRating(episode.getRating());
+                    CustomDialog.ButtonHelper actionButton = customDialog.getActionButton();
+                    dialog_detailEpisode_rating.setOnRatingBarChangeListener((ratingBar, rating, fromUser) -> {
+                        actionButton.setEnabled(rating != episode.getRating());
+                    });
+                    view.findViewById(R.id.dialog_detailEpisode_editViews).setOnClickListener(v -> showCalenderDialog(episode, customDialog));
+                    view.findViewById(R.id.dialog_detailEpisode_editViews).setOnLongClickListener(v -> {
+                        showResetDialog(Arrays.asList(episode), null, customDialog, null);
+                        return true;
+                    });
+                })
+                .setOnDialogDismiss(customDialog -> {
+                    if (customRecycler != null)
+                        customRecycler.reload();
+                    if (startedDirectly)
+                        Database.saveAll();
+                })
+                .show();
+    }
+
+    private CustomDialog showResetDialog(List<Show.Episode> episodeList_all, Show.Season season, CustomDialog customDialog, CustomRecycler customRecycler) {
+        List<Show.Episode> episodeList = episodeList_all.stream().filter(episode -> !episode.getDateList().isEmpty()).collect(Collectors.toList());
+        CustomDialog returnDialog = CustomDialog.Builder(this);
+        if (episodeList.isEmpty())
+            return returnDialog;
+
+        return returnDialog
+                .setTitle("Zurücksetzen")
+                .setText("Willst du nur " + (season != null ? "die" : "den") + " Status, oder die Komplette " + (season != null ? "Staffel" : "Folge") + " zurücksetzen")
+                .addButton("Nur Status", customDialog1 -> {
+                    CustomDialog.Builder(this)
+                            .setTitle("Status Zurücksetzen")
+                            .setText((season != null ? "Die Status der kompletten Staffel '" + season.getName() + "' werden"
+                                    : "Der Status der Episode '" + episodeList.get(0).getName() + "' wird") + " auf 'ungesehen' gesetzt")
+                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                            .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog2 -> {
+                                for (Show.Episode episode : episodeList) {
+                                    episode.setWatched(false);
                                 }
-                                customRecycler.reload();
-                            })
-                            .disableLastAddedButton()
-                            .setSetViewContent((customDialog, view) -> {
-                                ((TextView) view.findViewById(R.id.dialog_detailEpisode_title)).setText(episode.getName());
-                                ((TextView) view.findViewById(R.id.dialog_detailEpisode_number)).setText(String.valueOf(episode.getEpisodeNumber()));
-                                ((TextView) view.findViewById(R.id.dialog_detailEpisode_views)).setText(String.valueOf(episode.getDateList().size()));
-                                ((TextView) view.findViewById(R.id.dialog_detailEpisode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode.getAirDate()));
-                                RatingBar dialog_detailEpisode_rating = view.findViewById(R.id.dialog_detailEpisode_rating);
-                                dialog_detailEpisode_rating.setRating(episode.getRating());
-                                CustomDialog.ButtonHelper actionButton = customDialog.getActionButton();
-                                dialog_detailEpisode_rating.setOnRatingBarChangeListener((ratingBar, rating, fromUser) -> {
-                                    actionButton.setEnabled(rating != episode.getRating());
-                                });
+                                if (customDialog != null)
+                                    customDialog.reloadView();
+                                else
+                                    customRecycler.reload();
+                                customDialog1.dismiss();
                             })
                             .show();
+                }, false)
+                .addButton("Alles", customDialog1 -> {
+                    CustomDialog.Builder(this)
+                            .setTitle("Komplett Zurücksetzen")
+                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                            .setText("Bist du sicher, dass du die " + (season != null ? "Staffel '" + season.getName():  "Episode '" + episodeList.get(0).getName()) + "' komplett zurücksetzen willst?")
+                            .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog2 -> {
+                                for (Show.Episode episode : episodeList) {
+                                    episode.getDateList().clear();
+                                    episode.setWatched(false);
+                                    database.showMap.get(episode.getShowId()).getSeasonList().get(episode.getSeasonNumber()).getEpisodeMap().remove(episode.getUuid());
+                                }
+                                if (customDialog != null)
+                                    customDialog.reloadView();
+                                else
+                                    customRecycler.reload();
+                                customDialog1.dismiss();
+                            })
+                            .show();
+
+                }, false)
+                .show();
+    }
+
+    public void showCalenderDialog(Show.Episode episode, CustomDialog detailDialog) {
+        CustomDialog.Builder(this)
+                .setTitle("Ansichten Bearbeiten")
+                .setView(R.layout.dialog_edit_views)
+                .setSetViewContent((customDialog, view) -> {
+                    ViewStub stub_groups = view.findViewById(R.id.dialog_editViews_calender);
+                    stub_groups.setLayoutResource(R.layout.fragment_calender);
+                    stub_groups.inflate();
+                    CompactCalendarView calendarView = view.findViewById(R.id.fragmentCalender_calendar);
+                    calendarView.setFirstDayOfWeek(Calendar.MONDAY);
+                    Utility.setupEpisodeCalender(this, calendarView, ((FrameLayout) view), Arrays.asList(episode), false);
                 })
-                .hideDivider();
-        if (anchor == null) {
-            int marHor = Utility.dpToPx(8);
-            int marVer = Utility.dpToPx(5);
-            CustomDialog.Builder(this)
-                    .setTitle(season.getName() + " - Folgen")
-                    .addGoToButton((CustomDialog.GoToFilter<Show.Episode>) (search, episode) -> {
-                        if (String.valueOf(episode.getEpisodeNumber()).equals(search)) {
-                            return true;
-                        }
-                        return episode.getName().toLowerCase().contains(search.toLowerCase());
-                    }, (itemView, o) -> {
-                        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
-                        params.setMargins(marHor, marVer, marHor, marVer);
-                        itemView.findViewById(R.id.listItem_episode_root).setLayoutParams(params);
-                        ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(((Show.Episode) o).getEpisodeNumber()));
-                        ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(((Show.Episode) o).getName());
-                        ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(((Show.Episode) o).getAirDate()));
-                        ((TextView) itemView.findViewById(R.id.listItem_episode_viewCount)).setText(((Show.Episode) o).getDateList().isEmpty() ?  "" : "| " + ((Show.Episode) o).getDateList().size());
-                    }, episodeRecycler)
-                    .alignPreviousButtonsLeft()
-                    .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
-                    .setView(episodeRecycler.generateRecyclerView())
-                    .disableScroll()
-                    .setOnDialogDismiss(customDialog -> Database.saveAll())
-                    .show();
-        }
-        else
-            Utility.showPopupWindow(anchor, episodeRecycler.generateRecyclerView(), true);
+                .disableScroll()
+                .setDimensions(true, true)
+                .setOnDialogDismiss(customDialog -> {
+                    detailDialog.reloadView();
+                    Map<String, Show.Episode> episodeMap = database.showMap.get(episode.getShowId()).getSeasonList().get(episode.getSeasonNumber()).getEpisodeMap();
+                    if (episode.getDateList().isEmpty()) {
+                        episode.setWatched(false);
+                        episodeMap.remove(episode.getUuid());
+                    } else {
+                        if (!episodeMap.containsKey(episode.getUuid()))
+                            episodeMap.put(episode.getUuid(), episode);
+                    }
+
+
+//                    this.reLoadRecycler();
+//                    customRecycler.reload();
+                })
+                .show();
     }
     //  <--------------- Season & Episode ---------------
 
@@ -693,6 +852,7 @@ public class ShowActivity extends AppCompatActivity {
         requestQueue.add(jsonArrayRequest);
 
     }
+
     private void apiDetailRequest(int id, CustomDialog customDialog, Show show) {
         if (!Utility.isOnline(this))
             return;
@@ -723,7 +883,7 @@ public class ShowActivity extends AppCompatActivity {
                 List<Show.Season> seasonList = new ArrayList<>();
                 for (int i = 0; i < seasonArray_json.length(); i++) {
                     JSONObject season_json = seasonArray_json.getJSONObject(i);
-                    Show.Season season = new Show.Season(season_json.getString("name"));
+                    Show.Season season = new Show.Season(season_json.getString("name")).setShowId(show.getUuid());
                     if (season_json.has("season_number"))
                         season.setSeasonNumber(season_json.getInt("season_number"));
                     if (season_json.has("air_date"))
@@ -749,6 +909,7 @@ public class ShowActivity extends AppCompatActivity {
         requestQueue.add(jsonArrayRequest);
 
     }
+
     private void apiSeasonRequest(Show show, int seasonNumber, View view, Runnable onLoaded) {
         if (!Utility.isOnline(this))
             return;
@@ -766,11 +927,11 @@ public class ShowActivity extends AppCompatActivity {
                 for (int i = 0; i < episodes_json.length(); i++) {
                     JSONObject episode_json = episodes_json.getJSONObject(i);
                     int episodeNumber = episode_json.getInt("episode_number");
-                    episodeMap.put("E:" + episodeNumber, new Show.Episode(episode_json.getString("name")).setAirDate(Utility.getDateFromJsonString("air_date", episode_json))
-                            .setEpisodeNumber(episodeNumber).setTmdbId(episode_json.getInt("id")));
+                    episodeMap.put("E:" + episodeNumber, (Show.Episode) new Show.Episode(episode_json.getString("name")).setAirDate(Utility.getDateFromJsonString("air_date", episode_json))
+                            .setEpisodeNumber(episodeNumber).setTmdbId(episode_json.getInt("id")).setShowId(show.getUuid()).setSeasonNumber(seasonNumber).setUuid("E:" + episodeNumber));
 
                 }
-                Map<Integer,Map<String, Show.Episode>> map = new HashMap<>();
+                Map<Integer, Map<String, Show.Episode>> map = new HashMap<>();
                 map.put(seasonNumber, episodeMap);
                 database.tempShowSeasonEpisodeMap.put(show, map);
                 onLoaded.run();
@@ -790,38 +951,6 @@ public class ShowActivity extends AppCompatActivity {
     //  <--------------- TMDb Api ---------------
 
 
-    private void saveShow(CustomDialog dialog, boolean checked, Show show, Show editShow) {
-        boolean neueShow = show == null;
-        if (show == null)
-            show = editShow;
-
-        show.setName(((AutoCompleteTextView) dialog.findViewById(R.id.dialog_editOrAdd_show_title)).getText().toString());
-        show.setStatus(editShow.getStatus());
-        show.setGenreIdList(editShow.getGenreIdList());
-        show.setSeasonList(editShow.getSeasonList());
-        show.setNextEpisodeAir(editShow.getNextEpisodeAir());
-        show.setFirstAirDate(((LazyDatePicker) dialog.findViewById(R.id.dialog_editOrAdd_show_datePicker)).getDate());
-        show.setAllEpisodesCount(editShow.getAllEpisodesCount());
-        show.setSeasonsCount(editShow.getSeasonsCount());
-        show.setInProduction(editShow.isInProduction());
-        show.setTmdbId(editShow.getTmdbId());
-
-        boolean upcomming = false;
-        if (checked || (neueShow && (upcomming = editShow.isUpcomming())))
-            database.showWatchLaterList.add(editShow.getUuid());
-
-        database.showMap.put(editShow.getUuid(), editShow);
-        reLoadRecycler();
-        dialog.dismiss();
-
-        Database.saveAll();
-
-        Utility.showCenterdToast(this, singular + " gespeichert" +  (checked || upcomming ? "\n(Später ansehen)" : ""));
-
-        if (dialog.getObjectExtra() != null)
-            ((CustomDialog) dialog.getObjectExtra()).reloadView();
-
-    }
 
 
     @Override

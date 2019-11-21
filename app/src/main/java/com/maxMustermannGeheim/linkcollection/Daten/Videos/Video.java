@@ -1,6 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Videos;
 
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
 import java.util.ArrayList;
@@ -99,10 +100,23 @@ public class Video extends ParentClass {
                 givenDate.add(Calendar.DATE, -1);
             date = givenDate.getTime();
         }
-        this.dateList.add(Utility.removeTime(date));
+        this.dateList.add(date);
 
         return isBefore;
     }
+
+    public void removeDate(Date removeDate_withTime) {
+        Date removeDate = Utility.removeTime(removeDate_withTime);
+
+        CustomList<Date> dateListCopy = new CustomList<>(dateList);
+        dateListCopy.forEachCount((date, count) -> {
+            if (!Utility.removeTime(date).equals(removeDate))
+                return false;
+            dateList.remove(count);
+            return true;
+        });
+    }
+
 
     public Float getRating() {
         return rating;

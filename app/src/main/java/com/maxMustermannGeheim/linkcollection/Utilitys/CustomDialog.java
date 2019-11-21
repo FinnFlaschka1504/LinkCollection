@@ -59,7 +59,6 @@ public class CustomDialog {
     private boolean buttonLabelAllCaps = true;
 
     private SetViewContent setViewContent;
-    private OnDialogDismiss onDialogDismiss;
 
     private CustomList<ButtonHelper> buttonHelperList = new CustomList<>();
 
@@ -154,7 +153,7 @@ public class CustomDialog {
     }
 
     public CustomDialog setOnDialogDismiss(OnDialogDismiss onDialogDismiss) {
-        this.onDialogDismiss = onDialogDismiss;
+        dialog.setOnDismissListener(dialog1 -> onDialogDismiss.runOnDialogDismiss(this));
         return this;
     }
 
@@ -601,9 +600,6 @@ public class CustomDialog {
 
         if (setViewContent != null)
             setViewContent.runSetViewContent(this, view);
-
-        if (onDialogDismiss != null)
-            dialog.setOnDismissListener(dialog1 -> onDialogDismiss.runOnDialogDismiss(this));
 
         setDialogLayoutParameters(dialog, dimensions.first, dimensions.second);
         dialog.show();

@@ -8,7 +8,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 
-public class ParentClass {
+public class ParentClass implements Cloneable{
     protected String uuid;
     protected String name;
 
@@ -49,5 +49,13 @@ public class ParentClass {
                 return new ShowGenre(name);
         }
         return null;
+    }
+
+    public ParentClass clone(){
+        try {
+            return (ParentClass) super.clone();
+        } catch (CloneNotSupportedException e) {
+            return null;
+        }
     }
 }

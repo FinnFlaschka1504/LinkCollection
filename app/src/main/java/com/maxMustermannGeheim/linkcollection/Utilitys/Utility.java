@@ -5,7 +5,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
-import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.net.Uri;
 import android.view.Gravity;
 import android.view.View;
@@ -23,10 +23,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
+import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -254,6 +256,7 @@ public class Utility {
 
     //  ----- ... in Joke ----->
     public static boolean containedInShow(String query, Show show, HashSet<ShowActivity.FILTER_TYPE> filterTypeSet) {
+        if (show.getUuid().equals(query)) return true;
         return filterTypeSet.contains(ShowActivity.FILTER_TYPE.NAME) && show.getName().toLowerCase().contains(query);
 //        if (filterTypeSet.contains(ShowActivity.FILTER_TYPE.PUNCHLINE) && show.getPunchLine().toLowerCase().contains(query))
 //            return true;
@@ -267,7 +270,9 @@ public class Utility {
     //  <----- ... in Joke -----
 //  <----- Filter -----
 
-    public static void setupCalender(Context context, CompactCalendarView calendarView, FrameLayout layout, List<Video> videoList, boolean openVideo) {
+
+    //  --------------- FilmCalender --------------->
+    public static void setupFilmCalender(Context context, CompactCalendarView calendarView, FrameLayout layout, List<Video> videoList, boolean openVideo) {
         calendarView.removeAllEvents();
         TextView calender_month = layout.findViewById(R.id.fragmentCalender_month);
         ImageView calender_previousMonth = layout.findViewById(R.id.fragmentCalender_previousMonth);
@@ -332,10 +337,7 @@ public class Utility {
 
             @Override
             public void onMonthScroll(Date firstDayOfNewMonth) {
-//                Log.d(TAG, "Month was scrolled to: " + firstDayOfNewMonth);
-                SimpleDateFormat sdfmt = new SimpleDateFormat();
-                sdfmt.applyPattern( "MMMM yyyy" );
-                calender_month.setText(sdfmt.format(firstDayOfNewMonth));
+                calender_month.setText(new SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(firstDayOfNewMonth));
             }
         });
 
@@ -346,27 +348,114 @@ public class Utility {
 
         layout.findViewById(R.id.dialog_editViews_add).setOnClickListener(view -> {
             videoList.get(0).addDate(selectedDate[0], false);
-            calendarView.addEvent(new Event(Color.BLACK
+            calendarView.addEvent(new Event(context.getColor(R.color.colorDayNightContent)
                     , selectedDate[0].getTime(), videoList.get(0)));
             loadVideoList(calendarView.getEvents(selectedDate[0]), layout, customRecycler);
             setButtons(layout, 1);
             Database.saveAll();
         });
         layout.findViewById(R.id.dialog_editViews_remove).setOnClickListener(view -> {
-            videoList.get(0).getDateList().remove(selectedDate[0]);
+            videoList.get(0).removeDate(selectedDate[0]);
             calendarView.removeEvents(selectedDate[0]);
             loadVideoList(calendarView.getEvents(selectedDate[0]), layout, customRecycler);
             setButtons(layout, 0);
             Database.saveAll();
         });
     }
+    //  <--------------- FilmCalender ---------------
 
-    private static void setButtons(FrameLayout layout, int size) {
-        layout.findViewById(R.id.dialog_editViews_add).setVisibility(size == 0 ? View.VISIBLE : View.GONE);
-        layout.findViewById(R.id.dialog_editViews_remove).setVisibility(size != 0 ? View.VISIBLE : View.GONE);
+    //  --------------- EpisodeCalender --------------->
+    public static void setupEpisodeCalender(Context context, CompactCalendarView calendarView, FrameLayout layout, List<Show.Episode> episodeList, boolean openEpisode) {
+        calendarView.removeAllEvents();
+        TextView calender_month = layout.findViewById(R.id.fragmentCalender_month);
+        ImageView calender_previousMonth = layout.findViewById(R.id.fragmentCalender_previousMonth);
+        ImageView calender_nextMonth = layout.findViewById(R.id.fragmentCalender_nextMonth);
+
+        calender_previousMonth.setOnClickListener(view -> calendarView.scrollLeft());
+        calender_nextMonth.setOnClickListener(view -> calendarView.scrollRight());
+
+        Database database = Database.getInstance();
+        CustomRecycler<Event> customRecycler = new CustomRecycler<Event>(context, layout.findViewById(R.id.fragmentCalender_videoList))
+                .setItemLayout(R.layout.list_item_episode)
+                .setSetItemContent((itemView, event) -> {
+                    itemView.findViewById(R.id.listItem_episode_seen).setVisibility(View.GONE);
+
+
+                    Show.Episode episode = ((Show.Episode) event.getData());
+
+                    if (openEpisode) {
+                        itemView.findViewById(R.id.listItem_episode_extraInfo).setVisibility(View.VISIBLE);
+                        ((TextView) itemView.findViewById(R.id.listItem_episode_showName)).setText(database.showMap.get(episode.getShowId()).getName());
+                        ((TextView) itemView.findViewById(R.id.listItem_episode_seasonNumber)).setText(String.valueOf(episode.getSeasonNumber()));
+                    }
+
+                    ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(episode.getEpisodeNumber()));
+                    ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode.getName());
+                    ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode.getAirDate()));
+                    ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode.getRating() != -1 ? episode.getRating() + " ☆" : "");
+
+                })
+                .hideDivider();
+
+        if (openEpisode)
+            customRecycler.setOnClickListener((customRecycler1, view, event, index) ->
+            {
+                Show.Episode episode = (Show.Episode) event.getData();
+                ((MainActivity) context).startActivityForResult(new Intent(context, ShowActivity.class)
+                        .putExtra(CategoriesActivity.EXTRA_SEARCH, episode.getShowId())
+                        .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.EPISODE)
+                        .putExtra(ShowActivity.EXTRA_EPISODE, new Gson().toJson(episode)), MainActivity.START_SHOW_FROM_CALENDER);
+            });
+
+        for (Show.Episode episode : episodeList) {
+            for (Date date : episode.getDateList()) {
+                Event ev1 = new Event(context.getColor(R.color.colorDayNightContent)
+                        , date.getTime(), episode);
+                calendarView.addEvent(ev1);
+            }
+        }
+
+        final Date[] selectedDate = {removeTime(new Date())};
+        calendarView.setListener(new CompactCalendarView.CompactCalendarViewListener() {
+            @Override
+            public void onDayClick(Date dateClicked) {
+                selectedDate[0] = dateClicked;
+                if (episodeList.size() == 1)
+                    setButtons(layout, calendarView.getEvents(dateClicked).size());
+                loadVideoList(calendarView.getEvents(dateClicked), layout, customRecycler);
+            }
+
+            @Override
+            public void onMonthScroll(Date firstDayOfNewMonth) {
+                calender_month.setText(new SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(firstDayOfNewMonth));
+            }
+        });
+
+        loadVideoList(calendarView.getEvents(new Date()), layout, customRecycler);
+
+        if (episodeList.size() != 1)
+            return;
+
+        setButtons(layout, calendarView.getEvents(new Date()).size());
+
+        Show.Episode episode = episodeList.get(0);
+        layout.findViewById(R.id.dialog_editViews_add).setOnClickListener(view -> {
+            episode.addDate(selectedDate[0], false);
+            calendarView.addEvent(new Event(context.getColor(R.color.colorDayNightContent)
+                    , selectedDate[0].getTime(), episode));
+            loadVideoList(calendarView.getEvents(selectedDate[0]), layout, customRecycler);
+            setButtons(layout, 1);
+        });
+        layout.findViewById(R.id.dialog_editViews_remove).setOnClickListener(view -> {
+            episode.removeDate(selectedDate[0]);
+            calendarView.removeEvents(selectedDate[0]);
+            loadVideoList(calendarView.getEvents(selectedDate[0]), layout, customRecycler);
+            setButtons(layout, 0);
+        });
     }
+    //  <--------------- EpisodeCalender ---------------
 
-    private static void loadVideoList(List<Event> eventList, FrameLayout layout, CustomRecycler customRecycler) {
+    private static void loadVideoList(List<Event> eventList, FrameLayout layout, CustomRecycler<Event> customRecycler) {
         TextView calender_noTrips = layout.findViewById(R.id.fragmentCalender_noTrips);
         RecyclerView calender_videoList = layout.findViewById(R.id.fragmentCalender_videoList);
 
@@ -378,10 +467,17 @@ public class Utility {
             calender_noTrips.setVisibility(View.GONE);
         }
 
-        customRecycler
-                .setObjectList(eventList)
-                .generateRecyclerView();
+        if (customRecycler.getObjectList().isEmpty()) {
+            customRecycler.setObjectList(eventList).generate();
+        }
+        else
+            customRecycler.reload(eventList);
 
+    }
+
+    private static void setButtons(FrameLayout layout, int size) {
+        layout.findViewById(R.id.dialog_editViews_add).setVisibility(size == 0 ? View.VISIBLE : View.GONE);
+        layout.findViewById(R.id.dialog_editViews_remove).setVisibility(size != 0 ? View.VISIBLE : View.GONE);
     }
 
     public static Date removeTime(Date date) {

@@ -215,7 +215,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         List<String> categoriesNames = new ArrayList<>();
         List<String> sourcesNames = new ArrayList<>();
         if (knowledge != null) {
-            newKnowledge[0] = knowledge.cloneKnowledge();
+            newKnowledge[0] = knowledge.clone();
             newKnowledge[0].getCategoryIdList().forEach(uuid -> categoriesNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
             newKnowledge[0].getSources().forEach(nameUrlPair  -> sourcesNames.add(nameUrlPair.get(0)));
         }

@@ -234,7 +234,7 @@ public class JokeActivity extends AppCompatActivity {
         final Joke[] newJoke = {null};
         List<String> categoriesNames = new ArrayList<>();
         if (joke != null) {
-            newJoke[0] = joke.cloneJoke();
+            newJoke[0] = joke.clone();
             newJoke[0].getCategoryIdList().forEach(uuid -> categoriesNames.add(database.jokeCategoryMap.get(uuid).getName()));
         }
         CustomDialog returnDialog =  CustomDialog.Builder(this)

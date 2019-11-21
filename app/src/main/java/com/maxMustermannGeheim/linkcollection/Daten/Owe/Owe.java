@@ -128,14 +128,19 @@ public class Owe extends ParentClass {
 
     }
 
-    public Owe cloneOwe() {
-        Owe owe = new Owe();
-        owe.name = this.name;
-        owe.uuid = this.uuid;
-        owe.description = this.description;
-        owe.itemList = new ArrayList<>(this.itemList);
-        owe.date = this.date;
-        owe.ownOrOther = this.ownOrOther;
-        return owe;
+//    public Owe cloneOwe() {
+//        Owe owe = new Owe();
+//        owe.name = this.name;
+//        owe.uuid = this.uuid;
+//        owe.description = this.description;
+//        owe.itemList = new ArrayList<>(this.itemList);
+//        owe.date = this.date;
+//        owe.ownOrOther = this.ownOrOther;
+//        return owe;
+//    }
+
+    @Override
+    public Owe clone() {
+        return (Owe) super.clone();
     }
 }

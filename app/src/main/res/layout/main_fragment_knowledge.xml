@@ -280,7 +280,7 @@
 <!--                android:elevation="3dp"-->
 <!--                android:foreground="@drawable/ripple"-->
 <!--                android:gravity="center"-->
-<!--                android:onClick="showCalenderDialog"-->
+<!--                android:onClick="showFilmCalenderDialog"-->
 <!--                android:orientation="vertical">-->
 
 <!--                <androidx.constraintlayout.widget.ConstraintLayout-->
@@ -291,7 +291,7 @@
 <!--                        android:layout_width="0dp"-->
 <!--                        android:layout_height="0dp"-->
 <!--                        android:alpha="0.075"-->
-<!--                        android:src="@drawable/ic_kallendar"-->
+<!--                        android:src="@drawable/ic_calendar"-->
 <!--                        app:layout_constraintBottom_toBottomOf="parent"-->
 <!--                        app:layout_constraintEnd_toEndOf="parent"-->
 <!--                        app:layout_constraintStart_toStartOf="parent"-->

@@ -1,7 +1,14 @@
 package com.maxMustermannGeheim.linkcollection.Utilitys;
 
+import android.graphics.Typeface;
 import android.text.Editable;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
 import android.text.TextWatcher;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.StrikethroughSpan;
+import android.text.style.StyleSpan;
+import android.text.style.UnderlineSpan;
 import android.view.inputmethod.EditorInfo;
 
 import androidx.annotation.NonNull;
@@ -18,9 +25,7 @@ public class Helpers {
     public static class TextInputHelper {
         public enum INPUT_TYPE {
             TEXT(0x00000001), NUMBER(0x00000002), NUMBER_DECIMAL(0x00002002), CAP_SENTENCES(0x00004001),
-            CAPS_LOCK(0x00001001), CAPS_WORD(0x00002001),MULTI_LINE(0x00040001), E_MAIL(0x00000021)
-            , PASSWORD(0x00000081), NUMBER_PASSWORD(0x00000012), DATE_TIME(0x00000004)
-            , DATE(0x00000014), TIME(0x00000024);
+            CAPS_LOCK(0x00001001), CAPS_WORD(0x00002001), MULTI_LINE(0x00040001), E_MAIL(0x00000021), PASSWORD(0x00000081), NUMBER_PASSWORD(0x00000012), DATE_TIME(0x00000004), DATE(0x00000014), TIME(0x00000024);
 
             int code;
 
@@ -28,9 +33,9 @@ public class Helpers {
                 this.code = code;
             }
         }
+
         public enum IME_ACTION {
-            GO(0x00000002), SEARCH(0x00000003), SEND(0x00000004), NEXT(0x00000005)
-            , DONE(0x00000006), PREVIOUS(0x00000007);
+            GO(0x00000002), SEARCH(0x00000003), SEND(0x00000004), NEXT(0x00000005), DONE(0x00000006), PREVIOUS(0x00000007);
 
             int code;
 
@@ -42,6 +47,7 @@ public class Helpers {
                 return code;
             }
         }
+
         private CustomList<TextInputLayout> layoutList;
         private Map<TextInputLayout, Validator> inputValidationMap = new HashMap<>();
         private OnValidationResult onValidationResult;
@@ -81,6 +87,7 @@ public class Helpers {
         public void changeValidation(TextInputLayout textInputLayout, TextValidation textValidation) {
             inputValidationMap.get(textInputLayout).setTextValidation(textValidation);
         }
+
         public void changeValidation(TextInputLayout textInputLayout, String regEx) {
             inputValidationMap.get(textInputLayout).setRegEx(regEx);
         }
@@ -104,6 +111,7 @@ public class Helpers {
                     applyValidationListerner(inputLayout);
             }
         }
+
         private void applyValidationListerner(TextInputLayout textInputLayout) {
             textInputLayout.getEditText().addTextChangedListener(new TextWatcher() {
                 @Override
@@ -119,7 +127,7 @@ public class Helpers {
                 @Override
                 public void afterTextChanged(Editable s) {
                     validate(textInputLayout);
-                                    }
+                }
             });
         }
 
@@ -153,6 +161,7 @@ public class Helpers {
             enum MODE {
                 WHITE_LIST, BLACK_LIST
             }
+
             private boolean alwaysUseDefaultValidation = true;
             private STATUS status = STATUS.NONE;
             private MODE mode;
@@ -231,7 +240,6 @@ public class Helpers {
             }
 
 
-
             public Validator setTextValidation(TextValidation textValidation) {
                 this.textValidation = textValidation;
                 return this;
@@ -250,6 +258,7 @@ public class Helpers {
                 errorMessage = null;
                 status = STATUS.VALID;
             }
+
             public void setInalid(String errorMessage) {
                 this.errorMessage = errorMessage;
                 status = STATUS.INVALID;
@@ -258,9 +267,11 @@ public class Helpers {
             public void asWhiteList() {
                 mode = MODE.WHITE_LIST;
             }
+
             public void asBlackList() {
                 mode = MODE.BLACK_LIST;
             }
+
             public Validator setDefaultMode(MODE defaultMode) {
                 this.defaultMode = defaultMode;
                 return this;
@@ -276,6 +287,7 @@ public class Helpers {
                 return this;
             }
         }
+
         public interface OnValidationResult {
             void runOnValidationResult(boolean result);
         }
@@ -306,7 +318,7 @@ public class Helpers {
                 new CustomList<IME_ACTION>(actions).forEachCount((imeAction, count) -> {
                     if (count == 0) return;
 
-                    actionFlag[0] = actionFlag[0]| imeAction.code;
+                    actionFlag[0] = actionFlag[0] | imeAction.code;
                 });
                 textInputLayout.getEditText().setImeOptions(actionFlag[0]);
             }
@@ -355,4 +367,45 @@ public class Helpers {
         //  <----- Convenience -----
     }
     //  <----- TextInput -----
+
+
+    //  --------------- SpannableString --------------->
+    public static class SpannableStringHelper {
+        public enum SPAN_TYPE {
+            BOLD(new StyleSpan(Typeface.BOLD)), ITALIC(new StyleSpan(Typeface.ITALIC)), BOLD_ITALIC(new StyleSpan(Typeface.BOLD_ITALIC)), STRIKE_THROUGH(new StrikethroughSpan()),
+            UNDERLINED(new UnderlineSpan());
+
+            Object what;
+
+            SPAN_TYPE(Object what) {
+                this.what = what;
+            }
+
+            public Object getWhat() {
+                return what;
+            }
+        }
+        private SpannableStringBuilder builder = new SpannableStringBuilder();
+
+        public SpannableStringHelper append(String text) {
+            builder.append(text);
+            return this;
+        }
+
+        public SpannableStringHelper append(String text, SPAN_TYPE span_type) {
+            builder.append(text, span_type.getWhat(), Spannable.SPAN_COMPOSING);
+            return this;
+        }
+
+        public SpannableStringHelper appendColor(String text, int color) {
+            builder.append(text, new ForegroundColorSpan(color), Spannable.SPAN_COMPOSING);
+            return this;
+        }
+
+        public SpannableStringBuilder get() {
+            return builder;
+        }
+    }
+    //  <--------------- SpannableString ---------------
+
 }

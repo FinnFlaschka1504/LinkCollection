@@ -22,6 +22,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
@@ -146,7 +147,7 @@ public class Settings extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.main_genreCount)).setText(String.valueOf(database.genreMap.size()));
                     ((TextView) view.findViewById(R.id.main_studioCount)).setText(String.valueOf(database.studioMap.size()));
                     Set<Date> dateSet = new HashSet<>();
-                    database.videoMap.values().forEach(video -> dateSet.addAll(video.getDateList()));
+                    database.videoMap.values().forEach(video -> video.getDateList().forEach(date -> dateSet.add(Utility.removeTime(date))));
                     ((TextView) view.findViewById(R.id.main_daysCount)).setText(String.valueOf(dateSet.size()));
                     ((TextView) view.findViewById(R.id.main_watchLaterCount)).setText(String.valueOf(database.watchLaterList.size()));
                 })
@@ -157,6 +158,15 @@ public class Settings extends AppCompatActivity {
 
                     ((TextView) view.findViewById(R.id.main_shows_count)).setText(String.valueOf(database.showMap.size()));
                     ((TextView) view.findViewById(R.id.main_shows_genreCount)).setText(String.valueOf(database.showGenreMap.size()));
+
+                    Set<Date> dateSet = new HashSet<>();
+                    for (Show show : database.showMap.values()) {
+                        for (Show.Season season : show.getSeasonList()) {
+                            season.getEpisodeMap().values().forEach(episode -> episode.getDateList()
+                                    .forEach(date -> dateSet.add(Utility.removeTime(date))));
+                        }
+                    }
+                    ((TextView) view.findViewById(R.id.main_shows_viewCount)).setText(String.valueOf(dateSet.size()));
                 })
                 .setSettingsDialog(null));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_knowledge), context.getString(R.string.bottomMenu_knowledge)).setActivity(KnowledgeActivity.class).setItemId(Space.SPACE_KNOWLEDGE).setIconId(R.drawable.ic_knowledge).setFragmentLayoutId(R.layout.main_fragment_knowledge)

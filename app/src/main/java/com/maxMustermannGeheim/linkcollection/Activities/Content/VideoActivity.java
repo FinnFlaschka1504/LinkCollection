@@ -95,7 +95,7 @@ public class VideoActivity extends AppCompatActivity {
     private CustomDialog[] addOrEditDialog = new CustomDialog[]{null};
     private CustomDialog detailDialog;
 
-    private CustomRecycler customRecycler_VideoList;
+    private CustomRecycler<Video> customRecycler_VideoList;
     FloatingActionButton videos_confirmDelete;
     private SearchView videos_search;
 
@@ -273,7 +273,7 @@ public class VideoActivity extends AppCompatActivity {
             whenLoaded.run();
     }
 
-    private void sortList(List<Video> videoList) {
+    private List<Video> sortList(List<Video> videoList) {
         switch (sort_type) {
             case NAME:
                 videoList.sort((video1, video2) -> video1.getName().compareTo(video2.getName()));
@@ -298,9 +298,14 @@ public class VideoActivity extends AppCompatActivity {
                 break;
             case LATEST:
                 videoList.sort((video1, video2) -> {
-                    if (video1.getDateList().isEmpty() && video1.getDateList().isEmpty())
-                        return video1.getName().compareTo(video2.getName());
-                    else if (video1.getDateList().isEmpty())
+                    if (video1.getDateList().isEmpty() && video2.getDateList().isEmpty()) {
+                        if (video1.isUpcomming() && video2.isUpcomming() || !video1.isUpcomming() && !video2.isUpcomming())
+                            return video1.getName().compareTo(video2.getName());
+                        else if (video1.isUpcomming())
+                            return reverse ? -1 : 1;
+                        else if (video2.isUpcomming())
+                            return reverse ? 1 : -1;
+                    } else if (video1.getDateList().isEmpty())
                         return reverse ? -1 : 1;
                     else if (video2.getDateList().isEmpty())
                         return reverse ? 1 : -1;
@@ -315,12 +320,14 @@ public class VideoActivity extends AppCompatActivity {
                 break;
 
         }
+        return videoList;
     }
 
     private void loadVideoRecycler() {
         customRecycler_VideoList = new CustomRecycler<Video>(this, findViewById(R.id.videos_recycler))
                 .setItemLayout(R.layout.list_item_video)
-                .setObjectList(filterdVideoList)
+                .setGetActiveObjectList(() -> sortList(filterdVideoList))
+//                .setObjectList(filterdVideoList)
                 .setSetItemContent((itemView, video) -> {
                     itemView.findViewById(R.id.listItem_video_deleteCheck).setVisibility(delete ? View.VISIBLE :View.GONE);
                     ((TextView) itemView.findViewById(R.id.listItem_video_Titel)).setText(video.getName());
@@ -330,7 +337,8 @@ public class VideoActivity extends AppCompatActivity {
                     } else
                         itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.GONE);
 
-                    itemView.findViewById(R.id.listItem_video_later).setVisibility(database.watchLaterList.contains(video.getUuid()) || video.isUpcomming() ? View.VISIBLE : View.GONE);
+                    itemView.findViewById(R.id.listItem_video_later).setVisibility(database.watchLaterList.contains(video.getUuid()) ? View.VISIBLE : View.GONE);
+                    itemView.findViewById(R.id.listItem_video_upcoming).setVisibility(video.isUpcomming() ? View.VISIBLE : View.GONE);
 
                     List<String> darstellerNames = new ArrayList<>();
                     video.getDarstellerList().forEach(uuid -> darstellerNames.add(database.darstellerMap.get(uuid).getName()));
@@ -378,9 +386,8 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     private void reLoadVideoRecycler() {
-        sortList(filterdVideoList);
 //        customRecycler_VideoList.reload();
-        customRecycler_VideoList.reload(filterdVideoList);
+        customRecycler_VideoList.reload();
     }
 
     private CustomDialog showDetailDialog(Video video) {
@@ -443,7 +450,7 @@ public class VideoActivity extends AppCompatActivity {
                     stub_groups.inflate();
                     CompactCalendarView calendarView = view.findViewById(R.id.fragmentCalender_calendar);
                     calendarView.setFirstDayOfWeek(Calendar.MONDAY);
-                    Utility.setupCalender(this, calendarView, ((FrameLayout) view), videoList, false);
+                    Utility.setupFilmCalender(this, calendarView, ((FrameLayout) view), videoList, false);
                 })
                 .disableScroll()
                 .setDimensions(true, true)
@@ -453,7 +460,6 @@ public class VideoActivity extends AppCompatActivity {
                     this.reLoadVideoRecycler();
                 })
                 .show();
-
     }
 
 

@@ -28,7 +28,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
-import com.maxMustermannGeheim.linkcollection.Utilitys.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
 import java.util.ArrayList;
@@ -61,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
     public static final int START_SHOW = 15;
     public static final int START_SHOW_CATEGORY = 16;
     public static final int START_SHOW_GENRE = 16;
+    public static final int START_SHOW_FROM_CALENDER = 17;
 
     Database database;
     SharedPreferences mySPR_daten;
@@ -70,7 +70,6 @@ public class MainActivity extends AppCompatActivity {
 
     private static Settings.Space currentSpace;
 
-    // ToDo: serien (als expandeble Layout)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -264,12 +263,12 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(intent, START_GENRE);
     }
 
-    public void showCalenderDialog(View view1) {
+    public void showFilmCalenderDialog(View view1) {
         if (!Database.isReady())
             return;
 
         calenderDialog = CustomDialog.Builder(this)
-                .setTitle("Video Kalender")
+                .setTitle(currentSpace.getName() + " Kalender")
                 .setView(R.layout.dialog_edit_views)
                 .setSetViewContent((customDialog, view) -> {
                     ViewStub stub_groups = view.findViewById(R.id.dialog_editViews_calender);
@@ -277,7 +276,7 @@ public class MainActivity extends AppCompatActivity {
                     stub_groups.inflate();
                     CompactCalendarView calendarView = view.findViewById(R.id.fragmentCalender_calendar);
                     calendarView.setFirstDayOfWeek(Calendar.MONDAY);
-                    Utility.setupCalender(this, calendarView, ((FrameLayout) view), new ArrayList<>(database.videoMap.values()), true);
+                    Utility.setupFilmCalender(this, calendarView, ((FrameLayout) view), new ArrayList<>(database.videoMap.values()), true);
 //                    ViewCompat.setNestedScrollingEnabled(view.findViewById(R.id.fragmentCalender_videoList), false);
 
                 })
@@ -369,6 +368,34 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(intent, START_SHOW_GENRE);
     }
 
+    public void showShowCalenderDialog(View view1) {
+        if (!Database.isReady())
+            return;
+
+        calenderDialog = CustomDialog.Builder(this)
+                .setTitle(currentSpace.getName() + " Kalender")
+                .setView(R.layout.dialog_edit_views)
+                .setSetViewContent((customDialog, view) -> {
+                    ViewStub stub_groups = view.findViewById(R.id.dialog_editViews_calender);
+                    stub_groups.setLayoutResource(R.layout.fragment_calender);
+                    stub_groups.inflate();
+                    CompactCalendarView calendarView = view.findViewById(R.id.fragmentCalender_calendar);
+                    calendarView.setFirstDayOfWeek(Calendar.MONDAY);
+                    List<Show.Episode> episodeList = new ArrayList<>();
+                    for (Show show : database.showMap.values()) {
+                        for (Show.Season season : show.getSeasonList()) {
+                            episodeList.addAll(season.getEpisodeMap().values());
+                        }
+                    }
+                    Utility.setupEpisodeCalender(this, calendarView, ((FrameLayout) view), episodeList, true);
+//                    ViewCompat.setNestedScrollingEnabled(view.findViewById(R.id.fragmentCalender_videoList), false);
+
+                })
+                .disableScroll()
+                .setDimensions(true, true)
+                .show();
+    }
+
     public void showLaterMenu_show(View view) {
         ShowActivity.showLaterMenu(this, view);
     }
@@ -402,7 +429,7 @@ public class MainActivity extends AppCompatActivity {
         if (resultCode == RESULT_OK /*&& requestCode == START_VIDEOS*/) {
             if (requestCode == START_VIDEO_FROM_CALENDER) {
                 calenderDialog.dismiss();
-                showCalenderDialog(null);
+                showFilmCalenderDialog(null);
                 setCounts();
             }
             else if (requestCode == START_SETTINGS) {

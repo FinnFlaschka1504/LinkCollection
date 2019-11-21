@@ -307,7 +307,7 @@ public class OweActivity extends AppCompatActivity {
 
         final Owe[] newOwe = {null};
         if (owe != null) {
-            newOwe[0] = owe.cloneOwe();
+            newOwe[0] = owe.clone();
         }
         CustomDialog returnDialog =  CustomDialog.Builder(this)
                 .setTitle(owe == null ? "Neue Schulden" : "Schulden Bearbeiten")

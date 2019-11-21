@@ -480,19 +480,20 @@ public class CustomRecycler<T>{
         return recycler;
     }
 
-    public RecyclerView reload() {
+    public CustomRecycler<T> reload() {
         if (useActiveObjectList) {
             objectList.clear();
             objectList.addAll(getActiveObjectList.runGetActiveObjectList());
         }
         mAdapter.notifyDataSetChanged();
-        return recycler;
+        return this;
     }
 
-    public RecyclerView reload(List<T> objectList) {
-        mAdapter.dataSet = objectList;
+    public CustomRecycler<T> reload(List<T> objectList) {
+        this.objectList.clear();
+        this.objectList.addAll(objectList);
         mAdapter.notifyDataSetChanged();
-        return recycler;
+        return this;
     }
 
     public RecyclerView update(Integer... index) {

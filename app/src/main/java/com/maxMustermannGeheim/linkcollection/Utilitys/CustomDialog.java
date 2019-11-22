@@ -57,6 +57,7 @@ public class CustomDialog {
     private EditBuilder editBuilder;
     private boolean showEdit;
     private boolean buttonLabelAllCaps = true;
+    private boolean expandButtons;
 
     private SetViewContent setViewContent;
 
@@ -167,7 +168,10 @@ public class CustomDialog {
         return this;
     }
 
-
+    public CustomDialog enableExpandButtons() {
+        this.expandButtons = true;
+        return this;
+    }
     //  <----- Getters & Setters -----
 
 
@@ -187,7 +191,6 @@ public class CustomDialog {
     public interface GoToFilter<T>{
         boolean runGoToFilter(String search, T t);
     }
-
     //  <----- Interfaces -----
 
 
@@ -200,6 +203,7 @@ public class CustomDialog {
         private boolean disableButtonByDefault;
         private boolean allowEmpty;
         private String regEx = "";
+        private boolean fireActionDirectly;
         private Pair<Helpers.TextInputHelper.OnAction, Helpers.TextInputHelper.IME_ACTION[]> onActionActionPair;
 
         private Helpers.TextInputHelper.INPUT_TYPE inputType = Helpers.TextInputHelper.INPUT_TYPE.CAP_SENTENCES;
@@ -254,6 +258,16 @@ public class CustomDialog {
             return this;
         }
 
+        public EditBuilder enableFireActionDirectly() {
+            this.fireActionDirectly = true;
+            return this;
+        }
+
+        public EditBuilder setFireActionDirectly(boolean fireActionDirectly) {
+            this.fireActionDirectly = fireActionDirectly;
+            return this;
+        }
+
         public EditBuilder setOnAction(Helpers.TextInputHelper.OnAction onAction, Helpers.TextInputHelper.IME_ACTION... actions) {
             onActionActionPair = new Pair<>(onAction, actions);
             return this;
@@ -265,7 +279,6 @@ public class CustomDialog {
     }
 
     public static class TextBuilder{
-
     }
     //  <----- Builder -----
 
@@ -342,6 +355,10 @@ public class CustomDialog {
             Button button = new Button(context);
             button.setBackground(dialog.findViewById(R.id.dialog_custom_Button1).getBackground().getConstantState().newDrawable());
             button.setTextColor(((Button)dialog.findViewById(R.id.dialog_custom_Button1)).getTextColors());
+            if (expandButtons) {
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+                button.setLayoutParams(params);
+            }
 
             if (label != null)
                 button.setText(label);
@@ -443,48 +460,8 @@ public class CustomDialog {
         return this;
     }
 
-    public CustomDialog addGoToButton(GoToFilter goToFilter, CustomRecycler.SetItemContent setItemContent, CustomRecycler customRecycler) {
-        return addButton_complete(null , BUTTON_TYPE.GO_TO_BUTTON, customDialog -> {
-            final Object[] currentObject = {null};
-            CustomList filterdObjectList = new CustomList();
-            List allObjectList = customRecycler.getObjectList();
-            CustomDialog goToDialog = CustomDialog.Builder(context);
-            goToDialog
-                    .setTitle("Gehe Zu")
-                    .addButton("Zurück", customDialog1 -> {
-                        currentObject[0] = filterdObjectList.previous(currentObject[0]);
-                        customDialog1.reloadView();
-                    }, false)
-                    .addButton("Weiter", customDialog1 -> {
-                        currentObject[0] = filterdObjectList.next(currentObject[0]);
-                        customDialog1.reloadView();
-                    }, false)
-                    .addButton(BUTTON_TYPE.GO_TO_BUTTON, customDialog1 -> customRecycler.scrollTo(allObjectList.indexOf(currentObject[0]), true))
-                    .setView(customRecycler.getLayoutId())
-                    .setEdit(new EditBuilder().setHint("Filter").setOnAction((textInputHelper, textInputLayout, actionId, text1) -> {
-                        filterdObjectList.clear();
-                        filterdObjectList.addAll((Collection) allObjectList.stream().filter(o -> goToFilter.runGoToFilter(text1, o)).collect(Collectors.toList()));
-                        if (filterdObjectList.isEmpty())
-                            Toast.makeText(context, "Kein Eintrag für diese Suche", Toast.LENGTH_SHORT).show();
-                        else if (filterdObjectList.size() == 1) {
-                            customRecycler.scrollTo(allObjectList.indexOf(filterdObjectList.get(0)), true);
-                            goToDialog.dismiss();
-                        } else {
-                            currentObject[0] = filterdObjectList.get(0);
-                            goToDialog.reloadView();
-                        }
-                    }, Helpers.TextInputHelper.IME_ACTION.SEARCH))
-                    .setSetViewContent((customDialog1, view1) -> {
-                        View layoutView = customDialog1.findViewById(R.id.dialog_custom_layout_view);
-                        if (currentObject[0] == null)
-                            layoutView.setVisibility(View.GONE);
-                        else{
-                            setItemContent.runSetCellContent(layoutView, currentObject[0]);
-                            layoutView.setVisibility(View.VISIBLE);
-                        }
-                    })
-                    .show();
-        }, null, false);
+    public CustomDialog addGoToButton(CustomRecycler.GoToFilter goToFilter, CustomRecycler customRecycler) {
+        return addButton_complete(null , BUTTON_TYPE.GO_TO_BUTTON, customDialog -> customRecycler.goTo(goToFilter, null), null, false);
     }
     //  <----- Buttons -----
 
@@ -675,6 +652,9 @@ public class CustomDialog {
         textInputHelper.validate();
         if (editBuilder != null && editBuilder.disableButtonByDefault)
             button.setEnabled(false);
+
+        if (editBuilder.fireActionDirectly)
+            editBuilder.onActionActionPair.first.runOnAction(textInputHelper, textInputLayout, -1, textInputHelper.getText(textInputLayout));
     }
 
     static void setDialogLayoutParameters(Dialog dialog, boolean width, boolean height) {

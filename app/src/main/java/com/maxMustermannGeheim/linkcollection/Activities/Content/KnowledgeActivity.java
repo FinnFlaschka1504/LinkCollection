@@ -234,6 +234,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                             database.knowledgeMap.remove(knowledge.getUuid());
                             Database.saveAll();
                             reLoadRecycler();
+                            customDialog.dismiss();
                         })
                         .show();
                 }, false)

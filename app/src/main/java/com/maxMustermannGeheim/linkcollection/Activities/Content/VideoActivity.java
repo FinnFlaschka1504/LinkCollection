@@ -434,6 +434,18 @@ public class VideoActivity extends AppCompatActivity {
 
                     view.findViewById(R.id.dialog_video_editViews).setOnClickListener(view1 ->
                             showCalenderDialog(Arrays.asList(video), detailDialog));
+                    view.findViewById(R.id.dialog_video_editViews).setOnLongClickListener(view1 -> {
+                        boolean before = video.addDate(new Date(), true);
+                        Utility.showCenterdToast(this, "Ansicht Hinzugefügt" + (before ? "\n(Gestern)" : ""));
+                        Database.saveAll();
+                        customDialog.reloadView();
+                        reLoadVideoRecycler();
+                        return true;
+                    });
+                    view.findViewById(R.id.dialog_video_editViews).setOnContextClickListener(view1 -> {
+                        Toast.makeText(this, "Context Click", Toast.LENGTH_SHORT).show();
+                        return true;
+                    });
                 })
                 .setOnDialogDismiss(customDialog -> detailDialog = null);
         returnDialog.show();

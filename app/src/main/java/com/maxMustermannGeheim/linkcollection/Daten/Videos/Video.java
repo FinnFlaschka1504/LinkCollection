@@ -96,8 +96,10 @@ public class Video extends ParentClass {
             givenDate.setTime(date);
 
             isBefore = givenDate.before(limitTime);
-            if (isBefore)
-                givenDate.add(Calendar.DATE, -1);
+
+            givenDate = Calendar.getInstance();
+            givenDate.setTime(date);
+            givenDate.add(Calendar.HOUR, -6);
             date = givenDate.getTime();
         }
         this.dateList.add(date);

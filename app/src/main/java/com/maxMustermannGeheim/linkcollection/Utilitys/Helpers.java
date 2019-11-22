@@ -52,6 +52,7 @@ public class Helpers {
         private Map<TextInputLayout, Validator> inputValidationMap = new HashMap<>();
         private OnValidationResult onValidationResult;
         private boolean valid;
+        private INPUT_TYPE defaultInputType = INPUT_TYPE.CAP_SENTENCES;
 //        private boolean useStandardValidation = true;
 
         public TextInputHelper(OnValidationResult onValidationResult, TextInputLayout... inputLayouts) {
@@ -59,6 +60,7 @@ public class Helpers {
             this.layoutList = new CustomList<>(inputLayouts);
             inputValidationMap = this.layoutList.stream().collect(Collectors.toMap(o -> o, Validator::new));
             applyValidationListeners();
+            layoutList.forEach(textInputLayout -> textInputLayout.getEditText().setInputType(defaultInputType.code));
         }
 
         public TextInputHelper() {
@@ -92,12 +94,11 @@ public class Helpers {
             inputValidationMap.get(textInputLayout).setRegEx(regEx);
         }
 
-//        public void addValidation (TextInputLayout textInputLayout, TextValidation textValidation)
-
         public TextInputHelper addValidator(@NonNull TextInputLayout... textInputLayouts) {
             for (TextInputLayout textInputLayout : textInputLayouts) {
                 inputValidationMap.put(textInputLayout, new Validator(textInputLayout));
                 applyValidationListerner(textInputLayout);
+                textInputLayout.getEditText().setInputType(defaultInputType.code);
             }
             return this;
         }
@@ -341,6 +342,11 @@ public class Helpers {
             return this;
         }
 
+        public TextInputHelper setDefaultInputType(INPUT_TYPE defaultInputType) {
+            this.defaultInputType = defaultInputType;
+            return this;
+        }
+
         public TextInputHelper setOnValidationResult(OnValidationResult onValidationResult) {
             this.onValidationResult = onValidationResult;
             return this;
@@ -407,5 +413,4 @@ public class Helpers {
         }
     }
     //  <--------------- SpannableString ---------------
-
 }

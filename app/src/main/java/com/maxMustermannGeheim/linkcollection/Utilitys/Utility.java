@@ -456,6 +456,7 @@ public class Utility {
     //  <--------------- EpisodeCalender ---------------
 
     private static void loadVideoList(List<Event> eventList, FrameLayout layout, CustomRecycler<Event> customRecycler) {
+        eventList = new ArrayList<>(eventList);
         TextView calender_noTrips = layout.findViewById(R.id.fragmentCalender_noTrips);
         RecyclerView calender_videoList = layout.findViewById(R.id.fragmentCalender_videoList);
 
@@ -723,41 +724,6 @@ public class Utility {
         }
         return null;
     }
-
-//  ----- PopupWindow ----->
-    public static PopupWindow showPopupWindow(View anchor, View view, boolean centered) {
-    PopupWindow popupWindow = new PopupWindow(view, centered ? RelativeLayout.LayoutParams.MATCH_PARENT : RelativeLayout.LayoutParams.WRAP_CONTENT
-            , RelativeLayout.LayoutParams.WRAP_CONTENT, true);
-
-    if (centered)
-        popupWindow.showAtLocation(anchor, Gravity.CENTER, 0, 0);
-    else
-        popupWindow.showAsDropDown(anchor, 0, 0);
-
-    dimBehind(popupWindow);
-    return popupWindow;
-}
-
-    public static void dimBehind(PopupWindow popupWindow) {
-        View container;
-        if (popupWindow.getBackground() == null) {
-            container = (View) popupWindow.getContentView().getParent();
-        } else {
-            container = (View) popupWindow.getContentView().getParent().getParent();
-        }
-        Context context = popupWindow.getContentView().getContext();
-        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-        WindowManager.LayoutParams p = (WindowManager.LayoutParams) container.getLayoutParams();
-        p.flags = WindowManager.LayoutParams.FLAG_DIM_BEHIND;
-        p.dimAmount = 0.5f;
-        wm.updateViewLayout(container, p);
-    }
-
-    public static PopupWindow showLoadingWindow(Context context, View anchor){
-        ProgressBar progressBar = new ProgressBar(context, null, android.R.attr.progressBarStyle);
-        return showPopupWindow(anchor, progressBar, true);
-    }
-//  <----- PopupWindow -----
 
 
     public static class Triple<A,B,C> {

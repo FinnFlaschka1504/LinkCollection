@@ -144,7 +144,7 @@ public class CustomMenu {
                     popup_standardList_sub.callOnClick();
                 }, false);
 
-        popupWindow = Utility.showPopupWindow(anchor, customRecycler.generateRecyclerView(), false);
+        popupWindow = CustomPopupWindow.Builder(anchor, customRecycler.generateRecyclerView()).show_popupWindow();
         return this;
     }
 

@@ -8,6 +8,7 @@ import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -26,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class CustomRecycler<T>{
 
@@ -199,7 +201,7 @@ public class CustomRecycler<T>{
     }
 
     public CustomRecycler<T> addSubOnLongClickListener(int viewId, OnClickListener<T> onClickListener) {
-        idSubOnLongClickListenerMap.put(viewId, new Pair<>(onClickListener, true));
+        idSubOnLongClickListenerMap.put(viewId, new Pair<>(onClickListener, false));
         return this;
     }
 
@@ -513,6 +515,77 @@ public class CustomRecycler<T>{
         return recycler;
     }
     //  <----- Generate -----
+
+
+    //  --------------- GoTo --------------->
+    public CustomRecycler<T> goTo(T t) {
+        int index = objectList.indexOf(t);
+        if (index == -1)
+            return this;
+        scrollTo(index, true);
+        return this;
+    }
+    public CustomRecycler<T> goTo(GoToFilter<T> goToFilter, String search) {
+        final T[] currentObject = (T[]) new Object[1];
+        CustomList<T> filterdObjectList = new CustomList<>();
+        List<T> allObjectList = getObjectList();
+
+        if (search != null) {
+            filterdObjectList.clear();
+            filterdObjectList.addAll(allObjectList.stream().filter(t -> goToFilter.runGoToFilter(search, t)).collect(Collectors.toList()));
+            if (filterdObjectList.isEmpty())
+                Toast.makeText(context, "Kein Eintrag für diese Suche", Toast.LENGTH_SHORT).show();
+            else if (filterdObjectList.size() == 1) {
+                scrollTo(allObjectList.indexOf(filterdObjectList.get(0)), true);
+                return this;
+            }
+        }
+
+        CustomDialog goToDialog = CustomDialog.Builder(context);
+        goToDialog
+                .setTitle("Gehe Zu")
+                .addButton("Zurück", customDialog1 -> {
+                    currentObject[0] = filterdObjectList.previous(currentObject[0]);
+                    customDialog1.reloadView();
+                }, false)
+                .addButton("Weiter", customDialog1 -> {
+                    currentObject[0] = filterdObjectList.next(currentObject[0]);
+                    customDialog1.reloadView();
+                }, false)
+                .addButton(CustomDialog.BUTTON_TYPE.GO_TO_BUTTON, customDialog1 -> scrollTo(allObjectList.indexOf(currentObject[0]), true))
+                .setView(getLayoutId())
+                .setEdit(new CustomDialog.EditBuilder().setHint("Filter").setFireActionDirectly(search != null && !search.isEmpty()).setText(search != null ? search : "").allowEmpty()
+                        .setOnAction((textInputHelper, textInputLayout, actionId, text1) -> {
+                    filterdObjectList.clear();
+                    filterdObjectList.addAll(allObjectList.stream().filter(t -> goToFilter.runGoToFilter(text1, t)).collect(Collectors.toList()));
+                    if (filterdObjectList.isEmpty())
+                        Toast.makeText(context, "Kein Eintrag für diese Suche", Toast.LENGTH_SHORT).show();
+                    else if (filterdObjectList.size() == 1) {
+                        scrollTo(allObjectList.indexOf(filterdObjectList.get(0)), true);
+                        goToDialog.dismiss();
+                    } else {
+                        currentObject[0] = filterdObjectList.get(0);
+                        goToDialog.reloadView();
+                    }
+                }, Helpers.TextInputHelper.IME_ACTION.SEARCH))
+                .setSetViewContent((customDialog1, view1) -> {
+                    view1.setBackground(null);
+                    View layoutView = customDialog1.findViewById(R.id.dialog_custom_layout_view);
+                    if (currentObject[0] == null)
+                        layoutView.setVisibility(View.GONE);
+                    else{
+                        setItemContent.runSetCellContent(layoutView, currentObject[0]);
+                        layoutView.setVisibility(View.VISIBLE);
+                    }
+                })
+                .show();
+        return this;
+    }
+    public interface GoToFilter<T>{
+        boolean runGoToFilter(String search, T t);
+    }
+    //  <--------------- GoTo ---------------
+
 
     //  --------------- Convenience --------------->
     public CustomRecycler<T> scrollTo(int index, boolean ripple) {

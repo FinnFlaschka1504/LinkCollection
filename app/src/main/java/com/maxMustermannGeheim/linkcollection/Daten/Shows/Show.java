@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 public class Show extends ParentClass{
@@ -316,12 +317,14 @@ public class Show extends ParentClass{
                 givenDate.setTime(date);
 
                 isBefore = givenDate.before(limitTime);
-                if (isBefore)
-                    givenDate.add(Calendar.DATE, -1);
+
+                givenDate = Calendar.getInstance();
+                givenDate.setTime(date);
+                givenDate.add(Calendar.HOUR, -6);
                 date = givenDate.getTime();
             }
+
             this.dateList.add(date);
-//            this.dateList.add(Utility.removeTime(date));
 
             return isBefore;
         }
@@ -338,6 +341,25 @@ public class Show extends ParentClass{
             });
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Episode episode = (Episode) o;
+            return getTmdbId() == episode.getTmdbId() &&
+                    getEpisodeNumber() == episode.getEpisodeNumber() &&
+                    isWatched() == episode.isWatched() &&
+                    getSeasonNumber() == episode.getSeasonNumber() &&
+                    Objects.equals(getAirDate(), episode.getAirDate()) &&
+                    Objects.equals(getRating(), episode.getRating()) &&
+                    Objects.equals(getDateList(), episode.getDateList()) &&
+                    Objects.equals(getShowId(), episode.getShowId());
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(getTmdbId(), getAirDate(), getEpisodeNumber(), isWatched(), getRating(), getDateList(), getShowId(), getSeasonNumber());
+        }
     }
     //  <----- Classes -----
 

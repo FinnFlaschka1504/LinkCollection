@@ -46,6 +46,7 @@ import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomMenu;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomPopupWindow;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Helpers;
@@ -354,13 +355,78 @@ public class ShowActivity extends AppCompatActivity {
                 .setOnClickListener((customRecycler, view, show, index) -> {
                     showDetailDialog(show);
                 })
-                .addSubOnClickListener(R.id.listItem_show_list, (customRecycler, view, show, index) -> showSeasonDialog(show), false)
+                .addSubOnClickListener(R.id.listItem_show_list, (customRecycler, view, show, index) -> showSeasonDialog(show))
+                .addSubOnLongClickListener(R.id.listItem_show_list, (customRecycler, view, show, index) -> {
+                    List<Pair<Date, Show.Episode>> list = new ArrayList<>();
+                    for (Show.Season season : show.getSeasonList()) {
+                        season.getEpisodeMap().values().forEach(episode -> episode.getDateList()
+                                .forEach(date -> list.add(new Pair<>(date, episode))));
+                    }
+                    if (list.isEmpty())
+                        return;
+
+                    list.sort((o1, o2) -> o1.first.compareTo(o2.first) * -1);
+                    final Show.Episode[] episode = {list.get(0).second};
+
+                    Runnable onDecided = () -> {
+                        showSeasonDialog(show);
+                        int seasonNumber = episode[0].getSeasonNumber();
+                        if (episode[0].equals(list.get(0).second)) {
+                            apiSeasonRequest(show, seasonNumber, () -> {
+                                showEpisodeDialog(show.getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show).get(seasonNumber), null).goTo(episode[0]);
+                            });
+                        }
+                        else
+                            showEpisodeDialog(show.getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show).get(seasonNumber), null).goTo((search, episode1) -> episode1.getUuid().equals(episode[0].getUuid()), "");
+                    };
+
+                    CustomDialog.Builder(this)
+                            .setTitle("Gehe Zu")
+                            .addButton("Zuletzt gesehen", customDialog -> onDecided.run())
+                            .addButton("Nächste Episode", customDialog -> {
+                                getNextEpisode(episode[0], episode1 -> {
+                                    episode[0] = episode1;
+                                    if (episode[0] == null)
+                                        Toast.makeText(this, "Keine nächste Episode", Toast.LENGTH_SHORT).show();
+                                    else
+                                        onDecided.run();
+                                });
+                            })
+                            .enableExpandButtons()
+                            .show();
+                })
                 .setOnLongClickListener((customRecycler, view, show, index) -> {
                     showEditOrNewDialog(show);
                 })
                 .hideDivider()
                 .generate();
     }
+
+
+
+    //  --------------- NextEpisode --------------->
+    private void getNextEpisode(Show.Episode previousEpisode, OnNextEpisode onNextEpisode) {
+        Show show = database.showMap.get(previousEpisode.getShowId());
+        Show.Season season = show.getSeasonList().get(previousEpisode.getSeasonNumber());
+
+        if (season.getEpisodesCount() > previousEpisode.getEpisodeNumber()) {
+            apiSeasonRequest(show, season.getSeasonNumber(), () -> {
+                onNextEpisode.runOnNextEpisode(database.tempShowSeasonEpisodeMap.get(show).get(season.getSeasonNumber()).get("E:" + (previousEpisode.getEpisodeNumber() + 1)));
+            });
+        } else if (show.getSeasonsCount() > season.getSeasonNumber()) {
+            apiSeasonRequest(show, season.getSeasonNumber() + 1, () -> {
+                onNextEpisode.runOnNextEpisode(database.tempShowSeasonEpisodeMap.get(show).get(season.getSeasonNumber() + 1).get("E:1"));
+            });
+        }
+        else
+            onNextEpisode.runOnNextEpisode(null);
+
+    }
+
+    private interface OnNextEpisode {
+        void runOnNextEpisode(Show.Episode episode);
+    }
+    //  <--------------- NextEpisode ---------------
 
     private void reLoadRecycler() {
         customRecycler_ShowList.reload();
@@ -530,11 +596,13 @@ public class ShowActivity extends AppCompatActivity {
             ((CustomDialog) dialog.getObjectExtra()).reloadView();
 
     }
+
+
     //  --------------- Season & Episode --------------->
     private void showSeasonDialog(Show show) {
         CustomDialog customDialog = CustomDialog.Builder(this);
 
-        RecyclerView seasonRecycler = new CustomRecycler<Show.Season>(this)
+        CustomRecycler<Show.Season> seasonRecycler = new CustomRecycler<Show.Season>(this)
                 .setObjectList(show.getSeasonList())
                 .setItemLayout(R.layout.list_item_season)
                 .setSetItemContent((itemView, season) -> {
@@ -561,7 +629,7 @@ public class ShowActivity extends AppCompatActivity {
                     if ((seasonEpisodeMap = database.tempShowSeasonEpisodeMap.get(show)) != null && (episodeMap = seasonEpisodeMap.get(season.getSeasonNumber())) != null)
                         showEpisodeDialog(season, episodeMap,customRecycler);
                     else
-                        apiSeasonRequest(show, season.getSeasonNumber(), customDialog.getView(), () -> {
+                        apiSeasonRequest(show, season.getSeasonNumber(), () -> {
                             showEpisodeDialog(season, database.tempShowSeasonEpisodeMap.get(show).get(season.getSeasonNumber()),customRecycler);
                         });
                 })
@@ -570,16 +638,23 @@ public class ShowActivity extends AppCompatActivity {
                     showResetDialog(new CustomList<>(((Show.Season) season).getEpisodeMap().values()), season, null, customRecycler).setOnDialogDismiss(customDialog1 -> Database.saveAll());
                 })
                 .hideDivider()
-                .generateRecyclerView();
+                .generate();
         customDialog
                 .setTitle("Staffeln")
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
-                .setView(seasonRecycler)
+                .setView(seasonRecycler.getRecycler())
                 .disableScroll()
                 .show();
     }
 
-    private void showEpisodeDialog(Show.Season season, Map<String, Show.Episode> episodeMap, CustomRecycler<Show.Season> seasonCustomRecycler) {
+    private CustomRecycler<Show.Episode> showEpisodeDialog(Show.Season season, Map<String, Show.Episode> episodeMap, CustomRecycler<Show.Season> seasonCustomRecycler) {
+        final Show.Episode[] selectedEpisode = {null};
+        Runnable addView = () -> {
+            selectedEpisode[0].setWatched(true);
+            season.getEpisodeMap().put("E:" + selectedEpisode[0].getEpisodeNumber(), selectedEpisode[0]);
+            boolean before = selectedEpisode[0].addDate(new Date(), true);
+            Utility.showCenterdToast(this, "Ansicht hinzugefügt" + (before ? "\nAutomatisch für gestern hinzugefügt" : ""));
+        };
         CustomRecycler<Show.Episode> episodeRecycler = new CustomRecycler<Show.Episode>(this)
                 .setGetActiveObjectList(() -> {
                     episodeMap.putAll(season.getEpisodeMap());
@@ -610,14 +685,31 @@ public class ShowActivity extends AppCompatActivity {
                     }
                 })
                 .addSubOnClickListener(R.id.listItem_episode_seen, (customRecycler, itemView, episode, index) -> {
-                    if (season.getEpisodeMap().containsValue(episode)) {
-                        episode.setWatched(false);
-                        season.getEpisodeMap().remove("E:" + episode.getEpisodeNumber());
-                    } else {
-                        episode.setWatched(true);
-                        season.getEpisodeMap().put("E:" + episode.getEpisodeNumber(), episode);
-                        episode.getDateList().add(new Date());
+                    selectedEpisode[0] = episode;
+                    if (episode.getRating() == -1 || episode.getRating() == 0) {
+                        RatingBar ratingBar = new RatingBar(this);
+                        ratingBar.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                        ratingBar.setRating(-1);
+                        ratingBar.setMax(5);
+                        ratingBar.setStepSize(0.5f);
+                        ratingBar.setNumStars(5);
+                        ratingBar.setBackground(getDrawable(R.drawable.tile_background));
+                        CustomPopupWindow customPopupWindow = CustomPopupWindow.Builder(itemView, ratingBar).setPositionRelativeToAnchor(CustomPopupWindow.POSITION_RELATIVE_TO_ANCHOR.TOP).show();
+                        ratingBar.setOnRatingBarChangeListener((ratingBar1, rating, fromUser) -> {
+                            selectedEpisode[0].setRating(rating);
+                            addView.run();
+                            customRecycler.reload();
+                            customPopupWindow.dismiss();
+                        });
                     }
+                    else {
+                        addView.run();
+                        customRecycler.reload();
+                    }
+                })
+                .addSubOnLongClickListener(R.id.listItem_episode_seen, (customRecycler, itemView, episode, index) -> {
+                    selectedEpisode[0] = episode;
+                    addView.run();
                     customRecycler.reload();
                 })
                 .setOnClickListener((customRecycler, itemView, episode, index) -> {
@@ -625,23 +717,13 @@ public class ShowActivity extends AppCompatActivity {
                 })
                 .setOnLongClickListener((customRecycler, view, episode, index) -> showResetDialog(Arrays.asList(episode), null, null, customRecycler))
                 .hideDivider();
-        int marHor = Utility.dpToPx(8);
-        int marVer = Utility.dpToPx(5);
         CustomDialog.Builder(this)
                 .setTitle(season.getName() + " - Folgen")
-                .addGoToButton((CustomDialog.GoToFilter<Show.Episode>) (search, episode) -> {
+                .addGoToButton((CustomRecycler.GoToFilter<Show.Episode>) (search, episode) -> {
                     if (String.valueOf(episode.getEpisodeNumber()).equals(search)) {
                         return true;
                     }
                     return episode.getName().toLowerCase().contains(search.toLowerCase());
-                }, (itemView, o) -> {
-                    FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
-                    params.setMargins(marHor, marVer, marHor, marVer);
-                    itemView.findViewById(R.id.listItem_episode_root).setLayoutParams(params);
-                    ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(((Show.Episode) o).getEpisodeNumber()));
-                    ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(((Show.Episode) o).getName());
-                    ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(((Show.Episode) o).getAirDate()));
-                    ((TextView) itemView.findViewById(R.id.listItem_episode_viewCount)).setText(((Show.Episode) o).getDateList().isEmpty() ? "" : "| " + ((Show.Episode) o).getDateList().size());
                 }, episodeRecycler)
                 .alignPreviousButtonsLeft()
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
@@ -649,12 +731,15 @@ public class ShowActivity extends AppCompatActivity {
                 .disableScroll()
                 .setOnDialogDismiss(customDialog -> {
                     Database.saveAll();
-                    seasonCustomRecycler.reload();
+                    if (seasonCustomRecycler != null)
+                        seasonCustomRecycler.reload();
                 })
                 .show();
+        return episodeRecycler;
     }
 
     private void showEpisodeDetailDialog(CustomRecycler customRecycler, Show.Episode episode, boolean startedDirectly) {
+        setResult(RESULT_OK);
         CustomDialog.Builder(this)
                 .setTitle(episode.getName())
                 .setView(R.layout.dialog_detail_episode)
@@ -734,6 +819,7 @@ public class ShowActivity extends AppCompatActivity {
                                 for (Show.Episode episode : episodeList) {
                                     episode.getDateList().clear();
                                     episode.setWatched(false);
+                                    episode.setRating(-1f);
                                     database.showMap.get(episode.getShowId()).getSeasonList().get(episode.getSeasonNumber()).getEpisodeMap().remove(episode.getUuid());
                                 }
                                 if (customDialog != null)
@@ -749,6 +835,7 @@ public class ShowActivity extends AppCompatActivity {
     }
 
     public void showCalenderDialog(Show.Episode episode, CustomDialog detailDialog) {
+        int viewCount = episode.getDateList().size();
         CustomDialog.Builder(this)
                 .setTitle("Ansichten Bearbeiten")
                 .setView(R.layout.dialog_edit_views)
@@ -763,19 +850,18 @@ public class ShowActivity extends AppCompatActivity {
                 .disableScroll()
                 .setDimensions(true, true)
                 .setOnDialogDismiss(customDialog -> {
-                    detailDialog.reloadView();
                     Map<String, Show.Episode> episodeMap = database.showMap.get(episode.getShowId()).getSeasonList().get(episode.getSeasonNumber()).getEpisodeMap();
                     if (episode.getDateList().isEmpty()) {
                         episode.setWatched(false);
+                        episode.setRating(-1f);
                         episodeMap.remove(episode.getUuid());
                     } else {
                         if (!episodeMap.containsKey(episode.getUuid()))
                             episodeMap.put(episode.getUuid(), episode);
+                        if (viewCount < episode.getDateList().size())
+                            episode.setWatched(true);
                     }
-
-
-//                    this.reLoadRecycler();
-//                    customRecycler.reload();
+                    detailDialog.reloadView();
                 })
                 .show();
     }
@@ -910,7 +996,7 @@ public class ShowActivity extends AppCompatActivity {
 
     }
 
-    private void apiSeasonRequest(Show show, int seasonNumber, View view, Runnable onLoaded) {
+    private void apiSeasonRequest(Show show, int seasonNumber, Runnable onLoaded) {
         if (!Utility.isOnline(this))
             return;
 

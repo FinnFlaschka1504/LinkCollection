@@ -327,7 +327,7 @@ public class OweActivity extends AppCompatActivity {
                             database.oweMap.remove(owe.getUuid());
                             Database.saveAll();
                             reLoadRecycler();
-                            customDialog1.dismiss();
+                            customDialog.dismiss();
                             setResult(RESULT_OK);
                         })
                         .show();
@@ -378,9 +378,7 @@ public class OweActivity extends AppCompatActivity {
                 .setTitle("Deteil Ansicht")
                 .setView(R.layout.dialog_detail_owe)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
-                .addButton("Bearbeiten", customDialog ->
-                        addOrEditDialog[0] = showEditOrNewDialog(owe), false)
-//                .addButton("Öffnen mit...", dialog -> openUrl(owe, true), false)
+                .addButton("Bearbeiten", customDialog -> addOrEditDialog[0] = showEditOrNewDialog(owe), false)
                 .setSetViewContent((customDialog, view) -> {
                     ((TextView) view.findViewById(R.id.dialog_detail_owe_title)).setText(owe.getName());
                     ((TextView) view.findViewById(R.id.dialog_detail_owe_description)).setText(owe.getDescription());
@@ -390,6 +388,25 @@ public class OweActivity extends AppCompatActivity {
 
                     view.findViewById(R.id.dialog_detail_owe_listItems).setOnClickListener(v -> {
                         showItemsDialog(owe, view.findViewById(R.id.dialog_detail_owe_items),false);
+                    });
+                    view.findViewById(R.id.dialog_detail_owe_listItems).setOnLongClickListener(v -> {
+                        Runnable apply = () -> {
+                            owe.getItemList().forEach(item -> item.setOpen(false));
+                            Toast.makeText(this, "Alle Einträge beglichen", Toast.LENGTH_SHORT).show();
+                            customDialog.reloadView();
+                            reLoadRecycler();
+                        };
+
+                        if (owe.getItemList().size() > 1)
+                            CustomDialog.Builder(this)
+                                    .setTitle("Alle Einträge Begleichen")
+                                    .setText("Willst du wirklich alle Einträge begleichen?")
+                                    .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                                    .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> apply.run())
+                                    .show();
+                        else
+                            apply.run();
+                        return true;
                     });
                 })
                 .setOnDialogDismiss(customDialog -> detailDialog = null)

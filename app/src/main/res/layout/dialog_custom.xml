@@ -134,6 +134,7 @@
     </LinearLayout>
 
     <LinearLayout
+        android:id="@+id/dialog_custom_buttonLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="8dp"
@@ -153,14 +154,6 @@
             android:gravity="end" />
 
     </LinearLayout>
-
-    <org.apmem.tools.layouts.FlowLayout
-        android:id="@+id/dialog_custom_buttonLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="end">
-
-    </org.apmem.tools.layouts.FlowLayout>
 
     <Button
         android:id="@+id/dialog_custom_Button1"

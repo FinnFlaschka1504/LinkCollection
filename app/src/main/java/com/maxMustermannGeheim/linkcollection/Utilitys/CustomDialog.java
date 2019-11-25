@@ -11,7 +11,6 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -19,12 +18,7 @@ import com.maxMustermannGeheim.linkcollection.R;
 
 import org.apmem.tools.layouts.FlowLayout;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 public class CustomDialog {
 
@@ -57,6 +51,7 @@ public class CustomDialog {
     private EditBuilder editBuilder;
     private boolean showEdit;
     private boolean buttonLabelAllCaps = true;
+    private boolean stackButtons;
     private boolean expandButtons;
 
     private SetViewContent setViewContent;
@@ -168,10 +163,16 @@ public class CustomDialog {
         return this;
     }
 
+    public CustomDialog enableStackButtons() {
+        this.stackButtons = true;
+        return this;
+    }
+
     public CustomDialog enableExpandButtons() {
         this.expandButtons = true;
         return this;
     }
+
     //  <----- Getters & Setters -----
 
 
@@ -355,10 +356,12 @@ public class CustomDialog {
             Button button = new Button(context);
             button.setBackground(dialog.findViewById(R.id.dialog_custom_Button1).getBackground().getConstantState().newDrawable());
             button.setTextColor(((Button)dialog.findViewById(R.id.dialog_custom_Button1)).getTextColors());
-            if (expandButtons) {
+            if (stackButtons || expandButtons) {
                 LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
                 button.setLayoutParams(params);
             }
+
+
 
             if (label != null)
                 button.setText(label);
@@ -381,10 +384,19 @@ public class CustomDialog {
             if (hidden)
                 button.setVisibility(View.GONE);
 
-            if (alignLeft)
-                ((FlowLayout) dialog.findViewById(R.id.dialog_custom_buttonLayout_left)).addView(button);
-            else
-                ((FlowLayout) dialog.findViewById(R.id.dialog_custom_buttonLayout_right)).addView(button);
+            ViewGroup layout;
+            if (expandButtons) {
+                layout = dialog.findViewById(R.id.dialog_custom_buttonLayout);
+                if (buttonHelperList.isFirst(this))
+                    layout.removeAllViews();
+            } else {
+                if (alignLeft)
+                    layout = dialog.findViewById(R.id.dialog_custom_buttonLayout_left);
+                else
+                    layout = dialog.findViewById(R.id.dialog_custom_buttonLayout_right);
+            }
+
+            layout.addView(button);
             this.button = button;
 
             button.setOnClickListener(v -> {
@@ -564,12 +576,14 @@ public class CustomDialog {
         buttonHelperList.forEach(ButtonHelper::generateButton);
         FlowLayout dialog_custom_buttonLayout_left = dialog.findViewById(R.id.dialog_custom_buttonLayout_left);
         FlowLayout dialog_custom_buttonLayout_right = dialog.findViewById(R.id.dialog_custom_buttonLayout_right);
-        LinearLayout.LayoutParams layoutParams_left =
-                new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, dialog_custom_buttonLayout_right.getChildCount());
-        LinearLayout.LayoutParams layoutParams_right =
-                new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, dialog_custom_buttonLayout_left.getChildCount());
-        dialog_custom_buttonLayout_left.setLayoutParams(layoutParams_left);
-        dialog_custom_buttonLayout_right.setLayoutParams(layoutParams_right);
+        if (dialog_custom_buttonLayout_left != null && dialog_custom_buttonLayout_right != null) {
+            LinearLayout.LayoutParams layoutParams_left =
+                    new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, dialog_custom_buttonLayout_right.getChildCount());
+            LinearLayout.LayoutParams layoutParams_right =
+                    new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, dialog_custom_buttonLayout_left.getChildCount());
+            dialog_custom_buttonLayout_left.setLayoutParams(layoutParams_left);
+            dialog_custom_buttonLayout_right.setLayoutParams(layoutParams_right);
+        }
 
         if (showEdit) {
             applyEdit();

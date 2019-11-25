@@ -516,7 +516,12 @@ public class VideoActivity extends AppCompatActivity {
                     new Helpers.TextInputHelper().defaultDialogValidation(customDialog).addValidator(dialog_editOrAddVideo_Titel_layout)
                             .addActionListener(dialog_editOrAddVideo_Titel_layout, (textInputHelper, textInputLayout, actionId, text) -> {
                                 apiRequest(text, customDialog, video[0]);
-                            }, Helpers.TextInputHelper.IME_ACTION.SEARCH);
+                            }, Helpers.TextInputHelper.IME_ACTION.SEARCH)
+                            .changeValidation(dialog_editOrAddVideo_Titel_layout, (validator, text) -> {
+                                if (database.videoMap.values().stream().anyMatch(show1 -> show1.getName().toLowerCase().equals(text.toLowerCase())))
+                                    validator.setInalid("Schon vorhanden!");
+                            });
+
                     if (video[0] != null) {
                         ((AutoCompleteTextView) view.findViewById(R.id.dialog_editOrAddVideo_Titel)).setText(video[0].getName());
                         ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_Darsteller)).setText(

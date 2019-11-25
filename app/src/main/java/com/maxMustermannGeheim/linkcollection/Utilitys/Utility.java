@@ -254,20 +254,19 @@ public class Utility {
     }
     //  <----- ... in Joke -----
 
-    //  ----- ... in Joke ----->
+    //  ----- ... in Show ----->
     public static boolean containedInShow(String query, Show show, HashSet<ShowActivity.FILTER_TYPE> filterTypeSet) {
         if (show.getUuid().equals(query)) return true;
-        return filterTypeSet.contains(ShowActivity.FILTER_TYPE.NAME) && show.getName().toLowerCase().contains(query);
-//        if (filterTypeSet.contains(ShowActivity.FILTER_TYPE.PUNCHLINE) && show.getPunchLine().toLowerCase().contains(query))
-//            return true;
-//        if (filterTypeSet.contains(ShowActivity.FILTER_TYPE.CATEGORY)) {
-//            for (String categoryId : show.getCategoryIdList()) {
-//                if (getObjectFromDatabase(CategoriesActivity.CATEGORIES.JOKE_CATEGORIES, categoryId).getName().toLowerCase().contains(query))
-//                    return true;
-//            }
-//        }
+        if (filterTypeSet.contains(ShowActivity.FILTER_TYPE.NAME) && show.getName().toLowerCase().contains(query))
+            return true;
+        Database database = Database.getInstance();
+        if (filterTypeSet.contains(ShowActivity.FILTER_TYPE.GENRE) && show.getGenreIdList().stream().anyMatch(uuid -> {
+            return database.showGenreMap.get(uuid).getName().toLowerCase().contains(query.toLowerCase());
+        }))
+            return true;
+        return false;
     }
-    //  <----- ... in Joke -----
+    //  <----- ... in Show -----
 //  <----- Filter -----
 
 
@@ -457,6 +456,7 @@ public class Utility {
 
     private static void loadVideoList(List<Event> eventList, FrameLayout layout, CustomRecycler<Event> customRecycler) {
         eventList = new ArrayList<>(eventList);
+        eventList.sort((o1, o2) -> Long.compare(o1.getTimeInMillis(), o2.getTimeInMillis()));
         TextView calender_noTrips = layout.findViewById(R.id.fragmentCalender_noTrips);
         RecyclerView calender_videoList = layout.findViewById(R.id.fragmentCalender_videoList);
 

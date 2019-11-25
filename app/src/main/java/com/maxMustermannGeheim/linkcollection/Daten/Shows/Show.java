@@ -4,6 +4,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -120,23 +121,16 @@ public class Show extends ParentClass{
         return this;
     }
 
-//    public Show cloneShow() {
-//        Show newShow = new Show();
-//        newShow.setName(this.name);
-//        newShow.setUuid(this.uuid);
-//        newShow.setAllEpisodesCount(this.allEpisodesCount);
-//        newShow.setGenreIdList(new ArrayList<>(this.genreIdList));
-//        newShow.setSeasonsCount(this.seasonsCount);
-//        newShow.setTmdbId(this.tmdbId);
-//        newShow.setSeasonList(new ArrayList<>(this.seasonList));
-//        newShow.setFirstAirDate(this.firstAirDate);
-//        return newShow;
-//    }
-
-
     @Override
     public Show clone() {
         return (Show) super.clone();
+    }
+
+//    @Override
+    public void copy(Show parentClass) {
+        for (Field field : Show.class.getDeclaredFields()) {
+            field.setAccessible(true);
+        }
     }
 
     //  ----- Classes ----->

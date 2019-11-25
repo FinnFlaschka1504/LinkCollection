@@ -27,7 +27,6 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.res.ResourcesCompat;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -369,15 +368,15 @@ public class ShowActivity extends AppCompatActivity {
                     final Show.Episode[] episode = {list.get(0).second};
 
                     Runnable onDecided = () -> {
-                        showSeasonDialog(show);
+                        CustomRecycler<Show.Season> seasonRecycler = showSeasonDialog(show);
                         int seasonNumber = episode[0].getSeasonNumber();
                         if (episode[0].equals(list.get(0).second)) {
                             apiSeasonRequest(show, seasonNumber, () -> {
-                                showEpisodeDialog(show.getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show).get(seasonNumber), null).goTo(episode[0]);
+                                showEpisodeDialog(show.getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show).get(seasonNumber), seasonRecycler).goTo(episode[0]);
                             });
                         }
                         else
-                            showEpisodeDialog(show.getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show).get(seasonNumber), null).goTo((search, episode1) -> episode1.getUuid().equals(episode[0].getUuid()), "");
+                            showEpisodeDialog(show.getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show).get(seasonNumber), seasonRecycler).goTo((search, episode1) -> episode1.getUuid().equals(episode[0].getUuid()), "");
                     };
 
                     CustomDialog.Builder(this)
@@ -392,7 +391,7 @@ public class ShowActivity extends AppCompatActivity {
                                         onDecided.run();
                                 });
                             })
-                            .enableExpandButtons()
+                            .enableStackButtons()
                             .show();
                 })
                 .setOnLongClickListener((customRecycler, view, show, index) -> {
@@ -507,9 +506,24 @@ public class ShowActivity extends AppCompatActivity {
 
         final Show editShow = show == null ? new Show("") : show.clone();
 
-        return CustomDialog.Builder(this)
+        CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle(show == null ? "Neu: " + singular : singular + " Bearbeiten")
-                .setView(R.layout.dialog_edit_or_add_show)
+                .setView(R.layout.dialog_edit_or_add_show);
+
+        if (show != null) {
+            returnDialog.addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
+                CustomDialog.Builder(this)
+                        .setTitle("Löschen")
+                        .setText("Willst du wirklich '" + show.getName() + "' löschen?")
+                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                        .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
+                            database.showMap.remove(show.getUuid());
+                            reLoadRecycler();
+                        })
+                        .show();
+            }, false);
+        }
+        return returnDialog
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     boolean checked = ((CheckBox) customDialog.findViewById(R.id.dialog_editOrAdd_show_watchLater)).isChecked();
@@ -522,7 +536,11 @@ public class ShowActivity extends AppCompatActivity {
                     new Helpers.TextInputHelper().defaultDialogValidation(customDialog).addValidator(dialog_editOrAdd_show_Title_layout)
                             .addActionListener(dialog_editOrAdd_show_Title_layout, (textInputHelper, textInputLayout, actionId, text) -> {
                                 apiSearchRequest(text, customDialog, editShow);
-                            }, Helpers.TextInputHelper.IME_ACTION.SEARCH);
+                            }, Helpers.TextInputHelper.IME_ACTION.SEARCH)
+                            .changeValidation(dialog_editOrAdd_show_Title_layout, (validator, text) -> {
+                                if (show == null && database.showMap.values().stream().anyMatch(show1 -> show1.getName().toLowerCase().equals(text.toLowerCase())))
+                                    validator.setInalid("Gleiche Serie schon vorhanden!");
+                            });
                     AutoCompleteTextView dialog_editOrAdd_show_title = view.findViewById(R.id.dialog_editOrAdd_show_title);
                     if (!editShow.getName().isEmpty()) {
                         dialog_editOrAdd_show_title.setText(editShow.getName());
@@ -569,6 +587,7 @@ public class ShowActivity extends AppCompatActivity {
         if (show == null)
             show = editShow;
 
+//        show.copy(editShow);
         show.setName(((AutoCompleteTextView) dialog.findViewById(R.id.dialog_editOrAdd_show_title)).getText().toString());
         show.setStatus(editShow.getStatus());
         show.setGenreIdList(editShow.getGenreIdList());
@@ -599,7 +618,7 @@ public class ShowActivity extends AppCompatActivity {
 
 
     //  --------------- Season & Episode --------------->
-    private void showSeasonDialog(Show show) {
+    private CustomRecycler<Show.Season> showSeasonDialog(Show show) {
         CustomDialog customDialog = CustomDialog.Builder(this);
 
         CustomRecycler<Show.Season> seasonRecycler = new CustomRecycler<Show.Season>(this)
@@ -618,7 +637,7 @@ public class ShowActivity extends AppCompatActivity {
                         if (size < season.getEpisodesCount())
                             helper.append(size + " / " + season.getEpisodesCount());
                         else
-                            helper.appendColor("Alle", getColor(R.color.colorGreen));
+                            helper.appendColor("Alle " + season.getEpisodesCount(), getColor(R.color.colorGreen));
                     }
                     ((TextView) itemView.findViewById(R.id.listItem_season_episodes)).setText(helper.get());
                 })
@@ -645,6 +664,7 @@ public class ShowActivity extends AppCompatActivity {
                 .setView(seasonRecycler.getRecycler())
                 .disableScroll()
                 .show();
+        return seasonRecycler;
     }
 
     private CustomRecycler<Show.Episode> showEpisodeDialog(Show.Season season, Map<String, Show.Episode> episodeMap, CustomRecycler<Show.Season> seasonCustomRecycler) {

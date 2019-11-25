@@ -54,13 +54,21 @@ public class CustomList<E> extends ArrayList<E> {
         return this;
     }
 
+    public boolean isFirst(E e) {
+        if (e == null || isEmpty())
+            return false;
+        return e.equals(get(0));
+    }
+
     public boolean isLast(E e) {
-        if (e == null)
+        if (e == null || isEmpty())
             return false;
         return e.equals(getLast());
     }
+
     public boolean isLast(int i) {
-        return get(i).equals(getLast());
+        return i == size() - 1;
+//        return get(i).equals(getLast());
     }
 
     //  --------------- Recycle --------------->

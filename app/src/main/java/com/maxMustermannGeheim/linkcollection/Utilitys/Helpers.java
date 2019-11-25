@@ -211,7 +211,7 @@ public class Helpers {
             public boolean validate(String text, boolean changeErrorMessage) {
                 reset();
 
-                if (textValidation != null && !regEx.isEmpty())
+                if (textValidation != null && regEx.isEmpty())
                     textValidation.runTextValidation(this, text);
 
                 if (!regEx.isEmpty()) {
@@ -296,7 +296,7 @@ public class Helpers {
 
 
         //  ----- Action ----->
-        public void addActionListener(TextInputLayout textInputLayout, OnAction onAction, IME_ACTION... actions) {
+        public TextInputHelper addActionListener(TextInputLayout textInputLayout, OnAction onAction, IME_ACTION... actions) {
             textInputLayout.getEditText().setOnEditorActionListener((v, actionId, event) -> {
                 boolean handled = false;
                 if (actions.length == 0) {
@@ -323,6 +323,7 @@ public class Helpers {
                 });
                 textInputLayout.getEditText().setImeOptions(actionFlag[0]);
             }
+            return this;
         }
 
         public interface OnAction {

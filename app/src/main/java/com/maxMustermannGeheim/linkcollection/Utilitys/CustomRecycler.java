@@ -220,7 +220,7 @@ public class CustomRecycler<T>{
     }
 
     public interface OnClickListener<T> {
-        void runOnClickListener(CustomRecycler customRecycler, View itemView, T t, int index);
+        void runOnClickListener(CustomRecycler<T> customRecycler, View itemView, T t, int index);
     }
 
     public CustomRecycler<T> setOnClickListener(OnClickListener<T> onClickListener) {
@@ -229,7 +229,7 @@ public class CustomRecycler<T>{
     }
 
     public interface OnLongClickListener<T> {
-        void runOnLongClickListener(CustomRecycler customRecycler, View view, T t, int index);
+        void runOnLongClickListener(CustomRecycler<T> customRecycler, View view, T t, int index);
     }
 
     public CustomRecycler<T> setOnLongClickListener(OnLongClickListener<T> onLongClickListener) {

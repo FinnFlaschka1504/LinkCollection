@@ -148,8 +148,13 @@ public class CustomDialog {
         return this;
     }
 
-    public CustomDialog setOnDialogDismiss(OnDialogDismiss onDialogDismiss) {
-        dialog.setOnDismissListener(dialog1 -> onDialogDismiss.runOnDialogDismiss(this));
+    public CustomDialog setOnDialogDismiss(OnDialogCallback onDialogDismiss) {
+        dialog.setOnDismissListener(dialog1 -> onDialogDismiss.runOnDialogCallback(this));
+        return this;
+    }
+
+    public CustomDialog setOnDialogShown(OnDialogCallback onDialogShown) {
+        dialog.setOnShowListener(dialog1 -> onDialogShown.runOnDialogCallback(this));
         return this;
     }
 
@@ -185,8 +190,8 @@ public class CustomDialog {
         void runSetViewContent(CustomDialog customDialog, View view);
     }
 
-    public interface OnDialogDismiss {
-        void runOnDialogDismiss(CustomDialog customDialog);
+    public interface OnDialogCallback {
+        void runOnDialogCallback(CustomDialog customDialog);
     }
 
     public interface GoToFilter<T>{
@@ -417,6 +422,10 @@ public class CustomDialog {
         public ButtonHelper setVisibility(int visibility) {
             button.setVisibility(visibility);
             return this;
+        }
+
+        public Button getButton() {
+            return button;
         }
     }
 

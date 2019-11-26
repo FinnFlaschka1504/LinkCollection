@@ -1,5 +1,6 @@
 package com.maxMustermannGeheim.linkcollection.Utilitys;
 
+import android.content.res.ColorStateList;
 import android.graphics.Typeface;
 import android.text.Editable;
 import android.text.Spannable;
@@ -9,7 +10,9 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
+import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
 
 import androidx.annotation.NonNull;
 
@@ -20,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+// ToDo: warning beim speichern triggern und dann bestätigen müssen
 public class Helpers {
     //  ----- TextInput ----->
     public static class TextInputHelper {
@@ -53,8 +57,14 @@ public class Helpers {
         private OnValidationResult onValidationResult;
         private boolean valid;
         private INPUT_TYPE defaultInputType = INPUT_TYPE.CAP_SENTENCES;
-//        private boolean useStandardValidation = true;
-
+        private Validator.STATUS status;
+        public TextInputHelper(Button buttonToBind, TextInputLayout... inputLayouts) {
+            this.onValidationResult = buttonToBind::setEnabled;
+            this.layoutList = new CustomList<>(inputLayouts);
+            inputValidationMap = this.layoutList.stream().collect(Collectors.toMap(o -> o, Validator::new));
+            applyValidationListeners();
+            layoutList.forEach(textInputLayout -> textInputLayout.getEditText().setInputType(defaultInputType.code));
+        }
         public TextInputHelper(OnValidationResult onValidationResult, TextInputLayout... inputLayouts) {
             this.onValidationResult = onValidationResult;
             this.layoutList = new CustomList<>(inputLayouts);
@@ -67,27 +77,25 @@ public class Helpers {
         }
 
         //  ----- Validation ----->
-        public boolean validate(TextInputLayout... layoutLists) {
-            boolean all = false;
-            if (layoutLists.length == 1 && layoutLists[0] == null)
-                all = true;
+        public Validator.STATUS validate(TextInputLayout... layoutLists) {
             List<TextInputLayout> inputLayoutList = new CustomList<>(layoutLists);
+            status = Validator.STATUS.VALID;
             for (Map.Entry<TextInputLayout, Validator> entry : inputValidationMap.entrySet()) {
-                if (!entry.getValue().validate(entry.getKey().getEditText().getText().toString().trim(), inputLayoutList.contains(entry.getKey()) || all)) {
-                    valid = false;
-                    if (onValidationResult != null)
-                        onValidationResult.runOnValidationResult(false);
-                    return false;
+                Validator.STATUS validate = entry.getValue().validate(entry.getKey().getEditText().getText().toString().trim(),
+                        inputLayoutList.contains(entry.getKey()) || layoutLists == null);
+                if (validate.getLevel() > status.getLevel()) {
+                    status = validate;
                 }
             }
-            valid = true;
+            valid = status.isValid();
             if (onValidationResult != null)
-                onValidationResult.runOnValidationResult(true);
-            return true;
+                onValidationResult.runOnValidationResult(status.isValid());
+            return status;
         }
 
-        public void changeValidation(TextInputLayout textInputLayout, TextValidation textValidation) {
+        public TextInputHelper changeValidation(TextInputLayout textInputLayout, TextValidation textValidation) {
             inputValidationMap.get(textInputLayout).setTextValidation(textValidation);
+            return this;
         }
 
         public void changeValidation(TextInputLayout textInputLayout, String regEx) {
@@ -150,13 +158,42 @@ public class Helpers {
             return this;
         }
 
+        public TextInputHelper warnIfEmpty(@NonNull TextInputLayout... textInputLayouts) {
+            for (TextInputLayout textInputLayout : textInputLayouts) {
+                inputValidationMap.get(textInputLayout).warnIfEmpty = true;
+            }
+            return this;
+        }
+
         public interface TextValidation {
             void runTextValidation(Validator validator, String text);
         }
 
         public static class Validator {
             enum STATUS {
-                NONE, VALID, INVALID
+                NONE(false, false, 3), VALID(true, true, 0), INVALID(false, false, 2), WARNING(true, false, 1);
+
+                private boolean valid;
+                private boolean allwaysValid;
+                private int level;
+
+                STATUS(boolean valid, boolean allwaysValid, int level) {
+                    this.valid = valid;
+                    this.allwaysValid = allwaysValid;
+                    this.level = level;
+                }
+
+                public boolean isValid() {
+                    return valid;
+                }
+
+                public boolean isAlwaysValid() {
+                    return allwaysValid;
+                }
+
+                public int getLevel() {
+                    return level;
+                }
             }
 
             enum MODE {
@@ -167,48 +204,55 @@ public class Helpers {
             private STATUS status = STATUS.NONE;
             private MODE mode;
             private MODE defaultMode = MODE.BLACK_LIST;
-            private String errorMessage = "<Fehler>";
+            private String message = "<Fehler>";
             private TextValidation textValidation;
             private TextInputLayout textInputLayout;
             private TextWatcher textWatcher;
             private boolean useDefaultValidation = true;
             private boolean allowEmpty;
+            private boolean warnIfEmpty;
             private String regEx = "";
+            private int warningColor = 0xffFFB300;
+            private int errorColor = 0xFFFF7043;
 
             public Validator(TextInputLayout textInputLayout) {
                 this.textInputLayout = textInputLayout;
             }
 
             private void reset() {
-                errorMessage = null;
+                message = null;
                 status = STATUS.NONE;
                 useDefaultValidation = alwaysUseDefaultValidation;
-                errorMessage = "<Fehler>";
+                message = "<Fehler>";
                 mode = defaultMode;
             }
 
             private void defaultValidation(String text, boolean changeErrorMessage) {
-                if (text.isEmpty() && !allowEmpty) {
+                if (text.isEmpty() && !allowEmpty && !warnIfEmpty) {
                     if (changeErrorMessage)
-                        errorMessage = "Das Feld darf nicht leer sein!";
+                        message = "Das Feld darf nicht leer sein!";
                     status = STATUS.INVALID;
+                } else if (text.isEmpty() && !allowEmpty && warnIfEmpty){
+                    if (changeErrorMessage)
+                        message = "Das Feld ist leer!";
+                    status = STATUS.WARNING;
                 } else {
                     switch (mode) {
                         case BLACK_LIST:
                             if (changeErrorMessage)
-                                errorMessage = null;
+                                message = null;
                             status = STATUS.VALID;
                             break;
                         case WHITE_LIST:
                             if (changeErrorMessage)
-                                errorMessage = "Ungültige Eingabe";
+                                message = "Ungültige Eingabe";
                             status = STATUS.INVALID;
                             break;
                     }
                 }
             }
 
-            public boolean validate(String text, boolean changeErrorMessage) {
+            public STATUS validate(String text, boolean changeErrorMessage) {
                 reset();
 
                 if (textValidation != null && regEx.isEmpty())
@@ -217,10 +261,10 @@ public class Helpers {
                 if (!regEx.isEmpty()) {
                     if (text.matches(regEx)) {
                         status = STATUS.VALID;
-                        errorMessage = null;
+                        message = null;
                     } else {
                         status = STATUS.INVALID;
-                        errorMessage = "Ungültige Eingabe";
+                        message = "Ungültige Eingabe";
                     }
                 }
 
@@ -228,18 +272,38 @@ public class Helpers {
                     defaultValidation(text, changeErrorMessage);
 
                 if (changeErrorMessage)
-                    textInputLayout.setError(errorMessage);
+                    textInputLayout.setError(message);
+
+
 
                 switch (status) {
+                    case WARNING:
+                        setMessageColor(warningColor);
+                        return STATUS.WARNING;
                     case VALID:
-                        return true;
+                        return STATUS.VALID;
 
                     default:
                     case INVALID:
-                        return false;
+                        setMessageColor(errorColor);
+                        return STATUS.INVALID;
                 }
             }
 
+            private void setMessageColor(int color) {
+                int[][] states = {{android.R.attr.state_enabled}};
+                int[] colors = {color};
+                textInputLayout.setErrorTextColor(new ColorStateList(states, colors));
+                if (textInputLayout.hasFocus()) {
+                    textInputLayout.setVisibility(View.GONE);
+                    textInputLayout.setVisibility(View.VISIBLE);
+                    textInputLayout.requestFocus();
+                } else {
+                    textInputLayout.setEnabled(false);
+                    textInputLayout.setEnabled(true);
+                }
+
+            }
 
             public Validator setTextValidation(TextValidation textValidation) {
                 this.textValidation = textValidation;
@@ -256,13 +320,18 @@ public class Helpers {
             }
 
             public void setValid() {
-                errorMessage = null;
+                message = null;
                 status = STATUS.VALID;
             }
 
-            public void setInalid(String errorMessage) {
-                this.errorMessage = errorMessage;
+            public void setInvalid(String errorMessage) {
+                this.message = errorMessage;
                 status = STATUS.INVALID;
+            }
+
+            public void setWarning(String warningMessage) {
+                this.message = warningMessage;
+                status = STATUS.WARNING;
             }
 
             public void asWhiteList() {
@@ -285,6 +354,16 @@ public class Helpers {
 
             public Validator setRegEx(String regEx) {
                 this.regEx = regEx;
+                return this;
+            }
+
+            public Validator setErrorColor(int errorColor) {
+                this.errorColor = errorColor;
+                return this;
+            }
+
+            public Validator setWarningColor(int warningColor) {
+                this.warningColor = warningColor;
                 return this;
             }
         }
@@ -353,8 +432,20 @@ public class Helpers {
             return this;
         }
 
+        public TextInputHelper bindButton(Button buttonToBind) {
+            onValidationResult = buttonToBind::setEnabled;
+            buttonToBind.callOnClick();
+            View.OnClickListener onClickListener = v -> {};
+            return this;
+        }
+
+        public TextInputHelper bindButton(CustomDialog.ButtonHelper buttonToBind) {
+            onValidationResult = buttonToBind::setEnabled;
+            return this;
+        }
+
         public TextInputHelper defaultDialogValidation(CustomDialog customDialog) {
-            setOnValidationResult(customDialog.getActionButton()::setEnabled);
+            bindButton(customDialog.getActionButton());
             return this;
         }
 
@@ -370,6 +461,21 @@ public class Helpers {
                 return textInputLayout.getEditText().getText().toString();
             }
             return null;
+        }
+
+        public TextInputHelper interceptForValidation(View view, Runnable... onIntercept) {
+            final long[] time = {0};
+            Utility.interceptOnClick(view, view1 -> {
+                long currentTime = System.currentTimeMillis();
+                boolean alwaysValid = validate(null).isAlwaysValid();
+                if (currentTime - time[0] > 500 && !alwaysValid) {
+                    time[0] = currentTime;
+                    new CustomList<Runnable>(onIntercept).forEach(Runnable::run);
+                    return true;
+                }
+                return false;
+            });
+            return this;
         }
         //  <----- Convenience -----
     }

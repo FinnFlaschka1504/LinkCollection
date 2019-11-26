@@ -3,6 +3,7 @@ package com.maxMustermannGeheim.linkcollection.Activities.Content;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -14,6 +15,7 @@ import android.view.View;
 import android.view.ViewStub;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -484,6 +486,7 @@ public class VideoActivity extends AppCompatActivity {
         if (video[0] != null) {
             video[0] = ((Video) object).cloneVideo();
         }
+        Helpers.TextInputHelper helper = new Helpers.TextInputHelper();
         CustomDialog returnDialog =  CustomDialog.Builder(this)
                 .setTitle(object == null ? "Neu: " + singular : singular + " Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
@@ -497,30 +500,34 @@ public class VideoActivity extends AppCompatActivity {
                     String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_Url)).getText().toString().trim();
                     boolean checked = ((CheckBox) customDialog.findViewById(R.id.dialog_editOrAddVideo_watchLater)).isChecked();
 
-                    if (url.equals("") && !checked){
-                        CustomDialog.Builder(this)
-                        .setTitle("Ohne URL speichern?")
-                        .setText("Möchtest du wirklich ohne URL speichern?")
-                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
-                        .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 ->
-                                saveVideo(customDialog, object, titel, url, false, video))
-                        .show();
-                    }
-                    else
+//                    if (url.equals("") && !checked){
+//                        CustomDialog.Builder(this)
+//                        .setTitle("Ohne URL speichern?")
+//                        .setText("Möchtest du wirklich ohne URL speichern?")
+//                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+//                        .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 ->
+//                                saveVideo(customDialog, object, titel, url, false, video))
+//                        .show();
+//                    }
+//                    else
                         saveVideo(customDialog, object, titel, url, checked, video);
 
                 }, false)
                 .disableLastAddedButton()
                 .setSetViewContent((customDialog, view) -> {
                     TextInputLayout dialog_editOrAddVideo_Titel_layout = view.findViewById(R.id.dialog_editOrAddVideo_Titel_layout);
-                    new Helpers.TextInputHelper().defaultDialogValidation(customDialog).addValidator(dialog_editOrAddVideo_Titel_layout)
+                    TextInputLayout dialog_editOrAddVideo_Url_layout = view.findViewById(R.id.dialog_editOrAddVideo_Url_layout);
+                    helper.defaultDialogValidation(customDialog).addValidator(dialog_editOrAddVideo_Titel_layout, dialog_editOrAddVideo_Url_layout)
                             .addActionListener(dialog_editOrAddVideo_Titel_layout, (textInputHelper, textInputLayout, actionId, text) -> {
                                 apiRequest(text, customDialog, video[0]);
                             }, Helpers.TextInputHelper.IME_ACTION.SEARCH)
-                            .changeValidation(dialog_editOrAddVideo_Titel_layout, (validator, text) -> {
-                                if (database.videoMap.values().stream().anyMatch(show1 -> show1.getName().toLowerCase().equals(text.toLowerCase())))
-                                    validator.setInalid("Schon vorhanden!");
-                            });
+                            .warnIfEmpty(dialog_editOrAddVideo_Url_layout);
+
+                    if (object == null)
+                        helper.changeValidation(dialog_editOrAddVideo_Titel_layout, (validator, text) -> {
+                            if (database.videoMap.values().stream().anyMatch(show1 -> show1.getName().toLowerCase().equals(text.toLowerCase())))
+                                validator.setInvalid("Schon vorhanden!");
+                        });
 
                     if (video[0] != null) {
                         ((AutoCompleteTextView) view.findViewById(R.id.dialog_editOrAddVideo_Titel)).setText(video[0].getName());
@@ -550,6 +557,10 @@ public class VideoActivity extends AppCompatActivity {
                             Utility.showEditItemDialog(this, addOrEditDialog[0], video[0] == null ? null : video[0].getStudioList(), video[0], CategoriesActivity.CATEGORIES.STUDIOS ));
                     view.findViewById(R.id.dialog_editOrAddVideo_editGenre).setOnClickListener(view1 ->
                             Utility.showEditItemDialog(this, addOrEditDialog[0], video[0] == null ? null : video[0].getGenreList(), video[0], CategoriesActivity.CATEGORIES.GENRE));
+                })
+                .setOnDialogShown(customDialog -> {
+                    helper.interceptForValidation(customDialog.getActionButton().getButton(), () ->
+                            Utility.showCenterdToast(this, "Warnung: Die URL ist leer\n(DoppelClick zum Fortfahren)"));
                 })
                 .show();
         return returnDialog;

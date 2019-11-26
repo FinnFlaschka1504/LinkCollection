@@ -615,45 +615,10 @@ public class OweActivity extends AppCompatActivity {
         return true;
     }
 
-//  ----- Sources ----->
+//  ----- Items ----->
     private void showItemsDialog(Owe owe, TextView sourcesText, boolean edit) {
         int buttonId_add = View.generateViewId();
         final ArrayList<String> nameList = database.personMap.values().stream().map(ParentClass::getName).sorted(String::compareTo).collect(Collectors.toCollection(ArrayList::new));
-        KnowledgeActivity.TextValidation nameValidation = (textInputLayout, changeErrorMessage) -> {
-            String text = textInputLayout.getEditText().getText().toString().trim();
-
-            if (text.isEmpty()) {
-                if (changeErrorMessage)
-                    textInputLayout.setError("Das Feld darf nicht leer sein!");
-                return false;
-            } else if (!nameList.stream().anyMatch(s1 -> s1.equals(text))) {
-                if (changeErrorMessage)
-                    textInputLayout.setError("Person auswählen, oder hinzufügen");
-                return false;
-            } else {
-                if (changeErrorMessage)
-                    textInputLayout.setError(null);
-                return true;
-            }
-        };
-        KnowledgeActivity.TextValidation urlValidation = (textInputLayout, changeErrorMessage) -> {
-            String text = textInputLayout.getEditText().getText().toString().trim();
-
-            if (text.isEmpty()) {
-                if (changeErrorMessage)
-                    textInputLayout.setError("Das Feld darf nicht leer sein!");
-                return false;
-            } else if (!text.matches("^\\d*(\\.\\d{1,2})?$")) {
-                if (changeErrorMessage)
-                    textInputLayout.setError("Eine valide Zahl eingeben!");
-                return false;
-
-            } else {
-                textInputLayout.setError(null);
-                return true;
-            }
-
-        };
         final Owe.Item[] currentItem = new Owe.Item[]{null};
         CustomDialog sourcesDialog = new CustomDialog(this)
                 .setTitle("Einträge")
@@ -672,46 +637,25 @@ public class OweActivity extends AppCompatActivity {
                         return handled;
                     });
                     final ImageView dialog_items_addNames = view.findViewById(R.id.dialog_items_addNames);
-                    dialog_items_name.getEditText().addTextChangedListener(new TextWatcher() {
-                        @Override
-                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
-                        }
+                    new Helpers.TextInputHelper(dialog_items_save::setEnabled, dialog_items_name, dialog_items_amount)
+                            .changeValidation(dialog_items_name, (validator, text) -> {
+                                if (!nameList.stream().anyMatch(s1 -> s1.equals(text))) {
+                                    validator.setInvalid("Person auswählen, oder hinzufügen");
 
-                        @Override
-                        public void onTextChanged(CharSequence s, int start, int before, int count) {
+                                    if (!text.trim().isEmpty())
+                                        dialog_items_addNames.setVisibility(View.VISIBLE);
+                                    else
+                                        dialog_items_addNames.setVisibility(View.GONE);
 
-                        }
+                                }
+                            })
+                            .changeValidation(dialog_items_amount, (validator, text) -> {
+                                if (text.matches("^\\.$"))
+                                    validator.setWarning("Betrag später festlegen!");
+                            })
+                            .setInputType(dialog_items_amount, Helpers.TextInputHelper.INPUT_TYPE.NUMBER_DECIMAL);
 
-                        @Override
-                        public void afterTextChanged(Editable s) {
-                            if (!nameList.stream().anyMatch(s1 -> s1.matches(s.toString().trim())) && !s.toString().trim().isEmpty())
-                                dialog_items_addNames.setVisibility(View.VISIBLE);
-                            else
-                                dialog_items_addNames.setVisibility(View.GONE);
-                            validation(nameValidation, urlValidation, dialog_items_name, dialog_items_amount, true, false, dialog_items_save);
-                        }
-                    });
-                    dialog_items_amount.getEditText().addTextChangedListener(new TextWatcher() {
-                        @Override
-                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                            String BREAKPOINT = null;
-                        }
-
-                        @Override
-                        public void onTextChanged(CharSequence s, int start, int before, int count) {
-                            if (before < count && s.toString().trim().matches("^\\.$")) {
-                                dialog_items_amount.getEditText().setText("0.");
-                                dialog_items_amount.getEditText().setSelection(2);
-                            } else {
-                                validation(nameValidation, urlValidation, dialog_items_name, dialog_items_amount, false, true, dialog_items_save);
-                            }
-                        }
-
-                        @Override
-                        public void afterTextChanged(Editable s) {
-                        }
-                    });
                     Runnable hideEdit = () -> {
                         dialog_items_name.getEditText().setText("");
                         dialog_items_amount.getEditText().setText("");
@@ -751,7 +695,7 @@ public class OweActivity extends AppCompatActivity {
                                 dialog.findViewById(buttonId_add).setVisibility(View.GONE);
                                 dialog.findViewById(R.id.dialog_items_delete).setVisibility(View.VISIBLE);
                                 dialog_items_name.getEditText().setText(database.personMap.get(item.getPersonId()).getName());
-                                dialog_items_amount.getEditText().setText(String.valueOf(item.getAmount()));
+                                dialog_items_amount.getEditText().setText(item.getAmount() == 0 ? "." : String.valueOf(item.getAmount()));
                                 currentItem[0] = item;
                             })
                             .generate();
@@ -771,19 +715,27 @@ public class OweActivity extends AppCompatActivity {
                     });
 
                     dialog_items_save.setOnClickListener(v -> {
-                        if (!nameValidation.runTextValidation(dialog_items_name, true) | !urlValidation.runTextValidation(dialog_items_amount, true))
-                            return;
                         String amount_text = dialog_items_amount.getEditText().getText().toString().trim();
                         if (currentItem[0] == null) {
                             String personName = dialog_items_name.getEditText().getText().toString().trim();
                             String personId = database.personMap.values().stream().filter(person -> person.getName().equals(personName)).findFirst().get().getUuid();
-                            Owe.Item newItem = new Owe.Item(personId, Double.parseDouble(amount_text));
+                            double amount;
+                            if (amount_text.equals("."))
+                                amount = 0;
+                            else
+                                amount = Double.parseDouble(amount_text);
+                            Owe.Item newItem = new Owe.Item(personId, amount);
                             owe.getItemList().add(newItem);
                         } else {
                             String personName = dialog_items_name.getEditText().getText().toString().trim();
                             String personId = database.personMap.values().stream().filter(person -> person.getName().equals(personName)).findFirst().get().getUuid();
                             currentItem[0].setPersonId(personId);
-                            currentItem[0].setAmount(Double.parseDouble(amount_text));
+                            double amount;
+                            if (amount_text.equals("."))
+                                amount = 0;
+                            else
+                                amount = Double.parseDouble(amount_text);
+                            currentItem[0].setAmount(amount);
                         }
                         Database.saveAll();
                         sources_customRecycler.reload();
@@ -794,12 +746,12 @@ public class OweActivity extends AppCompatActivity {
                     AutoCompleteTextView autoCompleteName = (AutoCompleteTextView) dialog_items_name.getEditText();
                     ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, nameList);
                     autoCompleteName.setAdapter(adapter);
+                    autoCompleteName.setOnItemClickListener((parent, view1, position, id) -> dialog_items_amount.getEditText().requestFocus());
 
                     if (edit) {
                         dialog_items_editLayout.setVisibility(View.VISIBLE);
                         dialog_items_name.getEditText().requestFocus();
                         Utility.changeWindowKeyboard(customDialog.getDialog().getWindow(), true);
-                        autoCompleteName.showDropDown();
                     }
 
                     dialog_items_addNames.setOnClickListener(v -> {
@@ -819,7 +771,6 @@ public class OweActivity extends AppCompatActivity {
                                     nameList.add(name);
                                     adapter.add(name);
                                     customDialog1.dismiss();
-                                    validation(nameValidation, urlValidation, dialog_items_name, dialog_items_amount, true, false, dialog_items_save);
                                 }, false)
                                 .show();
                     });
@@ -840,6 +791,7 @@ public class OweActivity extends AppCompatActivity {
                     setItemText((TextView) customDialog.getObjectExtra(), owe);
                     reLoadRecycler();
                 })
+                .setOnDialogShown(customDialog -> ((AutoCompleteTextView) ((TextInputLayout) customDialog.findViewById(R.id.dialog_items_name)).getEditText()).showDropDown())
                 .show();
         if (edit)
             sourcesDialog.findViewById(buttonId_add).setVisibility(View.GONE);
@@ -877,7 +829,7 @@ public class OweActivity extends AppCompatActivity {
     interface TextValidation {
         boolean runTextValidation(TextInputLayout textInputLayout, boolean changeErrorMessage);
     }
-//  <----- Sources -----
+//  <----- Items -----
 
     public static void showPopupwindow(AppCompatActivity context, View view) {
         String ownOrOther = "Eigen/Fremd";

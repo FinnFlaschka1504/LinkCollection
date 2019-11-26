@@ -5,8 +5,8 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
-import android.graphics.PorterDuff;
 import android.net.Uri;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
@@ -15,15 +15,11 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.PopupWindow;
-import android.widget.ProgressBar;
-import android.widget.RelativeLayout;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
@@ -54,6 +50,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -132,12 +129,57 @@ public class Utility {
     }
 
     public static String formatToEuro(double amount) {
+        if (amount == 0)
+            return "N/A";
         if (amount % 1 == 0)
             return String.format(Locale.GERMANY,"%.0f €", amount);
         else
             return String.format(Locale.GERMANY,"%.2f €", amount);
     }
 
+
+    //  --------------- OnClickListener --------------->
+    public static View.OnClickListener getOnClickListener(View view) {
+        View.OnClickListener retrievedListener = null;
+        String viewStr = "android.view.View";
+        String lInfoStr = "android.view.View$ListenerInfo";
+
+        try {
+            Field listenerField = Class.forName(viewStr).getDeclaredField("mListenerInfo");
+            Object listenerInfo = null;
+
+            if (listenerField != null) {
+                listenerField.setAccessible(true);
+                listenerInfo = listenerField.get(view);
+            }
+
+            Field clickListenerField = Class.forName(lInfoStr).getDeclaredField("mOnClickListener");
+
+            if (clickListenerField != null && listenerInfo != null) {
+                retrievedListener = (View.OnClickListener) clickListenerField.get(listenerInfo);
+            }
+        } catch (NoSuchFieldException ex) {
+            Log.e("Reflection", "No Such Field.");
+        } catch (IllegalAccessException ex) {
+            Log.e("Reflection", "Illegal Access.");
+        } catch (ClassNotFoundException ex) {
+            Log.e("Reflection", "Class Not Found.");
+        }
+        return retrievedListener;
+    }
+
+    public static void interceptOnClick(View view, InterceptOnClick interceptOnClick) {
+        View.OnClickListener oldListener = getOnClickListener(view);
+        view.setOnClickListener(v -> {
+            if (!interceptOnClick.runInterceptOnClick(view))
+                oldListener.onClick(view);
+        });
+    }
+
+    interface InterceptOnClick{
+        boolean runInterceptOnClick(View view);
+    }
+    //  <--------------- OnClickListener ---------------
 
     //  ----- Filter ----->
     private static boolean contains(String all, String sub) {

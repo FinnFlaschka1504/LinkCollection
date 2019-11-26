@@ -475,29 +475,6 @@ public class ShowActivity extends AppCompatActivity {
                 .show();
     }
 
-//    public void showFilmCalenderDialog(List<Show> showList, CustomDialog detailDialog) {
-//        CustomDialog.Builder(this)
-//                .setTitle("Ansichten Bearbeiten")
-//                .setView(R.layout.dialog_edit_views)
-//                .setSetViewContent((customDialog, view) -> {
-//                    ViewStub stub_groups = view.findViewById(R.id.dialog_editViews_calender);
-//                    stub_groups.setLayoutResource(R.layout.fragment_calender);
-//                    stub_groups.inflate();
-//                    CompactCalendarView calendarView = view.findViewById(R.id.fragmentCalender_calendar);
-//                    calendarView.setFirstDayOfWeek(Calendar.MONDAY);
-//                    Utility.setupFilmCalender(this, calendarView, ((FrameLayout) view), showList, false);
-//                })
-//                .disableScroll()
-//                .setDimensions(true, true)
-//                .setOnDialogDismiss(customDialog -> {
-//                    ((TextView) detailDialog.findViewById(R.id.dialog_show_views))
-//                            .setText(String.valueOf(showList.get(0).getDateList().size()));
-//                    this.reLoadRecycler();
-//                })
-//                .show();
-//
-//    }
-
     private CustomDialog showEditOrNewDialog(Show show) {
         if (!Utility.isOnline(this))
             return null;
@@ -539,7 +516,7 @@ public class ShowActivity extends AppCompatActivity {
                             }, Helpers.TextInputHelper.IME_ACTION.SEARCH)
                             .changeValidation(dialog_editOrAdd_show_Title_layout, (validator, text) -> {
                                 if (show == null && database.showMap.values().stream().anyMatch(show1 -> show1.getName().toLowerCase().equals(text.toLowerCase())))
-                                    validator.setInalid("Gleiche Serie schon vorhanden!");
+                                    validator.setInvalid("Gleiche Serie schon vorhanden!");
                             });
                     AutoCompleteTextView dialog_editOrAdd_show_title = view.findViewById(R.id.dialog_editOrAdd_show_title);
                     if (!editShow.getName().isEmpty()) {

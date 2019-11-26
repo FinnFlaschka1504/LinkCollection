@@ -27,7 +27,8 @@ public class CustomList<E> extends ArrayList<E> {
     }
 
     public CustomList(Object[] objects) {
-        addAll((List<E>) Arrays.asList(objects));
+        if (objects != null)
+            addAll((List<E>) Arrays.asList(objects));
     }
 //  <----- Constructors -----
 

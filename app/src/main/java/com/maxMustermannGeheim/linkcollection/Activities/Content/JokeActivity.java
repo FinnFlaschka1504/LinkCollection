@@ -330,7 +330,7 @@ public class JokeActivity extends AppCompatActivity {
 
         Database.saveAll();
 
-        Utility.showCenterdToast(this, "Witz gespeichert");
+        Utility.showCenteredToast(this, "Witz gespeichert");
 
         if (detailDialog != null)
             detailDialog.reloadView();

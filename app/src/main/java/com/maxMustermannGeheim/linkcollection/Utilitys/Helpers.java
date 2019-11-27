@@ -18,6 +18,7 @@ import androidx.annotation.NonNull;
 
 import com.google.android.material.textfield.TextInputLayout;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +59,8 @@ public class Helpers {
         private boolean valid;
         private INPUT_TYPE defaultInputType = INPUT_TYPE.CAP_SENTENCES;
         private Validator.STATUS status;
+
+
         public TextInputHelper(Button buttonToBind, TextInputLayout... inputLayouts) {
             this.onValidationResult = buttonToBind::setEnabled;
             this.layoutList = new CustomList<>(inputLayouts);
@@ -65,6 +68,7 @@ public class Helpers {
             applyValidationListeners();
             layoutList.forEach(textInputLayout -> textInputLayout.getEditText().setInputType(defaultInputType.code));
         }
+
         public TextInputHelper(OnValidationResult onValidationResult, TextInputLayout... inputLayouts) {
             this.onValidationResult = onValidationResult;
             this.layoutList = new CustomList<>(inputLayouts);
@@ -73,8 +77,7 @@ public class Helpers {
             layoutList.forEach(textInputLayout -> textInputLayout.getEditText().setInputType(defaultInputType.code));
         }
 
-        public TextInputHelper() {
-        }
+        public TextInputHelper() {}
 
         //  ----- Validation ----->
         public Validator.STATUS validate(TextInputLayout... layoutLists) {
@@ -82,7 +85,7 @@ public class Helpers {
             status = Validator.STATUS.VALID;
             for (Map.Entry<TextInputLayout, Validator> entry : inputValidationMap.entrySet()) {
                 Validator.STATUS validate = entry.getValue().validate(entry.getKey().getEditText().getText().toString().trim(),
-                        inputLayoutList.contains(entry.getKey()) || layoutLists == null);
+                        inputLayoutList.contains(entry.getKey()) || layoutLists.length == 0);
                 if (validate.getLevel() > status.getLevel()) {
                     status = validate;
                 }
@@ -93,12 +96,12 @@ public class Helpers {
             return status;
         }
 
-        public TextInputHelper changeValidation(TextInputLayout textInputLayout, TextValidation textValidation) {
+        public TextInputHelper setValidation(TextInputLayout textInputLayout, TextValidation textValidation) {
             inputValidationMap.get(textInputLayout).setTextValidation(textValidation);
             return this;
         }
 
-        public void changeValidation(TextInputLayout textInputLayout, String regEx) {
+        public void setValidation(TextInputLayout textInputLayout, String regEx) {
             inputValidationMap.get(textInputLayout).setRegEx(regEx);
         }
 
@@ -366,6 +369,10 @@ public class Helpers {
                 this.warningColor = warningColor;
                 return this;
             }
+
+            public String getMessage() {
+                return message;
+            }
         }
 
         public interface OnValidationResult {
@@ -463,19 +470,37 @@ public class Helpers {
             return null;
         }
 
-        public TextInputHelper interceptForValidation(View view, Runnable... onIntercept) {
+        public TextInputHelper interceptDialogActionForValidation(CustomDialog customDialog, Runnable... onIntercept_onAllow) {
+            return interceptForValidation(customDialog.getActionButton().getButton(), onIntercept_onAllow);
+        }
+        public TextInputHelper interceptForValidation(View view, Runnable... onIntercept_onAllow) {
             final long[] time = {0};
             Utility.interceptOnClick(view, view1 -> {
                 long currentTime = System.currentTimeMillis();
-                boolean alwaysValid = validate(null).isAlwaysValid();
+                boolean alwaysValid = validate().isAlwaysValid();
                 if (currentTime - time[0] > 500 && !alwaysValid) {
                     time[0] = currentTime;
-                    new CustomList<Runnable>(onIntercept).forEach(Runnable::run);
+                    if (onIntercept_onAllow.length > 0)
+                        onIntercept_onAllow[0].run();
                     return true;
                 }
+                if (onIntercept_onAllow.length > 1)
+                    onIntercept_onAllow[1].run();
                 return false;
             });
             return this;
+        }
+
+        public List<String> getMessage(TextInputLayout... textInputLayouts) {
+            List<String> messageList = new ArrayList<>();
+            if (textInputLayouts.length == 0)
+                textInputLayouts = inputValidationMap.keySet().toArray(new TextInputLayout[0]);
+            for (TextInputLayout textInputLayout : textInputLayouts) {
+                String message = inputValidationMap.get(textInputLayout).getMessage();
+                if (message != null)
+                    messageList.add(message);
+            }
+            return messageList;
         }
         //  <----- Convenience -----
     }

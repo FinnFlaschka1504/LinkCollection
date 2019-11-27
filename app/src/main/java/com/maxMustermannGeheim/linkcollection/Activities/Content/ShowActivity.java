@@ -498,7 +498,8 @@ public class ShowActivity extends AppCompatActivity {
                             reLoadRecycler();
                         })
                         .show();
-            }, false);
+            }, false)
+            .alignPreviousButtonsLeft();
         }
         return returnDialog
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
@@ -514,7 +515,7 @@ public class ShowActivity extends AppCompatActivity {
                             .addActionListener(dialog_editOrAdd_show_Title_layout, (textInputHelper, textInputLayout, actionId, text) -> {
                                 apiSearchRequest(text, customDialog, editShow);
                             }, Helpers.TextInputHelper.IME_ACTION.SEARCH)
-                            .changeValidation(dialog_editOrAdd_show_Title_layout, (validator, text) -> {
+                            .setValidation(dialog_editOrAdd_show_Title_layout, (validator, text) -> {
                                 if (show == null && database.showMap.values().stream().anyMatch(show1 -> show1.getName().toLowerCase().equals(text.toLowerCase())))
                                     validator.setInvalid("Gleiche Serie schon vorhanden!");
                             });
@@ -586,7 +587,7 @@ public class ShowActivity extends AppCompatActivity {
 
         Database.saveAll();
 
-        Utility.showCenterdToast(this, singular + " gespeichert" + (checked || upcomming ? "\n(Später ansehen)" : ""));
+        Utility.showCenteredToast(this, singular + " gespeichert" + (checked || upcomming ? "\n(Später ansehen)" : ""));
 
         if (dialog.getObjectExtra() != null)
             ((CustomDialog) dialog.getObjectExtra()).reloadView();
@@ -650,7 +651,7 @@ public class ShowActivity extends AppCompatActivity {
             selectedEpisode[0].setWatched(true);
             season.getEpisodeMap().put("E:" + selectedEpisode[0].getEpisodeNumber(), selectedEpisode[0]);
             boolean before = selectedEpisode[0].addDate(new Date(), true);
-            Utility.showCenterdToast(this, "Ansicht hinzugefügt" + (before ? "\nAutomatisch für gestern hinzugefügt" : ""));
+            Utility.showCenteredToast(this, "Ansicht hinzugefügt" + (before ? "\nAutomatisch für gestern hinzugefügt" : ""));
         };
         CustomRecycler<Show.Episode> episodeRecycler = new CustomRecycler<Show.Episode>(this)
                 .setGetActiveObjectList(() -> {

@@ -10,10 +10,8 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.Typeface;
 import android.os.Bundle;
-import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
-import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
@@ -430,7 +428,7 @@ public class OweActivity extends AppCompatActivity {
 
         Database.saveAll();
 
-        Utility.showCenterdToast(this, "Schulden gespeichert");
+        Utility.showCenteredToast(this, "Schulden gespeichert");
 
         if (detailDialog != null)
             detailDialog.reloadView();
@@ -639,7 +637,7 @@ public class OweActivity extends AppCompatActivity {
                     final ImageView dialog_items_addNames = view.findViewById(R.id.dialog_items_addNames);
 
                     new Helpers.TextInputHelper(dialog_items_save::setEnabled, dialog_items_name, dialog_items_amount)
-                            .changeValidation(dialog_items_name, (validator, text) -> {
+                            .setValidation(dialog_items_name, (validator, text) -> {
                                 if (!nameList.stream().anyMatch(s1 -> s1.equals(text))) {
                                     validator.setInvalid("Person auswählen, oder hinzufügen");
 
@@ -650,7 +648,7 @@ public class OweActivity extends AppCompatActivity {
 
                                 }
                             })
-                            .changeValidation(dialog_items_amount, (validator, text) -> {
+                            .setValidation(dialog_items_amount, (validator, text) -> {
                                 if (text.matches("^\\.$"))
                                     validator.setWarning("Betrag später festlegen!");
                             })

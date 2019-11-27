@@ -533,12 +533,18 @@ public class Utility {
         return cal.getTime();
     }
 
-    public static void showCenterdToast(Context context, String text) {
+
+    //  --------------- Toast --------------->
+    public static Toast centeredToast(Context context, String text) {
         Toast toast = Toast.makeText(context, text, Toast.LENGTH_SHORT);
         TextView v = toast.getView().findViewById(android.R.id.message);
         if( v != null) v.setGravity(Gravity.CENTER);
-        toast.show();
+        return toast;
     }
+    public static void showCenteredToast(Context context, String text) {
+        centeredToast(context, text).show();
+    }
+    //  <--------------- Toast ---------------
 
     public static CustomDialog showEditItemDialog(Context context, CustomDialog addOrEditDialog, List<String> preSelectedUuidList, Object o, CategoriesActivity.CATEGORIES category) {
         Database database = Database.getInstance();

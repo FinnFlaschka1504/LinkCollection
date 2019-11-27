@@ -16,6 +16,8 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.crashlytics.android.Crashlytics;
+import com.finn.androidUtilities.Test;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
@@ -84,7 +86,6 @@ public class MainActivity extends AppCompatActivity {
 
         loadDatabase(false);
 
-
         if (Database.exists())
             Database.removeDatabaseReloadListener(null);
         Database.addDatabaseReloadListener(database_neu -> {
@@ -132,7 +133,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (firstTime) {
                 setContentView(R.layout.activity_main);
-                Utility.showCenterdToast(this, "Datenbank:\n" + Database.databaseCode);
+                Utility.showCenteredToast(this, "Datenbank:\n" + Database.databaseCode);
             }
 
             setLayout();

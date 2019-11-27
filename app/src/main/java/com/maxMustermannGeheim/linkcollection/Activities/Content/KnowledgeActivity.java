@@ -377,7 +377,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 
         Database.saveAll();
 
-        Utility.showCenterdToast(this, "Wissen gespeichert");
+        Utility.showCenteredToast(this, "Wissen gespeichert");
 
         if (detailDialog != null)
             detailDialog.reloadView();
@@ -716,9 +716,4 @@ public class KnowledgeActivity extends AppCompatActivity {
         return null;
     }
 //  <----- Sources -----
-
-
-
-
-
 }

@@ -649,9 +649,9 @@ public class CustomDialog {
                 textInputEditText.setSelection(editBuilder.text.length());
 
             if (!editBuilder.regEx.isEmpty())
-                textInputHelper.changeValidation(textInputLayout, editBuilder.regEx);
+                textInputHelper.setValidation(textInputLayout, editBuilder.regEx);
             else if (editBuilder.textValidation != null)
-                textInputHelper.changeValidation(textInputLayout, editBuilder.textValidation);
+                textInputHelper.setValidation(textInputLayout, editBuilder.textValidation);
 
             if (editBuilder.inputType != null)
                 textInputHelper.setInputType(textInputLayout, editBuilder.inputType);

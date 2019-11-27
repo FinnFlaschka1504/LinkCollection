@@ -3,7 +3,6 @@ package com.maxMustermannGeheim.linkcollection.Activities.Content;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
-import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -15,7 +14,6 @@ import android.view.View;
 import android.view.ViewStub;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
-import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -438,7 +436,7 @@ public class VideoActivity extends AppCompatActivity {
                             showCalenderDialog(Arrays.asList(video), detailDialog));
                     view.findViewById(R.id.dialog_video_editViews).setOnLongClickListener(view1 -> {
                         boolean before = video.addDate(new Date(), true);
-                        Utility.showCenterdToast(this, "Ansicht Hinzugefügt" + (before ? "\n(Gestern)" : ""));
+                        Utility.showCenteredToast(this, "Ansicht Hinzugefügt" + (before ? "\n(Gestern)" : ""));
                         Database.saveAll();
                         customDialog.reloadView();
                         reLoadVideoRecycler();
@@ -487,6 +485,7 @@ public class VideoActivity extends AppCompatActivity {
             video[0] = ((Video) object).cloneVideo();
         }
         Helpers.TextInputHelper helper = new Helpers.TextInputHelper();
+        final boolean[] checked = {false};
         CustomDialog returnDialog =  CustomDialog.Builder(this)
                 .setTitle(object == null ? "Neu: " + singular : singular + " Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
@@ -498,8 +497,6 @@ public class VideoActivity extends AppCompatActivity {
                         return;
                     }
                     String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_Url)).getText().toString().trim();
-                    boolean checked = ((CheckBox) customDialog.findViewById(R.id.dialog_editOrAddVideo_watchLater)).isChecked();
-
 //                    if (url.equals("") && !checked){
 //                        CustomDialog.Builder(this)
 //                        .setTitle("Ohne URL speichern?")
@@ -510,21 +507,41 @@ public class VideoActivity extends AppCompatActivity {
 //                        .show();
 //                    }
 //                    else
-                        saveVideo(customDialog, object, titel, url, checked, video);
+                    saveVideo(customDialog, object, titel, url, checked[0], video);
 
                 }, false)
                 .disableLastAddedButton()
                 .setSetViewContent((customDialog, view) -> {
                     TextInputLayout dialog_editOrAddVideo_Titel_layout = view.findViewById(R.id.dialog_editOrAddVideo_Titel_layout);
                     TextInputLayout dialog_editOrAddVideo_Url_layout = view.findViewById(R.id.dialog_editOrAddVideo_Url_layout);
+                    CheckBox dialog_editOrAddVideo_watchLater = customDialog.findViewById(R.id.dialog_editOrAddVideo_watchLater);
                     helper.defaultDialogValidation(customDialog).addValidator(dialog_editOrAddVideo_Titel_layout, dialog_editOrAddVideo_Url_layout)
                             .addActionListener(dialog_editOrAddVideo_Titel_layout, (textInputHelper, textInputLayout, actionId, text) -> {
                                 apiRequest(text, customDialog, video[0]);
                             }, Helpers.TextInputHelper.IME_ACTION.SEARCH)
+                            .setValidation(dialog_editOrAddVideo_Url_layout, (validator, text) -> {
+                                if (text.isEmpty() && dialog_editOrAddVideo_watchLater.isChecked())
+                                    validator.setValid();
+                                else if (!text.isEmpty()) {
+                                    if (text.matches("(?i)^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?!(?:10|127)(?:\\.\\d{1,3}){3})(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?(?:[/?#]\\S*)?$")) {
+                                        if (dialog_editOrAddVideo_watchLater.isChecked())
+                                            validator.setWarning("Url bei 'Später-Ansehen'!");
+                                        else
+                                            validator.setValid();
+                                    }
+                                    else
+                                        validator.setInvalid("Ungültige eingabe!");
+                                }
+                                validator.asWhiteList();
+                            })
                             .warnIfEmpty(dialog_editOrAddVideo_Url_layout);
 
+                    dialog_editOrAddVideo_watchLater.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                        checked[0] = isChecked;
+                        helper.validate(dialog_editOrAddVideo_Url_layout);
+                    });
                     if (object == null)
-                        helper.changeValidation(dialog_editOrAddVideo_Titel_layout, (validator, text) -> {
+                        helper.setValidation(dialog_editOrAddVideo_Titel_layout, (validator, text) -> {
                             if (database.videoMap.values().stream().anyMatch(show1 -> show1.getName().toLowerCase().equals(text.toLowerCase())))
                                 validator.setInvalid("Schon vorhanden!");
                         });
@@ -546,7 +563,7 @@ public class VideoActivity extends AppCompatActivity {
                         ((RatingBar) view.findViewById(R.id.dialog_editOrAddVideo_rating)).setRating(video[0].getRating());
                     }
                     else {
-                        view.findViewById(R.id.dialog_editOrAddVideo_watchLater).setVisibility(View.VISIBLE);
+                        dialog_editOrAddVideo_watchLater.setVisibility(View.VISIBLE);
                         video[0] = new Video();
                     }
 
@@ -559,8 +576,11 @@ public class VideoActivity extends AppCompatActivity {
                             Utility.showEditItemDialog(this, addOrEditDialog[0], video[0] == null ? null : video[0].getGenreList(), video[0], CategoriesActivity.CATEGORIES.GENRE));
                 })
                 .setOnDialogShown(customDialog -> {
-                    helper.interceptForValidation(customDialog.getActionButton().getButton(), () ->
-                            Utility.showCenterdToast(this, "Warnung: Die URL ist leer\n(DoppelClick zum Fortfahren)"));
+                    Toast toast = Utility.centeredToast(this, "");
+                    helper.interceptDialogActionForValidation(customDialog, () -> {
+                        toast.setText("Warnung: " + helper.getMessage().get(0) + "\n(Doppel-Click zum Fortfahren)");
+                        toast.show();
+                    }, toast::cancel);
                 })
                 .show();
         return returnDialog;
@@ -578,19 +598,6 @@ public class VideoActivity extends AppCompatActivity {
         Toast.makeText(this, "Einen Moment bitte..", Toast.LENGTH_SHORT).show();
 
         CustomList<Pair<String, JSONObject>> jsonObjectList = new CustomList<>();
-//        try {
-//            JSONObject jsonObject = new JSONObject("{\"page\":1,\"total_results\":16,\"total_pages\":1,\"results\":[{\"popularity\":46.912,\"id\":299534,\"video\":false,\"vote_count\":10216,\"vote_average\":8.3,\"title\":\"Avengers: Endgame\",\"release_date\":\"2019-04-24\",\"original_language\":\"en\",\"original_title\":\"Avengers: Endgame\",\"genre_ids\":[12,878,28],\"backdrop_path\":\"\\/7RyHsO4yDXtBv1zUU3mTpHeQ0d5.jpg\",\"adult\":false,\"overview\":\"Thanos hat also tatsächlich Wort gehalten, seinen Plan in die Tat umgesetzt und die Hälfte allen Lebens im Universum ausgelöscht. Die Avengers? Machtlos. Iron Man und Nebula sitzen auf dem Planeten Titan fest, während auf der Erde absolutes Chaos herrscht. Doch dann finden Captain America und die anderen überlebenden Helden auf der Erde heraus, dass Nick Fury vor den verheerenden Ereignissen gerade noch ein Notsignal absetzen konnte, um Verstärkung auf den Plan zu rufen. Die Superhelden-Gemeinschaft bekommt mit Captain Marvel kurzerhand tatkräftige Unterstützung im Kampf gegen ihren vermeintlich übermächtigen Widersacher. Und dann ist da auch noch Ant-Man, der wie aus dem Nichts auftaucht und sich der Truppe erneut anschließt, um die ganze Sache womöglich doch noch zu einem guten Ende zu bringen...\",\"poster_path\":\"\\/mrh5A3uIE9wDDzPSiBe70YSHvrK.jpg\"},{\"popularity\":8.698,\"vote_count\":190,\"video\":false,\"poster_path\":\"\\/fmDt68Pj9OiR3pfvNL9qkuhKvi2.jpg\",\"id\":12211,\"adult\":false,\"backdrop_path\":\"\\/xYdzbB3TksChZLuZ9qq7iq5fFux.jpg\",\"original_language\":\"en\",\"original_title\":\"Highlander: Endgame\",\"genre_ids\":[28,14],\"title\":\"Highlander: Endgame\",\"vote_average\":4.6,\"overview\":\"Heute: Auf der Suche nach seinem Vetter Connor MacLeod findet der unsterbliche Highlander Duncan MacLeod das geheime Refugium. Hier werden Unsterbliche, die des Lebens müde geworden sind, in einen künstlichen Schlaf versetzt. Das Refugium ist auch dafür da, dass der Kampf der Unsterblichen um die Weltherrschaft nie ein Ende finden kann, denn solange es noch mehr als einen gibt ist nichts entschieden. Auch darum ist der Standort des Refugiums geheim. Doch der kaltblütigste Unsterbliche hat es gefunden, zerstört, seine \\\"Einwohner\\\" geköpft. Nur Connor MacLeod hat er laufen lassen, nicht um ihn zu verschonen, sondern um sich an ihm zu rächen...\",\"release_date\":\"2000-09-01\"},{\"popularity\":3.429,\"id\":15102,\"video\":false,\"vote_count\":24,\"vote_average\":6.2,\"title\":\"Endgame\",\"release_date\":\"2009-01-18\",\"original_language\":\"en\",\"original_title\":\"Endgame\",\"genre_ids\":[80,18],\"backdrop_path\":\"\\/mVW8eCgXuWKHcBL9tRxboHtKNi.jpg\",\"adult\":false,\"overview\":\"Im Jahr 1985 hatten viele jede Hoffnung auf Frieden in Südafrika fast aufgegeben. Das weiße Apartheid-Regime wurde zunehmend brutaler bei den Versuchen, die schwarze Bevölkerung zu kontrollieren. Die Widerstandsbewegung wurde als Folge der Weigerung der Regierung, Nelson Mandela, Botschafter der friedlichen Opposition frei zu lassen zunehmend militant und militärisch. Das System der Apartheid war offensichtlich am Ende. Alles, was es noch mit dessen Vertretern zu besprechen gab, waren die Bedingungen, unter denen die Apartheid ein für alle Mal begraben sein würde.\",\"poster_path\":\"\\/btRzeSEX2KptiBFvfzXF3amutDK.jpg\"},{\"popularity\":8.098,\"id\":41135,\"video\":false,\"vote_count\":98,\"vote_average\":5.2,\"title\":\"Operation: Endgame\",\"release_date\":\"2010-07-20\",\"original_language\":\"en\",\"original_title\":\"Operation: Endgame\",\"genre_ids\":[12,28,35,53],\"backdrop_path\":\"\\/3bTXS5nwn1Qy49NZbvLIUZ0a5xo.jpg\",\"adult\":false,\"overview\":\"Zwei rivalisierende Teams von Regierungs-Agenten werden in einer geheimen Anlage trainert. Die Killer werden alle mit Decknamen aus einem Tarot-Kartenset benannt. Als “Der Narr” an seinem ersten Tag dort ankommt, stellt sich gleich schon heraus, dass der Boss unter mysteriösen Umständen umgebracht wurde. Nun muss der Mörder gefunden werden, bevor der ganze Laden hochgeht.\",\"poster_path\":\"\\/qYEcPpNbqSjlVF5qJIj2AmbFapp.jpg\"},{\"popularity\":7.312,\"id\":400605,\"video\":false,\"vote_count\":94,\"vote_average\":4.9,\"title\":\"Dead Rising: Endgame\",\"release_date\":\"2016-06-20\",\"original_language\":\"en\",\"original_title\":\"Dead Rising: Endgame\",\"genre_ids\":[28,27],\"backdrop_path\":\"\\/23KUOxHUD9oI0eesmgFNWWOnMcV.jpg\",\"adult\":false,\"overview\":\"Nachdem er den blutrünstigen Zombie-Horden von East Mission City entkommen ist, setzt der investigative Reporter Chase Carter alles daran, die Regierungsverschwörung öffentlich zu machen, die überhaupt erst zur Verbreitung des Zombie-Virus‘ geführt hat. Doch dazu muss er in die abgeriegelte und todbringende Quarantänezone zurückkehren. Dort bekommt er es aber nicht nur mit den gefährlichen Untoten, sondern auch mit dem gnadenlosen General Lyons zu tun, der die Beteiligung der Regierung und des US-Militärs an der Zombie-Seuche um jeden Preis vertuschen will und dafür auch über Leichen geht. Gemeinsam mit seinen Verbündeten muss sich Chase einmal mehr seinen blutigen Weg durch Zombies und Lügen bahnen, um schließlich die Wahrheit ans Licht zu bringen.\",\"poster_path\":\"\\/yWp0xCKFl2IGBsvyYR7GmI7VUdE.jpg\"},{\"popularity\":2.303,\"id\":51491,\"video\":false,\"vote_count\":8,\"vote_average\":4.8,\"title\":\"Endgame\",\"release_date\":\"2001-01-01\",\"original_language\":\"en\",\"original_title\":\"Endgame\",\"genre_ids\":[80,18,53],\"backdrop_path\":\"\\/9ZscJdBhYb5RWBG0qsJD3Cy07oH.jpg\",\"adult\":false,\"overview\":\"\",\"poster_path\":\"\\/52zpNbVVQpWem8rqHYaMWQjLB34.jpg\"},{\"popularity\":2.898,\"id\":28850,\"video\":false,\"vote_count\":15,\"vote_average\":5.3,\"title\":\"Endgame - Das letzte Spiel mit dem Tod\",\"release_date\":\"1983-11-05\",\"original_language\":\"it\",\"original_title\":\"Endgame - Bronx lotta finale\",\"genre_ids\":[878],\"backdrop_path\":\"\\/1jO21YbiYN7J4znNLZhgzdYmDcY.jpg\",\"adult\":false,\"overview\":\"Nach einem Atomkrieg ist die Erde verwüstet. Durch die Strahlung ist eine neue Menschenrasse entstanden: die Mutanten. Diese werden von den „normalen“ Menschen erbarmungslos gejagt. Um das Volk bei Laune zu halten, haben die neuen Diktatoren das „Endgame“ geschaffen, einen blutigen Gladiatorenkampf, bei dem nur der Stärkste überlebt. Bei einem dieser Kämpfe trifft der Favorit und mehrfache Sieger Shannon auf die hübsche Mutantin Lilith, die ihn bittet, sie und ihre Freunde aus der Stadt zu bringen. Nach anfänglichem Zögern willigt Shannon ein, denn Lilith verspricht ihm 50 Kg Gold als Belohnung. Zusammen mit einigen anderen unerschrockenen Kämpfern macht sich der Trupp auf den gefahrvollen Weg aus der Stadt.\",\"poster_path\":\"\\/97CnaUf0w8cXY4hkLyoYQzSVoF5.jpg\"},{\"popularity\":1.296,\"id\":376651,\"video\":false,\"vote_count\":4,\"vote_average\":5.8,\"title\":\"Endgame\",\"release_date\":\"2015-09-25\",\"original_language\":\"en\",\"original_title\":\"Endgame\",\"genre_ids\":[18],\"backdrop_path\":\"\\/cTROgsyfGK4IhMgsMa1YmzeinpC.jpg\",\"adult\":false,\"overview\":\"\",\"poster_path\":\"\\/lU76TBQbYMFKinr8eNi1cS2zLI6.jpg\"},{\"popularity\":0.6,\"id\":233407,\"video\":false,\"vote_count\":0,\"vote_average\":0,\"title\":\"Endgame\",\"release_date\":\"1989-01-01\",\"original_language\":\"en\",\"original_title\":\"Endgame\",\"genre_ids\":[],\"backdrop_path\":null,\"adult\":false,\"overview\":\"\",\"poster_path\":null},{\"popularity\":0.981,\"id\":68139,\"video\":false,\"vote_count\":3,\"vote_average\":6.7,\"title\":\"Endgame\",\"release_date\":\"2000-09-10\",\"original_language\":\"en\",\"original_title\":\"Endgame\",\"genre_ids\":[35,18,10770],\"backdrop_path\":\"\\/z0gor69sJrkAi60NUCtAVR6QRlG.jpg\",\"adult\":false,\"overview\":\"\",\"poster_path\":\"\\/fyIdFwCFnUhe6O9H5gXo0ksiRvr.jpg\"},{\"popularity\":3.943,\"id\":18312,\"video\":false,\"vote_count\":17,\"vote_average\":6.9,\"title\":\"Endgame: Blueprint for Global Enslavement\",\"release_date\":\"2007-11-01\",\"original_language\":\"en\",\"original_title\":\"Endgame: Blueprint for Global Enslavement\",\"genre_ids\":[99],\"backdrop_path\":\"\\/t4WxWKzEQ4L6g86XmIy4oNqtDBi.jpg\",\"adult\":false,\"overview\":\"\",\"poster_path\":\"\\/4NI59KbXWE0AaefHD8CG9KyuTD1.jpg\"},{\"popularity\":1.037,\"id\":353227,\"video\":false,\"vote_count\":2,\"vote_average\":1,\"title\":\"Horror 102: Endgame\",\"release_date\":\"2004-09-04\",\"original_language\":\"en\",\"original_title\":\"Horror 102: Endgame\",\"genre_ids\":[27],\"backdrop_path\":null,\"adult\":false,\"overview\":\"\",\"poster_path\":\"\\/fvPYC0pqmTr94JfZn9Vs7taFdkI.jpg\"},{\"popularity\":0.6,\"id\":401828,\"video\":false,\"vote_count\":0,\"vote_average\":0,\"title\":\"Endgame\",\"release_date\":\"2015-01-01\",\"original_language\":\"en\",\"original_title\":\"Endgame\",\"genre_ids\":[16],\"backdrop_path\":null,\"adult\":false,\"overview\":\"\",\"poster_path\":\"\\/jntVd28HefooS3ykVMADPAWgY8Q.jpg\"},{\"popularity\":0.6,\"id\":320200,\"video\":false,\"vote_count\":2,\"vote_average\":7,\"title\":\"Endgame\",\"release_date\":\"1999-12-01\",\"original_language\":\"en\",\"original_title\":\"Endgame\",\"genre_ids\":[],\"backdrop_path\":null,\"adult\":false,\"overview\":\"\",\"poster_path\":\"\\/bcGuIgKwafDNfbUIaawuug7o1CM.jpg\"},{\"popularity\":0.6,\"id\":545817,\"video\":false,\"vote_count\":0,\"vote_average\":0,\"title\":\"Britten's Endgame\",\"release_date\":\"2015-01-01\",\"original_language\":\"en\",\"original_title\":\"Britten's Endgame\",\"genre_ids\":[99,10402],\"backdrop_path\":null,\"adult\":false,\"overview\":\"\",\"poster_path\":\"\\/j94qqELDTsOxYxXZOpNKYWhwzdh.jpg\"},{\"popularity\":5.87,\"id\":256740,\"video\":false,\"vote_count\":54,\"vote_average\":5.6,\"title\":\"Wicked Blood\",\"release_date\":\"2014-03-04\",\"original_language\":\"en\",\"original_title\":\"Wicked Blood\",\"genre_ids\":[28,18,53],\"backdrop_path\":\"\\/se6pj7NARpwviPNjPrrtyIxINvV.jpg\",\"adult\":false,\"overview\":\"Für Hannah Lee ist das kriminelle Baton Rouge alltägliche Umgebung. Dennoch ist auch sie nicht vor Gefahr gefeit, als ihre ältere Schwester Amber sich ausgerechnet in Wild Bill verliebt, einen Konkurrent des rücksichtslosen Onkels Frank. Und so muss Hannah noch so manche bittere Erfahrung in Sachen Blutsbande machen…\",\"poster_path\":\"\\/dR4gPntr3aQEl9jUvg7WsAuYqr.jpg\"}]}");
-//            JSONArray results = jsonObject.getJSONArray("results");
-//            for (int i = 0; i < results.length(); i++) {
-//                JSONObject object = results.getJSONObject(i);
-//
-//                jsonObjectList.add(new Pair<>(object.getString("title"), object));
-//
-////                new Video(object.getString("title"))
-////                        .setRelease(new SimpleDateFormat("yyyy-MM-dd").parse(object.getString("release_date")))
-//            }
-//        } catch (JSONException ignored) {
-//        }
         AutoCompleteTextView dialog_editOrAddVideo_Titel = customDialog.findViewById(R.id.dialog_editOrAddVideo_Titel);
 
         dialog_editOrAddVideo_Titel.setOnItemClickListener((parent, view2, position, id) -> {
@@ -615,6 +622,11 @@ public class VideoActivity extends AppCompatActivity {
             JSONArray results;
             try {
                 results = response.getJSONArray("results");
+
+                if (results.length() == 0) {
+                    Toast.makeText(this, "Keine Ergebnisse gefunden", Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 for (int i = 0; i < results.length(); i++) {
                     JSONObject object = results.getJSONObject(i);
 
@@ -635,9 +647,7 @@ public class VideoActivity extends AppCompatActivity {
             } catch (JSONException ignored) {
             }
 
-        }, error -> {
-            Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
-        });
+        }, error -> Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show());
 
         requestQueue.add(jsonArrayRequest);
 
@@ -679,7 +689,7 @@ public class VideoActivity extends AppCompatActivity {
 
         Database.saveAll();
 
-        Utility.showCenterdToast(this, singular + " gespeichert" + (addedYesterday ? "\nAutomatisch für gestern eingetragen" : upcomming ? "\n(Bevorstehend)" : ""));
+        Utility.showCenteredToast(this, singular + " gespeichert" + (addedYesterday ? "\nAutomatisch für gestern eingetragen" : upcomming ? "\n(Bevorstehend)" : ""));
 
         if (detailDialog != null)
             detailDialog.reloadView();

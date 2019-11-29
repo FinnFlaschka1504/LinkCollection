@@ -2,13 +2,16 @@ package com.maxMustermannGeheim.linkcollection.Utilitys;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
@@ -65,6 +68,7 @@ import java.util.stream.Collectors;
 
 public class Utility {
 
+    //  --------------- isOnline --------------->
     static public boolean isOnline(Context context) {
         boolean isOnleine = isOnline();
         if (isOnleine) {
@@ -74,6 +78,7 @@ public class Utility {
             return false;
         }
     }
+
     static public boolean isOnline() {
         Runtime runtime = Runtime.getRuntime();
         try {
@@ -87,6 +92,7 @@ public class Utility {
         }
         return false;
     }
+    //  <--------------- isOnline ---------------
 
     public static void restartApp(Context context) {
         Intent mStartActivity = new Intent(context, MainActivity.class);
@@ -210,7 +216,7 @@ public class Utility {
     private static boolean  containedInActors(String query, List<String> actorUuids) {
         Database database = Database.getInstance();
         for (String actorUUid : actorUuids) {
-            if (contains(database.darstellerMap.get(actorUUid).getName(), query))
+            if (database.darstellerMap.get(actorUUid).getName().equals(query))
                 return true;
         }
         return false;
@@ -218,7 +224,7 @@ public class Utility {
     private static boolean  containedInGenre(String query, List<String> genreUuids) {
         Database database = Database.getInstance();
         for (String genreUUid : genreUuids) {
-            if (contains(database.genreMap.get(genreUUid).getName(), query))
+            if (database.genreMap.get(genreUUid).getName().equals(query))
                 return true;
         }
         return false;
@@ -226,7 +232,7 @@ public class Utility {
     private static boolean  containedInStudio(String query, List<String> studioUuids) {
         Database database = Database.getInstance();
         for (String studioUUid : studioUuids) {
-            if (contains(database.studioMap.get(studioUUid).getName(), query))
+            if (database.studioMap.get(studioUUid).getName().equals(query))
                 return true;
         }
         return false;
@@ -523,6 +529,8 @@ public class Utility {
         layout.findViewById(R.id.dialog_editViews_remove).setVisibility(size != 0 ? View.VISIBLE : View.GONE);
     }
 
+
+    //  --------------- Time --------------->
     public static Date removeTime(Date date) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
@@ -532,6 +540,15 @@ public class Utility {
         cal.set(Calendar.MILLISECOND, 0);
         return cal.getTime();
     }
+
+    public static Date shiftTime(Date date, int field, int amount) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.add(field, amount);
+        return calendar.getTime();
+
+    }
+    //  <--------------- Time ---------------
 
 
     //  --------------- Toast --------------->
@@ -808,6 +825,14 @@ public class Utility {
 
     public static int dpToPx(int dp) {
         return (int) (dp * Resources.getSystem().getDisplayMetrics().density);
+    }
+
+    public static void setMargins (View v, int links, int oben, int rechts, int unten) {
+        if (v.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+            ViewGroup.MarginLayoutParams p = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            p.setMargins(dpToPx(links), dpToPx(oben), dpToPx(rechts), dpToPx(unten));
+            v.requestLayout();
+        }
     }
 //  <----- Pixels -----
 

@@ -16,10 +16,11 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.crashlytics.android.Crashlytics;
+import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.Test;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.snackbar.Snackbar;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -29,6 +30,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomInternetHelper;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
@@ -37,7 +39,8 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+// --> \/\/(?!  (-|<))
+public class MainActivity extends AppCompatActivity implements CustomInternetHelper.InternetStateReceiverListener {
     public static final String SHARED_PREFERENCES_DATA = "LinkCollection_Daten";
     public static final String SHARED_PREFERENCES_SETTINGS = "SHARED_PREFERENCES_SETTINGS";
     public static final String EXTRA_CATEGORY = "EXTRA_CATEGORY";
@@ -64,13 +67,14 @@ public class MainActivity extends AppCompatActivity {
     public static final int START_SHOW_GENRE = 16;
     public static final int START_SHOW_FROM_CALENDER = 17;
 
-    Database database;
-    SharedPreferences mySPR_daten;
-    SharedPreferences mySPR_settings;
+    private static Database database;
+    private static SharedPreferences mySPR_daten;
+    private SharedPreferences mySPR_settings;
     private CustomDialog calenderDialog;
     private boolean firstTime;
 
     private static Settings.Space currentSpace;
+    private View main_offline;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,8 +87,6 @@ public class MainActivity extends AppCompatActivity {
 
         mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_DATA, MODE_PRIVATE);
         mySPR_settings = getSharedPreferences(SHARED_PREFERENCES_SETTINGS, MODE_PRIVATE);
-
-        loadDatabase(false);
 
         if (Database.exists())
             Database.removeDatabaseReloadListener(null);
@@ -99,6 +101,8 @@ public class MainActivity extends AppCompatActivity {
             setLayout();
         });
 
+        CustomInternetHelper.initialize(this);
+//        new CustomRecycler<String>(this).isRecyclerScrollable();
 
 //        int buttonId = View.generateViewId();
 //        CustomDialog.Builder(this)
@@ -162,7 +166,6 @@ public class MainActivity extends AppCompatActivity {
             if (count > 5) break;
             shortcutInfoList.add(new ShortcutInfo.Builder(this, space.getName() + ".Shortcut")
                             .setShortLabel(space.getName() + " Hinzufügen")
-//                    .setLongLabel("Ein neues VIDEO Hinzufügen")
                             .setIcon(Icon.createWithResource(this, space.getIconId()))
                             .setIntent(new Intent(this, space.getActivity()).setAction(ACTION_ADD))
                             .build()
@@ -196,6 +199,10 @@ public class MainActivity extends AppCompatActivity {
         SpaceFragment.currentSpace = currentSpace;
         bottomNavigationView.setOnNavigationItemSelectedListener(onNavigationItemSelectedListener);
         bottomNavigationView.setSelectedItemId(currentSpace.getItemId());
+
+        main_offline = findViewById(R.id.main_offline);
+        main_offline.setOnClickListener(v -> CustomInternetHelper.showActivateInternetDialog(this));
+        main_offline.setVisibility(Utility.isOnline() ? View.GONE : View.VISIBLE);
     }
 
     BottomNavigationView.OnNavigationItemSelectedListener onNavigationItemSelectedListener = menuItem -> {
@@ -212,7 +219,7 @@ public class MainActivity extends AppCompatActivity {
         if (!selectedSpace.hasFragment())
             selectedSpace.setFragment(new SpaceFragment(selectedSpace.getFragmentLayoutId()));
         SpaceFragment.currentSpace = selectedSpace;
-        getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container, selectedSpace.getFragment()).runOnCommit(MainActivity::setCounts).commitAllowingStateLoss();
+        getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container, selectedSpace.getFragment()).runOnCommit(() -> setCounts(this)).commitAllowingStateLoss();
         currentSpace = selectedSpace;
 
         return true;
@@ -403,9 +410,31 @@ public class MainActivity extends AppCompatActivity {
     //  <----- Shows -----
 
 
-    public static void setCounts() {
-        if (currentSpace != null)
-            currentSpace.setLayout();
+    public static void setCounts(MainActivity activity) {
+        if (currentSpace != null) {
+            if (Settings.database != null)
+                currentSpace.setLayout();
+            else if (database != null) {
+                Settings.database = database;
+                currentSpace.setLayout();
+                if (activity != null)
+                    Toast.makeText(activity, "Wäre gerade abgeschmiert  - Vers. 1", Toast.LENGTH_SHORT).show();
+            } else{
+                if (activity != null) {
+                    activity.setContentView(R.layout.loading_screen);
+                    Toast.makeText(activity, "Wäre gerade abgeschmiert  - Vers. 2", Toast.LENGTH_SHORT).show();
+                }
+                Database.getInstance(mySPR_daten, database1 -> {
+                    if (activity != null)
+                        activity.setContentView(R.layout.activity_main);
+
+                    Settings.database = database1;
+                    database = database1;
+
+                    currentSpace.setLayout();
+                });
+            }
+        }
     }
 
     @Override
@@ -431,13 +460,13 @@ public class MainActivity extends AppCompatActivity {
             if (requestCode == START_VIDEO_FROM_CALENDER) {
                 calenderDialog.dismiss();
                 showFilmCalenderDialog(null);
-                setCounts();
+                setCounts(this);
             }
             else if (requestCode == START_SETTINGS) {
                 setLayout();
             }
             else
-                setCounts();
+                setCounts(this);
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
@@ -452,14 +481,22 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         if (currentSpace != null)
             mySPR_settings.edit().putInt(SETTING_LAST_OPEN_SPACE, currentSpace.getItemId()).apply();
+        CustomInternetHelper.destroyInstance(this);
         super.onDestroy();
     }
 
     @Override
-    public void onBackPressed() {
-//        if (drawerLayout.isDrawerOpen(GravityCompat.START))
-//            drawerLayout.closeDrawer(GravityCompat.START);
-//        else
-            super.onBackPressed();
+    public void networkAvailable() {
+        loadDatabase(false);
+        if (main_offline != null)
+            main_offline.setVisibility(View.GONE);
     }
+
+    @Override
+    public void networkUnavailable() {
+        loadDatabase(false);
+        if (main_offline != null)
+            main_offline.setVisibility(View.VISIBLE);
+    }
+
 }

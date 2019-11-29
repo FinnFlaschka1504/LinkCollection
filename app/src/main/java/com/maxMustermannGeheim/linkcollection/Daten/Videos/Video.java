@@ -102,6 +102,10 @@ public class Video extends ParentClass {
             givenDate.add(Calendar.HOUR, -6);
             date = givenDate.getTime();
         }
+
+        if (!checkTime && date.equals(Utility.removeTime(new Date())))
+            date = Utility.shiftTime(new Date(), Calendar.HOUR, -6);
+
         this.dateList.add(date);
 
         return isBefore;
@@ -145,18 +149,24 @@ public class Video extends ParentClass {
             return false;
     }
 
-    public Video cloneVideo() {
-        Video video = new Video();
-        video.name = this.name;
-        video.uuid = this.uuid;
-        video.dateList = new ArrayList<>(this.dateList);
-        video.darstellerList = new ArrayList<>(this.darstellerList);
-        video.rating = this.rating;
-        video.genreList = new ArrayList<>(this.genreList);
-        video.studioList = this.studioList;
-        video.url = this.url;
-        video.release = this.release;
-        return video;
+//    public Video cloneVideo() {
+//        Video video = new Video();
+//        video.name = this.name;
+//        video.uuid = this.uuid;
+//        video.dateList = new ArrayList<>(this.dateList);
+//        video.darstellerList = new ArrayList<>(this.darstellerList);
+//        video.rating = this.rating;
+//        video.genreList = new ArrayList<>(this.genreList);
+//        video.studioList = this.studioList;
+//        video.url = this.url;
+//        video.release = this.release;
+//        return video;
+//    }
+
+
+    @Override
+    public Video clone() {
+        return (Video) super.clone();
     }
 
     @Override

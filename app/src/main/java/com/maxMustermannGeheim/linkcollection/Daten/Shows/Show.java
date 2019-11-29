@@ -318,6 +318,9 @@ public class Show extends ParentClass{
                 date = givenDate.getTime();
             }
 
+            if (!checkTime && date.equals(Utility.removeTime(new Date())))
+                date = Utility.shiftTime(new Date(), Calendar.HOUR, -6);
+
             this.dateList.add(date);
 
             return isBefore;

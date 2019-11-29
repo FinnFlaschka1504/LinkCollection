@@ -28,6 +28,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.res.ResourcesCompat;
 
+import com.finn.androidUtilities.CustomRecycler.Expandable;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
@@ -381,6 +382,52 @@ public class ShowActivity extends AppCompatActivity {
 
                     CustomDialog.Builder(this)
                             .setTitle("Gehe Zu")
+                            .addButton("Historie", customDialog -> {
+                                List<Expandable<List<Show.Episode>>> expendables = new Expandable.ToGroupExpandableList<Show.Episode, Pair<Date, Show.Episode>, Date>()
+                                        .setSort((o1, o2) -> ((Date) o1.getPayload()).compareTo(((Date) o2.getPayload())) * -1)
+                                        .runToGroupExpandableList(list, dateEpisodePair -> Utility.removeTime(dateEpisodePair.first), (date,pairList) -> String.format(Locale.getDefault(),"%s (%d)", new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(date), pairList.size())
+                                                , item -> item.second);
+
+                                CustomDialog.Builder(this)
+                                        .setTitle("Historie")
+                                        .setView(new com.finn.androidUtilities.CustomRecycler<Expandable<List<Show.Episode>>>(this)
+                                                .setObjectList(expendables)
+                                                .setExpandableHelper(customRecycler1 -> customRecycler1.new ExpandableHelper<Show.Episode>().enableExpandByDefault()
+                                                        .customizeRecycler(subRecycler -> {
+                                                            subRecycler.setSetItemContent((itemView, episode1) -> {
+                                                                Utility.setMargins(itemView, 5, 5, 5, 5);
+//                                                                ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(episode1.getEpisodeNumber()));
+//                                                                ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode1.getName());
+//                                                                if (episode1.getAirDate() != null)
+//                                                                    ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode1.getAirDate()));
+//                                                                ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode1.getRating() != -1 ? episode1.getRating() + " ☆" : "");
+//                                                                ((TextView) itemView.findViewById(R.id.listItem_episode_viewCount)).setText(
+//                                                                        episode1.getDateList().size() >= 2 || (!episode1.getDateList().isEmpty() && !episode1.isWatched()) ? "| " + episode1.getDateList().size() : "");
+//
+//                                                                itemView.findViewById(R.id.listItem_episode_seen).setVisibility(View.GONE);
+
+                                                                itemView.findViewById(R.id.listItem_episode_seen).setVisibility(View.GONE);
+
+                                                                itemView.findViewById(R.id.listItem_episode_extraInfo).setVisibility(View.VISIBLE);
+                                                                itemView.findViewById(R.id.listItem_episode_showName_layout).setVisibility(View.GONE);
+                                                                ((TextView) itemView.findViewById(R.id.listItem_episode_seasonNumber)).setText(String.valueOf(episode1.getSeasonNumber()));
+
+                                                                ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(episode1.getEpisodeNumber()));
+                                                                ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode1.getName());
+                                                                if (episode1.getAirDate() != null)
+                                                                    ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode1.getAirDate()));
+                                                                ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode1.getRating() != -1 ? episode1.getRating() + " ☆" : "");
+
+                                                            }).setOnClickListener((customRecycler2, itemView, episode1, index1) -> Toast.makeText(this, episode1.getName(), Toast.LENGTH_SHORT).show())
+                                                            .setItemLayout(R.layout.list_item_episode);
+                                                        })
+                                                )
+                                                .generateRecyclerView())
+                                        .addButton(CustomDialog.BUTTON_TYPE.BACK_BUTTON)
+                                        .setDimensions(true, true)
+                                        .disableScroll()
+                                        .show();
+                            })
                             .addButton("Zuletzt gesehen", customDialog -> onDecided.run())
                             .addButton("Nächste Episode", customDialog -> {
                                 getNextEpisode(episode[0], episode1 -> {
@@ -401,7 +448,28 @@ public class ShowActivity extends AppCompatActivity {
                 .generate();
     }
 
-
+    //  --------------- Nach Update ersetzen --------------->
+//    public interface KeyToString<T> {
+//        String runKeyToString(T t);
+//    }
+//
+//    static class ToGroupExpandableList<Result, Item, Key> {
+//        List<Expandable<List<Result>>> runToGroupExpandableList(List<Item> list, Function<Item, Key> classifier
+//                , KeyToString<Key> keyToString, ItemToResult<Item, Result> itemToResult){
+//            Map<Key, List<Item>> group = list.stream().collect(Collectors.groupingBy(classifier));
+//
+//            List<Expandable<List<Result>>> expandableList = new ArrayList<>();
+//            for (Map.Entry<Key, List<Item>> entry : group.entrySet()) {
+//                expandableList.add(new Expandable<>(keyToString.runKeyToString(entry.getKey()), entry.getValue().stream().map(itemToResult::runItemToResult).collect(Collectors.toList())));
+//            }
+//            return expandableList;
+//        }
+//    }
+//
+//    public interface ItemToResult<Item, Result> {
+//        Result runItemToResult(Item item);
+//    }
+    //  <--------------- Nach Update ersetzen ---------------
 
     //  --------------- NextEpisode --------------->
     private void getNextEpisode(Show.Episode previousEpisode, OnNextEpisode onNextEpisode) {
@@ -605,7 +673,8 @@ public class ShowActivity extends AppCompatActivity {
                 .setSetItemContent((itemView, season) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_season_number)).setText(String.valueOf(season.getSeasonNumber()));
                     ((TextView) itemView.findViewById(R.id.listItem_season_name)).setText(season.getName());
-                    ((TextView) itemView.findViewById(R.id.listItem_season_release)).setText(new SimpleDateFormat("(yyyy)", Locale.getDefault()).format(season.getAirDate()));
+                    if (season.getAirDate() != null)
+                        ((TextView) itemView.findViewById(R.id.listItem_season_release)).setText(new SimpleDateFormat("(yyyy)", Locale.getDefault()).format(season.getAirDate()));
                     Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
                     int size = (int) season.getEpisodeMap().values().stream().filter(Show.Episode::isWatched).count();
                     if (size == 0) {
@@ -664,7 +733,8 @@ public class ShowActivity extends AppCompatActivity {
                 .setSetItemContent((itemView, episode) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(episode.getEpisodeNumber()));
                     ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode.getName());
-                    ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode.getAirDate()));
+                    if (episode.getAirDate() != null)
+                        ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode.getAirDate()));
                     ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode.getRating() != -1 ? episode.getRating() + " ☆" : "");
                     ((TextView) itemView.findViewById(R.id.listItem_episode_viewCount)).setText(
                             episode.getDateList().size() >= 2 || (!episode.getDateList().isEmpty() && !episode.isWatched()) ? "| " + episode.getDateList().size() : "");
@@ -683,6 +753,8 @@ public class ShowActivity extends AppCompatActivity {
                     }
                 })
                 .addSubOnClickListener(R.id.listItem_episode_seen, (customRecycler, itemView, episode, index) -> {
+                    if (episode.isWatched())
+                        return;
                     selectedEpisode[0] = episode;
                     if (episode.getRating() == -1 || episode.getRating() == 0) {
                         RatingBar ratingBar = new RatingBar(this);
@@ -706,6 +778,8 @@ public class ShowActivity extends AppCompatActivity {
                     }
                 })
                 .addSubOnLongClickListener(R.id.listItem_episode_seen, (customRecycler, itemView, episode, index) -> {
+                    if (episode.isWatched())
+                        return;
                     selectedEpisode[0] = episode;
                     addView.run();
                     customRecycler.reload();

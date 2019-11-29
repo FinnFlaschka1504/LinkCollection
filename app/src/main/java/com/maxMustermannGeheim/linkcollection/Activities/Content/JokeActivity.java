@@ -14,12 +14,12 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.finn.androidUtilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
@@ -50,7 +50,7 @@ public class JokeActivity extends AppCompatActivity {
     private boolean reverse;
     private SORT_TYPE sort_type = SORT_TYPE.LATEST;
     Database database = Database.getInstance();
-    private CustomRecycler customRecycler_List;
+    private CustomRecycler<CustomRecycler.Expandable<Joke>> customRecycler_List;
     private CustomDialog[] addOrEditDialog = new CustomDialog[]{null};
     private String searchQuery = "";
     private SharedPreferences mySPR_daten;
@@ -148,23 +148,25 @@ public class JokeActivity extends AppCompatActivity {
     }
 
     private void loadRecycler() {
-        customRecycler_List = new CustomRecycler<Joke>(this, findViewById(R.id.recycler))
-                .setItemLayout(R.layout.list_item_joke)
+        customRecycler_List = new CustomRecycler<CustomRecycler.Expandable<Joke>>(this, findViewById(R.id.recycler))
                 .setGetActiveObjectList(() -> {
                     if (searchQuery.equals("")) {
                         allJokeList = new ArrayList<>(database.jokeMap.values());
-                        return sortList(allJokeList);
+                        return toExpandableList(sortList(allJokeList));
                     }
                     else
-                        return filterList(allJokeList);
+                        return toExpandableList(filterList(allJokeList));
                 })
-                .setSetItemContent((itemView, joke) -> {
+
+                .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper<Joke>(R.layout.list_item_joke, (itemView, joke, expanded) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_joke_title_label)).setText(joke.getPunchLine() == null || joke.getPunchLine().isEmpty() ? "Witz:" : "Aufbau:");
                     itemView.findViewById(R.id.listItem_joke_punchLine_layout).setVisibility(joke.getPunchLine() == null || joke.getPunchLine().isEmpty() ? View.GONE : View.VISIBLE);
 
+                    TextView listItem_joke_title = itemView.findViewById(R.id.listItem_joke_title);
+                    TextView listItem_joke_punchLine = itemView.findViewById(R.id.listItem_joke_punchLine);
 
-                    ((TextView) itemView.findViewById(R.id.listItem_joke_title)).setText(joke.getName());
-                    ((TextView) itemView.findViewById(R.id.listItem_joke_punchLine)).setText(joke.getPunchLine());
+                    listItem_joke_title.setText(joke.getName());
+                    listItem_joke_punchLine.setText(joke.getPunchLine());
 
 
                     ((TextView) itemView.findViewById(R.id.listItem_joke_categories)).setText(String.join(", ",
@@ -177,28 +179,33 @@ public class JokeActivity extends AppCompatActivity {
                     }
                     else
                         itemView.findViewById(R.id.listItem_joke_rating_layout).setVisibility(View.GONE);
-                })
-                .setOnClickListener((customRecycler, view, object, index) -> {
-                    TextView listItem_joke_title = view.findViewById(R.id.listItem_joke_title);
-                    TextView listItem_joke_content = view.findViewById(R.id.listItem_joke_punchLine);
-                    if (!listItem_joke_content.isFocusable()) {
-                        listItem_joke_title.setMaxLines(20);
-                        listItem_joke_content.setSingleLine(false);
-                        listItem_joke_content.setFocusable(true);
+
+
+                    if (expanded) {
+                        listItem_joke_title.setMaxLines(Integer.MAX_VALUE);
+                        listItem_joke_punchLine.setSingleLine(false);
                     } else {
                         listItem_joke_title.setMaxLines(2);
-                        listItem_joke_content.setSingleLine(true);
-                        listItem_joke_content.setFocusable(false);
+                        listItem_joke_punchLine.setSingleLine(true);
 
                     }
-//                  openUrl(object, false);
-                })
-                .addSubOnClickListener(R.id.listItem_joke_details, (customRecycler, view, object, index) -> detailDialog = showDetailDialog((Joke) object), false)
-                .setOnLongClickListener((customRecycler, view, object, index) -> {
-                    addOrEditDialog[0] = showEditOrNewDialog(object);
-                })
-                .hideDivider()
+
+                }))
+
+//                .setSetItemContent((itemView, joke) -> {
+//                })
+//                .setOnClickListener((customRecycler, view, object, index) -> {
+////                  openUrl(object, false);
+//                })
+
+
+                .addSubOnClickListener(R.id.listItem_joke_details, (customRecycler, view, jokeExpandable, index) -> detailDialog = showDetailDialog(jokeExpandable.getObject()), false)
+                .setOnLongClickListener((customRecycler, view, jokeExpandable, index) -> addOrEditDialog[0] = showEditOrNewDialog(jokeExpandable.getObject()))
                 .generate();
+    }
+
+    private List<CustomRecycler.Expandable<Joke>> toExpandableList(List<Joke> jokeList) {
+        return jokeList.stream().map(joke -> new CustomRecycler.Expandable<>(joke.getName(), joke)).collect(Collectors.toList());
     }
 
     private List<Joke> filterList(ArrayList<Joke> allJokeList) {

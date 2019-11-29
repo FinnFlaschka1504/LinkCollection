@@ -57,7 +57,7 @@ public class Settings extends AppCompatActivity {
     public static final String SETTING_SPACE_ORDER = "SETTING_SPACE_ORDER";
     public static Map<String, String> settingsMap = new HashMap<>();
 
-    static Database database = Database.getInstance();
+    static public Database database = Database.getInstance();
     public static SharedPreferences mySPR_settings;
 
     RecyclerView spaceRecycler;
@@ -71,9 +71,9 @@ public class Settings extends AppCompatActivity {
     private boolean spaceOrderChanged;
 
     //  ----- Static ----->
-    public static void startSettings_ifNeeded(Context context) {
+    public static boolean startSettings_ifNeeded(Context context) {
         if (mySPR_settings != null)
-            return;
+            return false;
 
         mySPR_settings = context.getSharedPreferences(SHARED_PREFERENCES_SETTINGS, MODE_PRIVATE);
 
@@ -81,6 +81,7 @@ public class Settings extends AppCompatActivity {
         applySpacesList(context);
         getFromSpr();
         updateSpaces();
+        return true;
     }
 
     private static void applySettingsMap(Context context) {

@@ -475,19 +475,19 @@ public class VideoActivity extends AppCompatActivity {
     }
 
 
-    private CustomDialog showEditOrNewDialog(Object object) {
+    private CustomDialog showEditOrNewDialog(Video video) {
         if (!Utility.isOnline(this))
             return null;
         setResult(RESULT_OK);
 
-        final Video[] video = {(Video) object};
-        if (video[0] != null) {
-            video[0] = ((Video) object).cloneVideo();
+        final Video[] editVideo = {video};
+        if (editVideo[0] != null) {
+            editVideo[0] = video.clone();
         }
         Helpers.TextInputHelper helper = new Helpers.TextInputHelper();
         final boolean[] checked = {false};
         CustomDialog returnDialog =  CustomDialog.Builder(this)
-                .setTitle(object == null ? "Neu: " + singular : singular + " Bearbeiten")
+                .setTitle(video == null ? "Neu: " + singular : singular + " Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
@@ -503,11 +503,11 @@ public class VideoActivity extends AppCompatActivity {
 //                        .setText("Möchtest du wirklich ohne URL speichern?")
 //                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
 //                        .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 ->
-//                                saveVideo(customDialog, object, titel, url, false, video))
+//                                saveVideo(customDialog, video, titel, url, false, editVideo))
 //                        .show();
 //                    }
 //                    else
-                    saveVideo(customDialog, object, titel, url, checked[0], video);
+                    saveVideo(customDialog, video, titel, url, checked[0], editVideo);
 
                 }, false)
                 .disableLastAddedButton()
@@ -517,7 +517,7 @@ public class VideoActivity extends AppCompatActivity {
                     CheckBox dialog_editOrAddVideo_watchLater = customDialog.findViewById(R.id.dialog_editOrAddVideo_watchLater);
                     helper.defaultDialogValidation(customDialog).addValidator(dialog_editOrAddVideo_Titel_layout, dialog_editOrAddVideo_Url_layout)
                             .addActionListener(dialog_editOrAddVideo_Titel_layout, (textInputHelper, textInputLayout, actionId, text) -> {
-                                apiRequest(text, customDialog, video[0]);
+                                apiRequest(text, customDialog, editVideo[0]);
                             }, Helpers.TextInputHelper.IME_ACTION.SEARCH)
                             .setValidation(dialog_editOrAddVideo_Url_layout, (validator, text) -> {
                                 if (text.isEmpty() && dialog_editOrAddVideo_watchLater.isChecked())
@@ -540,40 +540,40 @@ public class VideoActivity extends AppCompatActivity {
                         checked[0] = isChecked;
                         helper.validate(dialog_editOrAddVideo_Url_layout);
                     });
-                    if (object == null)
+                    if (video == null)
                         helper.setValidation(dialog_editOrAddVideo_Titel_layout, (validator, text) -> {
                             if (database.videoMap.values().stream().anyMatch(show1 -> show1.getName().toLowerCase().equals(text.toLowerCase())))
                                 validator.setInvalid("Schon vorhanden!");
                         });
 
-                    if (video[0] != null) {
-                        ((AutoCompleteTextView) view.findViewById(R.id.dialog_editOrAddVideo_Titel)).setText(video[0].getName());
+                    if (editVideo[0] != null) {
+                        ((AutoCompleteTextView) view.findViewById(R.id.dialog_editOrAddVideo_Titel)).setText(editVideo[0].getName());
                         ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_Darsteller)).setText(
-                                video[0].getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                                editVideo[0].getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                         view.findViewById(R.id.dialog_editOrAddVideo_Darsteller).setSelected(true);
                         ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_Studio)).setText(
-                                video[0].getStudioList().stream().map(uuid -> database.studioMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                                editVideo[0].getStudioList().stream().map(uuid -> database.studioMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                         view.findViewById(R.id.dialog_editOrAddVideo_Studio).setSelected(true);
                         ((TextView) view.findViewById(R.id.dialog_editOrAddVideo_Genre)).setText(
-                                video[0].getGenreList().stream().map(uuid -> database.genreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                                editVideo[0].getGenreList().stream().map(uuid -> database.genreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                         view.findViewById(R.id.dialog_editOrAddVideo_Genre).setSelected(true);
-                        ((EditText) view.findViewById(R.id.dialog_editOrAddVideo_Url)).setText(video[0].getUrl());
-                        if (video[0].getRelease() != null)
-                            ((LazyDatePicker) view.findViewById(R.id.dialog_editOrAddVideo_datePicker)).setDate(video[0].getRelease());
-                        ((RatingBar) view.findViewById(R.id.dialog_editOrAddVideo_rating)).setRating(video[0].getRating());
+                        ((EditText) view.findViewById(R.id.dialog_editOrAddVideo_Url)).setText(editVideo[0].getUrl());
+                        if (editVideo[0].getRelease() != null)
+                            ((LazyDatePicker) view.findViewById(R.id.dialog_editOrAddVideo_datePicker)).setDate(editVideo[0].getRelease());
+                        ((RatingBar) view.findViewById(R.id.dialog_editOrAddVideo_rating)).setRating(editVideo[0].getRating());
                     }
                     else {
                         dialog_editOrAddVideo_watchLater.setVisibility(View.VISIBLE);
-                        video[0] = new Video();
+                        editVideo[0] = new Video();
                     }
 
 
                     view.findViewById(R.id.dialog_editOrAddVideo_editActor).setOnClickListener(view1 ->
-                            Utility.showEditItemDialog(this, addOrEditDialog[0], video[0] == null ? null : video[0].getDarstellerList(), video[0], CategoriesActivity.CATEGORIES.DARSTELLER));
+                            Utility.showEditItemDialog(this, addOrEditDialog[0], editVideo[0] == null ? null : editVideo[0].getDarstellerList(), editVideo[0], CategoriesActivity.CATEGORIES.DARSTELLER));
                     view.findViewById(R.id.dialog_editOrAddVideo_editStudio).setOnClickListener(view1 ->
-                            Utility.showEditItemDialog(this, addOrEditDialog[0], video[0] == null ? null : video[0].getStudioList(), video[0], CategoriesActivity.CATEGORIES.STUDIOS ));
+                            Utility.showEditItemDialog(this, addOrEditDialog[0], editVideo[0] == null ? null : editVideo[0].getStudioList(), editVideo[0], CategoriesActivity.CATEGORIES.STUDIOS ));
                     view.findViewById(R.id.dialog_editOrAddVideo_editGenre).setOnClickListener(view1 ->
-                            Utility.showEditItemDialog(this, addOrEditDialog[0], video[0] == null ? null : video[0].getGenreList(), video[0], CategoriesActivity.CATEGORIES.GENRE));
+                            Utility.showEditItemDialog(this, addOrEditDialog[0], editVideo[0] == null ? null : editVideo[0].getGenreList(), editVideo[0], CategoriesActivity.CATEGORIES.GENRE));
                 })
                 .setOnDialogShown(customDialog -> {
                     Toast toast = Utility.centeredToast(this, "");

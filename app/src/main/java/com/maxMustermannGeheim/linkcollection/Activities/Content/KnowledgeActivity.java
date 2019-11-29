@@ -21,13 +21,13 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.finn.androidUtilities.CustomRecycler;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
@@ -135,17 +135,17 @@ public class KnowledgeActivity extends AppCompatActivity {
     }
 
     private void loadRecycler() {
-        customRecycler_List = new CustomRecycler<Knowledge>(this, findViewById(R.id.recycler))
-                .setItemLayout(R.layout.list_item_knowledge)
+        customRecycler_List = new CustomRecycler<CustomRecycler.Expandable<Knowledge>>(this, findViewById(R.id.recycler))
                 .setGetActiveObjectList(() -> {
                     if (searchQuery.equals("")) {
                         allKnowledgeList = new ArrayList<>(database.knowledgeMap.values());
-                        return sortList(allKnowledgeList);
+                        return toExpandableList(sortList(allKnowledgeList));
                     }
                     else
-                        return filterList(allKnowledgeList);
+                        return toExpandableList(filterList(allKnowledgeList));
                 })
-                .setSetItemContent((itemView, knowledge) -> {
+
+                .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper<Knowledge>(R.layout.list_item_knowledge, (itemView, knowledge, expanded) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_knowledge_title)).setText(knowledge.getName());
                     ((TextView) itemView.findViewById(R.id.listItem_knowledge_content)).setText(knowledge.getContent());
 
@@ -160,26 +160,23 @@ public class KnowledgeActivity extends AppCompatActivity {
                     }
                     else
                         itemView.findViewById(R.id.listItem_knowledge_rating_layout).setVisibility(View.GONE);
-                })
-                .setOnClickListener((customRecycler, view, object, index) -> {
-                    TextView listItem_knowledge_content = view.findViewById(R.id.listItem_knowledge_content);
-                    if (listItem_knowledge_content.isFocusable()) {
-                        listItem_knowledge_content.setSingleLine(true);
-                        listItem_knowledge_content.setFocusable(false);
 
-                    } else {
-                        listItem_knowledge_content.setSingleLine(false);
-                        listItem_knowledge_content.setFocusable(true);
-                    }
-//                  openUrl(object, false);
+
+                    ((TextView) itemView.findViewById(R.id.listItem_knowledge_content)).setSingleLine(!expanded);
+                }))
+
+
+                .addSubOnClickListener(R.id.listItem_knowledge_details, (customRecycler, view, knowledgeExpandable, index) -> detailDialog = showDetailDialog(knowledgeExpandable.getObject()), false)
+                .setOnLongClickListener((customRecycler, view, knowledgeExpandable, index) -> {
+                    addOrEditDialog[0] = showEditOrNewDialog(knowledgeExpandable.getObject());
                 })
-                .addSubOnClickListener(R.id.listItem_knowledge_details, (customRecycler, view, object, index) -> detailDialog = showDetailDialog((Knowledge) object), false)
-                .setOnLongClickListener((customRecycler, view, object, index) -> {
-                    addOrEditDialog[0] = showEditOrNewDialog(object);
-                })
-                .hideDivider()
                 .generate();
     }
+
+    private List<CustomRecycler.Expandable<Knowledge>> toExpandableList(List<Knowledge> jokeList) {
+        return jokeList.stream().map(joke -> new CustomRecycler.Expandable<>(joke.getName(), joke)).collect(Collectors.toList());
+    }
+
 
     private List<Knowledge> filterList(ArrayList<Knowledge> allKnowledgeList) {
         return sortList(allKnowledgeList.stream().filter(knowledge -> Utility.containedInKnowledge(searchQuery, knowledge, filterTypeSet)).collect(Collectors.toList()));
@@ -620,7 +617,6 @@ public class KnowledgeActivity extends AppCompatActivity {
                                 ((TextView) itemView.findViewById(R.id.listItem_source_name)).setText(nameUrlPair.get(0));
                                 ((TextView) itemView.findViewById(R.id.listItem_source_content)).setText(nameUrlPair.get(1));
                             })
-                            .hideDivider()
                             .setOnClickListener((customRecycler, itemView, o, index) -> Utility.openUrl(this, o.get(1), false))
                             .setOnLongClickListener((customRecycler, view1, stringList, index) -> {
                                 Dialog dialog = customDialog.getDialog();

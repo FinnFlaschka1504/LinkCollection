@@ -1021,7 +1021,7 @@ public class OweActivity extends AppCompatActivity {
                                 else
                                     customRecycler.reload();
                                 Toast.makeText(activity, "Ausgleich erstellt", Toast.LENGTH_SHORT).show();
-                                MainActivity.setCounts();
+                                MainActivity.setCounts(null);
                             })
                             .show();
                 });

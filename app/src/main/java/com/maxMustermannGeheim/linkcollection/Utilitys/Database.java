@@ -141,6 +141,9 @@ public class Database {
         return database;
     }
 
+    public static Database getInstance(SharedPreferences mySPR_daten, OnInstanceFinishedLoading onInstanceFinishedLoading) {
+        return getInstance(mySPR_daten, onInstanceFinishedLoading, false);
+    }
     public static Database getInstance(SharedPreferences mySPR_daten, OnInstanceFinishedLoading onInstanceFinishedLoading, boolean createNew) {
         Log.d(TAG, "getInstance: new " + onInstanceFinishedLoadingList.size());
         Database.mySPR_daten = mySPR_daten;

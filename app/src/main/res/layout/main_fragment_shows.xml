@@ -288,7 +288,7 @@
                     android:elevation="3dp"
                     android:foreground="@drawable/ripple"
                     android:gravity="center"
-                    android:onClick="showShowCalenderDialog"
+                    android:onClick="showNewEpisodesDialog"
                     android:orientation="vertical">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
@@ -336,18 +336,26 @@
 
                         </LinearLayout>
 
-                        <TextView
-                            android:id="@+id/main_shows_notificationIndicator"
+                        <com.maxMustermannGeheim.linkcollection.Utilitys.SquareLayout
+                            android:id="@+id/main_shows_notificationIndicator_layout"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="8dp"
                             android:layout_marginEnd="8dp"
+                            android:background="@color/colorPrimary"
                             android:gravity="center"
                             android:padding="5dp"
-                            android:text="5"
-                            android:textSize="12sp"
                             app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintTop_toTopOf="parent" />
+                            app:layout_constraintTop_toTopOf="parent">
+
+                            <TextView
+                                android:id="@+id/main_shows_notificationIndicator"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="5"
+                                android:textColor="#3C3C3C"
+                                android:textSize="12sp" />
+                        </com.maxMustermannGeheim.linkcollection.Utilitys.SquareLayout>
 
                     </androidx.constraintlayout.widget.ConstraintLayout>
 

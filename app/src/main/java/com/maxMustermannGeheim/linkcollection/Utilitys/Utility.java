@@ -26,9 +26,12 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -53,12 +56,18 @@ import com.maxMustermannGeheim.linkcollection.R;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -68,8 +77,10 @@ import java.util.stream.Collectors;
 
 import top.defaults.drawabletoolbox.DrawableBuilder;
 
+import static java.lang.reflect.Modifier.TRANSIENT;
 
-public class Utility {
+
+public class Utility implements java.io.Serializable{
 
     //  --------------- isOnline --------------->
     static public boolean isOnline(Context context) {
@@ -141,10 +152,49 @@ public class Utility {
         if (amount == 0)
             return "N/A";
         if (amount % 1 == 0)
-            return String.format(Locale.GERMANY,"%.0f €", amount);
+            return String.format(Locale.GERMANY, "%.0f €", amount);
         else
-            return String.format(Locale.GERMANY,"%.2f €", amount);
+            return String.format(Locale.GERMANY, "%.2f €", amount);
     }
+
+
+    //  --------------- Copy --------------->
+    public static <T> T deepCopy(T t) {
+//        try {
+//            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+//            ObjectOutputStream outputStrm = new ObjectOutputStream(outputStream);
+//            outputStrm.writeObject(t);
+//            ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
+//            ObjectInputStream objInputStream = new ObjectInputStream(inputStream);
+//            return (T) objInputStream.readObject();
+//        } catch (Exception e) {
+//            return null;
+//        }
+
+//        Gson gson = new Gson();
+//        return (T) gson.fromJson(gson.toJson(t, t.getClass()), t.getClass());
+
+
+//        Gson gson = new GsonBuilder()
+//                .excludeFieldsWithoutExposeAnnotation()
+//                .excludeFieldsWithModifiers(TRANSIENT) // STATIC|TRANSIENT in the default configuration
+//                .create();
+//
+//        return (T) gson.fromJson(gson.toJson(t), t.getClass());
+
+//        final ObjectMapper objMapper = new ObjectMapper();
+//        String jsonStr = null;
+//        try {
+//            jsonStr = objMapper.writeValueAsString(t);
+//            return (T) objMapper.readValue(jsonStr, t.getClass());
+//        } catch (IOException e) {
+//            String BREAKPOINT = null;
+//            return null;
+//        }
+
+        return t;
+    }
+    //  <--------------- Copy ---------------
 
 
     //  --------------- OnClickListener --------------->
@@ -185,15 +235,15 @@ public class Utility {
         });
     }
 
-    interface InterceptOnClick{
+    interface InterceptOnClick {
         boolean runInterceptOnClick(View view);
     }
     //  <--------------- OnClickListener ---------------
 
     //  ----- Filter ----->
     private static boolean contains(String all, String sub) {
-    return all.toLowerCase().contains(sub.toLowerCase());
-}
+        return all.toLowerCase().contains(sub.toLowerCase());
+    }
 
     //  ----- ... in Videos ----->
     public static boolean containedInVideo(String query, Video video, HashSet<VideoActivity.FILTER_TYPE> filterTypeSet) {
@@ -216,7 +266,7 @@ public class Utility {
         return false;
     }
 
-    private static boolean  containedInActors(String query, List<String> actorUuids) {
+    private static boolean containedInActors(String query, List<String> actorUuids) {
         Database database = Database.getInstance();
         for (String actorUUid : actorUuids) {
             if (database.darstellerMap.get(actorUUid).getName().equals(query))
@@ -224,7 +274,8 @@ public class Utility {
         }
         return false;
     }
-    private static boolean  containedInGenre(String query, List<String> genreUuids) {
+
+    private static boolean containedInGenre(String query, List<String> genreUuids) {
         Database database = Database.getInstance();
         for (String genreUUid : genreUuids) {
             if (database.genreMap.get(genreUUid).getName().equals(query))
@@ -232,7 +283,8 @@ public class Utility {
         }
         return false;
     }
-    private static boolean  containedInStudio(String query, List<String> studioUuids) {
+
+    private static boolean containedInStudio(String query, List<String> studioUuids) {
         Database database = Database.getInstance();
         for (String studioUUid : studioUuids) {
             if (database.studioMap.get(studioUUid).getName().equals(query))
@@ -521,8 +573,7 @@ public class Utility {
 
         if (customRecycler.getObjectList().isEmpty()) {
             customRecycler.setObjectList(eventList).generate();
-        }
-        else
+        } else
             customRecycler.reload(eventList);
 
     }
@@ -558,9 +609,10 @@ public class Utility {
     public static Toast centeredToast(Context context, String text) {
         Toast toast = Toast.makeText(context, text, Toast.LENGTH_SHORT);
         TextView v = toast.getView().findViewById(android.R.id.message);
-        if( v != null) v.setGravity(Gravity.CENTER);
+        if (v != null) v.setGravity(Gravity.CENTER);
         return toast;
     }
+
     public static void showCenteredToast(Context context, String text) {
         centeredToast(context, text).show();
     }
@@ -568,15 +620,15 @@ public class Utility {
 
     public static CustomDialog showEditItemDialog(Context context, CustomDialog addOrEditDialog, List<String> preSelectedUuidList, Object o, CategoriesActivity.CATEGORIES category) {
         Database database = Database.getInstance();
-        
+
         if (preSelectedUuidList == null)
             preSelectedUuidList = new ArrayList<>();
 
-        List<String> selectedUuidList = new  ArrayList<>(preSelectedUuidList);
+        List<String> selectedUuidList = new ArrayList<>(preSelectedUuidList);
         List<ParentClass> allObjectsList;
         String editType_string = category.getPlural();
         final String[] searchQuery = {""};
-        switch (category){
+        switch (category) {
             default:
             case DARSTELLER:
                 allObjectsList = new ArrayList<>(database.darstellerMap.values());
@@ -613,7 +665,7 @@ public class Utility {
                             .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                             .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
                                 ParentClass parentClass = ParentClass.newCategoy(category, customDialog1.getEditText());
-                                switch (category){
+                                switch (category) {
                                     case DARSTELLER:
                                         database.darstellerMap.put(parentClass.getUuid(), (Darsteller) parentClass);
                                         break;
@@ -635,7 +687,7 @@ public class Utility {
                                 }
                                 selectedUuidList.add(parentClass.getUuid());
                                 customDialog1.dismiss();
-                                showEditItemDialog(context, addOrEditDialog,selectedUuidList, o, category);
+                                showEditItemDialog(context, addOrEditDialog, selectedUuidList, o, category);
                                 Database.saveAll();
                             })
                             .setEdit(new CustomDialog.EditBuilder()
@@ -644,10 +696,11 @@ public class Utility {
                             .show();
 
                 }, false)
-                .addButton("Abbrechen", customDialog -> {})
+                .addButton("Abbrechen", customDialog -> {
+                })
                 .addButton("Speichern", customDialog -> {
                     List<String> nameList = new ArrayList<>();
-                    switch (category){
+                    switch (category) {
                         case DARSTELLER:
                             ((Video) o).setDarstellerList(selectedUuidList);
                             selectedUuidList.forEach(uuid -> nameList.add(database.darstellerMap.get(uuid).getName()));
@@ -696,7 +749,7 @@ public class Utility {
                 .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
                 .setOnClickListener((customRecycler, view, object, index) -> {
                     Toast.makeText(context,
-                            "Halten zum abwählen" , Toast.LENGTH_SHORT).show();
+                            "Halten zum abwählen", Toast.LENGTH_SHORT).show();
                 })
                 .setOnLongClickListener((customRecycler, view, object, index) -> {
                     ((CustomRecycler.MyAdapter) customRecycler.getRecycler().getAdapter()).removeItemAt(index);
@@ -794,7 +847,7 @@ public class Utility {
     }
 
 
-    public static class Triple<A,B,C> {
+    public static class Triple<A, B, C> {
         public A first;
         public B second;
         public C third;
@@ -806,7 +859,7 @@ public class Utility {
         }
     }
 
-    public static class Quadruple<A,B,C,D> {
+    public static class Quadruple<A, B, C, D> {
         public A first;
         public B second;
         public C third;
@@ -821,7 +874,7 @@ public class Utility {
     }
 
 
-//  ----- Pixels ----->
+    //  ----- Pixels ----->
     public static int pxToDp(int px) {
         return (int) (px / Resources.getSystem().getDisplayMetrics().density);
     }
@@ -830,7 +883,7 @@ public class Utility {
         return (int) (dp * Resources.getSystem().getDisplayMetrics().density);
     }
 
-    public static void setMargins (View v, int links, int oben, int rechts, int unten) {
+    public static void setMargins(View v, int links, int oben, int rechts, int unten) {
         if (v.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
             ViewGroup.MarginLayoutParams p = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
             p.setMargins(dpToPx(links), dpToPx(oben), dpToPx(rechts), dpToPx(unten));
@@ -866,10 +919,11 @@ public class Utility {
         HEIGHT, WIDTH, MAX, MIN
     }
 
-    public static void squareView(View view){
+    public static void squareView(View view) {
         squareView(view, EQUAL_MODE.MAX);
     }
-    public static void squareView(View view, EQUAL_MODE equal_mode){
+
+    public static void squareView(View view, EQUAL_MODE equal_mode) {
         ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
         int matchParentMeasureSpec = View.MeasureSpec.makeMeasureSpec(((View) view.getParent()).getWidth(), View.MeasureSpec.EXACTLY);
         int wrapContentMeasureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
@@ -914,6 +968,7 @@ public class Utility {
         return drawableBuilder
                 .build();
     }
+
     public static Drawable drawableBuilder_oval(int color) {
         return new DrawableBuilder()
                 .oval()
@@ -921,4 +976,25 @@ public class Utility {
                 .build();
     }
     //  <--------------- DrawableBuilder ---------------
+
+
+    //  --------------- ConcatCollections --------------->
+    public interface GetCollections<T, V> {
+        Collection<V> runGetCollections(T t);
+    }
+
+    public static <T, V> List<V> concatenateCollections(Collection<T> tCollection, GetCollections<T, V> getCollections) {
+        List<Collection<V>> collectionList = new ArrayList<>();
+        tCollection.forEach(t -> collectionList.add(getCollections.runGetCollections(t)));
+        return collectionList.stream().flatMap(Collection::stream).collect(Collectors.toList());
+    }
+
+    public static <T> List<T> concatenateCollections(Collection<Collection<T>> collections) {
+        return collections.stream().flatMap(Collection::stream).collect(Collectors.toList());
+    }
+
+    public static <T> List<T> concatenateCollections(List<T>... collections) {
+        return Arrays.stream(collections).flatMap(Collection::stream).collect(Collectors.toList());
+    }
+    //  <--------------- ConcatCollections ---------------
 }

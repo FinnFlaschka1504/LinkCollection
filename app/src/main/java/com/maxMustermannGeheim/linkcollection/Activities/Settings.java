@@ -28,6 +28,7 @@ import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
+import com.maxMustermannGeheim.linkcollection.Utilitys.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
 import java.util.ArrayList;
@@ -168,11 +169,17 @@ public class Settings extends AppCompatActivity {
                                     .forEach(date -> dateSet.add(Utility.removeTime(date))));
                         }
                     }
-                    ((TextView) view.findViewById(R.id.main_shows_viewCount)).setText(String.valueOf(dateSet.size()));
+                    List<Show.Episode> episodeList = Utility.concatenateCollections(database.showMap.values(), show ->
+                            show.getAlreadyAiredList().stream().filter(episode -> !episode.isWatched()).collect(Collectors.toList()));
 
+                    ((TextView) view.findViewById(R.id.main_shows_viewCount)).setText(String.valueOf(dateSet.size()));
                     TextView main_shows_notificationIndicator = view.findViewById(R.id.main_shows_notificationIndicator);
-                    Utility.squareView(main_shows_notificationIndicator);
-                    main_shows_notificationIndicator.setBackground(Utility.drawableBuilder_oval(context.getColor(R.color.colorPrimary)));
+
+                    SquareLayout main_shows_notificationIndicator_layout = view.findViewById(R.id.main_shows_notificationIndicator_layout);
+//                    Utility.squareView(main_shows_notificationIndicator_layout);
+                    main_shows_notificationIndicator_layout.setBackground(Utility.drawableBuilder_oval(context.getColor(R.color.colorPrimary)));
+                    main_shows_notificationIndicator.setText(String.valueOf(episodeList.size()));
+                    main_shows_notificationIndicator_layout.setVisibility(episodeList.isEmpty() ? View.GONE : View.VISIBLE);
                 })
                 .setSettingsDialog(null));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_knowledge), context.getString(R.string.bottomMenu_knowledge)).setActivity(KnowledgeActivity.class).setItemId(Space.SPACE_KNOWLEDGE).setIconId(R.drawable.ic_knowledge).setFragmentLayoutId(R.layout.main_fragment_knowledge)

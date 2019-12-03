@@ -9,9 +9,11 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 public class Show extends ParentClass{
@@ -24,8 +26,9 @@ public class Show extends ParentClass{
     private boolean inProduction;
     private Date nextEpisodeAir;
     private String status;
-    private Date lastUpdated; // ToDo: <--
+    private Date lastUpdated;
     private boolean notifyNew;
+    private List<Episode> alreadyAiredList = new ArrayList<>();
 
     public Show(String name) {
         uuid = "show_" + UUID.randomUUID().toString();
@@ -138,6 +141,15 @@ public class Show extends ParentClass{
 
     public Show setNotifyNew(boolean notifyNew) {
         this.notifyNew = notifyNew;
+        return this;
+    }
+
+    public List<Episode> getAlreadyAiredList() {
+        return alreadyAiredList;
+    }
+
+    public Show setAlreadyAiredList(List<Episode> alreadyAiredList) {
+        this.alreadyAiredList = alreadyAiredList;
         return this;
     }
 
@@ -358,6 +370,10 @@ public class Show extends ParentClass{
             });
         }
 
+        public Episode getRaw() {
+            return clone().setWatched(false);
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -376,6 +392,11 @@ public class Show extends ParentClass{
         @Override
         public int hashCode() {
             return Objects.hash(getTmdbId(), getAirDate(), getEpisodeNumber(), isWatched(), getRating(), getDateList(), getShowId(), getSeasonNumber());
+        }
+
+        @Override
+        public Episode clone() {
+            return (Episode) super.clone();
         }
     }
     //  <----- Classes -----

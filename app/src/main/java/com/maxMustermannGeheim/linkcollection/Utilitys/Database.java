@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class Database {
     private static final String TAG = "Database";
@@ -42,6 +43,7 @@ public class Database {
     public static final String FAILED = "FAILED";
 
     private static Database database;
+    private static Database lastUploaded_database;
     private static DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
     private static List<OnInstanceFinishedLoading> onInstanceFinishedLoadingList = new ArrayList<>();
     private static SharedPreferences mySPR_daten;
@@ -369,12 +371,42 @@ public class Database {
     public static void saveAll() {
         Log.d(TAG, "saveAll: ");
 
-        if (!Database.isReady() || !database.isOnline())
+        if (!Database.isReady() || !database.isOnline()) //) || !Database.hasChanges())
             return;
 
         database.saveDatabase_offline(mySPR_daten);
         if (Utility.isOnline())
             database.writeAllToFirebase();
+    }
+
+    private static boolean hasChanges() {
+        return !database.equals(lastUploaded_database);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Database database = (Database) o;
+        return Objects.equals(videoMap, database.videoMap) &&
+                Objects.equals(darstellerMap, database.darstellerMap) &&
+                Objects.equals(studioMap, database.studioMap) &&
+                Objects.equals(genreMap, database.genreMap) &&
+                Objects.equals(watchLaterList, database.watchLaterList) &&
+                Objects.equals(knowledgeMap, database.knowledgeMap) &&
+                Objects.equals(knowledgeCategoryMap, database.knowledgeCategoryMap) &&
+                Objects.equals(oweMap, database.oweMap) &&
+                Objects.equals(personMap, database.personMap) &&
+                Objects.equals(jokeMap, database.jokeMap) &&
+                Objects.equals(jokeCategoryMap, database.jokeCategoryMap) &&
+                Objects.equals(showMap, database.showMap) &&
+                Objects.equals(showGenreMap, database.showGenreMap) &&
+                Objects.equals(showWatchLaterList, database.showWatchLaterList);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(videoMap, darstellerMap, studioMap, genreMap, watchLaterList, knowledgeMap, knowledgeCategoryMap, oweMap, personMap, jokeMap, jokeCategoryMap, showMap, showGenreMap, showWatchLaterList);
     }
 
     private void saveDatabase_offline(SharedPreferences mySPR_daten) {
@@ -480,6 +512,8 @@ public class Database {
             onInstanceFinishedLoadingList.remove(onInstanceFinishedLoading);
         });
 
+//        lastUploaded_database = Utility.deepCopy(database);
+        String BREAKPOINT = null;
     }
 //  <----- Get data from Firebase -----
 

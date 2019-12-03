@@ -25,6 +25,7 @@ import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.res.ResourcesCompat;
 
@@ -154,26 +155,6 @@ public class ShowActivity extends AppCompatActivity {
             }
         }
 
-    }
-
-    public static void showLaterMenu(AppCompatActivity activity, View view) {
-        if (!Database.isReady())
-            return;
-        CustomMenu.Builder(activity, view.findViewById(R.id.main_shows_watchLater_label))
-                .setMenus((customMenu, items) -> {
-                    items.add(new CustomMenu.MenuItem("Später ansehen", new Pair<>(new Intent(activity, ShowActivity.class)
-                            .putExtra(CategoriesActivity.EXTRA_SEARCH, WATCH_LATER_SEARCH)
-                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.SHOW), MainActivity.START_WATCH_LATER)));
-                    items.add(new CustomMenu.MenuItem("Bevorstehende", new Pair<>(new Intent(activity, ShowActivity.class)
-                            .putExtra(CategoriesActivity.EXTRA_SEARCH, UPCOMING_SEARCH)
-                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.SHOW), MainActivity.START_UPCOMING)));
-                })
-                .setOnClickListener((customRecycler, itemView, item, index) -> {
-                    Pair<Intent, Integer> pair = (Pair<Intent, Integer>) item.getContent();
-                    activity.startActivityForResult(pair.first, pair.second);
-                })
-                .dismissOnClick()
-                .show();
     }
 
     private void loadDatabase() {
@@ -440,6 +421,88 @@ public class ShowActivity extends AppCompatActivity {
                 .show();
     }
 
+
+    //  --------------- Static from Main --------------->
+    public static void showLaterMenu(AppCompatActivity activity, View view) {
+        if (!Database.isReady())
+            return;
+        CustomMenu.Builder(activity, view.findViewById(R.id.main_shows_watchLater_label))
+                .setMenus((customMenu, items) -> {
+                    items.add(new CustomMenu.MenuItem("Später ansehen", new Pair<>(new Intent(activity, ShowActivity.class)
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH, WATCH_LATER_SEARCH)
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.SHOW), MainActivity.START_WATCH_LATER)));
+                    items.add(new CustomMenu.MenuItem("Bevorstehende", new Pair<>(new Intent(activity, ShowActivity.class)
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH, UPCOMING_SEARCH)
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.SHOW), MainActivity.START_UPCOMING)));
+                })
+                .setOnClickListener((customRecycler, itemView, item, index) -> {
+                    Pair<Intent, Integer> pair = (Pair<Intent, Integer>) item.getContent();
+                    activity.startActivityForResult(pair.first, pair.second);
+                })
+                .dismissOnClick()
+                .show();
+    }
+    public static void showNewEpisodesDialog(AppCompatActivity activity, View view){
+        Database database = Database.getInstance();
+//        List<Show.Episode> alreadyAiredList = new ArrayList<>();
+//        database.showMap.values().forEach(show -> alreadyAiredList.addAll(show.getAlreadyAiredList()));
+        List<Show.Episode> alreadyAiredList = Utility.concatenateCollections(database.showMap.values(), show1 ->
+                show1.getAlreadyAiredList().stream().filter(episode2 -> !episode2.isWatched()).collect(Collectors.toList()));
+
+//        if (alreadyAiredList.isEmpty()) {
+//            Toast.makeText(activity, , Toast.LENGTH_SHORT).show();
+//        }
+
+        List<Expandable<List<Show.Episode>>> expandableList = new Expandable.ToGroupExpandableList<Show.Episode, Show.Episode, String>()
+                .runToGroupExpandableList(alreadyAiredList, Show.Episode::getShowId, (s, m) -> String.format(Locale.getDefault(), "%s (%d)", database.showMap.get(s).getName(), m.size()), episode -> episode);
+
+        CustomDialog customDialog = CustomDialog.Builder(activity);
+        customDialog
+                .setTitle("Neue Folgen")
+                .setView(new com.finn.androidUtilities.CustomRecycler<Expandable<List<Show.Episode>>>(activity)
+                        .setObjectList(expandableList)
+                        .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper<Show.Episode>().enableExpandByDefault()
+                                .customizeRecycler(subRecycler -> {
+                                    subRecycler.setSetItemContent((itemView, episode1) -> {
+                                        Utility.setMargins(itemView, 5, 5, 5, 5);
+                                        itemView.findViewById(R.id.listItem_episode_seen).setVisibility(View.GONE);
+
+                                        itemView.findViewById(R.id.listItem_episode_extraInfo).setVisibility(View.VISIBLE);
+                                        itemView.findViewById(R.id.listItem_episode_showName_layout).setVisibility(View.GONE);
+                                        ((TextView) itemView.findViewById(R.id.listItem_episode_seasonNumber)).setText(String.valueOf(episode1.getSeasonNumber()));
+
+                                        ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(episode1.getEpisodeNumber()));
+                                        ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode1.getName());
+                                        if (episode1.getAirDate() != null)
+                                            ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode1.getAirDate()));
+                                        ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode1.getRating() != -1 ? episode1.getRating() + " ☆" : "");
+
+                                    }).setOnClickListener((customRecycler2, itemView, episode1, index1) -> Toast.makeText(activity, episode1.getName(), Toast.LENGTH_SHORT).show())
+                                            .setItemLayout(R.layout.list_item_episode);
+                                    subRecycler.enableSwiping((objectList, direction, episode) -> {
+                                        List<Expandable<List<Show.Episode>>> rest = customRecycler.getObjectList().stream().filter(listExpandable -> !listExpandable.getList().isEmpty()).collect(Collectors.toList());
+                                        if (rest.isEmpty())
+                                            customDialog.dismiss();
+                                        else
+                                            customRecycler.reload(rest);
+                                        Database.getInstance().showMap.values().stream().filter(show -> show.getUuid().equals(episode.getShowId())).findFirst()
+                                                .ifPresent(show -> show.getAlreadyAiredList().stream().filter(episode1 -> episode1.equals(episode)).findFirst()
+                                                        .ifPresent(episode1 -> episode1.setWatched(true)));
+                                        MainActivity.setCounts((MainActivity) activity);
+                                    }, true, true);
+                                })
+                        )
+                        .generateRecyclerView())
+                .disableScroll()
+                .setDimensions(true, true)
+                .addButton("Alle Aktuallisieren")
+                .alignPreviousButtonsLeft()
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
+                .setOnDialogDismiss(customDialog1 -> Database.saveAll())
+                .show();
+    }
+    //  <--------------- Static from Main ---------------
+
     //  --------------- NextEpisode --------------->
     private void getNextEpisode(Show.Episode previousEpisode, OnNextEpisode onNextEpisode) {
         Show show = database.showMap.get(previousEpisode.getShowId());
@@ -643,6 +706,13 @@ public class ShowActivity extends AppCompatActivity {
 
     }
 
+    private boolean alreadySeen(Show show, Show.Episode episode) {
+        final boolean[] result = {false};
+        show.getSeasonList().stream().filter(season -> episode.getSeasonNumber() == season.getSeasonNumber()).findFirst().ifPresent(season -> {
+            result[0] = season.getEpisodeMap().containsKey("E:" + episode.getEpisodeNumber());
+        });
+        return result[0];
+    }
 
     //  --------------- Season & Episode --------------->
     private CustomRecycler<Show.Season> showSeasonDialog(Show show) {
@@ -710,7 +780,7 @@ public class ShowActivity extends AppCompatActivity {
                 .disableScroll()
                 .show();
 
-        if (show.getLastUpdated() == null || System.currentTimeMillis() - show.getLastUpdated().getTime() > 86400000)
+//        if (show.getLastUpdated() == null || System.currentTimeMillis() - show.getLastUpdated().getTime() > 86400000) // ToDo <---
             apiDetailRequest(show.getTmdbId(), customDialog, show, true);
 
         return seasonRecycler;
@@ -1066,6 +1136,16 @@ public class ShowActivity extends AppCompatActivity {
                         .findFirst().ifPresent(newSeason -> newSeason.setEpisodeMap(season.getEpisodeMap())));
 
                 show.setSeasonList(seasonList);
+
+                if (show.isNotifyNew()) {
+                    Show.Episode latest = jsonToEpisode(show, null, response.getJSONObject("last_episode_to_air"));
+                    if (show.getAlreadyAiredList().stream().noneMatch(episode -> episode.getRaw().equals(latest)) && !alreadySeen(show, latest)) {
+                        show.getAlreadyAiredList().add(latest);
+                        setResult(RESULT_OK);
+                        Database.saveAll();
+                    }
+                }
+
                 show.setLastUpdated(new Date());
                 customDialog.reloadView();
             } catch (JSONException e) {
@@ -1097,10 +1177,7 @@ public class ShowActivity extends AppCompatActivity {
                 Map<String, Show.Episode> episodeMap = new HashMap<>();
                 for (int i = 0; i < episodes_json.length(); i++) {
                     JSONObject episode_json = episodes_json.getJSONObject(i);
-                    int episodeNumber = episode_json.getInt("episode_number");
-                    episodeMap.put("E:" + episodeNumber, (Show.Episode) new Show.Episode(episode_json.getString("name")).setAirDate(Utility.getDateFromJsonString("air_date", episode_json))
-                            .setEpisodeNumber(episodeNumber).setTmdbId(episode_json.getInt("id")).setShowId(show.getUuid()).setSeasonNumber(seasonNumber).setUuid("E:" + episodeNumber));
-
+                    jsonToEpisode(show, episodeMap, episode_json);
                 }
                 Map<Integer, Map<String, Show.Episode>> map = new HashMap<>();
                 map.put(seasonNumber, episodeMap);
@@ -1118,6 +1195,20 @@ public class ShowActivity extends AppCompatActivity {
 
         requestQueue.add(jsonArrayRequest);
 
+    }
+
+    private Show.Episode jsonToEpisode(Show show, @Nullable Map<String, Show.Episode> episodeMap, JSONObject episode_json) {
+        try {
+            int episodeNumber = episode_json.getInt("episode_number");
+            Show.Episode episode = (Show.Episode) new Show.Episode(episode_json.getString("name")).setAirDate(Utility.getDateFromJsonString("air_date", episode_json))
+                    .setEpisodeNumber(episodeNumber).setTmdbId(episode_json.getInt("id")).setShowId(show.getUuid()).setSeasonNumber(episode_json.getInt("season_number")).setUuid("E:" + episodeNumber);
+            if (episodeMap != null)
+                episodeMap.put("E:" + episodeNumber, episode);
+            return episode;
+        } catch (JSONException e) {
+            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+        return null;
     }
     //  <--------------- TMDb Api ---------------
 

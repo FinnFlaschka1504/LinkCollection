@@ -404,6 +404,13 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     public void showLaterMenu_show(View view) {
         ShowActivity.showLaterMenu(this, view);
     }
+
+    public void showNewEpisodesDialog(View view) {
+        if (!Database.isReady())
+            return;
+
+        ShowActivity.showNewEpisodesDialog(this, view);
+    }
     //  <----- Shows -----
 
 

@@ -76,12 +76,17 @@
                 tools:text="Staffeln: *, Folgen: *, " />
 
             <ImageView
-                android:id="@+id/dialog_detailShow_list"
+                android:id="@+id/dialog_detailShow_notification"
+                style="@style/ImageButtonStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:clickable="true"
-                android:foreground="@drawable/ripple"
-                android:padding="5dp"
+                app:srcCompat="@drawable/ic_notification" />
+
+            <ImageView
+                android:id="@+id/dialog_detailShow_list"
+                style="@style/ImageButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 app:srcCompat="@drawable/ic_list" />
         </LinearLayout>
 

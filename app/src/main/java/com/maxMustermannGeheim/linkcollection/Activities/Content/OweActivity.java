@@ -1,5 +1,6 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Content;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
@@ -32,6 +33,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.textfield.TextInputLayout;
+import com.maltaisn.calcdialog.CalcDialog;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
@@ -45,6 +47,7 @@ import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,9 +58,11 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class OweActivity extends AppCompatActivity {
+public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDialogCallback {
     public static final String EXTRA_OWN_OR_OTHER = "EXTRA_OWN_OR_OTHER";
     public static final String EXTRA_OPEN = "EXTRA_OPEN";
+    private static final int CALCULATOR_REQUESTCODE_AMOUNT = 1;
+    CustomDialog sourcesDialog;
 
     enum SORT_TYPE{
         NAME, OWN_OR_OTHER, LATEST, STATUS
@@ -347,7 +352,7 @@ public class OweActivity extends AppCompatActivity {
 
                 }, false)
                 .disableLastAddedButton()
-                .setSetViewContent((customDialog, view) -> {
+                .setSetViewContent((customDialog, view, reload) -> {
                     new Helpers.TextInputHelper().defaultDialogValidation(customDialog).addValidator(view.findViewById(R.id.dialog_editOrAdd_owe_Title_layout));
                     if (newOwe[0] != null) {
                         ((EditText) view.findViewById(R.id.dialog_editOrAdd_owe_Title)).setText(newOwe[0].getName());
@@ -377,7 +382,7 @@ public class OweActivity extends AppCompatActivity {
                 .setView(R.layout.dialog_detail_owe)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Bearbeiten", customDialog -> addOrEditDialog[0] = showEditOrNewDialog(owe), false)
-                .setSetViewContent((customDialog, view) -> {
+                .setSetViewContent((customDialog, view, reload) -> {
                     ((TextView) view.findViewById(R.id.dialog_detail_owe_title)).setText(owe.getName());
                     ((TextView) view.findViewById(R.id.dialog_detail_owe_description)).setText(owe.getDescription());
                     setItemText(view.findViewById(R.id.dialog_detail_owe_items), owe);
@@ -618,10 +623,10 @@ public class OweActivity extends AppCompatActivity {
         int buttonId_add = View.generateViewId();
         final ArrayList<String> nameList = database.personMap.values().stream().map(ParentClass::getName).sorted(String::compareTo).collect(Collectors.toCollection(ArrayList::new));
         final Owe.Item[] currentItem = new Owe.Item[]{null};
-        CustomDialog sourcesDialog = new CustomDialog(this)
+        sourcesDialog = new CustomDialog(this)
                 .setTitle("Einträge")
                 .setView(R.layout.dialog_items)
-                .setSetViewContent((customDialog, view) -> {
+                .setSetViewContent((customDialog, view, reload) -> {
                     LinearLayout dialog_items_editLayout = view.findViewById(R.id.dialog_items_editLayout);
                     TextInputLayout dialog_items_name = view.findViewById(R.id.dialog_items_name);
                     TextInputLayout dialog_items_amount = view.findViewById(R.id.dialog_items_amount);
@@ -635,6 +640,17 @@ public class OweActivity extends AppCompatActivity {
                         return handled;
                     });
                     final ImageView dialog_items_addNames = view.findViewById(R.id.dialog_items_addNames);
+
+                    view.findViewById(R.id.dialog_items_amount_calc).setOnClickListener(v -> {
+                        String amount_string = dialog_items_amount.getEditText().getText().toString();
+                        CalcDialog calcDialog = new CalcDialog();
+                        calcDialog.getSettings()
+                                .setInitialValue(BigDecimal.valueOf(amount_string.equals("") ? 0 : Double.valueOf(amount_string)))
+                                .setRequestCode(CALCULATOR_REQUESTCODE_AMOUNT)
+                                .setExpressionShown(true)
+                                .setExpressionEditable(true);
+                        calcDialog.show(getSupportFragmentManager(), "calc_dialog");
+                    });
 
                     new Helpers.TextInputHelper(dialog_items_save::setEnabled, dialog_items_name, dialog_items_amount)
                             .setValidation(dialog_items_name, (validator, text) -> {
@@ -794,6 +810,13 @@ public class OweActivity extends AppCompatActivity {
         if (edit)
             sourcesDialog.findViewById(buttonId_add).setVisibility(View.GONE);
     }
+
+    @Override
+    public void onValueEntered(int requestCode, @Nullable BigDecimal value) {
+        if (requestCode == CALCULATOR_REQUESTCODE_AMOUNT)
+            ((TextInputLayout) sourcesDialog.findViewById(R.id.dialog_items_amount)).getEditText().setText(value.toString());
+    }
+
 
     private void setItemText(TextView textView, Owe owe) {
         SpannableStringBuilder stringBuilder = new SpannableStringBuilder();
@@ -1029,6 +1052,7 @@ public class OweActivity extends AppCompatActivity {
         tradeOff_customDialog
                 .setTitle("Ausgleiche Verfügbar Für")
                 .setView(tradeOff_customRecycler.generateRecyclerView())
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
                 .show();
 //        Utility.showPopupWindow(activity, view.findViewById(R.id.main_owe_tradeOff_label), tradeOff_customRecycler);
     }

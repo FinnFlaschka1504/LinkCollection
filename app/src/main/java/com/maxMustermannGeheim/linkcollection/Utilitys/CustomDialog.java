@@ -187,7 +187,7 @@ public class CustomDialog {
     }
 
     public interface SetViewContent{
-        void runSetViewContent(CustomDialog customDialog, View view);
+        void runSetViewContent(CustomDialog customDialog, View view, boolean reload);
     }
 
     public interface OnDialogCallback {
@@ -599,7 +599,7 @@ public class CustomDialog {
         }
 
         if (setViewContent != null)
-            setViewContent.runSetViewContent(this, view);
+            setViewContent.runSetViewContent(this, view, false);
 
         setDialogLayoutParameters(dialog, dimensions.first, dimensions.second);
         dialog.show();
@@ -608,7 +608,10 @@ public class CustomDialog {
     }
 
     public CustomDialog reloadView() {
-        setViewContent.runSetViewContent(this, view);
+        if (setViewContent != null)
+            setViewContent.runSetViewContent(this, view, true);
+        else if (objectExtra instanceof CustomRecycler)
+            ((CustomRecycler) objectExtra).reload();
         return this;
     }
     //  <----- Actions -----

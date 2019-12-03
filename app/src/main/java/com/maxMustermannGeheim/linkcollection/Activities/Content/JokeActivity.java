@@ -277,7 +277,7 @@ public class JokeActivity extends AppCompatActivity {
 
                 }, false)
                 .disableLastAddedButton()
-                .setSetViewContent((customDialog, view) -> {
+                .setSetViewContent((customDialog, view, reload) -> {
                     new Helpers.TextInputHelper().defaultDialogValidation(customDialog).addValidator(view.findViewById(R.id.dialog_editOrAddJoke_titel_layout));
                     if (newJoke[0] != null) {
                         ((EditText) view.findViewById(R.id.dialog_editOrAddJoke_Titel)).setText(newJoke[0].getName());
@@ -304,7 +304,7 @@ public class JokeActivity extends AppCompatActivity {
                 .setView(R.layout.dialog_detail_joke)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Bearbeiten", customDialog -> addOrEditDialog[0] = showEditOrNewDialog(joke), false)
-                .setSetViewContent((customDialog, view) -> {
+                .setSetViewContent((customDialog, view, reload) -> {
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_title_label)).setText(joke.getPunchLine() == null || joke.getPunchLine().isEmpty() ? "Witz:" : "Aufbau:");
                     view.findViewById(R.id.dialog_detailJoke_punchLine_layout).setVisibility(joke.getPunchLine() == null || joke.getPunchLine().isEmpty() ? View.GONE : View.VISIBLE);
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_title)).setText(joke.getName());
@@ -370,7 +370,7 @@ public class JokeActivity extends AppCompatActivity {
 
                 }, false)
 //                .addButton("Öffnen", (customDialog, dialog) -> openUrl(randomJoke[0], false), false)
-                .setSetViewContent((customDialog, view) -> {
+                .setSetViewContent((customDialog, view, reload) -> {
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_title)).setText(randomJoke[0].getName());
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_punchLine)).setText(randomJoke[0].getPunchLine());
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_categories)).setText(String.join(", ", categoryNames));

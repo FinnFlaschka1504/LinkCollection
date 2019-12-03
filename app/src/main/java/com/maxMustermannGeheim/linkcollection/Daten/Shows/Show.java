@@ -24,6 +24,8 @@ public class Show extends ParentClass{
     private boolean inProduction;
     private Date nextEpisodeAir;
     private String status;
+    private Date lastUpdated; // ToDo: <--
+    private boolean notifyNew;
 
     public Show(String name) {
         uuid = "show_" + UUID.randomUUID().toString();
@@ -87,7 +89,7 @@ public class Show extends ParentClass{
         return this;
     }
 
-    public boolean isUpcomming() {
+    public boolean isUpcoming() {
         if (firstAirDate != null)
             return new Date().before(firstAirDate);
         else
@@ -121,12 +123,30 @@ public class Show extends ParentClass{
         return this;
     }
 
+    public Date getLastUpdated() {
+        return lastUpdated;
+    }
+
+    public Show setLastUpdated(Date lastUpdated) {
+        this.lastUpdated = lastUpdated;
+        return this;
+    }
+
+    public boolean isNotifyNew() {
+        return notifyNew;
+    }
+
+    public Show setNotifyNew(boolean notifyNew) {
+        this.notifyNew = notifyNew;
+        return this;
+    }
+
     @Override
     public Show clone() {
         return (Show) super.clone();
     }
 
-//    @Override
+    @Deprecated
     public void copy(Show parentClass) {
         for (Field field : Show.class.getDeclaredFields()) {
             field.setAccessible(true);

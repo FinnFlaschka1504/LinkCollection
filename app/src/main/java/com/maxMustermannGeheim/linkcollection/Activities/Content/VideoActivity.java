@@ -398,7 +398,7 @@ public class VideoActivity extends AppCompatActivity {
                 .addButton("Bearbeiten", customDialog ->
                         addOrEditDialog[0] = showEditOrNewDialog(video), false)
                 .addButton("Öffnen mit...", customDialog -> openUrl(video.getUrl(), true), false)
-                .setSetViewContent((customDialog, view) -> {
+                .setSetViewContent((customDialog, view, reload) -> {
                     ((TextView) view.findViewById(R.id.dialog_video_Titel)).setText(video.getName());
                     ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(
                             video.getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
@@ -456,7 +456,7 @@ public class VideoActivity extends AppCompatActivity {
         CustomDialog.Builder(this)
                 .setTitle("Ansichten Bearbeiten")
                 .setView(R.layout.dialog_edit_views)
-                .setSetViewContent((customDialog, view) -> {
+                .setSetViewContent((customDialog, view, reload) -> {
                     ViewStub stub_groups = view.findViewById(R.id.dialog_editViews_calender);
                     stub_groups.setLayoutResource(R.layout.fragment_calender);
                     stub_groups.inflate();
@@ -511,7 +511,7 @@ public class VideoActivity extends AppCompatActivity {
 
                 }, false)
                 .disableLastAddedButton()
-                .setSetViewContent((customDialog, view) -> {
+                .setSetViewContent((customDialog, view, reload) -> {
                     TextInputLayout dialog_editOrAddVideo_Titel_layout = view.findViewById(R.id.dialog_editOrAddVideo_Titel_layout);
                     TextInputLayout dialog_editOrAddVideo_Url_layout = view.findViewById(R.id.dialog_editOrAddVideo_Url_layout);
                     CheckBox dialog_editOrAddVideo_watchLater = customDialog.findViewById(R.id.dialog_editOrAddVideo_watchLater);
@@ -866,7 +866,7 @@ public class VideoActivity extends AppCompatActivity {
 
                 }, false)
                 .addButton("Öffnen", customDialog -> openUrl(randomVideo.getUrl(), false), false)
-                .setSetViewContent((customDialog, view) -> {
+                .setSetViewContent((customDialog, view, reload) -> {
                     ((TextView) view.findViewById(R.id.dialog_video_Titel)).setText(randomVideo.getName());
                     ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(String.join(", ", darstellerNames));
                     ((TextView) view.findViewById(R.id.dialog_video_Studio)).setText(String.join(", ", studioNames));

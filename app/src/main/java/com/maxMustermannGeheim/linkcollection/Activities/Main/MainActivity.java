@@ -16,11 +16,8 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.finn.androidUtilities.CustomRecycler;
-import com.finn.androidUtilities.Test;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.snackbar.Snackbar;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -278,7 +275,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         calenderDialog = CustomDialog.Builder(this)
                 .setTitle(currentSpace.getName() + " Kalender")
                 .setView(R.layout.dialog_edit_views)
-                .setSetViewContent((customDialog, view) -> {
+                .setSetViewContent((customDialog, view, reload) -> {
                     ViewStub stub_groups = view.findViewById(R.id.dialog_editViews_calender);
                     stub_groups.setLayoutResource(R.layout.fragment_calender);
                     stub_groups.inflate();
@@ -383,7 +380,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         calenderDialog = CustomDialog.Builder(this)
                 .setTitle(currentSpace.getName() + " Kalender")
                 .setView(R.layout.dialog_edit_views)
-                .setSetViewContent((customDialog, view) -> {
+                .setSetViewContent((customDialog, view, reload) -> {
                     ViewStub stub_groups = view.findViewById(R.id.dialog_editViews_calender);
                     stub_groups.setLayoutResource(R.layout.fragment_calender);
                     stub_groups.inflate();

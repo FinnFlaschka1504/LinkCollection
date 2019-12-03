@@ -7,6 +7,7 @@ import android.util.Pair;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -168,6 +169,10 @@ public class Settings extends AppCompatActivity {
                         }
                     }
                     ((TextView) view.findViewById(R.id.main_shows_viewCount)).setText(String.valueOf(dateSet.size()));
+
+                    TextView main_shows_notificationIndicator = view.findViewById(R.id.main_shows_notificationIndicator);
+                    Utility.squareView(main_shows_notificationIndicator);
+                    main_shows_notificationIndicator.setBackground(Utility.drawableBuilder_oval(context.getColor(R.color.colorPrimary)));
                 })
                 .setSettingsDialog(null));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_knowledge), context.getString(R.string.bottomMenu_knowledge)).setActivity(KnowledgeActivity.class).setItemId(Space.SPACE_KNOWLEDGE).setIconId(R.drawable.ic_knowledge).setFragmentLayoutId(R.layout.main_fragment_knowledge)
@@ -466,7 +471,7 @@ public class Settings extends AppCompatActivity {
                         .setEdit(new CustomDialog.EditBuilder().setHint("Singular|Plural").setText(space.getName() + "|" + space.getPlural()).setValidation("\\w+\\|\\w+"));
                 if (id_SetViewContent_OnClick_quadruple != null)
                     customDialog.setView(id_SetViewContent_OnClick_quadruple.first)
-                            .setSetViewContent((customDialog1, view) -> id_SetViewContent_OnClick_quadruple.second.runSetViewContent(customDialog1, view, this))
+                            .setSetViewContent((customDialog1, view, reload) -> id_SetViewContent_OnClick_quadruple.second.runSetViewContent(customDialog1, view, this))
                             .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> id_SetViewContent_OnClick_quadruple.third.runOnClick(customDialog1, this));
                 else
                     customDialog.addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {

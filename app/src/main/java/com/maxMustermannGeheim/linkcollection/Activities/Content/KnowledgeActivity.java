@@ -260,7 +260,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 
                 }, false)
                 .disableLastAddedButton()
-                .setSetViewContent((customDialog, view) -> {
+                .setSetViewContent((customDialog, view, reload) -> {
                     new Helpers.TextInputHelper().defaultDialogValidation(customDialog).addValidator(view.findViewById(R.id.dialog_editOrAddKnowledge_Titel_layout));
                     if (newKnowledge[0] != null) {
                         ((EditText) view.findViewById(R.id.dialog_editOrAddKnowledge_Titel)).setText(newKnowledge[0].getName());
@@ -298,7 +298,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     CustomDialog.Builder(this)
                             .setTitle("Teilen")
                             .setView(R.layout.dialog_share_knowledge)
-                            .setSetViewContent((customDialog1, view) -> {
+                            .setSetViewContent((customDialog1, view, reload) -> {
                                 if (!knowledge.getName().isEmpty()) {
                                     ((EditText) view.findViewById(R.id.dialog_shareKnowledge_title)).setText(knowledge.getName());
                                     ((CheckBox) customDialog1.findViewById(R.id.dialog_shareKnowledge_title_check)).setChecked(true);
@@ -338,7 +338,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                 }, false)
                 .addButton("Bearbeiten", customDialog ->
                         addOrEditDialog[0] = showEditOrNewDialog(knowledge), false)
-                .setSetViewContent((customDialog, view) -> {
+                .setSetViewContent((customDialog, view, reload) -> {
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_title)).setText(knowledge.getName());
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_content)).setText(knowledge.getContent());
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_categories)).setText(String.join(", ", categoriesNames));
@@ -407,7 +407,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 
                 }, false)
 //                .addButton("Öffnen", customDialog -> openUrl(randomKnowledge[0], false), false)
-                .setSetViewContent((customDialog, view) -> {
+                .setSetViewContent((customDialog, view, reload) -> {
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_title)).setText(randomKnowledge[0].getName());
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_content)).setText(randomKnowledge[0].getContent());
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_categories)).setText(String.join(", ", categoryNames));
@@ -543,7 +543,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         CustomDialog sourcesDialog = new CustomDialog(this)
                 .setTitle("Quellen")
                 .setView(R.layout.dialog_sources)
-                .setSetViewContent((customDialog, view) -> {
+                .setSetViewContent((customDialog, view, reload) -> {
                     LinearLayout dialog_sources_editLayout = view.findViewById(R.id.dialog_sources_editLayout);
                     TextInputLayout dialog_sources_name = view.findViewById(R.id.dialog_sources_name);
                     TextInputLayout dialog_sources_url = view.findViewById(R.id.dialog_sources_url);

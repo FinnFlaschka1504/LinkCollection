@@ -85,7 +85,7 @@ public class Owe extends ParentClass {
         return this;
     }
 
-    public static class Item{
+    public static class Item extends ParentClass{
         private double amount;
         private String personId;
         private boolean open = true;

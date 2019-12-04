@@ -3,6 +3,7 @@ package com.maxMustermannGeheim.linkcollection.Utilitys;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
+import android.util.Pair;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -13,6 +14,8 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
@@ -32,9 +35,11 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Database {
     private static final String TAG = "Database";
@@ -43,7 +48,8 @@ public class Database {
     public static final String FAILED = "FAILED";
 
     private static Database database;
-    private static Database lastUploaded_database;
+    private static Map<String, Object> lastUploaded_contentMap;
+    public static Set<Object> changeSet = new HashSet<>();
     private static DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
     private static List<OnInstanceFinishedLoading> onInstanceFinishedLoadingList = new ArrayList<>();
     private static SharedPreferences mySPR_daten;
@@ -368,45 +374,90 @@ public class Database {
         return contentMap;
     }
 
+    public Map<String,Object> getSimpleContentMap() {
+        Map<String, Content> contentMap = getContentMap(true);
+        Map<String,Object> simpleContentMap = new HashMap<>();
+        for (Map.Entry<String, Content> contentEntry : contentMap.entrySet()) {
+            simpleContentMap.put(contentEntry.getKey(), contentEntry.getValue().getContent());
+        }
+        return simpleContentMap;
+    }
+
+    public Map<String,Object> deepCopySimpleContentMap() {
+        Map<String,Object> deepCopy = new HashMap<>();
+        Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
+        Map<String, Object> simpleContentMap = database.getSimpleContentMap();
+        HashMap<String, Object> hashMap = gson.fromJson(gson.toJson(simpleContentMap), HashMap.class);
+        for (Map.Entry<String, Object> entry : hashMap.entrySet()) {
+            if (!(entry.getValue() instanceof LinkedTreeMap)) {
+                deepCopy.put(entry.getKey(), entry.getValue());
+            } else {
+                Content content = contentMap.get(entry.getKey());
+                String json = gson.toJson(entry.getValue());
+                HashMap map = gson.fromJson(json, TypeToken.getParameterized(HashMap.class, String.class, content.tClass).getType());
+                deepCopy.put(entry.getKey(), map);
+            }
+        }
+        return deepCopy;
+    }
+
+
     public static void saveAll() {
         Log.d(TAG, "saveAll: ");
 
-        if (!Database.isReady() || !database.isOnline()) //) || !Database.hasChanges())
+        if (!Database.isReady() || !database.isOnline() || !Database.hasChanges())
             return;
 
+        List<Pair<String[], Object>> updateList = new ArrayList<>();
+        for (Object o : changeSet) {
+            contentMap.values().stream().filter(content -> content.tClass.equals(o.getClass())).findFirst()
+                    .ifPresent(content -> updateList.add(new Pair<>(
+                            new CustomList<String>(content.getPathArray()).add(new String[]{((ParentClass) o).getUuid()}).toArray(new String[0])
+                            , o)));
+            String BREAKPOINT = null;
+        }
+
+
         database.saveDatabase_offline(mySPR_daten);
-        if (Utility.isOnline())
-            database.writeAllToFirebase();
+        if (Utility.isOnline()) {
+            if (updateList.isEmpty())
+                database.writeAllToFirebase();
+            else
+                database.writeAllToFirebase(updateList);
+        }
+
+        changeSet.clear();
+        lastUploaded_contentMap = database.deepCopySimpleContentMap();
+
+        String BREAKPOINT = null;
     }
 
     private static boolean hasChanges() {
-        return !database.equals(lastUploaded_database);
+        return !lastUploaded_contentMap.equals(database.getSimpleContentMap());
+//        return !compareContentMaps(lastUploaded_contentMap, database.getSimpleContentMap());
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Database database = (Database) o;
-        return Objects.equals(videoMap, database.videoMap) &&
-                Objects.equals(darstellerMap, database.darstellerMap) &&
-                Objects.equals(studioMap, database.studioMap) &&
-                Objects.equals(genreMap, database.genreMap) &&
-                Objects.equals(watchLaterList, database.watchLaterList) &&
-                Objects.equals(knowledgeMap, database.knowledgeMap) &&
-                Objects.equals(knowledgeCategoryMap, database.knowledgeCategoryMap) &&
-                Objects.equals(oweMap, database.oweMap) &&
-                Objects.equals(personMap, database.personMap) &&
-                Objects.equals(jokeMap, database.jokeMap) &&
-                Objects.equals(jokeCategoryMap, database.jokeCategoryMap) &&
-                Objects.equals(showMap, database.showMap) &&
-                Objects.equals(showGenreMap, database.showGenreMap) &&
-                Objects.equals(showWatchLaterList, database.showWatchLaterList);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(videoMap, darstellerMap, studioMap, genreMap, watchLaterList, knowledgeMap, knowledgeCategoryMap, oweMap, personMap, jokeMap, jokeCategoryMap, showMap, showGenreMap, showWatchLaterList);
+    private static boolean compareContentMaps(Map<String, Object> oldMap, Map<String, Object> newMap) {
+        boolean result = true;
+        for (Map.Entry<String, Object> entry : newMap.entrySet()) {
+            if (entry.getValue().equals(oldMap.get(entry.getKey()))) {
+                String BREAKPOINT = null;
+            } else {
+                String BREAKPOINT = null;
+                if (entry.getValue() instanceof Map) {
+                    Map<String, Show> map = (Map) entry.getValue();
+                    for (Map.Entry<String, Show> showEntry : map.entrySet()) {
+                        if (!showEntry.getValue().equals(((Map<String, Show>) oldMap.get(entry.getKey())).get(showEntry.getKey()))) {
+                            String BREAKPOINT2 = "mip";
+                            System.out.println(BREAKPOINT2); // ToDo: lastupdate millis weg
+                        }
+                    }
+                }
+                result = false;
+            }
+        }
+        String BREAKPOINT = null;
+        return result;
     }
 
     private void saveDatabase_offline(SharedPreferences mySPR_daten) {
@@ -425,6 +476,12 @@ public class Database {
         editor.apply();
     }
 
+    private void writeAllToFirebase(List<Pair<String[], Object>> updateList) {
+        for (Pair<String[], Object> pair : updateList) {
+            databaseCall_write(pair.second, pair.first);
+        }
+
+    }
     private void writeAllToFirebase() {
         for (Content content : getContentMap(true).values()) {
             if (content.saveOnline)
@@ -513,6 +570,8 @@ public class Database {
         });
 
 //        lastUploaded_database = Utility.deepCopy(database);
+
+        lastUploaded_contentMap = database.deepCopySimpleContentMap();
         String BREAKPOINT = null;
     }
 //  <----- Get data from Firebase -----

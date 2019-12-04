@@ -2,6 +2,7 @@ package com.maxMustermannGeheim.linkcollection.Utilitys;
 
 import androidx.annotation.NonNull;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -50,7 +51,7 @@ public class CustomList<E> extends ArrayList<E> {
             return super.get(index);
     }
 
-    public CustomList add(E... e) {
+    public CustomList<E> add(E... e) {
         Collections.addAll(this, e);
         return this;
     }
@@ -126,6 +127,12 @@ public class CustomList<E> extends ArrayList<E> {
         return foundAt[0];
     }
 
+
+//    @NonNull
+//    @Override
+//    public E[] toArray() {
+//        return (E[]) toArray((E[]) new Object[0]);
+//    }
 
     //  ----- Stream ----->
     public <R> CustomList<R> map(Function<? super E, ? extends R> mapper) {

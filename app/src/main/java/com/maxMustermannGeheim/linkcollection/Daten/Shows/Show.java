@@ -9,11 +9,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 
 public class Show extends ParentClass{
@@ -163,6 +161,32 @@ public class Show extends ParentClass{
         for (Field field : Show.class.getDeclaredFields()) {
             field.setAccessible(true);
         }
+    }
+
+//    @Override
+//    public boolean equals(Object o) {
+//        dynamicEqual(o);
+//        if (this == o) return true;
+//        if (o == null || getClass() != o.getClass()) return false;
+//        if (!super.equals(o)) return false;
+//        Show show = (Show) o;
+//        return getSeasonsCount() == show.getSeasonsCount() &&
+//                getAllEpisodesCount() == show.getAllEpisodesCount() &&
+//                getTmdbId() == show.getTmdbId() &&
+//                isInProduction() == show.isInProduction() &&
+//                isNotifyNew() == show.isNotifyNew() &&
+//                Objects.equals(getGenreIdList(), show.getGenreIdList()) &&
+//                Objects.equals(getSeasonList(), show.getSeasonList()) &&
+//                Objects.equals(getFirstAirDate(), show.getFirstAirDate()) &&
+//                Objects.equals(getNextEpisodeAir(), show.getNextEpisodeAir()) &&
+//                Objects.equals(getStatus(), show.getStatus()) &&
+//                Objects.equals(getLastUpdated(), show.getLastUpdated()) &&
+//                Objects.equals(getAlreadyAiredList(), show.getAlreadyAiredList());
+//    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), getGenreIdList(), getSeasonsCount(), getAllEpisodesCount(), getTmdbId(), getSeasonList(), getFirstAirDate(), isInProduction(), getNextEpisodeAir(), getStatus(), getLastUpdated(), isNotifyNew(), getAlreadyAiredList());
     }
 
     //  ----- Classes ----->
@@ -370,24 +394,24 @@ public class Show extends ParentClass{
             });
         }
 
-        public Episode getRaw() {
+        public Episode createRaw() {
             return clone().setWatched(false);
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Episode episode = (Episode) o;
-            return getTmdbId() == episode.getTmdbId() &&
-                    getEpisodeNumber() == episode.getEpisodeNumber() &&
-                    isWatched() == episode.isWatched() &&
-                    getSeasonNumber() == episode.getSeasonNumber() &&
-                    Objects.equals(getAirDate(), episode.getAirDate()) &&
-                    Objects.equals(getRating(), episode.getRating()) &&
-                    Objects.equals(getDateList(), episode.getDateList()) &&
-                    Objects.equals(getShowId(), episode.getShowId());
-        }
+//        @Override
+//        public boolean equals(Object o) {
+//            if (this == o) return true;
+//            if (o == null || getClass() != o.getClass()) return false;
+//            Episode episode = (Episode) o;
+//            return getTmdbId() == episode.getTmdbId() &&
+//                    getEpisodeNumber() == episode.getEpisodeNumber() &&
+//                    isWatched() == episode.isWatched() &&
+//                    getSeasonNumber() == episode.getSeasonNumber() &&
+//                    Objects.equals(getAirDate(), episode.getAirDate()) &&
+//                    Objects.equals(getRating(), episode.getRating()) &&
+//                    Objects.equals(getDateList(), episode.getDateList()) &&
+//                    Objects.equals(getShowId(), episode.getShowId());
+//        }
 
         @Override
         public int hashCode() {

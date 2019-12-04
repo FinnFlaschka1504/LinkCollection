@@ -61,6 +61,8 @@ dependencies {
     implementation 'com.github.FinnFlaschka1504:AndroidUtilities:1.1.6'
     implementation 'com.github.duanhong169:drawabletoolbox:1.0.7'
 
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.8.5'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.10.1'
-    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.8.5'}
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.8.5'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.8.5'
+    implementation 'org.assertj:assertj-core:3.14.0'
+}

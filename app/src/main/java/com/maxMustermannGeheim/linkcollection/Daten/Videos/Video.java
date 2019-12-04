@@ -87,6 +87,12 @@ public class Video extends ParentClass {
         return dateList;
     }
 
+    public Video setDateList(List<Date> dateList) {
+        dateList = dateList.stream().map(Utility::removeMilliseconds).collect(Collectors.toList());
+        this.dateList = dateList;
+        return this;
+    }
+
     public boolean addDate(Date date, boolean checkTime) {
         boolean isBefore = false;
         if (checkTime) {
@@ -99,6 +105,7 @@ public class Video extends ParentClass {
 
             givenDate = Calendar.getInstance();
             givenDate.setTime(date);
+            givenDate.set(Calendar.MILLISECOND, 0);
             givenDate.add(Calendar.HOUR, -6);
             date = givenDate.getTime();
         }
@@ -169,20 +176,24 @@ public class Video extends ParentClass {
         return (Video) super.clone();
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Video video = (Video) o;
-        return Objects.equals(uuid, video.uuid) &&
-                Objects.equals(name, video.name) &&
-                Objects.equals(url, video.url) &&
-                Objects.equals(studioList, video.studioList) &&
-                Objects.equals(darstellerList, video.darstellerList) &&
-                Objects.equals(rating, video.rating) &&
-                Objects.equals(dateList, video.dateList) &&
-                Objects.equals(genreList, video.genreList);
-    }
+//    @Override
+//    public boolean equals(Object o) {
+////        dateList = dateList.stream().map(Utility::removeMilliseconds).collect(Collectors.toList());
+//        if (this == o) return true;
+//        if (o == null || getClass() != o.getClass()) return false;
+//        Video video = (Video) o;
+//        return Objects.equals(uuid, video.uuid) &&
+//                Objects.equals(name, video.name) &&
+//                Objects.equals(url, video.url) &&
+//                Objects.equals(studioList, video.studioList) &&
+//                Objects.equals(darstellerList, video.darstellerList) &&
+//                Objects.equals(rating, video.rating) &&
+//                Objects.equals(dateList, video.dateList) &&
+//                Objects.equals(genreList, video.genreList) &&
+//                Objects.equals(getRelease(), video.getRelease());
+//    }
+
+
 
     @Override
     public int hashCode() {

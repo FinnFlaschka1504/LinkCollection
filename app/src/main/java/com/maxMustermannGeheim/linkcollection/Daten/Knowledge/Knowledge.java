@@ -26,26 +26,6 @@ public class Knowledge extends ParentClass {
         this.name = name;
     }
 
-    @Override
-    public String getName() {
-        return super.getName();
-    }
-
-    @Override
-    public ParentClass setName(String name) {
-        return super.setName(name);
-    }
-
-    @Override
-    public String getUuid() {
-        return super.getUuid();
-    }
-
-    @Override
-    public ParentClass setUuid(String uuid) {
-        return super.setUuid(uuid);
-    }
-
     public String getContent() {
         return content;
     }

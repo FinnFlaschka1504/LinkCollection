@@ -1139,7 +1139,7 @@ public class ShowActivity extends AppCompatActivity {
 
                 if (show.isNotifyNew()) {
                     Show.Episode latest = jsonToEpisode(show, null, response.getJSONObject("last_episode_to_air"));
-                    if (show.getAlreadyAiredList().stream().noneMatch(episode -> episode.getRaw().equals(latest)) && !alreadySeen(show, latest)) {
+                    if (show.getAlreadyAiredList().stream().noneMatch(episode -> episode.createRaw().equals(latest)) && !alreadySeen(show, latest)) {
                         show.getAlreadyAiredList().add(latest);
                         setResult(RESULT_OK);
                         Database.saveAll();
@@ -1148,6 +1148,7 @@ public class ShowActivity extends AppCompatActivity {
 
                 show.setLastUpdated(new Date());
                 customDialog.reloadView();
+                Database.saveAll();
             } catch (JSONException e) {
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
             }

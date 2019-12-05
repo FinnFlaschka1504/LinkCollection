@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -49,7 +50,8 @@ public class Database {
 
     private static Database database;
     private static Map<String, Object> lastUploaded_contentMap;
-    public static Set<Object> changeSet = new HashSet<>();
+//    public static Set<Pair<Boolean,Object>> changePairSet = new HashSet<>();
+    public static List<Utility.Triple<Boolean, String[], Object>> updateList = new ArrayList<>();
     private static DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
     private static List<OnInstanceFinishedLoading> onInstanceFinishedLoadingList = new ArrayList<>();
     private static SharedPreferences mySPR_daten;
@@ -99,7 +101,7 @@ public class Database {
     public static final String SHOWS = "SHOWS";
     public static final String SHOW_MAP = "SHOW_MAP";
     public static final String SHOW_GENRE_MAP = "SHOW_GENRE_MAP";
-    public static final String SHOW_WATCH_LATER_LIST = "WATCH_LATER_LIST";
+    public static final String SHOW_WATCH_LATER_LIST = "SHOW_WATCH_LATER_LIST";
     public Map<String, Show> showMap = new HashMap<>();
     public Map<String, ShowGenre> showGenreMap = new HashMap<>();
     public Map<Show,Map<Integer,Map<String, Show.Episode>>> tempShowSeasonEpisodeMap = new HashMap<>();
@@ -408,16 +410,6 @@ public class Database {
         if (!Database.isReady() || !database.isOnline() || !Database.hasChanges())
             return;
 
-        List<Pair<String[], Object>> updateList = new ArrayList<>();
-        for (Object o : changeSet) {
-            contentMap.values().stream().filter(content -> content.tClass.equals(o.getClass())).findFirst()
-                    .ifPresent(content -> updateList.add(new Pair<>(
-                            new CustomList<String>(content.getPathArray()).add(new String[]{((ParentClass) o).getUuid()}).toArray(new String[0])
-                            , o)));
-            String BREAKPOINT = null;
-        }
-
-
         database.saveDatabase_offline(mySPR_daten);
         if (Utility.isOnline()) {
             if (updateList.isEmpty())
@@ -426,38 +418,95 @@ public class Database {
                 database.writeAllToFirebase(updateList);
         }
 
-        changeSet.clear();
+        updateList.clear();
         lastUploaded_contentMap = database.deepCopySimpleContentMap();
 
         String BREAKPOINT = null;
     }
 
     private static boolean hasChanges() {
-        return !lastUploaded_contentMap.equals(database.getSimpleContentMap());
-//        return !compareContentMaps(lastUploaded_contentMap, database.getSimpleContentMap());
-    }
+        final boolean[] result = {false};
+        for (Map.Entry<String, Content> contentEntry : contentMap.entrySet()) {
+            Content content = contentEntry.getValue();
+            Object contentObject_new = content.getContent();
+            Object contentObject_old = lastUploaded_contentMap.get(contentEntry.getKey());
+            if (contentObject_new instanceof Map && contentObject_old instanceof Map) {
+                Map<String,Object> contentObjectMap_new = (Map) contentObject_new;
+                Map<String,Object> contentObjectMap_old = (Map) contentObject_old;
 
-    private static boolean compareContentMaps(Map<String, Object> oldMap, Map<String, Object> newMap) {
-        boolean result = true;
-        for (Map.Entry<String, Object> entry : newMap.entrySet()) {
-            if (entry.getValue().equals(oldMap.get(entry.getKey()))) {
-                String BREAKPOINT = null;
-            } else {
-                String BREAKPOINT = null;
-                if (entry.getValue() instanceof Map) {
-                    Map<String, Show> map = (Map) entry.getValue();
-                    for (Map.Entry<String, Show> showEntry : map.entrySet()) {
-                        if (!showEntry.getValue().equals(((Map<String, Show>) oldMap.get(entry.getKey())).get(showEntry.getKey()))) {
-                            String BREAKPOINT2 = "mip";
-                            System.out.println(BREAKPOINT2); // ToDo: lastupdate millis weg
-                        }
+                Set<Map.Entry<String, Object>> newEntries = contentObjectMap_new.entrySet();
+                Set<Map.Entry<String, Object>> addedOrChangedEntries = new HashSet<>(newEntries);
+                Set<Map.Entry<String, Object>> oldEntries = contentObjectMap_old.entrySet();
+                Set<Map.Entry<String, Object>> removedEntries = new HashSet<>(oldEntries);
+                Set<Map.Entry<String, Object>> changedEntries = new HashSet<>();
+                Set<Map.Entry<String, Object>> addedEntries = new HashSet<>();
+
+                addedOrChangedEntries.removeAll(oldEntries);
+                addedOrChangedEntries.forEach(stringObjectEntry -> {
+                    if (contentObjectMap_old.containsKey(stringObjectEntry.getKey())) {
+                        changedEntries.add(stringObjectEntry);
+
+                    } else {
+                        addedEntries.add(stringObjectEntry);
+                    }
+                });
+
+                removedEntries = removedEntries.stream().filter(stringObjectEntry -> !contentObjectMap_new.containsKey(stringObjectEntry.getKey())).collect(Collectors.toSet());
+
+                if (!addedOrChangedEntries.isEmpty() || !removedEntries.isEmpty()) {
+                    result[0] = true;
+
+                    if (content.saveOnline) {
+                        changedEntries.forEach(stringObjectEntry -> addChangeToList(content, null, stringObjectEntry.getValue()));
+                        addedEntries.forEach(stringObjectEntry -> addChangeToList(content, true, stringObjectEntry.getValue()));
+                        removedEntries.forEach(stringObjectEntry -> addChangeToList(content, false, stringObjectEntry.getValue()));
                     }
                 }
-                result = false;
+
+            } else if (contentObject_new instanceof List && contentObject_old instanceof List) {
+                List<Objects> contentObjectList_new = (List) contentObject_new;
+                List<Objects> contentObjectList_old = (List) contentObject_old;
+
+                List<Object> addedOrChangedList = new ArrayList<>(contentObjectList_new);
+                List<Object> addedList = new ArrayList<>();
+                List<Object> removedList = new ArrayList<>(contentObjectList_old);
+
+
+                addedOrChangedList.removeAll(contentObjectList_old);
+
+//                if (!addedOrChangedList.isEmpty() && addedOrChangedList.get(0) instanceof ParentClass) {
+//                    for (Object o : addedOrChangedList) {
+//                        ParentClass parent = (ParentClass) o;
+//                    }
+//                }
+                addedList.addAll(addedOrChangedList);
+                removedList.removeAll(contentObjectList_new);
+
+                if (!addedOrChangedList.isEmpty() || !removedList.isEmpty()) {
+                    result[0] = true;
+
+                    if (content.saveOnline) {
+//                addedList.forEach(o -> addChangeToList(content, true, ));
+                        addChangeToList(content, null, contentObjectList_new);
+                    }
+                }
+
+                // ToDo: ^^^^ Irgendwann beenden
+            } else {
+                if (!Objects.equals(contentObject_new, contentObject_old))
+                    result[0] = true;
             }
         }
-        String BREAKPOINT = null;
-        return result;
+
+        return result[0];
+    }
+
+    private static void addChangeToList(Content content, Boolean type, Object o) {
+        CustomList<String> path = new CustomList<>(content.getPathArray());
+        if (o instanceof ParentClass)
+            path.add(new String[]{((ParentClass) o).getUuid()});
+
+        updateList.add(new Utility.Triple<>(type, path.toArray(new String[0]), o));
     }
 
     private void saveDatabase_offline(SharedPreferences mySPR_daten) {
@@ -476,9 +525,13 @@ public class Database {
         editor.apply();
     }
 
-    private void writeAllToFirebase(List<Pair<String[], Object>> updateList) {
-        for (Pair<String[], Object> pair : updateList) {
-            databaseCall_write(pair.second, pair.first);
+    private void writeAllToFirebase(List<Utility.Triple<Boolean, String[], Object>> updateList) {
+        for (Utility.Triple<Boolean, String[], Object> triple : updateList) {
+            if (triple.first == null || triple.first) {
+                databaseCall_write(triple.third, triple.second);
+            } else {
+                databaseCall_delete(triple.second);
+            }
         }
 
     }

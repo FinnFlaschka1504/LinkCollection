@@ -8,6 +8,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 public class Knowledge extends ParentClass {
@@ -77,6 +78,11 @@ public class Knowledge extends ParentClass {
 //        return knowledge;
 //    }
 
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), getSources(), getCategoryIdList(), getRating(), getLastChanged());
+    }
 
     @Override
     public Knowledge clone() {

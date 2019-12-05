@@ -1,5 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Daten;
 
+import android.util.Pair;
+
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
@@ -69,8 +71,6 @@ public class ParentClass implements Cloneable {
         if (o == null || getClass() != o.getClass()) return false;
         ParentClass that = (ParentClass) o;
         return dynamicEqual(that);
-//        return Objects.equals(getUuid(), that.getUuid()) &&
-//                Objects.equals(getName(), that.getName());
     }
 
     @Override
@@ -84,30 +84,25 @@ public class ParentClass implements Cloneable {
     }
 
     private boolean compareClassLayer(Class aClass, Object o) {
-        boolean result = true; // ToDo: sicherstellen, dass immer wirklich alle überprüft werden (herkömmliches equals bricht zu früh ab)
         try {
             for (Field field : aClass.getDeclaredFields()) {
                 field.setAccessible(true);
                 Object get = field.get(o);
                 Object get2 = field.get(this);
                 if (!Objects.equals(get, get2)) {
-                    Database.changeSet.add(o);
-                    result = false;
-//                    return false;
+                    return false;
                 }
             }
 
             if (!aClass.equals(ParentClass.class) && aClass.getSuperclass() != null) {
                 if (!compareClassLayer(aClass.getSuperclass(), o)) {
-                    result = false;
-//                    return false;
+                    return false;
                 }
             }
         } catch (IllegalAccessException e) {
             String BREAKPOINT = null;
         }
-        return result;
-//        return true;
+        return true;
     }
     //  <--------------- DynamicEqual ---------------
 

@@ -12,6 +12,8 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class ParentClass implements Cloneable {
@@ -65,6 +67,32 @@ public class ParentClass implements Cloneable {
         }
     }
 
+    //  --------------- DynamicHash --------------->
+    @Override
+    public int hashCode() {
+        return Objects.hash(getValues(new ArrayList<>(), getClass()).toArray());
+    }
+
+    private List<Object> getValues(List<Object> valueList, Class aClass) {
+        try {
+            for (Field field : aClass.getDeclaredFields()) {
+                field.setAccessible(true);
+                Object get = field.get(this);
+                valueList.add(get);
+            }
+
+            if (!aClass.equals(ParentClass.class) && aClass.getSuperclass() != null) {
+                getValues(valueList, aClass.getSuperclass());
+            }
+        } catch (IllegalAccessException e) {
+            String BREAKPOINT = null;
+        }
+        return valueList;
+    }
+    //  <--------------- DynamicHash ---------------
+
+
+    //  --------------- DynamicEqual --------------->
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -73,12 +101,6 @@ public class ParentClass implements Cloneable {
         return dynamicEqual(that);
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(getUuid(), getName());
-    }
-
-    //  --------------- DynamicEqual --------------->
     protected boolean dynamicEqual(Object o) {
         return compareClassLayer(o.getClass(), o);
     }

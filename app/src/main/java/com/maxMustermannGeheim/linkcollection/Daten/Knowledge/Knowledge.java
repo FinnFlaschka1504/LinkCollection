@@ -68,22 +68,6 @@ public class Knowledge extends ParentClass {
         return this;
     }
 
-//    public Knowledge cloneKnowledge() {
-//        Knowledge knowledge = new Knowledge();
-//        knowledge.name = this.name;
-//        knowledge.uuid = this.uuid;
-//        knowledge.categoryIdList = new ArrayList<>(this.categoryIdList);
-//        knowledge.rating = this.rating;
-//        knowledge.sources = new ArrayList<>(this.sources);
-//        return knowledge;
-//    }
-
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), getSources(), getCategoryIdList(), getRating(), getLastChanged());
-    }
-
     @Override
     public Knowledge clone() {
         return (Knowledge) super.clone();

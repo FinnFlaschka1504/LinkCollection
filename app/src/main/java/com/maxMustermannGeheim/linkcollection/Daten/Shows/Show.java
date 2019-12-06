@@ -163,32 +163,6 @@ public class Show extends ParentClass{
         }
     }
 
-//    @Override
-//    public boolean equals(Object o) {
-//        dynamicEqual(o);
-//        if (this == o) return true;
-//        if (o == null || getClass() != o.getClass()) return false;
-//        if (!super.equals(o)) return false;
-//        Show show = (Show) o;
-//        return getSeasonsCount() == show.getSeasonsCount() &&
-//                getAllEpisodesCount() == show.getAllEpisodesCount() &&
-//                getTmdbId() == show.getTmdbId() &&
-//                isInProduction() == show.isInProduction() &&
-//                isNotifyNew() == show.isNotifyNew() &&
-//                Objects.equals(getGenreIdList(), show.getGenreIdList()) &&
-//                Objects.equals(getSeasonList(), show.getSeasonList()) &&
-//                Objects.equals(getFirstAirDate(), show.getFirstAirDate()) &&
-//                Objects.equals(getNextEpisodeAir(), show.getNextEpisodeAir()) &&
-//                Objects.equals(getStatus(), show.getStatus()) &&
-//                Objects.equals(getLastUpdated(), show.getLastUpdated()) &&
-//                Objects.equals(getAlreadyAiredList(), show.getAlreadyAiredList());
-//    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), getGenreIdList(), getSeasonsCount(), getAllEpisodesCount(), getTmdbId(), getSeasonList(), getFirstAirDate(), isInProduction(), getNextEpisodeAir(), getStatus(), getLastUpdated(), isNotifyNew(), getAlreadyAiredList());
-    }
-
     //  ----- Classes ----->
     public static class Season extends ParentClass{
         private int episodesCount;
@@ -396,26 +370,6 @@ public class Show extends ParentClass{
 
         public Episode createRaw() {
             return clone().setWatched(false);
-        }
-
-//        @Override
-//        public boolean equals(Object o) {
-//            if (this == o) return true;
-//            if (o == null || getClass() != o.getClass()) return false;
-//            Episode episode = (Episode) o;
-//            return getTmdbId() == episode.getTmdbId() &&
-//                    getEpisodeNumber() == episode.getEpisodeNumber() &&
-//                    isWatched() == episode.isWatched() &&
-//                    getSeasonNumber() == episode.getSeasonNumber() &&
-//                    Objects.equals(getAirDate(), episode.getAirDate()) &&
-//                    Objects.equals(getRating(), episode.getRating()) &&
-//                    Objects.equals(getDateList(), episode.getDateList()) &&
-//                    Objects.equals(getShowId(), episode.getShowId());
-//        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(getTmdbId(), getAirDate(), getEpisodeNumber(), isWatched(), getRating(), getDateList(), getShowId(), getSeasonNumber());
         }
 
         @Override

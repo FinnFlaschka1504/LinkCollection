@@ -6,13 +6,16 @@ import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -447,7 +450,7 @@ public class ShowActivity extends AppCompatActivity {
 //        List<Show.Episode> alreadyAiredList = new ArrayList<>();
 //        database.showMap.values().forEach(show -> alreadyAiredList.addAll(show.getAlreadyAiredList()));
         List<Show.Episode> alreadyAiredList = Utility.concatenateCollections(database.showMap.values(), show1 ->
-                show1.getAlreadyAiredList().stream().filter(episode2 -> !episode2.isWatched()).collect(Collectors.toList()));
+                show1.getAlreadyAiredList()/*.stream().filter(episode2 -> !episode2.isWatched()).collect(Collectors.toList())*/);
 
 //        if (alreadyAiredList.isEmpty()) {
 //            Toast.makeText(activity, , Toast.LENGTH_SHORT).show();
@@ -463,19 +466,28 @@ public class ShowActivity extends AppCompatActivity {
                         .setObjectList(expandableList)
                         .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper<Show.Episode>().enableExpandByDefault()
                                 .customizeRecycler(subRecycler -> {
-                                    subRecycler.setSetItemContent((itemView, episode1) -> {
+                                    subRecycler.setSetItemContent((itemView, episode) -> {
                                         Utility.setMargins(itemView, 5, 5, 5, 5);
                                         itemView.findViewById(R.id.listItem_episode_seen).setVisibility(View.GONE);
 
+
                                         itemView.findViewById(R.id.listItem_episode_extraInfo).setVisibility(View.VISIBLE);
                                         itemView.findViewById(R.id.listItem_episode_showName_layout).setVisibility(View.GONE);
-                                        ((TextView) itemView.findViewById(R.id.listItem_episode_seasonNumber)).setText(String.valueOf(episode1.getSeasonNumber()));
+                                        ((TextView) itemView.findViewById(R.id.listItem_episode_seasonNumber)).setText(String.valueOf(episode.getSeasonNumber()));
 
-                                        ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(episode1.getEpisodeNumber()));
-                                        ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode1.getName());
-                                        if (episode1.getAirDate() != null)
-                                            ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode1.getAirDate()));
-                                        ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode1.getRating() != -1 ? episode1.getRating() + " ☆" : "");
+                                        ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(episode.getEpisodeNumber()));
+                                        ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode.getName());
+                                        if (episode.getAirDate() != null)
+                                            ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode.getAirDate()));
+
+                                        Object what = null;
+                                        if (episode.isWatched())
+                                            what = new StrikethroughSpan();
+                                        Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper().setQuickWhat(what);
+                                        Utility.applyToAllViews(((ViewGroup) itemView), TextView.class, textView -> {
+                                            textView.setText(helper.quick(textView.getText().toString()));
+                                            textView.setAlpha(episode.isWatched() ? 0.4f : 1f);
+                                        });
 
                                     }).setOnClickListener((customRecycler2, itemView, episode1, index1) -> Toast.makeText(activity, episode1.getName(), Toast.LENGTH_SHORT).show())
                                             .setItemLayout(R.layout.list_item_episode);
@@ -1133,7 +1145,11 @@ public class ShowActivity extends AppCompatActivity {
                 }
 
                 show.getSeasonList().forEach(season -> seasonList.stream().filter(season1 -> season.getTmdbId() == season1.getTmdbId())
-                        .findFirst().ifPresent(newSeason -> newSeason.setEpisodeMap(season.getEpisodeMap())));
+                        .findFirst().ifPresent(newSeason -> {
+                            newSeason.setEpisodeMap(season.getEpisodeMap());
+                            newSeason.setUuid(season.getUuid());
+                        }));
+
 
                 show.setSeasonList(seasonList);
 

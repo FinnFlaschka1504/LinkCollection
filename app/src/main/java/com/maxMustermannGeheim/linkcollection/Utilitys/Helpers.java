@@ -4,6 +4,7 @@ import android.content.res.ColorStateList;
 import android.graphics.Typeface;
 import android.text.Editable;
 import android.text.Spannable;
+import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
@@ -511,7 +512,7 @@ public class Helpers {
     public static class SpannableStringHelper {
         public enum SPAN_TYPE {
             BOLD(new StyleSpan(Typeface.BOLD)), ITALIC(new StyleSpan(Typeface.ITALIC)), BOLD_ITALIC(new StyleSpan(Typeface.BOLD_ITALIC)), STRIKE_THROUGH(new StrikethroughSpan()),
-            UNDERLINED(new UnderlineSpan());
+            UNDERLINED(new UnderlineSpan()), NONE(null);
 
             Object what;
 
@@ -543,6 +544,40 @@ public class Helpers {
         public SpannableStringBuilder get() {
             return builder;
         }
+
+
+        //  --------------- Quick... --------------->
+        private Object quickWhat;
+
+        public SpannableStringHelper setQuickWhat(Object quickWhat) {
+            this.quickWhat = quickWhat;
+            return this;
+        }
+
+        public SpannableString quick(String text) {
+            SpannableString spannableString = new SpannableString(text);
+            spannableString.setSpan(quickWhat, 0, text.length(), 0);
+            return spannableString;
+        }
+
+        public SpannableString quick(String text, Object what) {
+            SpannableString spannableString = new SpannableString(text);
+            spannableString.setSpan(what, 0, text.length(), 0);
+            return spannableString;
+        }
+
+        public SpannableString quickBold(String text) {
+            SpannableString spannableString = new SpannableString(text);
+            spannableString.setSpan(SPAN_TYPE.BOLD.getWhat(), 0, text.length(), 0);
+            return spannableString;
+        }
+
+        public SpannableString quickStrikeThrough(String text) {
+            SpannableString spannableString = new SpannableString(text);
+            spannableString.setSpan(SPAN_TYPE.STRIKE_THROUGH.getWhat(), 0, text.length(), 0);
+            return spannableString;
+        }
+        //  <--------------- Quick... ---------------
     }
     //  <--------------- SpannableString ---------------
 }

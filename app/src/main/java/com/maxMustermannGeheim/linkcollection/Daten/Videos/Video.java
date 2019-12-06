@@ -176,27 +176,4 @@ public class Video extends ParentClass {
         return (Video) super.clone();
     }
 
-//    @Override
-//    public boolean equals(Object o) {
-////        dateList = dateList.stream().map(Utility::removeMilliseconds).collect(Collectors.toList());
-//        if (this == o) return true;
-//        if (o == null || getClass() != o.getClass()) return false;
-//        Video video = (Video) o;
-//        return Objects.equals(uuid, video.uuid) &&
-//                Objects.equals(name, video.name) &&
-//                Objects.equals(url, video.url) &&
-//                Objects.equals(studioList, video.studioList) &&
-//                Objects.equals(darstellerList, video.darstellerList) &&
-//                Objects.equals(rating, video.rating) &&
-//                Objects.equals(dateList, video.dateList) &&
-//                Objects.equals(genreList, video.genreList) &&
-//                Objects.equals(getRelease(), video.getRelease());
-//    }
-
-
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(uuid, name, url, studioList, darstellerList, rating, dateList, genreList);
-    }
 }

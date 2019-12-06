@@ -61,6 +61,7 @@ public class Database {
     private static boolean reload = false;
     private static List<DatabaseReloadListener> reloadListenerList = new ArrayList<>();
     private static boolean syncDatabaseToContentMap = true;
+    private Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
 
 
     //  ----- Content deklaration ----->
@@ -258,7 +259,6 @@ public class Database {
         }
 
         public Map<String, V> getMapFromString(String mapString) {
-            Gson gson = new Gson();
             return gson.fromJson(mapString, TypeToken.getParameterized(HashMap.class, String.class, tClass).getType());
         }
         //  <----- Get Map From ... -----
@@ -274,7 +274,6 @@ public class Database {
         }
 
         public List<V> getListFromString(String mapString) {
-            Gson gson = new Gson();
             return gson.fromJson(mapString, TypeToken.getParameterized(List.class, tClass).getType());
         }
 
@@ -387,7 +386,6 @@ public class Database {
 
     public Map<String,Object> deepCopySimpleContentMap() {
         Map<String,Object> deepCopy = new HashMap<>();
-        Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
         Map<String, Object> simpleContentMap = database.getSimpleContentMap();
         HashMap<String, Object> hashMap = gson.fromJson(gson.toJson(simpleContentMap), HashMap.class);
         for (Map.Entry<String, Object> entry : hashMap.entrySet()) {
@@ -510,7 +508,6 @@ public class Database {
     }
 
     private void saveDatabase_offline(SharedPreferences mySPR_daten) {
-        Gson gson = new Gson();
         SharedPreferences.Editor editor = mySPR_daten.edit();
 
         for (Content content : getContentMap(true).values()) {

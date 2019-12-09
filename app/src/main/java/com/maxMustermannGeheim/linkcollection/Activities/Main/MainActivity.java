@@ -409,7 +409,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         if (!Database.isReady())
             return;
 
-        ShowActivity.showNewEpisodesDialog(this, view);
+        ShowActivity.showNewEpisodesDialog(this);
     }
     //  <----- Shows -----
 

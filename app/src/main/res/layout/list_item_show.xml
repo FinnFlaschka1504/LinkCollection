@@ -23,7 +23,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -54,11 +55,12 @@
 
                 <LinearLayout
                     android:id="@+id/listItem_show_Views_layout"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:orientation="horizontal"
                     android:visibility="gone"
-                    tools:visibility="visible">
+                    tools:visibility="visible"
+                    android:gravity="center_vertical">
 
                     <View
                         android:layout_width="1dp"
@@ -71,9 +73,10 @@
                         android:id="@+id/listItem_show_Views"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="1" />
+                        tools:text="1" />
 
                 </LinearLayout>
+
 
                 <ImageView
                     android:id="@+id/listItem_show_later"
@@ -113,6 +116,35 @@
                 android:marqueeRepeatLimit="marquee_forever"
                 android:scrollHorizontally="true"
                 android:singleLine="true" />
+
+            <LinearLayout
+                android:id="@+id/listItem_show_rating_layout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginHorizontal="8dp"
+                    android:layout_marginVertical="3dp"
+                    android:background="?android:attr/listDivider" />
+
+                <TextView
+                    android:id="@+id/listItem_show_rating"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    tools:text="1" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="☆" />
+
+            </LinearLayout>
+
         </LinearLayout>
 <!--        <LinearLayout-->
 <!--            android:layout_width="match_parent"-->

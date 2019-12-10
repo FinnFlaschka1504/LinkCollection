@@ -135,6 +135,10 @@ public class CustomList<E> extends ArrayList<E> {
 //    }
 
     //  ----- Stream ----->
+    public static <E,R> CustomList<R> map(List<E> list, Function<? super E, ? extends R> mapper) {
+        return list.stream().map(mapper).collect(Collectors.toCollection(CustomList::new));
+    }
+
     public <R> CustomList<R> map(Function<? super E, ? extends R> mapper) {
         return stream().map(mapper).collect(Collectors.toCollection(CustomList::new));
     }

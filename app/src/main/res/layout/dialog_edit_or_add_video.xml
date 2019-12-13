@@ -43,6 +43,14 @@
                     android:singleLine="true" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <ImageView
+                android:id="@+id/dialog_editOrAddVideo_translate"
+                style="@style/ImageButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                app:srcCompat="@drawable/ic_translate"
+                tools:visibility="visible" />
         </LinearLayout>
 
         <LinearLayout
@@ -141,6 +149,7 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/dialog_editOrAddVideo_Url_allLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
@@ -215,6 +224,7 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/dialog_editOrAddVideo_rating_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"

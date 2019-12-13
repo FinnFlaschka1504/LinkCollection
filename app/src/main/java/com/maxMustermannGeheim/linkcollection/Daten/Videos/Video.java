@@ -9,7 +9,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -24,6 +23,9 @@ public class Video extends ParentClass {
     private List<Date> dateList = new ArrayList<>();
     private List<String> genreList = new ArrayList<>();
     private Date release;
+    private String imagePath;
+    private List<String> translationList = new ArrayList<>();
+    private int tmdId;
 
     public Video(String name) {
         uuid = "video_" + UUID.randomUUID().toString();
@@ -156,7 +158,34 @@ public class Video extends ParentClass {
             return false;
     }
 
-//    public Video cloneVideo() {
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public Video setImagePath(String imagePath) {
+        this.imagePath = imagePath;
+        return this;
+    }
+
+    public List<String> getTranslationList() {
+        return translationList;
+    }
+
+    public Video setTranslationList(List<String> translationList) {
+        this.translationList = translationList;
+        return this;
+    }
+
+    public int getTmdId() {
+        return tmdId;
+    }
+
+    public Video setTmdId(int tmdId) {
+        this.tmdId = tmdId;
+        return this;
+    }
+
+    //    public Video cloneVideo() {
 //        Video video = new Video();
 //        video.name = this.name;
 //        video.uuid = this.uuid;

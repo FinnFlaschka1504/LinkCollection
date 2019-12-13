@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
 import android.os.Bundle;
 import android.view.Menu;
@@ -11,11 +12,17 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewStub;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
@@ -67,7 +74,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     private static Database database;
     private static SharedPreferences mySPR_daten;
     private SharedPreferences mySPR_settings;
-    private CustomDialog calenderDialog;
+    private com.finn.androidUtilities.CustomDialog calenderDialog;
     private boolean firstTime;
 
     private static Settings.Space currentSpace;
@@ -125,6 +132,37 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> Toast.makeText(this, customDialog.getEditText(), Toast.LENGTH_SHORT).show())
 ////                .addButton(CustomDialog.BUTTON_TYPE.BACK_BUTTON)
 ////                .disableButtonAllCaps()
+//                .show();
+//        ImageView imageView = new ImageView(this);
+//        imageView.setImageResource(R.drawable.simpsons_movie_poster);
+////        Glide
+////                .with(this)
+////                .load("http://image.tmdb.org/t/p/w92//dKAx5Vt9V8Qfbm3aIaLcAjUxIS4.jpg")
+////                .listener(new RequestListener<Drawable>() {
+////                    @Override
+////                    public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+////                        return false;
+////                    }
+////
+////                    @Override
+////                    public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+////                        return false;
+////                    }
+////                })
+////                .error(R.drawable.simpsons_movie_poster)
+////                .into(imageView);
+//        Picasso
+//                .get()
+////                .load("https://images-na.ssl-images-amazon.com/images/I/511Ex1uIeZL.jpg")
+//                .load("https://image.tmdb.org/t/p/w92//dKAx5Vt9V8Qfbm3aIaLcAjUxIS4.jpg")
+//                .error(R.drawable.ic_show_as_grid)
+//                .placeholder(R.drawable.simpsons_movie_poster)
+//
+//                .into(imageView);
+//        com.finn.androidUtilities.CustomDialog.Builder(this)
+//                .setTitle("Bild-Test")
+//                .setView(imageView)
+//                .setDimensions(true, true)
 //                .show();
     }
 
@@ -272,7 +310,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         if (!Database.isReady())
             return;
 
-        calenderDialog = CustomDialog.Builder(this)
+        calenderDialog = com.finn.androidUtilities.CustomDialog.Builder(this)
                 .setTitle(currentSpace.getName() + " Kalender")
                 .setView(R.layout.dialog_edit_views)
                 .setSetViewContent((customDialog, view, reload) -> {
@@ -287,6 +325,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 })
                 .disableScroll()
                 .setDimensions(true, true)
+                .enableTitleBackButton()
                 .show();
     }
 
@@ -377,7 +416,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         if (!Database.isReady())
             return;
 
-        calenderDialog = CustomDialog.Builder(this)
+        calenderDialog = com.finn.androidUtilities.CustomDialog.Builder(this)
                 .setTitle(currentSpace.getName() + " Kalender")
                 .setView(R.layout.dialog_edit_views)
                 .setSetViewContent((customDialog, view, reload) -> {
@@ -397,6 +436,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
                 })
                 .disableScroll()
+                .enableTitleBackButton()
                 .setDimensions(true, true)
                 .show();
     }

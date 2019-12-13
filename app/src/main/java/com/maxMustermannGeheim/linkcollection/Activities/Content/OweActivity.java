@@ -398,6 +398,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                             Toast.makeText(this, "Alle Einträge beglichen", Toast.LENGTH_SHORT).show();
                             customDialog.reloadView();
                             reLoadRecycler();
+                            Database.saveAll();
                         };
 
                         if (owe.getItemList().size() > 1)

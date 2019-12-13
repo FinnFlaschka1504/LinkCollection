@@ -4,115 +4,131 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:padding="16dp"
     android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:orientation="horizontal">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:layout_weight="1"
+            android:orientation="vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="8dp"
-                android:text="Titel:"
-                android:textStyle="bold" />
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/dialog_detailShow_title"
-                android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="8dp"
+                    android:text="Titel:"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/dialog_detailShow_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    tools:text="Name1" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/dialog_detailShow_punchLine_layout"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                tools:text="Name1" />
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:text="Genre"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/dialog_detailShow_genre"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    tools:text="G1, G2.." />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="8dp"
+                    android:text="Release: "
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/dialog_detailShow_release"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    tools:text="Datum" />
+
+
+            </LinearLayout>
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/dialog_detailShow_punchLine_layout"
-            android:layout_width="match_parent"
+        <ImageView
+            android:id="@+id/dialog_detailShow_poster"
+            android:layout_width="50dp"
+            android:layout_height="75dp"
+            android:layout_marginLeft="8dp"
+            android:visibility="gone"
+            app:srcCompat="@drawable/ic_download"
+            tools:visibility="visible" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
+            android:layout_marginEnd="8dp"
+            android:text="Detail:"
+            android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:text="Genre"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/dialog_detailShow_genre"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                tools:text="G1, G2.." />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/dialog_detailShow_details"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_weight="1"
+            tools:text="Staffeln: *, Folgen: *, " />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:text="Detail:"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/dialog_detailShow_details"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                tools:text="Staffeln: *, Folgen: *, " />
-
-            <ImageView
-                android:id="@+id/dialog_detailShow_notification"
-                style="@style/ImageButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:srcCompat="@drawable/ic_notification" />
-
-            <ImageView
-                android:id="@+id/dialog_detailShow_list"
-                style="@style/ImageButtonStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:srcCompat="@drawable/ic_list" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
+        <ImageView
+            android:id="@+id/dialog_detailShow_notification"
+            style="@style/ImageButtonStyle"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            app:srcCompat="@drawable/ic_notification" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="8dp"
-                android:text="Release: "
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/dialog_detailShow_release"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                tools:text="Datum" />
-
-
-        </LinearLayout>
-
+        <ImageView
+            android:id="@+id/dialog_detailShow_list"
+            style="@style/ImageButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:srcCompat="@drawable/ic_list" />
     </LinearLayout>
 
 </LinearLayout>

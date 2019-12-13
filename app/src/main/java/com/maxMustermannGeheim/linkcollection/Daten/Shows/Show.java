@@ -11,7 +11,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 public class Show extends ParentClass{
@@ -27,6 +26,7 @@ public class Show extends ParentClass{
     private Date lastUpdated;
     private boolean notifyNew;
     private List<Episode> alreadyAiredList = new ArrayList<>();
+    private String imagePath;
 
     public Show(String name) {
         uuid = "show_" + UUID.randomUUID().toString();
@@ -148,6 +148,15 @@ public class Show extends ParentClass{
 
     public Show setAlreadyAiredList(List<Episode> alreadyAiredList) {
         this.alreadyAiredList = alreadyAiredList;
+        return this;
+    }
+
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public Show setImagePath(String imagePath) {
+        this.imagePath = imagePath;
         return this;
     }
 

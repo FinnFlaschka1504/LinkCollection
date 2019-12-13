@@ -7,12 +7,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.R;
 
@@ -300,7 +300,7 @@ public class CustomDialog {
     }
 
     public String getEditText() {
-        TextInputEditText editText = dialog.findViewById(R.id.dialog_custom_edit);
+        AutoCompleteTextView editText = dialog.findViewById(R.id.dialog_custom_edit);
         if (editText == null)
             return null;
         else
@@ -618,7 +618,7 @@ public class CustomDialog {
 
     private void applyEdit() {
         TextInputLayout textInputLayout = dialog.findViewById(R.id.dialog_custom_edit_editLayout);
-        TextInputEditText textInputEditText = dialog.findViewById(R.id.dialog_custom_edit);
+        AutoCompleteTextView textInputEditText = dialog.findViewById(R.id.dialog_custom_edit);
 
         Button button = null;
         Optional<ButtonHelper> optional = buttonHelperList.stream()

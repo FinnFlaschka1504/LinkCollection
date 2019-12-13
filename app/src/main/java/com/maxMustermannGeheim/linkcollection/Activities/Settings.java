@@ -291,6 +291,7 @@ public class Settings extends AppCompatActivity {
                 .setOnClickListener((customRecycler, itemView, space, index) -> space.showSettingsDialog(this))
                 .setDividerMargin_inDp(16)
                 .deaktivateCustomRipple()
+                .hideOverscroll()
                 .enableSwiping((objectList, direction, space) -> {
                     Toast.makeText(this, space.getPlural(), Toast.LENGTH_SHORT).show();
                 }, true, false)

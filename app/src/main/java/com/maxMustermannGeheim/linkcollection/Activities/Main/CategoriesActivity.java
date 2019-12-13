@@ -35,6 +35,7 @@ import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
+import com.maxMustermannGeheim.linkcollection.Utilitys.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
 
 import java.util.ArrayList;
@@ -48,6 +49,7 @@ public class CategoriesActivity extends AppCompatActivity {
     public static final int START_CATIGORY_SEARCH = 001;
     public static final String EXTRA_SEARCH_CATEGORY = "EXTRA_SEARCH_CATOGORY";
     public static final String EXTRA_SEARCH = "EXTRA_SEARCH";
+    private Helpers.SortHelper<Pair<ParentClass, Integer>> sortHelper;
 
     enum SORT_TYPE {
         NAME, COUNT
@@ -105,6 +107,14 @@ public class CategoriesActivity extends AppCompatActivity {
         setContentView(R.layout.activity_catigorys);
         mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
+        sortHelper = new Helpers.SortHelper<Pair<ParentClass, Integer>>()
+                .addSorter(SORT_TYPE.NAME)
+                .changeType(parentClassIntegerPair -> parentClassIntegerPair.first.getName())
+
+                .addSorter(SORT_TYPE.COUNT)
+                .changeType(parentClassIntegerPair -> parentClassIntegerPair.second)
+                .enableReverseDefaultComparable()
+                .finish();
 
         catigory = (CATEGORIES) getIntent().getSerializableExtra(MainActivity.EXTRA_CATEGORY);
         setTitle(catigory.getPlural());
@@ -112,6 +122,7 @@ public class CategoriesActivity extends AppCompatActivity {
 
         sortList(allDatenObjektPairList);
         loadRecycler();
+
 
         catigorys_search = findViewById(R.id.catigorys_search);
         textListener = new SearchView.OnQueryTextListener() {
@@ -147,15 +158,19 @@ public class CategoriesActivity extends AppCompatActivity {
     }
 
     private List<Pair<ParentClass,Integer>> sortList(List<Pair<ParentClass,Integer>> datenObjektPairList) {
-        switch (sort_type) {
-            case NAME:
-                datenObjektPairList.sort((objekt1, objekt2) -> objekt1.first.getName().compareTo(objekt2.first.getName()));
-                break;
-            case COUNT:
-                datenObjektPairList.sort((objekt1, objekt2) -> objekt1.second.compareTo(objekt2.second));
-                Collections.reverse(datenObjektPairList);
-                break;
-        }
+        sortHelper
+                .setList(datenObjektPairList)
+                .sort(sort_type);
+
+//        switch (sort_type) {
+//            case NAME:
+//                datenObjektPairList.sort((objekt1, objekt2) -> objekt1.first.getName().compareTo(objekt2.first.getName()));
+//                break;
+//            case COUNT:
+//                datenObjektPairList.sort((objekt1, objekt2) -> objekt1.second.compareTo(objekt2.second));
+//                Collections.reverse(datenObjektPairList);
+//                break;
+//        }
         return datenObjektPairList;
     }
 

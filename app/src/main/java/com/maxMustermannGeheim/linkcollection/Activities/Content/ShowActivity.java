@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -32,6 +33,11 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.res.ResourcesCompat;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.finn.androidUtilities.CustomRecycler.Expandable;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -47,6 +53,8 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
 import com.maxMustermannGeheim.linkcollection.R;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomAdapter.CustomAutoCompleteAdapter;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomAdapter.ImageAdapterItem;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomMenu;
@@ -727,6 +735,37 @@ public class ShowActivity extends AppCompatActivity {
                     });
                     view.findViewById(R.id.dialog_detailShow_list).setOnClickListener(view1 -> showSeasonDialog(show));
 
+                    if (show.getImagePath() != null && !show.getImagePath().isEmpty()) {
+                        ImageView dialog_video_poster = view.findViewById(R.id.dialog_detailShow_poster);
+                        dialog_video_poster.setVisibility(View.VISIBLE);
+                        Glide
+                                .with(this)
+                                .load("https://image.tmdb.org/t/p/w92/" + show.getImagePath())
+                                .placeholder(R.drawable.ic_download)
+                                .into(dialog_video_poster);
+                        dialog_video_poster.setOnClickListener(v -> {
+                            com.finn.androidUtilities.CustomDialog posterDialog = com.finn.androidUtilities.CustomDialog.Builder(this)
+                                    .setView(R.layout.dialog_poster)
+                                    .setSetViewContent((customDialog1, view1, reload1) -> {
+                                        ImageView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
+                                        Glide
+                                                .with(this)
+                                                .load("https://image.tmdb.org/t/p/original/" + show.getImagePath())
+                                                .placeholder(R.drawable.ic_download)
+                                                .into(dialog_poster_poster);
+                                        dialog_poster_poster.setOnContextClickListener(v1 -> {
+                                            customDialog1.dismiss();
+                                            return true;
+                                        });
+                                    });
+                            posterDialog
+                                    .removeBackground()
+                                    .disableScroll()
+                                    .show();
+                        });
+                    }
+
+
                     if (show.getLastUpdated() == null || System.currentTimeMillis() - show.getLastUpdated().getTime() > 86400000)
                         apiDetailRequest(this, show.getTmdbId(), show, customDialog::reloadView, true);
                 })
@@ -827,17 +866,19 @@ public class ShowActivity extends AppCompatActivity {
         if (show == null)
             show = editShow;
 
+//        show.getChangesFrom(editShow);
 //        show.copy(editShow);
+        show.getChangesFrom(editShow);
         show.setName(((AutoCompleteTextView) dialog.findViewById(R.id.dialog_editOrAdd_show_title)).getText().toString());
-        show.setStatus(editShow.getStatus());
-        show.setGenreIdList(editShow.getGenreIdList());
-        show.setSeasonList(editShow.getSeasonList());
-        show.setNextEpisodeAir(editShow.getNextEpisodeAir());
+//        show.setStatus(editShow.getStatus());
+//        show.setGenreIdList(editShow.getGenreIdList());
+//        show.setSeasonList(editShow.getSeasonList());
+//        show.setNextEpisodeAir(editShow.getNextEpisodeAir());
         show.setFirstAirDate(((LazyDatePicker) dialog.findViewById(R.id.dialog_editOrAdd_show_datePicker)).getDate());
-        show.setAllEpisodesCount(editShow.getAllEpisodesCount());
-        show.setSeasonsCount(editShow.getSeasonsCount());
-        show.setInProduction(editShow.isInProduction());
-        show.setTmdbId(editShow.getTmdbId());
+//        show.setAllEpisodesCount(editShow.getAllEpisodesCount());
+//        show.setSeasonsCount(editShow.getSeasonsCount());
+//        show.setInProduction(editShow.isInProduction());
+//        show.setTmdbId(editShow.getTmdbId());
 
         boolean upcomming = false;
         if (checked || (neueShow && (upcomming = show.isUpcoming())))
@@ -1136,7 +1177,7 @@ public class ShowActivity extends AppCompatActivity {
 
     public void showCalenderDialog(Show.Episode episode, CustomDialog detailDialog) {
         int viewCount = episode.getDateList().size();
-        CustomDialog.Builder(this)
+        com.finn.androidUtilities.CustomDialog.Builder(this)
                 .setTitle("Ansichten Bearbeiten")
                 .setView(R.layout.dialog_edit_views)
                 .setSetViewContent((customDialog, view, reload) -> {
@@ -1163,6 +1204,7 @@ public class ShowActivity extends AppCompatActivity {
                     }
                     detailDialog.reloadView();
                 })
+                .enableTitleBackButton()
                 .show();
     }
 
@@ -1207,7 +1249,8 @@ public class ShowActivity extends AppCompatActivity {
         AutoCompleteTextView dialog_editOrAddShow_Titel = customDialog.findViewById(R.id.dialog_editOrAdd_show_title);
 
         dialog_editOrAddShow_Titel.setOnItemClickListener((parent, view2, position, id) -> {
-            JSONObject jsonObject = jsonObjectList.get(position).second;
+            String text = ((ImageAdapterItem) parent.getItemAtPosition(position)).getText();
+            JSONObject jsonObject = jsonObjectList.stream().filter(stringJSONObjectPair -> stringJSONObjectPair.first.equals(text)).findFirst().orElse(jsonObjectList.get(position)).second;
             try {
                 show.setFirstAirDate(Utility.getDateFromJsonString("first_air_date", jsonObject))
                         .setTmdbId(jsonObject.getInt("id")).setName(jsonObject.getString("name"));
@@ -1253,7 +1296,20 @@ public class ShowActivity extends AppCompatActivity {
                 ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, jsonObjectList
                         .map(stringJSONObjectPair -> stringJSONObjectPair.first));
 
-                dialog_editOrAddShow_Titel.setAdapter(adapter);
+                CustomList<ImageAdapterItem> itemList = jsonObjectList.map(stringJSONObjectPair -> {
+                    ImageAdapterItem adapterItem = new ImageAdapterItem(stringJSONObjectPair.first);
+                    if (stringJSONObjectPair.second.has("poster_path")) {
+                        try {
+                            adapterItem.setImagePath(stringJSONObjectPair.second.getString("poster_path"));
+                        } catch (JSONException ignored) {
+                        }
+                    }
+                    return adapterItem;
+                });
+
+                CustomAutoCompleteAdapter autoCompleteAdapter = new CustomAutoCompleteAdapter(this, itemList);
+
+                dialog_editOrAddShow_Titel.setAdapter(autoCompleteAdapter);
                 dialog_editOrAddShow_Titel.showDropDown();
             } catch (JSONException e) {
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -1294,6 +1350,8 @@ public class ShowActivity extends AppCompatActivity {
                     show.setNextEpisodeAir(Utility.getDateFromJsonString("next_episode_to_air", response));
                 if (response.has("status"))
                     show.setStatus(response.getString("status"));
+                if (response.has("poster_path"))
+                    show.setImagePath(response.getString("poster_path"));
 
                 JSONArray seasonArray_json = response.getJSONArray("seasons");
                 List<Show.Season> seasonList = new ArrayList<>();
@@ -1326,14 +1384,16 @@ public class ShowActivity extends AppCompatActivity {
                         show.getAlreadyAiredList().add(latest);
                         activity.setResult(RESULT_OK);
                         Database.saveAll();
-                        ((ShowActivity) activity).reLoadRecycler();
+                        if (activity instanceof ShowActivity)
+                            ((ShowActivity) activity).reLoadRecycler();
                     }
                 }
 
                 show.setLastUpdated(new Date());
                 onFinish.run();
                 Database.saveAll();
-                ((ShowActivity) activity).reLoadRecycler();
+                if (activity instanceof ShowActivity)
+                    ((ShowActivity) activity).reLoadRecycler();
             } catch (JSONException e) {
                 Toast.makeText(activity, e.getMessage(), Toast.LENGTH_SHORT).show();
             }

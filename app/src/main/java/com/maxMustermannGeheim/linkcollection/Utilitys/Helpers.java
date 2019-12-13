@@ -593,8 +593,16 @@ public class Helpers {
         private List<Sorter> sorterList = new ArrayList<>();
         private boolean allReversed;
 
+        public SortHelper() {
+        }
+
         public SortHelper(List<T> list) {
             this.list = list;
+        }
+
+        public SortHelper<T> setList(List<T> list) {
+            this.list = list;
+            return this;
         }
 
         public Sorter<T> addSorter(Object type, Comparator<T> comparator) {
@@ -762,6 +770,10 @@ public class Helpers {
 
             public SortHelper<T> finish() {
                 return parent;
+            }
+
+            public List<T> finish_and_sort(Object type) {
+                return parent.sort(type);
             }
 
             public <N> Sorter<N> changeType(ChangeType<T, N> changeType1, ChangeType<T, N> changeType2) {

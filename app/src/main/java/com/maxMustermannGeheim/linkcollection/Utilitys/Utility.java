@@ -17,6 +17,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -73,15 +74,14 @@ public class Utility implements java.io.Serializable{
 
     //  --------------- isOnline --------------->
     static public boolean isOnline(Context context) {
-        boolean isOnleine = isOnline();
-        if (isOnleine) {
+        if (isOnline()) {
             return true;
         } else {
             Toast.makeText(context, "Keine Internetverbindung", Toast.LENGTH_SHORT).show();
             return false;
         }
     }
-
+    // ToDo: in seperatem Thread
     static public boolean isOnline() {
         Runtime runtime = Runtime.getRuntime();
         try {
@@ -95,6 +95,78 @@ public class Utility implements java.io.Serializable{
         }
         return false;
     }
+
+    public static void isOnline(Runnable onTrue, Runnable onFalse){
+
+    }
+
+    public static void isOnline(OnResult onResult){
+
+    }
+
+    public interface OnResult {
+        void runOnResult(boolean status);
+    }
+
+    private class PingThread extends Thread {
+//        String name;
+        Runnable onTrue;
+        Runnable onFalse;
+        OnResult onResult;
+        Context context;
+
+        //  ------------------------- Constructors ------------------------->
+        public PingThread(Runnable onTrue, Runnable onFalse) {
+            this.onTrue = onTrue;
+            this.onFalse = onFalse;
+        }
+
+        public PingThread(Runnable onTrue, Runnable onFalse, Context context) {
+            this.onTrue = onTrue;
+            this.onFalse = onFalse;
+            this.context = context;
+        }
+
+        public PingThread(OnResult onResult) {
+            this.onResult = onResult;
+        }
+
+        public PingThread(OnResult onResult, Context context) {
+            this.onResult = onResult;
+            this.context = context;
+        }
+        //  <------------------------- Constructors -------------------------
+
+        @Override
+        public void run() {
+            if (checkConnection()) {
+                if (onTrue != null) onTrue.run();
+                if (onResult != null) onResult.runOnResult(true);
+            } else {
+                if (onFalse != null) onFalse.run();
+                if (onResult != null) onResult.runOnResult(false);
+                if (context != null) Toast.makeText(context, "Keine Internetverbindung", Toast.LENGTH_SHORT).show();
+            }
+        }
+
+        private boolean checkConnection() {
+            Runtime runtime = Runtime.getRuntime();
+            try {
+                Process ipProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
+                int exitValue = ipProcess.waitFor();
+
+
+                Thread.sleep(2000);
+
+                return false;
+//                return (exitValue == 0);
+            } catch (IOException | InterruptedException e) {
+                e.printStackTrace();
+            }
+            return false;
+        }
+    }
+
     //  <--------------- isOnline ---------------
 
     public static void restartApp(Context context) {
@@ -598,6 +670,12 @@ public class Utility implements java.io.Serializable{
         return calendar.getTime();
 
     }
+
+    public static boolean isUpcoming(Date date){
+        if (date == null)
+            return false;
+        return new Date().before(date);
+    }
     //  <--------------- Time ---------------
 
 
@@ -974,6 +1052,64 @@ public class Utility implements java.io.Serializable{
         }
     }
     //  <--------------- SquareView ---------------
+
+
+
+//    //  ------------------------- ViewAspectRatio ------------------------->
+//    public static void applyAspectRatioWidth(View view, double aspectRatio){
+//        ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
+//
+//        int matchParentMeasureSpec = View.MeasureSpec.makeMeasureSpec(((View) view.getParent()).getWidth(), View.MeasureSpec.EXACTLY);
+//        int wrapContentMeasureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+//        view.measure(matchParentMeasureSpec, wrapContentMeasureSpec);
+//        int height = view.getMeasuredHeight();
+//
+//        layoutParams.width = (int) (height * aspectRatio);
+//    }
+//    public static void applyAspectRatioHeight(View view, double aspectRatio){
+//        ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
+//
+////        int matchParentMeasureSpec_width = View.MeasureSpec.makeMeasureSpec(((View) view.getParent()).getHeight(), View.MeasureSpec.EXACTLY);
+////        int wrapContentMeasureSpec_width = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+////        view.measure(wrapContentMeasureSpec_width, matchParentMeasureSpec_width);
+////        int width = view.getMeasuredWidth();
+//
+//        view.addOnLayoutChangeListener((v1, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+//            int width = v1.getWidth();
+//            int height = v1.getHeight();
+////            layoutParams.width = width;
+//
+//            v1.getLayoutParams().height = (int) (width * aspectRatio);
+//            v1.requestLayout();
+////            view.setLayoutParams(layoutParams);
+////            view.setMinimumHeight((int) (width * aspectRatio));
+//        });
+//
+//    }
+//    //  <------------------------- ViewAspectRatio -------------------------
+
+
+    //  ------------------------- ScaleMatchingParent ------------------------->
+    public static void scaleMatchingParentWidth(View view){
+        view.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            ViewGroup parent = (ViewGroup) v.getParent();
+            int parentWidth = parent.getWidth();
+
+            v.measure(View.MeasureSpec.makeMeasureSpec(parent.getWidth(), View.MeasureSpec.UNSPECIFIED), View.MeasureSpec.makeMeasureSpec(parent.getHeight(), View.MeasureSpec.UNSPECIFIED));
+            final double targetHeight = v.getMeasuredHeight();
+            final double targetWidth = v.getMeasuredWidth();
+
+            double width = v.getWidth();
+            double height = v.getHeight();
+            if (width == 0)
+                return;
+            double ratio = targetHeight / targetWidth;
+//            double ratio = height / width;
+//            view.setLayoutParams(new LinearLayout.LayoutParams(targetWidth, targetHeight));
+            view.setLayoutParams(new LinearLayout.LayoutParams(parentWidth, (int) (parentWidth * ratio)));
+        });
+    }
+    //  <------------------------- ScaleMatchingParent -------------------------
 
 
     //  --------------- DrawableBuilder --------------->

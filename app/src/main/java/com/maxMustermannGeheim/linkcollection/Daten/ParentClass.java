@@ -1,7 +1,5 @@
 package com.maxMustermannGeheim.linkcollection.Daten;
 
-import android.util.Pair;
-
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
@@ -9,7 +7,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
-import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -66,6 +63,31 @@ public class ParentClass implements Cloneable {
             return null;
         }
     }
+
+
+    //  ------------------------- GetChangesFrom ------------------------->
+    public ParentClass getChangesFrom(ParentClass newVersion) {
+        name = newVersion.name;
+        getLayer(newVersion, getClass());
+        return this;
+    }
+
+    private void getLayer(ParentClass newVersion, Class aClass) {
+        if (aClass.equals(ParentClass.class))
+            return;
+        try {
+            for (Field field : aClass.getDeclaredFields()) {
+                field.setAccessible(true);
+                field.set(this, field.get(newVersion));
+            }
+
+            if (aClass.getSuperclass() != null)
+                getLayer(newVersion, aClass.getSuperclass());
+        } catch (IllegalAccessException e) {
+            String BREAKPOINT = null;
+        }
+    }
+    //  <------------------------- GetChangesFrom -------------------------
 
     //  --------------- DynamicHash --------------->
     @Override

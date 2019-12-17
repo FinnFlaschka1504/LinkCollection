@@ -3,6 +3,7 @@ package com.maxMustermannGeheim.linkcollection.Utilitys;
 import android.content.res.ColorStateList;
 import android.graphics.Typeface;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -11,6 +12,7 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
@@ -113,7 +115,8 @@ public class Helpers {
             for (TextInputLayout textInputLayout : textInputLayouts) {
                 inputValidationMap.put(textInputLayout, new Validator(textInputLayout));
                 applyValidationListerner(textInputLayout);
-                textInputLayout.getEditText().setInputType(defaultInputType.code);
+                if (textInputLayout.getEditText().getInputType() == (InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE))
+                    textInputLayout.getEditText().setInputType(defaultInputType.code);
             }
             return this;
         }
@@ -389,13 +392,13 @@ public class Helpers {
             textInputLayout.getEditText().setOnEditorActionListener((v, actionId, event) -> {
                 boolean handled = false;
                 if (actions.length == 0) {
-                    if (actionId == EditorInfo.IME_ACTION_DONE) {
-                        onAction.runOnAction(this, textInputLayout, actionId, textInputLayout.getEditText().getText().toString());
+                    if (actionId == EditorInfo.IME_ACTION_DONE || event.getAction() == KeyEvent.ACTION_DOWN || event.getAction() == KeyEvent.KEYCODE_ENTER) {
+                        onAction.runOnAction(this, textInputLayout, actionId, textInputLayout.getEditText().getText().toString().trim());
                         handled = true;
                     }
                 } else {
                     if (new CustomList<IME_ACTION>(actions).map(IME_ACTION::getCode).contains(actionId)) {
-                        onAction.runOnAction(this, textInputLayout, actionId, textInputLayout.getEditText().getText().toString());
+                        onAction.runOnAction(this, textInputLayout, actionId, textInputLayout.getEditText().getText().toString().trim());
                         handled = true;
                     }
                 }

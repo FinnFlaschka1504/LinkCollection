@@ -461,12 +461,12 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
             else if (database != null) {
                 Settings.database = database;
                 currentSpace.setLayout();
-                if (activity != null)
-                    Toast.makeText(activity, "Wäre gerade abgeschmiert  - Vers. 1", Toast.LENGTH_SHORT).show();
+//                if (activity != null)
+//                    Toast.makeText(activity, "Wäre gerade abgeschmiert  - Vers. 1", Toast.LENGTH_SHORT).show();
             } else{
                 if (activity != null) {
                     activity.setContentView(R.layout.loading_screen);
-                    Toast.makeText(activity, "Wäre gerade abgeschmiert  - Vers. 2", Toast.LENGTH_SHORT).show();
+//                    Toast.makeText(activity, "Wäre gerade abgeschmiert  - Vers. 2", Toast.LENGTH_SHORT).show();
                 }
                 Database.getInstance(mySPR_daten, database1 -> {
                     if (activity != null)

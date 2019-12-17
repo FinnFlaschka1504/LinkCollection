@@ -18,22 +18,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".Activities.Content.ShowActivity"
-            android:parentActivityName=".Activities.Main.MainActivity"/>
-        <activity
-            android:name=".Activities.Content.JokeActivity"
-            android:label="Witze"
-            android:parentActivityName=".Activities.Main.MainActivity" />
-        <activity
-            android:name=".Activities.Content.OweActivity"
-            android:label="Schulden"
-            android:parentActivityName=".Activities.Main.MainActivity" />
-        <activity
-            android:name=".Activities.Settings"
-            android:label="Einstellungen"
-            android:parentActivityName=".Activities.Main.MainActivity" />
-        <activity
-            android:name=".Activities.Main.MainActivity"
+        <activity android:name=".Activities.Main.MainActivity"
             android:configChanges="orientation|screenSize"
             android:theme="@style/AppTheme">
             <intent-filter>
@@ -42,16 +27,32 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".Activities.Content.VideoActivity"
+        <activity android:name=".Activities.Content.VideoActivity"
             android:label="@string/VideoActivity_label"
-            android:parentActivityName=".Activities.Main.MainActivity" />
-        <activity
-            android:name=".Activities.Content.KnowledgeActivity"
+            android:parentActivityName=".Activities.Main.MainActivity">
+            <intent-filter
+                android:icon="@drawable/ic_videos"
+                android:label="Video hinzufügen">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".Activities.Content.ShowActivity"
+            android:parentActivityName=".Activities.Main.MainActivity"/>
+        <activity android:name=".Activities.Content.KnowledgeActivity"
             android:label="Wissen"
             android:parentActivityName=".Activities.Main.MainActivity" />
-        <activity
-            android:name=".Activities.Main.CategoriesActivity"
+        <activity android:name=".Activities.Content.OweActivity"
+            android:label="Schulden"
+            android:parentActivityName=".Activities.Main.MainActivity" />
+        <activity android:name=".Activities.Content.JokeActivity"
+            android:label="Witze"
+            android:parentActivityName=".Activities.Main.MainActivity" />
+        <activity android:name=".Activities.Main.CategoriesActivity"
+            android:parentActivityName=".Activities.Main.MainActivity" />
+        <activity android:name=".Activities.Settings"
+            android:label="Einstellungen"
             android:parentActivityName=".Activities.Main.MainActivity" />
     </application>
 

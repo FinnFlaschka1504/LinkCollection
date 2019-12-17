@@ -1,5 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Utilitys;
 
+import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 
 import java.lang.reflect.Array;
@@ -27,9 +29,9 @@ public class CustomList<E> extends ArrayList<E> {
         super(initialCapacity);
     }
 
-    public CustomList(Object[] objects) {
+    public CustomList(E[] objects) {
         if (objects != null)
-            addAll((List<E>) Arrays.asList(objects));
+            addAll(Arrays.asList(objects));
     }
 //  <----- Constructors -----
 
@@ -99,6 +101,7 @@ public class CustomList<E> extends ArrayList<E> {
             count++;
         }
     }
+
     public interface ForEachCount_breakable<E> {
         boolean runForeEachCount(E e, int count);
     }
@@ -147,4 +150,19 @@ public class CustomList<E> extends ArrayList<E> {
         return stream().filter(mapper).collect(Collectors.toCollection(CustomList::new));
     }
     //  <----- Stream -----
+
+
+    //  ------------------------- remove ------------------------->
+    public E removeLast() {
+        if (isEmpty())
+            return null;
+        return remove(size() - 1);
+    }
+
+    public E removeFirst() {
+        if (isEmpty())
+            return null;
+        return remove(0);
+    }
+    //  <------------------------- remove -------------------------
 }

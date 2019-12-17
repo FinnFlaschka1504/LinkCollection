@@ -3,6 +3,7 @@ package com.maxMustermannGeheim.linkcollection.Utilitys;
 import android.app.Dialog;
 import android.content.Context;
 import android.util.Pair;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +13,10 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
+import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.IdRes;
+import androidx.annotation.LayoutRes;
 
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.R;
@@ -53,6 +58,7 @@ public class CustomDialog {
     private boolean buttonLabelAllCaps = true;
     private boolean stackButtons;
     private boolean expandButtons;
+    private OnBackPressedListener onBackPressedListener;
 
     private SetViewContent setViewContent;
 
@@ -88,7 +94,7 @@ public class CustomDialog {
         return this;
     }
 
-    public CustomDialog setView(int layoutId) {
+    public CustomDialog setView(@LayoutRes int layoutId) {
         LayoutInflater li = LayoutInflater.from(context);
         this.view = li.inflate(layoutId, null);
         return this;
@@ -178,6 +184,10 @@ public class CustomDialog {
         return this;
     }
 
+    public CustomDialog setOnBackPressedListener(OnBackPressedListener onBackPressedListener) {
+        this.onBackPressedListener = onBackPressedListener;
+        return this;
+    }
     //  <----- Getters & Setters -----
 
 
@@ -196,6 +206,10 @@ public class CustomDialog {
 
     public interface GoToFilter<T>{
         boolean runGoToFilter(String search, T t);
+    }
+
+    public interface OnBackPressedListener {
+        boolean runOnBackPressedListener(CustomDialog customDialog);
     }
     //  <----- Interfaces -----
 
@@ -295,7 +309,7 @@ public class CustomDialog {
     return this;
 }
 
-    public <T extends View> T findViewById(int id) {
+    public <T extends View> T findViewById(@IdRes int id) {
         return dialog.findViewById(id);
     }
 
@@ -602,8 +616,18 @@ public class CustomDialog {
             setViewContent.runSetViewContent(this, view, false);
 
         setDialogLayoutParameters(dialog, dimensions.first, dimensions.second);
-        dialog.show();
 
+        if (onBackPressedListener != null) {
+            dialog
+                    .setOnKeyListener((dialog, keyCode, event) -> {
+                        if (keyCode == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {
+                            return onBackPressedListener.runOnBackPressedListener(this);
+                        }
+                        return false;
+                    });
+        }
+
+        dialog.show();
         return this;
     }
 
@@ -618,7 +642,7 @@ public class CustomDialog {
 
     private void applyEdit() {
         TextInputLayout textInputLayout = dialog.findViewById(R.id.dialog_custom_edit_editLayout);
-        AutoCompleteTextView textInputEditText = dialog.findViewById(R.id.dialog_custom_edit);
+        AutoCompleteTextView autoCompleteTextView = dialog.findViewById(R.id.dialog_custom_edit);
 
         Button button = null;
         Optional<ButtonHelper> optional = buttonHelperList.stream()
@@ -637,19 +661,19 @@ public class CustomDialog {
 
         if (editBuilder != null) {
             if (editBuilder.showKeyboard) {
-                textInputEditText.requestFocus();
+                autoCompleteTextView.requestFocus();
                 Utility.changeWindowKeyboard(dialog.getWindow(), true);
             }
 
             if (!editBuilder.text.isEmpty())
-                textInputEditText.setText(editBuilder.text);
+                autoCompleteTextView.setText(editBuilder.text);
 
             textInputLayout.setHint(editBuilder.hint);
 
             if (editBuilder.selectAll)
-                textInputEditText.selectAll();
+                autoCompleteTextView.selectAll();
             else
-                textInputEditText.setSelection(editBuilder.text.length());
+                autoCompleteTextView.setSelection(editBuilder.text.length());
 
             if (!editBuilder.regEx.isEmpty())
                 textInputHelper.setValidation(textInputLayout, editBuilder.regEx);
@@ -662,7 +686,7 @@ public class CustomDialog {
             if (editBuilder.allowEmpty)
                 textInputHelper.allowEmpty(textInputLayout);
         } else {
-            textInputEditText.requestFocus();
+            autoCompleteTextView.requestFocus();
             Utility.changeWindowKeyboard(dialog.getWindow(), true);
         }
 

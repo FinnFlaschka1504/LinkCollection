@@ -38,8 +38,9 @@
                     android:id="@+id/dialog_editOrAddJoke_Titel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:inputType="textMultiLine|textCapSentences"
                     android:selectAllOnFocus="true"
-                    android:singleLine="true" />
+                    android:singleLine="false"/>
             </com.google.android.material.textfield.TextInputLayout>
 
         </LinearLayout>

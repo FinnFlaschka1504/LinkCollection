@@ -868,7 +868,8 @@ public class ShowActivity extends AppCompatActivity {
 
 //        show.getChangesFrom(editShow);
 //        show.copy(editShow);
-        show.getChangesFrom(editShow);
+        if (show != editShow)
+            show.getChangesFrom(editShow);
         show.setName(((AutoCompleteTextView) dialog.findViewById(R.id.dialog_editOrAdd_show_title)).getText().toString());
 //        show.setStatus(editShow.getStatus());
 //        show.setGenreIdList(editShow.getGenreIdList());
@@ -1394,6 +1395,8 @@ public class ShowActivity extends AppCompatActivity {
                 Database.saveAll();
                 if (activity instanceof ShowActivity)
                     ((ShowActivity) activity).reLoadRecycler();
+                else if (activity instanceof MainActivity)
+                    MainActivity.setCounts(((MainActivity) activity));
             } catch (JSONException e) {
                 Toast.makeText(activity, e.getMessage(), Toast.LENGTH_SHORT).show();
             }

@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.util.ArrayMap;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -60,6 +61,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -281,7 +283,21 @@ public class VideoActivity extends AppCompatActivity {
                 showEditOrNewDialog(null);
 
             if (getIntent().getAction() != null && getIntent().getAction().equals("android.intent.action.SEND")) {
-                CharSequence text = getIntent().getClipData().getItemAt(0).getText();
+                CharSequence text;
+                text = getIntent().getClipData().getItemAt(0).getText();
+                if (text == null) {
+                    try {
+                        Field mMap_field = getIntent().getExtras().getClass().getSuperclass().getDeclaredField("mMap");
+                        mMap_field.setAccessible(true);
+                        Object o = mMap_field.get(getIntent().getExtras());
+                        if (o instanceof ArrayMap) {
+                            Object value = ((ArrayMap) o).valueAt(1);
+                        }
+                    } catch (NoSuchFieldException | IllegalAccessException ignored) {
+                        String BREAKPOINT = null;
+                    }
+                }
+
                 if (text != null) {
                     isShared = true;
                     if (Utility.isUrl(text.toString())) {
@@ -707,7 +723,7 @@ public class VideoActivity extends AppCompatActivity {
                         ((RatingBar) view.findViewById(R.id.dialog_editOrAddVideo_rating)).setRating(editVideo[0].getRating());
                     } else {
                         dialog_editOrAddVideo_watchLater.setVisibility(View.VISIBLE);
-                        editVideo[0] = new Video();
+                        editVideo[0] = new Video("");
                     }
 
 

@@ -676,7 +676,7 @@ public class Database {
         List<String> newSteps = new ArrayList<>(Arrays.asList(steps));
         if (newSteps.size() > 0) {
             DatabaseReference newDatabaseReference = databaseReference.child(newSteps.remove(0));
-            return accessChilds(newDatabaseReference, newSteps.toArray(new String[newSteps.size()]));
+            return accessChilds(newDatabaseReference, newSteps.toArray(new String[0]));
         }
         return databaseReference;
     }

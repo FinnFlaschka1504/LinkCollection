@@ -35,7 +35,9 @@
                 android:label="Video hinzufügen">
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/plain" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:mimeType="text/*" />
+                <data android:mimeType="file/*" />
             </intent-filter>
         </activity>
         <activity android:name=".Activities.Content.ShowActivity"

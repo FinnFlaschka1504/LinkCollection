@@ -434,12 +434,16 @@ public class Utility implements java.io.Serializable{
 //  <----- Filter -----
 
 
+    private static Date currentDate;
     //  --------------- FilmCalender --------------->
     public static void setupFilmCalender(Context context, CompactCalendarView calendarView, FrameLayout layout, List<Video> videoList, boolean openVideo) {
         calendarView.removeAllEvents();
         TextView calender_month = layout.findViewById(R.id.fragmentCalender_month);
         ImageView calender_previousMonth = layout.findViewById(R.id.fragmentCalender_previousMonth);
         ImageView calender_nextMonth = layout.findViewById(R.id.fragmentCalender_nextMonth);
+
+        currentDate = new Date();
+        calender_month.setText(new SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(new Date()));
 
         calender_previousMonth.setOnClickListener(view -> calendarView.scrollLeft());
         calender_nextMonth.setOnClickListener(view -> calendarView.scrollRight());
@@ -492,9 +496,10 @@ public class Utility implements java.io.Serializable{
         calendarView.setListener(new CompactCalendarView.CompactCalendarViewListener() {
             @Override
             public void onDayClick(Date dateClicked) {
+                currentDate = dateClicked;
                 selectedDate[0] = dateClicked;
-                if (videoList.size() == 1)
-                    setButtons(layout, calendarView.getEvents(dateClicked).size());
+//                if (videoList.size() == 1)
+                    setButtons(layout, calendarView.getEvents(dateClicked).size(), calendarView, videoList, customRecycler);
                 loadVideoList(calendarView.getEvents(dateClicked), layout, customRecycler);
             }
 
@@ -506,26 +511,30 @@ public class Utility implements java.io.Serializable{
 
         loadVideoList(calendarView.getEvents(new Date()), layout, customRecycler);
 
-        if (videoList.size() == 1)
-            setButtons(layout, calendarView.getEvents(new Date()).size());
+        setButtons(layout, calendarView.getEvents(new Date()).size(), calendarView, videoList, customRecycler);
+
+        if (videoList.size() != 1)
+            return;
 
         layout.findViewById(R.id.dialog_editViews_add).setOnClickListener(view -> {
             videoList.get(0).addDate(selectedDate[0], false);
             calendarView.addEvent(new Event(context.getColor(R.color.colorDayNightContent)
                     , selectedDate[0].getTime(), videoList.get(0)));
             loadVideoList(calendarView.getEvents(selectedDate[0]), layout, customRecycler);
-            setButtons(layout, 1);
+            setButtons(layout, 1, calendarView, videoList, customRecycler);
             Database.saveAll();
         });
         layout.findViewById(R.id.dialog_editViews_remove).setOnClickListener(view -> {
             videoList.get(0).removeDate(selectedDate[0]);
             calendarView.removeEvents(selectedDate[0]);
             loadVideoList(calendarView.getEvents(selectedDate[0]), layout, customRecycler);
-            setButtons(layout, 0);
+            setButtons(layout, 0, calendarView, videoList, customRecycler);
             Database.saveAll();
         });
     }
     //  <--------------- FilmCalender ---------------
+
+    // ToDo: Alignment von den Buttons ändern
 
     //  --------------- EpisodeCalender --------------->
     public static void setupEpisodeCalender(Context context, CompactCalendarView calendarView, FrameLayout layout, List<Show.Episode> episodeList, boolean openEpisode) {
@@ -533,6 +542,9 @@ public class Utility implements java.io.Serializable{
         TextView calender_month = layout.findViewById(R.id.fragmentCalender_month);
         ImageView calender_previousMonth = layout.findViewById(R.id.fragmentCalender_previousMonth);
         ImageView calender_nextMonth = layout.findViewById(R.id.fragmentCalender_nextMonth);
+
+        currentDate = new Date();
+        calender_month.setText(new SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(new Date()));
 
         calender_previousMonth.setOnClickListener(view -> calendarView.scrollLeft());
         calender_nextMonth.setOnClickListener(view -> calendarView.scrollRight());
@@ -582,9 +594,10 @@ public class Utility implements java.io.Serializable{
         calendarView.setListener(new CompactCalendarView.CompactCalendarViewListener() {
             @Override
             public void onDayClick(Date dateClicked) {
+                currentDate = dateClicked;
                 selectedDate[0] = dateClicked;
-                if (episodeList.size() == 1)
-                    setButtons(layout, calendarView.getEvents(dateClicked).size());
+//                if (episodeList.size() == 1)
+                    setButtons(layout, calendarView.getEvents(dateClicked).size(), calendarView, episodeList, customRecycler);
                 loadVideoList(calendarView.getEvents(dateClicked), layout, customRecycler);
             }
 
@@ -596,10 +609,10 @@ public class Utility implements java.io.Serializable{
 
         loadVideoList(calendarView.getEvents(new Date()), layout, customRecycler);
 
+        setButtons(layout, calendarView.getEvents(new Date()).size(), calendarView, episodeList, customRecycler);
+
         if (episodeList.size() != 1)
             return;
-
-        setButtons(layout, calendarView.getEvents(new Date()).size());
 
         Show.Episode episode = episodeList.get(0);
         layout.findViewById(R.id.dialog_editViews_add).setOnClickListener(view -> {
@@ -607,13 +620,13 @@ public class Utility implements java.io.Serializable{
             calendarView.addEvent(new Event(context.getColor(R.color.colorDayNightContent)
                     , selectedDate[0].getTime(), episode));
             loadVideoList(calendarView.getEvents(selectedDate[0]), layout, customRecycler);
-            setButtons(layout, 1);
+            setButtons(layout, 1, calendarView, episodeList, customRecycler);
         });
         layout.findViewById(R.id.dialog_editViews_remove).setOnClickListener(view -> {
             episode.removeDate(selectedDate[0]);
             calendarView.removeEvents(selectedDate[0]);
             loadVideoList(calendarView.getEvents(selectedDate[0]), layout, customRecycler);
-            setButtons(layout, 0);
+            setButtons(layout, 0, calendarView, episodeList, customRecycler);
         });
     }
     //  <--------------- EpisodeCalender ---------------
@@ -639,9 +652,59 @@ public class Utility implements java.io.Serializable{
 
     }
 
-    private static void setButtons(FrameLayout layout, int size) {
-        layout.findViewById(R.id.dialog_editViews_add).setVisibility(size == 0 ? View.VISIBLE : View.GONE);
-        layout.findViewById(R.id.dialog_editViews_remove).setVisibility(size != 0 ? View.VISIBLE : View.GONE);
+    private static void setButtons(FrameLayout layout, int size, CompactCalendarView calendarView, List list, CustomRecycler<Event> customRecycler) {
+        if (list.size() == 1) {
+            layout.findViewById(R.id.dialog_editViews_add).setVisibility(size == 0 ? View.VISIBLE : View.GONE);
+            layout.findViewById(R.id.dialog_editViews_remove).setVisibility(size != 0 ? View.VISIBLE : View.GONE);
+        }
+
+        CustomList<Date> dateList = new CustomList<>();
+        for (Object o : list) {
+            if (o instanceof Video) {
+                Video video = (Video) o;
+                dateList.addAll(video.getDateList());
+//                video.getDateList().forEach(date -> dateSet.add(Utility.removeTime(date)));
+            } else if (o instanceof Show.Episode) {
+                Show.Episode episode = (Show.Episode) o;
+                dateList.addAll(episode.getDateList());
+//                episode.getDateList().forEach(date -> dateSet.add(Utility.removeTime(date)));
+            }
+        }
+        dateList.sorted(Date::compareTo).replaceAll(Utility::removeTime);
+        dateList.distinct();
+//        dateList = dateSet.stream().sorted(Date::compareTo).collect(Collectors.toCollection(CustomList::new));
+
+        layout.findViewById(R.id.dialog_editViews_previous).setOnClickListener(v -> {
+            Date previous = dateList.stream().filter(date -> date.before(currentDate)).collect(Collectors.toCollection(CustomList::new)).getLast();
+            if (previous != null) {
+                calendarView.setCurrentDate(previous);
+                loadVideoList(calendarView.getEvents(previous), layout, customRecycler);
+                ((TextView) layout.findViewById(R.id.fragmentCalender_month)).setText(new SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(previous));
+                currentDate = previous;
+//                v.setVisibility(dateList.isFirst(previous) ? View.GONE : View.VISIBLE);
+                if (list.size() == 1) {
+                    layout.findViewById(R.id.dialog_editViews_add).setVisibility(View.GONE);
+                    layout.findViewById(R.id.dialog_editViews_remove).setVisibility(View.VISIBLE);
+                }
+
+            }
+        });
+
+        layout.findViewById(R.id.dialog_editViews_next).setOnClickListener(v -> {
+            Date next = dateList.stream().filter(date -> date.after(currentDate)).findFirst().orElse(null);
+            if (next != null) {
+                calendarView.setCurrentDate(next);
+                loadVideoList(calendarView.getEvents(next), layout, customRecycler);
+                ((TextView) layout.findViewById(R.id.fragmentCalender_month)).setText(new SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(next));
+                currentDate = next;
+//                v.setVisibility(dateList.isLast(next) ? View.GONE : View.VISIBLE);
+                if (list.size() == 1) {
+                    layout.findViewById(R.id.dialog_editViews_add).setVisibility(View.GONE);
+                    layout.findViewById(R.id.dialog_editViews_remove).setVisibility(View.VISIBLE);
+                }
+            }
+        });
+
     }
 
 

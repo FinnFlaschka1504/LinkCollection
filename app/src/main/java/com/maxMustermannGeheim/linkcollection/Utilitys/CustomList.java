@@ -3,12 +3,14 @@ package com.maxMustermannGeheim.linkcollection.Utilitys;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -148,6 +150,18 @@ public class CustomList<E> extends ArrayList<E> {
 
     public CustomList<E> filter(Predicate<? super E> mapper) {
         return stream().filter(mapper).collect(Collectors.toCollection(CustomList::new));
+    }
+
+    public CustomList<E> sorted(@Nullable Comparator<? super E> c) {
+        super.sort(c);
+        return this;
+    }
+
+    public CustomList<E> distinct() {
+        Collection<E> distinct = stream().distinct().collect(Collectors.toCollection(CustomList::new));
+        clear();
+        addAll(distinct);
+        return this;
     }
     //  <----- Stream -----
 

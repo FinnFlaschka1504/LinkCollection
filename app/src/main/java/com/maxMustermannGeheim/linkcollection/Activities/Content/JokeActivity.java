@@ -7,6 +7,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.TextView;
@@ -20,6 +21,8 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomList;
+import com.maxMustermannGeheim.linkcollection.Utilitys.CustomPopupWindow;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
@@ -311,7 +314,7 @@ public class JokeActivity extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_punchLine)).setText(joke.getPunchLine());
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_categories)).setText(
                             joke.getCategoryIdList().stream().map(uuid -> database.jokeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", ")));
-                    ((TextView) view.findViewById(R.id.dialog_detailJoke_lastChanged)).setText(String.format("%s Uhr", new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.GERMANY).format(joke.getAddedDate())));
+                    ((TextView) view.findViewById(R.id.dialog_detailJoke_addedDate)).setText(String.format("%s Uhr", new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.GERMANY).format(joke.getAddedDate())));
                     view.findViewById(R.id.dialog_detailJoke_details).setVisibility(View.VISIBLE);
                     ((RatingBar) view.findViewById(R.id.dialog_detailJoke_rating)).setRating(joke.getRating());
                 })
@@ -344,36 +347,64 @@ public class JokeActivity extends AppCompatActivity {
     }
 
     private void showRandomDialog() {
-        List<Joke> filterdJokeList = filterList(allJokeList);
-        if (filterdJokeList.isEmpty()) {
+        CustomList<Joke> randomJokeList = new CustomList<>(filterList(allJokeList));
+        if (randomJokeList.isEmpty()) {
             Toast.makeText(this, "Nichts zum Zeigen", Toast.LENGTH_SHORT).show();
             return;
         }
-        final Joke[] randomJoke = {filterdJokeList.get((int) (Math.random() * filterdJokeList.size()))};
-        List<String> categoryNames = new ArrayList<>();
-        randomJoke[0].getCategoryIdList().forEach(uuid -> categoryNames.add(database.jokeCategoryMap.get(uuid).getName()));
+        final Joke[] randomJoke = {randomJokeList.removeRandom()};
+        int ratingButtonId = View.generateViewId();
 
         CustomDialog.Builder(this)
                 .setTitle("Zufälliger Witz")
                 .setView(R.layout.dialog_detail_joke)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
+                .addButton("", customDialog -> {
+                    RatingBar ratingBar = new RatingBar(this);
+                    ratingBar.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                    ratingBar.setMax(5);
+                    ratingBar.setStepSize(0.5f);
+                    ratingBar.setNumStars(5);
+                    ratingBar.setRating(randomJoke[0].getRating());
+                    ratingBar.setBackground(getDrawable(R.drawable.tile_background));
+                    CustomPopupWindow customPopupWindow = CustomPopupWindow.Builder(customDialog.getButton(ratingButtonId).getButton(), ratingBar).setPositionRelativeToAnchor(CustomPopupWindow.POSITION_RELATIVE_TO_ANCHOR.TOP).show();
+                    ratingBar.setOnRatingBarChangeListener((ratingBar1, rating, fromUser) -> {
+                        randomJoke[0].setRating(rating);
+                        Database.saveAll();
+                        customDialog.reloadView();
+                        reLoadRecycler();
+                        customPopupWindow.dismiss();
+                    });
+
+                }, ratingButtonId, false)
                 .addButton("Nochmal", customDialog -> {
+                    if (randomJokeList.isEmpty()) {
+                        Toast.makeText(this, "Kein neuer Witz vorhanden", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
                     Toast.makeText(this, "Neu", Toast.LENGTH_SHORT).show();
-                    randomJoke[0] = filterdJokeList.get((int) (Math.random() * filterdJokeList.size()));
-                    ((TextView) customDialog.findViewById(R.id.dialog_detailJoke_title)).setText(randomJoke[0].getName());
-                    ((TextView) customDialog.findViewById(R.id.dialog_detailJoke_punchLine)).setText(randomJoke[0].getPunchLine());
-
-                    List<String> darstellerNames_neu = new ArrayList<>();
-                    randomJoke[0].getCategoryIdList().forEach(uuid -> darstellerNames_neu.add(database.jokeCategoryMap.get(uuid).getName()));
-                    ((TextView) customDialog.findViewById(R.id.dialog_detailJoke_categories)).setText(String.join(", ", darstellerNames_neu));
-
-
+                    randomJoke[0] = randomJokeList.removeRandom();
+//                    ((TextView) customDialog.findViewById(R.id.dialog_detailJoke_title_label)).setText(randomJoke[0].getPunchLine() == null || randomJoke[0].getPunchLine().isEmpty() ? "Witz:" : "Aufbau:");
+//                    customDialog.findViewById(R.id.dialog_detailJoke_punchLine_layout).setVisibility(randomJoke[0].getPunchLine() == null || randomJoke[0].getPunchLine().isEmpty() ? View.GONE : View.VISIBLE);
+//
+//                    ((TextView) customDialog.findViewById(R.id.dialog_detailJoke_title)).setText(randomJoke[0].getName());
+//                    ((TextView) customDialog.findViewById(R.id.dialog_detailJoke_punchLine)).setText(randomJoke[0].getPunchLine());
+//
+//                    ((TextView) customDialog.findViewById(R.id.dialog_detailJoke_categories)).setText(
+//                            randomJoke[0].getCategoryIdList().stream().map(uuid -> database.jokeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                    customDialog.reloadView();
                 }, false)
-//                .addButton("Öffnen", (customDialog, dialog) -> openUrl(randomJoke[0], false), false)
                 .setSetViewContent((customDialog, view, reload) -> {
+                    ((TextView) view.findViewById(R.id.dialog_detailJoke_title_label)).setText(randomJoke[0].getPunchLine() == null || randomJoke[0].getPunchLine().isEmpty() ? "Witz:" : "Aufbau:");
+                    view.findViewById(R.id.dialog_detailJoke_punchLine_layout).setVisibility(randomJoke[0].getPunchLine() == null || randomJoke[0].getPunchLine().isEmpty() ? View.GONE : View.VISIBLE);
+
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_title)).setText(randomJoke[0].getName());
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_punchLine)).setText(randomJoke[0].getPunchLine());
-                    ((TextView) view.findViewById(R.id.dialog_detailJoke_categories)).setText(String.join(", ", categoryNames));
+                    ((TextView) view.findViewById(R.id.dialog_detailJoke_categories)).setText(
+                            randomJoke[0].getCategoryIdList().stream().map(uuid -> database.jokeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+
+                    customDialog.getButton(ratingButtonId).getButton().setText(randomJoke[0].getRating() != -1f && randomJoke[0].getRating() != -0f ? randomJoke[0].getRating() + " ☆" : "☆");
 
                 })
                 .show();

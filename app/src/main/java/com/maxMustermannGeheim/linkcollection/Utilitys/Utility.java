@@ -442,7 +442,7 @@ public class Utility implements java.io.Serializable{
         ImageView calender_previousMonth = layout.findViewById(R.id.fragmentCalender_previousMonth);
         ImageView calender_nextMonth = layout.findViewById(R.id.fragmentCalender_nextMonth);
 
-        currentDate = new Date();
+        currentDate = Utility.removeTime(new Date());
         calender_month.setText(new SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(new Date()));
 
         calender_previousMonth.setOnClickListener(view -> calendarView.scrollLeft());
@@ -543,7 +543,7 @@ public class Utility implements java.io.Serializable{
         ImageView calender_previousMonth = layout.findViewById(R.id.fragmentCalender_previousMonth);
         ImageView calender_nextMonth = layout.findViewById(R.id.fragmentCalender_nextMonth);
 
-        currentDate = new Date();
+        currentDate = Utility.removeTime(new Date());
         calender_month.setText(new SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(new Date()));
 
         calender_previousMonth.setOnClickListener(view -> calendarView.scrollLeft());

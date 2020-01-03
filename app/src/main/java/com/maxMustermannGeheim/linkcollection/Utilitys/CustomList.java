@@ -37,9 +37,16 @@ public class CustomList<E> extends ArrayList<E> {
     }
 //  <----- Constructors -----
 
+
+    //  ------------------------- Random ------------------------->
     public E getRandom() {
         return get((int) (Math.random() * size()));
     }
+
+    public E removeRandom(){
+        return remove((int) (Math.random() * size()));
+    }
+    //  <------------------------- Random -------------------------
 
     public E getLast() {
         if (isEmpty())

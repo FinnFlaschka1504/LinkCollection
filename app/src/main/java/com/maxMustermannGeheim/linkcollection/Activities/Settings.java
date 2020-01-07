@@ -7,7 +7,7 @@ import android.util.Pair;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.ImageView;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -48,12 +48,15 @@ public class Settings extends AppCompatActivity {
 
     public static final String SHARED_PREFERENCES_SETTINGS = "SHARED_PREFERENCES_SETTINGS";
 
-//    public static final String SETTING_SHOPPING_LIST_SORT = "SETTING_SHOPPING_LIST_SORT";
+    //    public static final String SETTING_SHOPPING_LIST_SORT = "SETTING_SHOPPING_LIST_SORT";
 //    public static final String SETTING_SHOPPING_LIST_HIERARCHY = "SETTING_SHOPPING_LIST_HIERARCHY";
 //    public static final String SETTING_FINANCES_SWAP_LABLES = "SETTING_FINANCES_SWAP_LABLES";
 //    public static final String LAST_VERSION = "LAST_VERSION";
 //    public static final String SETTING_OTHERS_USER = "SETTING_OTHERS_USER";
 //    public static final String SETTING_OTHERS_DARK_MODE = "SETTING_OTHERS_DARK_MODE";
+    public static final String SETTING_VIDEO_SHOW_RELEASE = "SETTING_VIDEO_SHOW_RELEASE";
+    public static final String SETTING_VIDEO_AUTO_SEARCH = "SETTING_VIDEO_AUTO_SEARCH";
+
     public static final String SETTING_SPACE_SHOWN_ = "SETTING_SPACE_SHOWN_";
     public static final String SETTING_SPACE_NAMES_ = "SETTING_SPACE_NAMES_";
     public static final String SETTING_SPACE_ORDER = "SETTING_SPACE_ORDER";
@@ -90,8 +93,8 @@ public class Settings extends AppCompatActivity {
         if (!Database.isReady())
             return;
 
-//        settingsMap.put(SETTING_SHOPPING_LIST_SORT, "Nach Häufigkeit");
-//        settingsMap.put(SETTING_SHOPPING_LIST_HIERARCHY, "true");
+        settingsMap.put(SETTING_VIDEO_SHOW_RELEASE, "true");
+        settingsMap.put(SETTING_VIDEO_AUTO_SEARCH, "true");
 //        settingsMap.put(SETTING_FINANCES_SWAP_LABLES, "false");
 ////        settingsMap.put(SETTING_OTHERS_USER, Database.getInstance().loggedInUserId);
 ////        settingsMap.put(SETTING_OTHERS_DARK_MODE, context.getResources().getString(R.string.automatically));
@@ -106,12 +109,15 @@ public class Settings extends AppCompatActivity {
         return true;
     }
 
-    public static String getSingleSetting(Context context, String key){
+    public static String getSingleSetting(Context context, String key) {
         return context.getSharedPreferences(SHARED_PREFERENCES_SETTINGS, MODE_PRIVATE).getString(key, null);
     }
+    public static Boolean getSingleSetting_boolean(Context context, String key) {
+        return Boolean.parseBoolean(getSingleSetting(context, key));
+    }
 
-    private static void saveSettings() {
-        SharedPreferences.Editor editor =  mySPR_settings.edit();
+        private static void saveSettings() {
+        SharedPreferences.Editor editor = mySPR_settings.edit();
 
         for (Map.Entry<String, String> entry : settingsMap.entrySet()) {
             editor.putString(entry.getKey(), entry.getValue());
@@ -120,24 +126,7 @@ public class Settings extends AppCompatActivity {
         editor.apply();
     }
 
-//    public static void applyDarkmode(Context context){
-//        String s;
-//        if (settingsMap.isEmpty())
-//            s = getSingleSetting(context, SETTING_OTHERS_DARK_MODE);
-//        else
-//            s = settingsMap.get(SETTING_OTHERS_DARK_MODE);
-////        int nightModeFlags = context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
-//        if (context.getResources().getString(R.string.automatically).equals(s) &&
-//                !(AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_UNSPECIFIED || AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)){ // && nightModeFlags != Configuration.UI_MODE_NIGHT_UNDEFINED) {
-//            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
-//        } else if (context.getResources().getString(R.string.on).equals(s) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_YES){ // && nightModeFlags != Configuration.UI_MODE_NIGHT_YES) {
-//            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-//        } else if (context.getResources().getString(R.string.off).equals(s) && AppCompatDelegate.getDefaultNightMode() != AppCompatDelegate.MODE_NIGHT_NO){ // && nightModeFlags != Configuration.UI_MODE_NIGHT_NO) {
-//            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-//        }
-//    }
-
-    public static void applySpacesList(Context context){
+    public static void applySpacesList(Context context) {
         if (!allSpaces.isEmpty())
             return;
 
@@ -154,7 +143,16 @@ public class Settings extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.main_daysCount)).setText(String.valueOf(dateSet.size()));
                     ((TextView) view.findViewById(R.id.main_watchLaterCount)).setText(String.valueOf(database.watchLaterList.size()));
                 })
-                .setSettingsDialog(null));
+                .setSettingsDialog(new Utility.Triple<>(R.layout.dialog_settings_video, (customDialog, view, space) -> {
+                    ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showRelease)).setChecked(Boolean.parseBoolean(getSingleSetting(context, SETTING_VIDEO_SHOW_RELEASE)));
+                    ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_autoSearch)).setChecked(Boolean.parseBoolean(getSingleSetting(context, SETTING_VIDEO_AUTO_SEARCH)));
+                }, new Space.OnClick() {
+                    @Override
+                    public void runOnClick(CustomDialog customDialog, Space space) {
+                        changeSetting(SETTING_VIDEO_SHOW_RELEASE, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_showRelease)).isChecked()));
+                        changeSetting(SETTING_VIDEO_AUTO_SEARCH, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_autoSearch)).isChecked()));
+                    }
+                })));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_show), context.getString(R.string.bottomMenu_shows)).setActivity(ShowActivity.class).setItemId(Space.SPACE_SHOW).setIconId(R.drawable.ic_shows).setFragmentLayoutId(R.layout.main_fragment_shows)
                 .setSetLayout((space, view) -> {
                     ((TextView) view.findViewById(R.id.main_shows_label)).setText(space.getPlural());
@@ -218,6 +216,7 @@ public class Settings extends AppCompatActivity {
             settingsMap.put(SETTING_SPACE_NAMES_ + space.getItemId(), space.getName() + "|" + space.getPlural());
         }
     }
+
     private static void updateSpaces() {
         for (Space space : allSpaces) {
             String key = SETTING_SPACE_SHOWN_ + space.getItemId();
@@ -232,7 +231,7 @@ public class Settings extends AppCompatActivity {
         }
         String spaceOrder_string = mySPR_settings.getString(SETTING_SPACE_ORDER, null);
         if (spaceOrder_string != null) {
-            Map<Integer,Integer> spaceOrder = Arrays.stream(spaceOrder_string.split(";")).map(s -> {
+            Map<Integer, Integer> spaceOrder = Arrays.stream(spaceOrder_string.split(";")).map(s -> {
                 String[] strings = s.split(":");
                 return new Pair<>(Integer.parseInt(strings[0]), Integer.parseInt(strings[1]));
             }).collect(Collectors.toMap(pair -> pair.first, pair -> pair.second));
@@ -316,7 +315,8 @@ public class Settings extends AppCompatActivity {
                         String code = customDialog.getEditText().trim();
                         SharedPreferences mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
                         mySPR_daten.edit().putString(Database.DATABASE_CODE, code).commit();
-                        Database.getInstance(mySPR_daten, database1 -> {}, false);
+                        Database.getInstance(mySPR_daten, database1 -> {
+                        }, false);
                     })
                     .setOnDialogDismiss(customDialog -> settings_others_databaseCode.setText(customDialog.getEditText()))
                     .show();
@@ -472,34 +472,52 @@ public class Settings extends AppCompatActivity {
             CustomDialog runBuildSettingsDialog(Settings settings, Space space);
         }
 
-        public Space setSettingsDialog(Utility.Triple<Integer, SetViewContent, OnClick> id_SetViewContent_OnClick_quadruple) {
+        public Space setSettingsDialog(Utility.Triple<Integer, SetViewContent, OnClick> layoutId_SetViewContent_OnClick_quadruple) {
             buildSettingsDialog = (context1, space) -> {
                 CustomDialog customDialog = CustomDialog.Builder(context1).setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
-                        .setTitle(space.getPlural() + "-Einstellungen")
-                        .setEdit(new CustomDialog.EditBuilder().setHint("Singular|Plural").setText(space.getName() + "|" + space.getPlural()).setValidation("\\w+\\|\\w+"));
-                if (id_SetViewContent_OnClick_quadruple != null)
-                    customDialog.setView(id_SetViewContent_OnClick_quadruple.first)
-                            .setSetViewContent((customDialog1, view, reload) -> id_SetViewContent_OnClick_quadruple.second.runSetViewContent(customDialog1, view, this))
-                            .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> id_SetViewContent_OnClick_quadruple.third.runOnClick(customDialog1, this));
+                        .setTitle(space.getPlural() + "-Einstellungen");
+                if (layoutId_SetViewContent_OnClick_quadruple != null)
+                    customDialog
+                            .setView(layoutId_SetViewContent_OnClick_quadruple.first)
+                            .setSetViewContent((customDialog1, view, reload) -> layoutId_SetViewContent_OnClick_quadruple.second.runSetViewContent(customDialog1, view, this))
+                            .addButton("Umbenennen", customDialog1 -> {
+                                CustomDialog renameDialog = CustomDialog.Builder(context1).setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                                        .setTitle("Bereich Umbenennen")
+                                        .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog2 -> {
+                                            new OnClick() {
+                                            }.runOnClick(customDialog2, this);
+                                            context1.spaceRecycler_customRecycler.reload();
+                                            context1.setResult(RESULT_OK);
+                                            Settings.changeSetting(SETTING_SPACE_NAMES_ + space.getItemId(), space.getName() + "|" + space.getPlural());
+                                        }, false)
+                                        .setEdit(new CustomDialog.EditBuilder().setHint("Singular|Plural").setText(space.getName() + "|" + space.getPlural()).setValidation("\\w+\\|\\w+"))
+                                        .show();
+
+                            }, false)
+                            .alignPreviousButtonsLeft()
+                            .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> layoutId_SetViewContent_OnClick_quadruple.third.runOnClick(customDialog1, this));
                 else
-                    customDialog.addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
-                        new OnClick() {}.runOnClick(customDialog1, this);
-                        context1.spaceRecycler_customRecycler.reload();
-                        context1.setResult(RESULT_OK);
-                        Settings.changeSetting(SETTING_SPACE_NAMES_ + space.getItemId(), space.getName() + "|" + space.getPlural());
-                    }, false);
+                    customDialog
+                            .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                                new OnClick() {
+                                }.runOnClick(customDialog1, this);
+                                context1.spaceRecycler_customRecycler.reload();
+                                context1.setResult(RESULT_OK);
+                                Settings.changeSetting(SETTING_SPACE_NAMES_ + space.getItemId(), space.getName() + "|" + space.getPlural());
+                            }, false)
+                            .setEdit(new CustomDialog.EditBuilder().setHint("Singular|Plural").setText(space.getName() + "|" + space.getPlural()).setValidation("\\w+\\|\\w+"));
                 return customDialog;
             };
 
             return this;
         }
 
-        public interface SetViewContent{
+        public interface SetViewContent {
             void runSetViewContent(CustomDialog customDialog, View view, Space space);
         }
 
         public interface OnClick {
-            default void runOnClick(CustomDialog customDialog, Space space){
+            default void runOnClick(CustomDialog customDialog, Space space) {
                 String text = customDialog.getEditText();
                 if (text.isEmpty())
                     return;
@@ -522,7 +540,7 @@ public class Settings extends AppCompatActivity {
         }
         //  <----- SettingsDialog -----
 
-        public static Space getSpaceById(int id){
+        public static Space getSpaceById(int id) {
             for (Space space : allSpaces) {
                 if (space.getItemId() == id)
                     return space;

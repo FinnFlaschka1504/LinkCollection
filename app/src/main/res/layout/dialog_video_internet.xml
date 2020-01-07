@@ -10,6 +10,19 @@
         android:layout_height="match_parent" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/dialog_videoInternet_toggleJavaScript"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:layout_toStartOf="@+id/dialog_videoInternet_getSelection"
+        android:backgroundTint="#838383"
+        android:clickable="true"
+        android:visibility="gone"
+        app:srcCompat="@drawable/ic_java_script" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/dialog_videoInternet_getSelection"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

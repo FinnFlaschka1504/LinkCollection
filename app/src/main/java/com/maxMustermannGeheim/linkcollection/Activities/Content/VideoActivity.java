@@ -286,16 +286,7 @@ public class VideoActivity extends AppCompatActivity {
                 CharSequence text;
                 text = getIntent().getClipData().getItemAt(0).getText();
                 if (text == null) {
-                    try {
-                        Field mMap_field = getIntent().getExtras().getClass().getSuperclass().getDeclaredField("mMap");
-                        mMap_field.setAccessible(true);
-                        Object o = mMap_field.get(getIntent().getExtras());
-                        if (o instanceof ArrayMap) {
-                            Object value = ((ArrayMap) o).valueAt(1);
-                        }
-                    } catch (NoSuchFieldException | IllegalAccessException ignored) {
-                        String BREAKPOINT = null;
-                    }
+                    text = getIntent().getStringExtra(Intent.EXTRA_TEXT);
                 }
 
                 if (text != null) {
@@ -606,29 +597,38 @@ public class VideoActivity extends AppCompatActivity {
                     TextInputLayout dialog_editOrAddVideo_Url_layout = view.findViewById(R.id.dialog_editOrAddVideo_Url_layout);
 
                     view.findViewById(R.id.dialog_editOrAddVideo_internet).setOnClickListener(v -> {
+                        final boolean[] isJsEnabled = {false};
                         if (internetDialog[0] == null) {
                             internetDialog[0] = com.finn.androidUtilities.CustomDialog.Builder(this)
                                     .setView(R.layout.dialog_video_internet)
                                     .setSetViewContent((customDialog1, view1, reload1) -> {
                                         webView = view1.findViewById(R.id.dialog_videoInternet_webView);
-//                                        webView.loadUrl(editVideo[0] != null && editVideo[0].getUrl() != null && !editVideo[0].getUrl().isEmpty() ? editVideo[0].getUrl() : "https://www.google.de/");
                                         String url = dialog_editOrAddVideo_Url_layout.getEditText().getText().toString();
                                         webView.loadUrl(!url.isEmpty() ? url : "https://www.google.de/");
                                         webView.setWebViewClient(new WebViewClient());
                                         WebSettings webSettings = webView.getSettings();
-                                        webSettings.setJavaScriptEnabled(true);
+//                                        webSettings.setJavaScriptEnabled(true);
                                         webSettings.setBuiltInZoomControls(true);
-                                        FloatingActionButton getSelection = view1.findViewById(R.id.dialog_videoInternet_getSelection);
-                                        getSelection.setOnClickListener(v1 -> {
+//                                        view1.findViewById(R.id.dialog_videoInternet_toggleJavaScript).setOnClickListener(v1 -> {
+//                                            isJsEnabled[0] = !isJsEnabled[0];
+//                                            webSettings.setJavaScriptEnabled(isJsEnabled[0]);
+//                                            if(isJsEnabled[0])
+//                                                webView.reload();
+////                                            ((FloatingActionButton) v1).setbati
+//                                        });
+                                        view1.findViewById(R.id.dialog_videoInternet_getSelection).setOnClickListener(v1 -> {
+                                            webSettings.setJavaScriptEnabled(true);
                                             webView.evaluateJavascript("(function(){return window.getSelection().toString()})()", value -> {
                                                 value = Utility.subString(value, 1, -1);
                                                 if (!value.isEmpty()) {
                                                     Toast.makeText(VideoActivity.this, value, Toast.LENGTH_SHORT).show();
                                                     dialog_editOrAddVideo_Titel_layout.getEditText().setText(value);
-                                                    dialog_editOrAddVideo_Titel_layout.getEditText().onEditorAction(Helpers.TextInputHelper.IME_ACTION.SEARCH.getCode());
+                                                    if (Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_AUTO_SEARCH))
+                                                        dialog_editOrAddVideo_Titel_layout.getEditText().onEditorAction(Helpers.TextInputHelper.IME_ACTION.SEARCH.getCode());
                                                     customDialog1.dismiss();
                                                 }
                                             });
+                                            webSettings.setJavaScriptEnabled(false);
                                         });
                                     })
                                     .setOnBackPressedListener(customDialog1 -> {
@@ -725,6 +725,9 @@ public class VideoActivity extends AppCompatActivity {
                         dialog_editOrAddVideo_watchLater.setVisibility(View.VISIBLE);
                         editVideo[0] = new Video("");
                     }
+
+                    if (!Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_SHOW_RELEASE))
+                        view.findViewById(R.id.dialog_editOrAddVideo_datePicker_layout).setVisibility(View.GONE);
 
 
                     view.findViewById(R.id.dialog_editOrAddVideo_editActor).setOnClickListener(view1 ->

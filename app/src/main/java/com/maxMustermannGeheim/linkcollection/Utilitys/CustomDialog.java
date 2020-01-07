@@ -690,6 +690,9 @@ public class CustomDialog {
             Utility.changeWindowKeyboard(dialog.getWindow(), true);
         }
 
+        if (editBuilder == null)
+            return; // ToDo: könnte das Abbrechen an dieser Stelle zu Problemen führen?
+
         if (editBuilder.onActionActionPair == null) {
             textInputHelper.addActionListener(textInputLayout, (textInputHelper1, textInputLayout1, actionId, text) -> {
                 if (textInputHelper1.isValid() && finalButton != null)
@@ -703,7 +706,7 @@ public class CustomDialog {
         if (editBuilder != null && editBuilder.disableButtonByDefault)
             button.setEnabled(false);
 
-        if (editBuilder.fireActionDirectly)
+        if (editBuilder.fireActionDirectly && editBuilder.onActionActionPair != null)
             editBuilder.onActionActionPair.first.runOnAction(textInputHelper, textInputLayout, -1, textInputHelper.getText(textInputLayout));
     }
 

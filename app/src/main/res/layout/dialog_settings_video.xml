@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="16dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Bearbeiten"
+            android:textColor="@color/colorPrimary"
+            android:textStyle="bold" />
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Release Anzeigen"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Feld für Erscheinungsdatum anzeigen"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/dialogSettingsVideo_edit_showRelease"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="8dp"
+                android:checked="true" />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginVertical="5dp"
+            android:background="?android:attr/listDivider" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Videos automation suchen"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Geteilte Videos automatisch in TMDb suchen"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/dialogSettingsVideo_edit_autoSearch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="8dp"
+                android:checked="true" />
+
+        </LinearLayout>
+
+
+        <!--            <LinearLayout-->
+        <!--                android:layout_width="match_parent"-->
+        <!--                android:layout_height="match_parent"-->
+        <!--                android:gravity="center_vertical"-->
+        <!--                android:orientation="vertical">-->
+
+        <!--                <TextView-->
+        <!--                    android:layout_width="match_parent"-->
+        <!--                    android:layout_height="wrap_content"-->
+        <!--                    android:text="Update"-->
+        <!--                    android:textStyle="bold" />-->
+
+        <!--                <LinearLayout-->
+        <!--                    android:layout_width="match_parent"-->
+        <!--                    android:layout_height="match_parent"-->
+        <!--                    android:gravity="center_vertical"-->
+        <!--                    android:orientation="horizontal">-->
+
+
+        <!--                    <LinearLayout-->
+        <!--                        android:layout_width="wrap_content"-->
+        <!--                        android:layout_height="wrap_content"-->
+        <!--                        android:layout_weight="1"-->
+        <!--                        android:orientation="vertical">-->
+
+        <!--                        <TextView-->
+        <!--                            android:layout_width="wrap_content"-->
+        <!--                            android:layout_height="wrap_content"-->
+        <!--                            android:text="Nach neuerer Version Suchen und updaten"-->
+        <!--                            android:textSize="12sp" />-->
+
+        <!--                        <LinearLayout-->
+        <!--                            android:layout_width="match_parent"-->
+        <!--                            android:layout_height="wrap_content"-->
+        <!--                            android:gravity="center_vertical"-->
+        <!--                            android:orientation="horizontal">-->
+
+        <!--                            <TextView-->
+        <!--                                android:layout_width="wrap_content"-->
+        <!--                                android:layout_height="wrap_content"-->
+        <!--                                android:layout_marginRight="5dp"-->
+        <!--                                android:text="Aktuelle Version:"-->
+        <!--                                android:textSize="12sp"-->
+        <!--                                android:textStyle="italic" />-->
+
+
+        <!--                            <TextView-->
+        <!--                                android:id="@+id/settings_others_version"-->
+        <!--                                android:layout_width="wrap_content"-->
+        <!--                                android:layout_height="wrap_content"-->
+        <!--                                android:layout_marginRight="8dp"-->
+        <!--                                android:textSize="12sp"-->
+        <!--                                android:textStyle="italic"-->
+        <!--                                tools:text="1.1" />-->
+
+        <!--                            <TextView-->
+        <!--                                android:id="@+id/settings_others_changeLog"-->
+        <!--                                android:layout_width="wrap_content"-->
+        <!--                                android:layout_height="wrap_content"-->
+        <!--                                android:layout_gravity="center_horizontal"-->
+        <!--                                android:clickable="true"-->
+        <!--                                android:foreground="@drawable/ripple"-->
+        <!--                                android:padding="5dp"-->
+        <!--                                android:text="Change-Log"-->
+        <!--                                android:textColor="@color/colorAccent"-->
+        <!--                                android:textSize="12sp"-->
+        <!--                                android:textStyle="italic" />-->
+
+        <!--                        </LinearLayout>-->
+
+        <!--                    </LinearLayout>-->
+
+        <!--                    <Button-->
+        <!--                        android:id="@+id/settings_others_checkForUpdate"-->
+        <!--                        style="@style/Widget.AppCompat.Button.Borderless.Colored"-->
+        <!--                        android:layout_width="wrap_content"-->
+        <!--                        android:layout_height="wrap_content"-->
+        <!--                        android:text="Auf Updates \nüberprüfen" />-->
+        <!--                </LinearLayout>-->
+
+        <!--            </LinearLayout>-->
+
+    </LinearLayout>
+
+<!--    <View-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="3dp"-->
+<!--        android:background="?android:attr/listDivider" />-->
+</LinearLayout>

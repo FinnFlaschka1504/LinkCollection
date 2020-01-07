@@ -848,6 +848,7 @@ public class Utility implements java.io.Serializable{
                                 }
                                 selectedUuidList.add(parentClass.getUuid());
                                 customDialog1.dismiss();
+                                customDialog.dismiss();
                                 showEditItemDialog(context, addOrEditDialog, selectedUuidList, o, category);
                                 Database.saveAll();
                             })

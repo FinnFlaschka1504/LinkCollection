@@ -401,12 +401,11 @@ public class Database {
         return deepCopy;
     }
 
-
-    public static void saveAll() {
+    public static boolean saveAll() {
         Log.d(TAG, "saveAll: ");
 
         if (!Database.isReady() || !database.isOnline() || !Database.hasChanges())
-            return;
+            return false;
 
         database.saveDatabase_offline(mySPR_daten);
         if (Utility.isOnline()) {
@@ -419,7 +418,7 @@ public class Database {
         updateList.clear();
         lastUploaded_contentMap = database.deepCopySimpleContentMap();
 
-        String BREAKPOINT = null;
+        return true;
     }
 
     private static boolean hasChanges() {

@@ -45,6 +45,7 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.database.DatabaseReference;
 import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
@@ -1071,16 +1072,23 @@ public class ShowActivity extends AppCompatActivity {
                 .setView(episodeRecycler.generateRecyclerView())
                 .disableScroll()
                 .setOnDialogDismiss(customDialog -> {
-                    Database.saveAll();
+                    if (Database.saveAll())
+                        setResult(RESULT_OK);
                     reLoadRecycler();
                     if (seasonCustomRecycler != null)
                         seasonCustomRecycler.reload();
+
                 })
                 .show();
         return episodeRecycler;
     }
 
+
     private void showEpisodeDetailDialog(CustomRecycler customRecycler, Show.Episode episode, boolean startedDirectly) {
+        if (episode == null) {
+            Toast.makeText(this, "Es ist ein Fehler aufgetreten", Toast.LENGTH_SHORT).show();
+            return;
+        }
         setResult(RESULT_OK);
         CustomDialog.Builder(this)
                 .setTitle(episode.getName())

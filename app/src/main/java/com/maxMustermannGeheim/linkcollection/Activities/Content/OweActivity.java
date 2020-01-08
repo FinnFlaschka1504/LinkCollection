@@ -20,6 +20,7 @@ import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -211,9 +212,11 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                     if (owe.getItemList().stream().noneMatch(Owe.Item::isOpen)) {
                         listItem_owe_check.setColorFilter(getColor(R.color.colorGreen), PorterDuff.Mode.SRC_IN);
                         listItem_owe_check.setAlpha(1f);
+                        Utility.applyToAllViews(((ViewGroup) itemView), TextView.class, textView -> textView.setAlpha(filterTypeSet.contains(FILTER_TYPE.OPEN) ? 0.5f : 1f));
                     } else {
                         listItem_owe_check.setColorFilter(getColor(R.color.colorDrawable), PorterDuff.Mode.SRC_IN);
                         listItem_owe_check.setAlpha(0.2f);
+                        Utility.applyToAllViews(((ViewGroup) itemView), TextView.class, textView -> textView.setAlpha(1f));
                     }
 
                     TextView listItem_owe_sum = itemView.findViewById(R.id.listItem_owe_sum);
@@ -775,7 +778,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                                 .setEdit(new CustomDialog.EditBuilder().setText(autoCompleteName.getText().toString()).setHint("Personen-Name"))
                                 .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
-                                    String name = customDialog.getEditText().trim();
+                                    String name = customDialog1.getEditText();
                                     if (nameList.contains(name)) {
                                         Toast.makeText(this, "Keine zwei Personen dürfen gleich heißen", Toast.LENGTH_SHORT).show();
                                         return;

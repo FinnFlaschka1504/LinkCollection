@@ -20,12 +20,12 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomList;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomPopupWindow;
-import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
-import com.maxMustermannGeheim.linkcollection.Utilitys.Helpers;
-import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomPopupWindow;
+import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
+import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;

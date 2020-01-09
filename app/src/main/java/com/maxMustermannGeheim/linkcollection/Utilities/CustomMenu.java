@@ -1,4 +1,4 @@
-package com.maxMustermannGeheim.linkcollection.Utilitys;
+package com.maxMustermannGeheim.linkcollection.Utilities;
 
 import android.view.View;
 import android.widget.PopupWindow;

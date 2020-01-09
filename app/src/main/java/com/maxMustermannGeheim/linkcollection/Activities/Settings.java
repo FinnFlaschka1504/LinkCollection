@@ -25,11 +25,11 @@ import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
-import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
-import com.maxMustermannGeheim.linkcollection.Utilitys.SquareLayout;
-import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
+import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
+import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
 import java.util.ArrayList;
 import java.util.Arrays;

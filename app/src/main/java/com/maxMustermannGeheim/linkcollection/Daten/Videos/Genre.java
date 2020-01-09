@@ -1,9 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Videos;
 
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomList;
 
-import java.util.List;
 import java.util.UUID;
 
 public class Genre extends ParentClass {

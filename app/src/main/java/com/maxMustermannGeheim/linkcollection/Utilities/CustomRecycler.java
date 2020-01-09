@@ -1,4 +1,4 @@
-package com.maxMustermannGeheim.linkcollection.Utilitys;
+package com.maxMustermannGeheim.linkcollection.Utilities;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -83,6 +83,7 @@ public class CustomRecycler<T>{
     private int dividerMargin;
     private OnSwiped<T> onSwiped;
     private Pair<Boolean,Boolean> leftRightSwipe_pair;
+    private OnReload<T> onReload;
 
 
     public CustomRecycler(Context context) {
@@ -308,6 +309,14 @@ public class CustomRecycler<T>{
         return this;
     }
 
+    public interface OnReload<T> {
+        void runOnReload(CustomRecycler<T> customRecycler);
+    }
+
+    public CustomRecycler<T> setOnReload(OnReload<T> onReload) {
+        this.onReload = onReload;
+        return this;
+    }
 
     //  ----- Adapter ----->
     public class MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> {
@@ -488,6 +497,8 @@ public class CustomRecycler<T>{
             objectList.addAll(getActiveObjectList.runGetActiveObjectList());
         }
         mAdapter.notifyDataSetChanged();
+        if (onReload != null)
+            onReload.runOnReload(this);
         return this;
     }
 
@@ -495,6 +506,8 @@ public class CustomRecycler<T>{
         this.objectList.clear();
         this.objectList.addAll(objectList);
         mAdapter.notifyDataSetChanged();
+        if (onReload != null)
+            onReload.runOnReload(this);
         return this;
     }
 
@@ -504,6 +517,8 @@ public class CustomRecycler<T>{
             objectList.addAll(getActiveObjectList.runGetActiveObjectList());
         }
         Arrays.asList(index).forEach(mAdapter::notifyItemChanged);
+        if (onReload != null)
+            onReload.runOnReload(this);
         return recycler;
     }
 
@@ -512,6 +527,8 @@ public class CustomRecycler<T>{
         mAdapter = new MyAdapter(objectList);
         this.recycler.setAdapter(mAdapter);
         generateRecyclerView();
+        if (onReload != null)
+            onReload.runOnReload(this);
         return recycler;
     }
     //  <----- Generate -----

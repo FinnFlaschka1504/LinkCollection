@@ -1,4 +1,4 @@
-package com.maxMustermannGeheim.linkcollection.Utilitys;
+package com.maxMustermannGeheim.linkcollection.Utilities;
 
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;

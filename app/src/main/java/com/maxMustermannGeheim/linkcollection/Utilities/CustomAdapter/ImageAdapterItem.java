@@ -1,4 +1,4 @@
-package com.maxMustermannGeheim.linkcollection.Utilitys.CustomAdapter;
+package com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter;
 
 import android.graphics.Bitmap;
 

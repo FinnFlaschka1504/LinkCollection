@@ -1,8 +1,8 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Videos;
 
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomList;
-import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
+import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
 import java.util.ArrayList;
 import java.util.Arrays;

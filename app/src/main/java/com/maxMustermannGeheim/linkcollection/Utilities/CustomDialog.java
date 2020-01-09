@@ -1,4 +1,4 @@
-package com.maxMustermannGeheim.linkcollection.Utilitys;
+package com.maxMustermannGeheim.linkcollection.Utilities;
 
 import android.app.Dialog;
 import android.content.Context;
@@ -14,7 +14,6 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
-import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.IdRes;
 import androidx.annotation.LayoutRes;
 

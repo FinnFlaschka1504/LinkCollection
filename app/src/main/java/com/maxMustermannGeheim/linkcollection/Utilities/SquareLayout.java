@@ -1,10 +1,8 @@
-package com.maxMustermannGeheim.linkcollection.Utilitys;
+package com.maxMustermannGeheim.linkcollection.Utilities;
 
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.util.AttributeSet;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 import com.maxMustermannGeheim.linkcollection.R;

@@ -65,7 +65,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
-            <com.maxMustermannGeheim.linkcollection.Utilitys.SquareLayout
+            <com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="8dp"
@@ -123,9 +123,9 @@
                     </LinearLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
-            </com.maxMustermannGeheim.linkcollection.Utilitys.SquareLayout>
+            </com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout>
 
-            <com.maxMustermannGeheim.linkcollection.Utilitys.SquareLayout
+            <com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="8dp"
@@ -183,7 +183,7 @@
                     </LinearLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
-            </com.maxMustermannGeheim.linkcollection.Utilitys.SquareLayout>
+            </com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout>
 
         </LinearLayout>
 
@@ -192,7 +192,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
-            <com.maxMustermannGeheim.linkcollection.Utilitys.SquareLayout
+            <com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="8dp"
@@ -252,9 +252,9 @@
                     </LinearLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
-            </com.maxMustermannGeheim.linkcollection.Utilitys.SquareLayout>
+            </com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout>
 
-            <com.maxMustermannGeheim.linkcollection.Utilitys.SquareLayout
+            <com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="8dp"
@@ -313,7 +313,7 @@
                     </LinearLayout>
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
-            </com.maxMustermannGeheim.linkcollection.Utilitys.SquareLayout>
+            </com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout>
         </LinearLayout>
 
 <!--        <LinearLayout-->

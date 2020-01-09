@@ -32,7 +32,8 @@ public class SpaceFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         if (layoutId == -1)
-            layoutId = R.layout.main_fragment_videos;
+            layoutId = R.layout.loading_screen;
+//            layoutId = R.layout.main_fragment_videos;
         return inflater.inflate(layoutId, container, false);
     }
 }

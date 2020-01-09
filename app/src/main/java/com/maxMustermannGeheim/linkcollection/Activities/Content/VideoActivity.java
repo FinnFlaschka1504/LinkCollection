@@ -4,21 +4,16 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.database.Cursor;
 import android.os.Bundle;
-import android.util.ArrayMap;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewStub;
-import android.view.inputmethod.InputMethod;
-import android.webkit.ValueCallback;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.AutoCompleteTextView;
-import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -27,8 +22,8 @@ import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.VideoView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.android.volley.Request;
@@ -36,9 +31,11 @@ import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
+import com.finn.androidUtilities.CustomUtility;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.database.DatabaseReference;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
@@ -46,22 +43,21 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomAdapter.CustomAutoCompleteAdapter;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomAdapter.ImageAdapterItem;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomDialog;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomList;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomMenu;
-import com.maxMustermannGeheim.linkcollection.Utilitys.CustomRecycler;
-import com.maxMustermannGeheim.linkcollection.Utilitys.Database;
-import com.maxMustermannGeheim.linkcollection.Utilitys.Helpers;
-import com.maxMustermannGeheim.linkcollection.Utilitys.Utility;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAutoCompleteAdapter;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.ImageAdapterItem;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
+import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
+import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.mikhaellopez.lazydatepicker.LazyDatePicker;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -117,8 +113,6 @@ public class VideoActivity extends AppCompatActivity {
     FloatingActionButton videos_confirmDelete;
     private SearchView videos_search;
 
-    // ToDo: https://stackoverflow.com/questions/8624315/make-android-app-listen-to-shared-links
-
     @SuppressLint("RestrictedApi")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -170,12 +164,15 @@ public class VideoActivity extends AppCompatActivity {
     public static void showLaterMenu(AppCompatActivity activity, View view) {
         if (!Database.isReady())
             return;
+
+        int watchLaterCount = Database.getInstance().watchLaterList.size();
+        int upcomingCount = (int) Database.getInstance().videoMap.values().stream().filter(Video::isUpcomming).count();
         CustomMenu.Builder(activity, view.findViewById(R.id.main_watchLaterCount_label))
                 .setMenus((customMenu, items) -> {
-                    items.add(new CustomMenu.MenuItem("Später ansehen", new Pair<>(new Intent(activity, VideoActivity.class)
+                    items.add(new CustomMenu.MenuItem(String.format(Locale.getDefault(), "Später ansehen (%d)", watchLaterCount), new Pair<>(new Intent(activity, VideoActivity.class)
                             .putExtra(CategoriesActivity.EXTRA_SEARCH, WATCH_LATER_SEARCH)
                             .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO), MainActivity.START_WATCH_LATER)));
-                    items.add(new CustomMenu.MenuItem("Bevorstehende", new Pair<>(new Intent(activity, VideoActivity.class)
+                    items.add(new CustomMenu.MenuItem(String.format(Locale.getDefault(), "Bevorstehende (%d)", upcomingCount), new Pair<>(new Intent(activity, VideoActivity.class)
                             .putExtra(CategoriesActivity.EXTRA_SEARCH, UPCOMING_SEARCH)
                             .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO), MainActivity.START_UPCOMING)));
                 })
@@ -303,9 +300,9 @@ public class VideoActivity extends AppCompatActivity {
                                 video.setName(String.join(" ", list));
                             }
                         }
-                        showEditOrNewDialog(video);
+                        addOrEditDialog[0] = showEditOrNewDialog(video);
                     } else
-                        showEditOrNewDialog(new Video(text.toString()));
+                        addOrEditDialog[0] = showEditOrNewDialog(new Video(text.toString()));
                 }
             }
 
@@ -436,8 +433,9 @@ public class VideoActivity extends AppCompatActivity {
         customRecycler_VideoList.reload();
     }
 
-    private CustomDialog showDetailDialog(Video video) {
+    private CustomDialog showDetailDialog(@NonNull Video video) {
         setResult(RESULT_OK);
+        final int[] views = {video.getDateList().size()};
         CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle("Deteil Ansicht")
                 .setView(R.layout.dialog_detail_video)
@@ -492,12 +490,21 @@ public class VideoActivity extends AppCompatActivity {
                         });
                     }
 
+                    if (views[0] != video.getDateList().size()) {
+                        if (views[0] < video.getDateList().size() && database.watchLaterList.contains(video.getUuid())) {
+                            database.watchLaterList.remove(video.getUuid());
+                            Database.saveAll();
+                            textListener.onQueryTextSubmit(videos_search.getQuery().toString());
+                        }
+                        views[0] = video.getDateList().size();
+                    }
 
                     final boolean[] isInWatchLater = {database.watchLaterList.contains(video.getUuid())};
-                    view.findViewById(R.id.dialog_video_watchLater_background).setPressed(isInWatchLater[0]);
+//                    view.findViewById(R.id.dialog_video_watchLater_background).setPressed(isInWatchLater[0]);
+                    view.findViewById(R.id.dialog_video_watchLater_background).setBackground(isInWatchLater[0] ? CustomUtility.drawableBuilder_rectangle(0x96868686, 7, false) : null);
                     view.findViewById(R.id.dialog_video_watchLater).setOnClickListener(view1 -> {
                         isInWatchLater[0] = !isInWatchLater[0];
-                        view.findViewById(R.id.dialog_video_watchLater_background).setPressed(isInWatchLater[0]);
+                        view.findViewById(R.id.dialog_video_watchLater_background).setBackground(isInWatchLater[0] ? CustomUtility.drawableBuilder_rectangle(0x96868686, 7, false) : null);
                         if (isInWatchLater[0]) {
                             database.watchLaterList.add(video.getUuid());
                             Toast.makeText(this, "Zu 'Später-Ansehen' hinzugefügt", Toast.LENGTH_SHORT).show();
@@ -545,8 +552,9 @@ public class VideoActivity extends AppCompatActivity {
                 .disableScroll()
                 .setDimensions(true, true)
                 .setOnDialogDismiss(customDialog -> {
-                    ((TextView) detailDialog.findViewById(R.id.dialog_video_views))
-                            .setText(String.valueOf(videoList.get(0).getDateList().size()));
+//                    ((TextView) detailDialog.findViewById(R.id.dialog_video_views))
+//                            .setText(String.valueOf(videoList.get(0).getDateList().size()));
+                    detailDialog.reloadView();
                     this.reLoadVideoRecycler();
                 })
                 .enableTitleBackButton()
@@ -564,7 +572,7 @@ public class VideoActivity extends AppCompatActivity {
             editVideo[0] = video.clone();
         }
         Helpers.TextInputHelper helper = new Helpers.TextInputHelper();
-        final boolean[] checked = {false};
+        final boolean[] checked = {video != null && database.watchLaterList.contains(video.getUuid())};
         @SuppressLint("SetJavaScriptEnabled") CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle(video == null ? "Neu: " + singular : singular + " Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
@@ -654,7 +662,7 @@ public class VideoActivity extends AppCompatActivity {
                                 apiRequest(text, customDialog, editVideo[0]);
                             }, Helpers.TextInputHelper.IME_ACTION.SEARCH)
                             .setValidation(dialog_editOrAddVideo_Url_layout, (validator, text) -> {
-                                if (text.isEmpty() && (dialog_editOrAddVideo_watchLater.isChecked() || Utility.isUpcoming(editVideo[0].getRelease())))
+                                if (text.isEmpty() && (checked[0] || Utility.isUpcoming(editVideo[0].getRelease())))
                                     validator.setValid();
                                 else if (!text.isEmpty()) {
                                     if (Utility.isUrl(text)) {
@@ -714,17 +722,23 @@ public class VideoActivity extends AppCompatActivity {
                         ((EditText) view.findViewById(R.id.dialog_editOrAddVideo_Url)).setText(editVideo[0].getUrl());
                         if (editVideo[0].getRelease() != null) {
                             ((LazyDatePicker) view.findViewById(R.id.dialog_editOrAddVideo_datePicker)).setDate(editVideo[0].getRelease());
-
-                            int visibility = Utility.isUpcoming(editVideo[0].getRelease()) && video == null ? View.GONE : View.VISIBLE;
-                            dialog_editOrAddVideo_watchLater.setVisibility(visibility);
-                            view.findViewById(R.id.dialog_editOrAddVideo_rating_layout).setVisibility(visibility);
-                            view.findViewById(R.id.dialog_editOrAddVideo_Url_allLayout).setVisibility(visibility);
                         }
+
+                        dialog_editOrAddVideo_watchLater.setVisibility(Utility.isUpcoming(editVideo[0].getRelease()) || (video != null && !video.getName().isEmpty()) ? View.GONE : View.VISIBLE);
+                        int visibility = Utility.isUpcoming(editVideo[0].getRelease())/* && (video == null || !video.getName().isEmpty())*/ ? View.GONE : View.VISIBLE;
+                        view.findViewById(R.id.dialog_editOrAddVideo_rating_layout).setVisibility(visibility);
+                        view.findViewById(R.id.dialog_editOrAddVideo_Url_allLayout).setVisibility(visibility);
+
                         ((RatingBar) view.findViewById(R.id.dialog_editOrAddVideo_rating)).setRating(editVideo[0].getRating());
                     } else {
                         dialog_editOrAddVideo_watchLater.setVisibility(View.VISIBLE);
                         editVideo[0] = new Video("");
                     }
+
+                    ((LazyDatePicker) view.findViewById(R.id.dialog_editOrAddVideo_datePicker)).setOnDatePickListener(dateSelected -> {
+                        editVideo[0].setRelease(dateSelected);
+                        customDialog.reloadView();
+                    });
 
                     if (!Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_SHOW_RELEASE))
                         view.findViewById(R.id.dialog_editOrAddVideo_datePicker_layout).setVisibility(View.GONE);
@@ -1021,53 +1035,31 @@ public class VideoActivity extends AppCompatActivity {
             Toast.makeText(this, "Keine " + plural, Toast.LENGTH_SHORT).show();
             return;
         }
-        randomVideo = filterdVideoList.get((int) (Math.random() * filterdVideoList.size()));
-        List<String> darstellerNames = new ArrayList<>();
-        randomVideo.getDarstellerList().forEach(uuid -> darstellerNames.add(database.darstellerMap.get(uuid).getName()));
-        List<String> studioNames = new ArrayList<>();
-        randomVideo.getStudioList().forEach(uuid -> studioNames.add(database.studioMap.get(uuid).getName()));
-        List<String> genreNames = new ArrayList<>();
-        randomVideo.getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
+        CustomList<Video> randomList = new CustomList<>(filterdVideoList);
+        randomVideo = randomList.removeRandom();
 
         CustomDialog.Builder(this)
                 .setTitle("Zufällig")
                 .setView(R.layout.dialog_detail_video)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Nochmal", customDialog -> {
+                    if (randomList.isEmpty()) {
+                        Toast.makeText(this, "Kein neuer " + singular + " vorhanden", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
                     Toast.makeText(this, "Neu", Toast.LENGTH_SHORT).show();
-                    randomVideo = filterdVideoList.get((int) (Math.random() * filterdVideoList.size()));
-                    ((TextView) customDialog.findViewById(R.id.dialog_video_Titel)).setText(randomVideo.getName());
-
-                    List<String> darstellerNames_neu = new ArrayList<>();
-                    randomVideo.getDarstellerList().forEach(uuid -> darstellerNames_neu.add(database.darstellerMap.get(uuid).getName()));
-                    ((TextView) customDialog.findViewById(R.id.dialog_video_Darsteller)).setText(String.join(", ", darstellerNames_neu));
-
-                    List<String> studioNames_neu = new ArrayList<>();
-                    randomVideo.getStudioList().forEach(uuid -> studioNames_neu.add(database.studioMap.get(uuid).getName()));
-                    ((TextView) customDialog.findViewById(R.id.dialog_video_Studio)).setText(String.join(", ", studioNames_neu));
-
-                    List<String> genreNames_neu = new ArrayList<>();
-                    randomVideo.getGenreList().forEach(uuid -> genreNames_neu.add(database.genreMap.get(uuid).getName()));
-                    ((TextView) customDialog.findViewById(R.id.dialog_video_Genre)).setText(String.join(", ", genreNames_neu));
-
-                    if (randomVideo.getImagePath() != null && !randomVideo.getImagePath().isEmpty()) {
-                        ImageView dialog_video_poster = customDialog.findViewById(R.id.dialog_video_poster);
-                        dialog_video_poster.setVisibility(View.VISIBLE);
-                        Glide
-                                .with(this)
-                                .load("https://image.tmdb.org/t/p/w92/" + randomVideo.getImagePath())
-                                .placeholder(R.drawable.ic_download)
-                                .into(dialog_video_poster);
-                    } else
-                        customDialog.findViewById(R.id.dialog_video_poster).setVisibility(View.GONE);
-
+                    randomVideo = randomList.removeRandom();
+                    customDialog.reloadView();
                 }, false)
                 .addButton("Öffnen", customDialog -> openUrl(randomVideo.getUrl(), false), false)
                 .setSetViewContent((customDialog, view, reload) -> {
                     ((TextView) view.findViewById(R.id.dialog_video_Titel)).setText(randomVideo.getName());
-                    ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(String.join(", ", darstellerNames));
-                    ((TextView) view.findViewById(R.id.dialog_video_Studio)).setText(String.join(", ", studioNames));
-                    ((TextView) view.findViewById(R.id.dialog_video_Genre)).setText(String.join(", ", genreNames));
+                    ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(
+                            randomVideo.getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                    ((TextView) view.findViewById(R.id.dialog_video_Studio)).setText(
+                            randomVideo.getStudioList().stream().map(uuid -> database.studioMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                    ((TextView) view.findViewById(R.id.dialog_video_Genre)).setText(
+                            randomVideo.getGenreList().stream().map(uuid -> database.genreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                     view.findViewById(R.id.dialog_video_Darsteller).setSelected(true);
 
                     if (randomVideo.getImagePath() != null && !randomVideo.getImagePath().isEmpty()) {
@@ -1078,7 +1070,8 @@ public class VideoActivity extends AppCompatActivity {
                                 .load("https://image.tmdb.org/t/p/w92/" + randomVideo.getImagePath())
                                 .placeholder(R.drawable.ic_download)
                                 .into(dialog_video_poster);
-                    }
+                    } else
+                        customDialog.findViewById(R.id.dialog_video_poster).setVisibility(View.GONE);
 
                 })
                 .show();

@@ -1,4 +1,4 @@
-package com.maxMustermannGeheim.linkcollection.Utilitys;
+package com.maxMustermannGeheim.linkcollection.Utilities;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -813,16 +813,15 @@ public class Utility implements java.io.Serializable{
 
         int saveButtonId = View.generateViewId();
 
-        String finalEditType_string = editType_string;
         CustomDialog dialog_AddActorOrGenre = CustomDialog.Builder(context)
                 .setTitle(editType_string + " Bearbeiten")
-                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .setView(R.layout.dialog_edit_item)
                 .setDimensions(true, true)
                 .disableScroll()
                 .addButton("Hinzufügen", customDialog -> {
                     CustomDialog.Builder(context)
-                            .setTitle(finalEditType_string + " Hinzufügen")
+                            .setTitle(editType_string + " Hinzufügen")
                             .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                             .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
                                 ParentClass parentClass = ParentClass.newCategoy(category, customDialog1.getEditText());
@@ -853,14 +852,13 @@ public class Utility implements java.io.Serializable{
                                 Database.saveAll();
                             })
                             .setEdit(new CustomDialog.EditBuilder()
-                                    .setHint(finalEditType_string + "-Name")
+                                    .setHint(editType_string + "-Name")
                                     .setText(((SearchView) customDialog.findViewById(R.id.dialogAddPassenger_search)).getQuery().toString()))
                             .show();
 
                 }, false)
-                .addButton("Abbrechen", customDialog -> {
-                })
-                .addButton("Speichern", customDialog -> {
+                .alignPreviousButtonsLeft()
+                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     List<String> nameList = new ArrayList<>();
                     switch (category) {
                         case DARSTELLER:

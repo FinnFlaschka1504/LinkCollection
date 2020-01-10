@@ -72,6 +72,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
@@ -224,11 +225,11 @@ public class VideoActivity extends AppCompatActivity {
                 }
 
                 @Override
-                public boolean onQueryTextChange(String s) {
+                public boolean onQueryTextChange(String query) {
                     filterdVideoList = new ArrayList<>(allVideoList);
-
-                    if (!s.trim().equals("")) {
-                        if (s.trim().equals(WATCH_LATER_SEARCH)) {
+                    // ToDo: kategorien nur exakt filtern wenn direkt danach gesucht
+                    if (!query.trim().equals("")) {
+                        if (query.trim().equals(WATCH_LATER_SEARCH)) {
                             filterdVideoList = new ArrayList<>();
                             List<String> unableToFindList = new ArrayList<>();
                             for (String videoUuid : database.watchLaterList) {
@@ -255,19 +256,28 @@ public class VideoActivity extends AppCompatActivity {
                             reLoadVideoRecycler();
                             return true;
                         }
-                        if (s.trim().equals(UPCOMING_SEARCH)) {
+                        if (query.trim().equals(UPCOMING_SEARCH)) {
                             filterdVideoList = allVideoList.stream().filter(Video::isUpcomming).collect(Collectors.toList());
                             reLoadVideoRecycler();
                             return true;
                         }
 
-                        for (String subQuery : s.split("\\|")) {
-                            subQuery = subQuery.trim();
-                            List<Video> subList = new ArrayList<>(filterdVideoList);
-                            for (Video video : subList) {
-                                if (!Utility.containedInVideo(subQuery, video, filterTypeSet))
-                                    filterdVideoList.remove(video);
+                        if (query.contains("|")) {
+                            Stream<Video> resultStream = null;
+                            for (String subQuery : query.split("\\|")) {
+                                if (resultStream == null)
+                                    resultStream = filterdVideoList.stream().filter(video -> Utility.containedInVideo(subQuery.trim(), video, filterTypeSet));
+                                else
+                                    resultStream = Stream.concat(resultStream, filterdVideoList.stream().filter(video -> Utility.containedInVideo(subQuery.trim(), video, filterTypeSet)));
                             }
+                            if (resultStream != null) {
+                                filterdVideoList = resultStream.collect(Collectors.toList());
+                            }
+                        } else {
+                            Stream<Video> filteredStream = allVideoList.stream();
+                            for (String subQuery : query.split("&"))
+                                filteredStream = filteredStream.filter(video -> Utility.containedInVideo(subQuery.trim(), video, filterTypeSet));
+                            filterdVideoList = filteredStream.collect(Collectors.toList());
                         }
                     }
                     reLoadVideoRecycler();
@@ -1031,11 +1041,11 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     private void showRandomDialog() {
-        if (filterdVideoList.isEmpty()) {
+        CustomList<Video> randomList = new CustomList<>(filterdVideoList).filter(video -> !video.isUpcomming());
+        if (randomList.isEmpty()) {
             Toast.makeText(this, "Keine " + plural, Toast.LENGTH_SHORT).show();
             return;
         }
-        CustomList<Video> randomList = new CustomList<>(filterdVideoList);
         randomVideo = randomList.removeRandom();
 
         CustomDialog.Builder(this)
@@ -1070,6 +1080,30 @@ public class VideoActivity extends AppCompatActivity {
                                 .load("https://image.tmdb.org/t/p/w92/" + randomVideo.getImagePath())
                                 .placeholder(R.drawable.ic_download)
                                 .into(dialog_video_poster);
+
+                        if (!reload) {
+                            dialog_video_poster.setOnClickListener(v -> {
+                                com.finn.androidUtilities.CustomDialog posterDialog = com.finn.androidUtilities.CustomDialog.Builder(this)
+                                        .setView(R.layout.dialog_poster)
+                                        .setSetViewContent((customDialog1, view1, reload1) -> {
+                                            ImageView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
+                                            Glide
+                                                    .with(this)
+                                                    .load("https://image.tmdb.org/t/p/original/" + randomVideo.getImagePath())
+                                                    .placeholder(R.drawable.ic_download)
+                                                    .into(dialog_poster_poster);
+                                            dialog_poster_poster.setOnContextClickListener(v1 -> {
+                                                customDialog1.dismiss();
+                                                return true;
+                                            });
+
+                                        });
+                                posterDialog
+                                        .removeBackground()
+                                        .disableScroll()
+                                        .show();
+                            });
+                        }
                     } else
                         customDialog.findViewById(R.id.dialog_video_poster).setVisibility(View.GONE);
 

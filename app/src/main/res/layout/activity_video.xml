@@ -13,7 +13,7 @@
         android:focusable="auto"
         android:iconifiedByDefault="false"
         android:queryBackground="@android:color/transparent"
-        android:queryHint="Filter eingeben ('|' als Divider)"
+        android:queryHint="Filter eingeben ('&amp;' als 'und'; '|' als 'oder')"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">

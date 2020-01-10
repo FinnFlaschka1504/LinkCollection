@@ -33,6 +33,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
@@ -55,12 +56,7 @@ public class CategoriesActivity extends AppCompatActivity {
     }
 
     public enum CATEGORIES {
-        VIDEO("Video", "Videos", VideoActivity.class), DARSTELLER("Darsteller", "Darsteller", VideoActivity.class)
-        , STUDIOS("Studio", "Studios", VideoActivity.class), GENRE("Genre", "Genres", VideoActivity.class)
-        , KNOWLEDGE_CATEGORIES("Kategorie", "Kategorien", KnowledgeActivity.class)
-        , PERSON("Person", "Personen", OweActivity.class) , JOKE_CATEGORIES("Witz", "Witze", JokeActivity.class)
-        , SHOW_GENRES("Genre", "Genres", ShowActivity.class), SHOW("Serie", "Serien", ShowActivity.class)
-        , EPISODE("Episode", "Episoden", ShowActivity.class);
+        VIDEO("Video", "Videos", VideoActivity.class), DARSTELLER("Darsteller", "Darsteller", VideoActivity.class), STUDIOS("Studio", "Studios", VideoActivity.class), GENRE("Genre", "Genres", VideoActivity.class), KNOWLEDGE_CATEGORIES("Kategorie", "Kategorien", KnowledgeActivity.class), PERSON("Person", "Personen", OweActivity.class), JOKE_CATEGORIES("Witz", "Witze", JokeActivity.class), SHOW_GENRES("Genre", "Genres", ShowActivity.class), SHOW("Serie", "Serien", ShowActivity.class), EPISODE("Episode", "Episoden", ShowActivity.class);
 
         private String singular;
         private String plural;
@@ -144,7 +140,7 @@ public class CategoriesActivity extends AppCompatActivity {
         catigorys_search.setQueryHint(catigory.getPlural() + " filtern");
     }
 
-    private List<Pair<ParentClass,Integer>> filterList(List<Pair<ParentClass,Integer>> datenObjektPairList) {
+    private List<Pair<ParentClass, Integer>> filterList(List<Pair<ParentClass, Integer>> datenObjektPairList) {
         if (!searchQuerry.equals("")) {
 //            for (Pair<ParentClass, Integer> datenObjektIntegerPair : allDatenObjektPairList) {
 //                ParentClass parentClass = datenObjektIntegerPair.first;
@@ -156,7 +152,7 @@ public class CategoriesActivity extends AppCompatActivity {
             return new ArrayList<>(datenObjektPairList);
     }
 
-    private List<Pair<ParentClass,Integer>> sortList(List<Pair<ParentClass,Integer>> datenObjektPairList) {
+    private List<Pair<ParentClass, Integer>> sortList(List<Pair<ParentClass, Integer>> datenObjektPairList) {
         sortHelper
                 .setList(datenObjektPairList)
                 .sort(sort_type);
@@ -283,8 +279,7 @@ public class CategoriesActivity extends AppCompatActivity {
                             stringBuilder.append("<Keine Schulden>", new StyleSpan(Typeface.ITALIC), Spannable.SPAN_COMPOSING);
 
                         ((TextView) itemView.findViewById(R.id.userlistItem_catigoryItem_count)).setText(stringBuilder);
-                    }
-                    else
+                    } else
                         ((TextView) itemView.findViewById(R.id.userlistItem_catigoryItem_count)).setText(String.valueOf(parentClassIntegerPair.second));
                 })
                 .setRowOrColumnCount(columnCount)
@@ -387,21 +382,25 @@ public class CategoriesActivity extends AppCompatActivity {
     }
 
     private void showRandomDialog() {
-        List<Pair<ParentClass, Integer>> filterdDatenObjektPairList = sortList(filterList(allDatenObjektPairList));
+        CustomList<Pair<ParentClass, Integer>> filterdDatenObjektPairList = new CustomList<>(sortList(filterList(allDatenObjektPairList)));
         if (filterdDatenObjektPairList.isEmpty()) {
             Toast.makeText(this, "Die Auswahl ist leer", Toast.LENGTH_SHORT).show();
             return;
         }
-        final Pair<ParentClass, Integer>[] randomPair = new Pair[]{filterdDatenObjektPairList.get((int) (Math.random() * filterdDatenObjektPairList.size()))};
-        CustomDialog.Builder(this)
+        final Pair<ParentClass, Integer>[] randomPair = new Pair[]{filterdDatenObjektPairList.removeRandom()};
+        CustomDialog
+                .Builder(this)
                 .setTitle("Zufall")
                 .setText(randomPair[0].first.getName() + " (" + randomPair[0].second + ")")
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Nochmal", customDialog -> {
-                            randomPair[0] = filterdDatenObjektPairList.get((int) (Math.random() * filterdDatenObjektPairList.size()));
-                            CustomDialog.changeText(customDialog, randomPair[0].first.getName() + " (" + randomPair[0].second + ")");
-                        },
-                        false)
+                    if (filterdDatenObjektPairList.isEmpty()) {
+                        Toast.makeText(this, "Alle wurden bereits vorgeschlagen", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    randomPair[0] = filterdDatenObjektPairList.removeRandom();
+                    CustomDialog.changeText(customDialog, randomPair[0].first.getName() + " (" + randomPair[0].second + ")");
+                }, false)
                 .addButton("Suchen", customDialog -> {
                     startActivityForResult(new Intent(this, VideoActivity.class)
                                     .putExtra(EXTRA_SEARCH, randomPair[0].first.getName())

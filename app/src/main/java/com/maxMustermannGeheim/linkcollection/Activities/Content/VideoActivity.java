@@ -4,7 +4,11 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.icu.util.DateInterval;
+import android.icu.util.LocaleData;
 import android.os.Bundle;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -54,6 +58,8 @@ import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.mikhaellopez.lazydatepicker.LazyDatePicker;
 
+import org.joda.time.Days;
+import org.joda.time.LocalDate;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -227,7 +233,6 @@ public class VideoActivity extends AppCompatActivity {
                 @Override
                 public boolean onQueryTextChange(String query) {
                     filterdVideoList = new ArrayList<>(allVideoList);
-                    // ToDo: kategorien nur exakt filtern wenn direkt danach gesucht
                     if (!query.trim().equals("")) {
                         if (query.trim().equals(WATCH_LATER_SEARCH)) {
                             filterdVideoList = new ArrayList<>();
@@ -287,7 +292,7 @@ public class VideoActivity extends AppCompatActivity {
             videos_search.setOnQueryTextListener(textListener);
 
             if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_ADD))
-                showEditOrNewDialog(null);
+                addOrEditDialog[0] = showEditOrNewDialog(null);
 
             if (getIntent().getAction() != null && getIntent().getAction().equals("android.intent.action.SEND")) {
                 CharSequence text;
@@ -453,6 +458,15 @@ public class VideoActivity extends AppCompatActivity {
                         addOrEditDialog[0] = showEditOrNewDialog(video), false)
                 .addButton("Öffnen mit...", customDialog -> openUrl(video.getUrl(), true), false)
                 .setSetViewContent((customDialog, view, reload) -> {
+                    if (reload && views[0] != video.getDateList().size()) {
+                        if (views[0] < video.getDateList().size() && database.watchLaterList.contains(video.getUuid())) {
+                            database.watchLaterList.remove(video.getUuid());
+                            Database.saveAll();
+                            textListener.onQueryTextSubmit(videos_search.getQuery().toString());
+                        }
+                        views[0] = video.getDateList().size();
+                    }
+
                     ((TextView) view.findViewById(R.id.dialog_video_Titel)).setText(video.getName());
                     ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(
                             video.getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
@@ -465,7 +479,18 @@ public class VideoActivity extends AppCompatActivity {
                     view.findViewById(R.id.dialog_video_Genre).setSelected(true);
                     view.findViewById(R.id.dialog_video_details).setVisibility(View.VISIBLE);
                     ((TextView) view.findViewById(R.id.dialog_video_Url)).setText(video.getUrl());
-                    ((TextView) view.findViewById(R.id.dialog_video_views)).setText(String.valueOf(video.getDateList().size()));
+
+                    Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
+                    SpannableStringBuilder viewsText = helper.quickItalic("Keine Ansichten");
+                    if (views[0] > 0) {
+                        Date lastWatched = CustomList.cast(video.getDateList()).getBiggest();
+                        viewsText = helper.append(String.valueOf(views[0])).append(
+                                String.format(Locale.getDefault(), "   (%s – %dd)",
+                                        new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(lastWatched),
+                                        Days.daysBetween(new LocalDate(lastWatched), new LocalDate(new Date())).getDays())
+                        , Helpers.SpannableStringHelper.SPAN_TYPE.ITALIC).get();
+                    }
+                    ((TextView) view.findViewById(R.id.dialog_video_views)).setText(viewsText);
                     ((TextView) view.findViewById(R.id.dialog_video_release)).setText(video.getRelease() != null ? new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(video.getRelease()) : "");
                     ((RatingBar) view.findViewById(R.id.dialog_video_rating)).setRating(video.getRating());
 
@@ -500,31 +525,25 @@ public class VideoActivity extends AppCompatActivity {
                         });
                     }
 
-                    if (views[0] != video.getDateList().size()) {
-                        if (views[0] < video.getDateList().size() && database.watchLaterList.contains(video.getUuid())) {
-                            database.watchLaterList.remove(video.getUuid());
-                            Database.saveAll();
-                            textListener.onQueryTextSubmit(videos_search.getQuery().toString());
-                        }
-                        views[0] = video.getDateList().size();
-                    }
 
                     final boolean[] isInWatchLater = {database.watchLaterList.contains(video.getUuid())};
 //                    view.findViewById(R.id.dialog_video_watchLater_background).setPressed(isInWatchLater[0]);
                     view.findViewById(R.id.dialog_video_watchLater_background).setBackground(isInWatchLater[0] ? CustomUtility.drawableBuilder_rectangle(0x96868686, 7, false) : null);
                     view.findViewById(R.id.dialog_video_watchLater).setOnClickListener(view1 -> {
-                        isInWatchLater[0] = !isInWatchLater[0];
-                        view.findViewById(R.id.dialog_video_watchLater_background).setBackground(isInWatchLater[0] ? CustomUtility.drawableBuilder_rectangle(0x96868686, 7, false) : null);
-                        if (isInWatchLater[0]) {
-                            database.watchLaterList.add(video.getUuid());
-                            Toast.makeText(this, "Zu 'Später-Ansehen' hinzugefügt", Toast.LENGTH_SHORT).show();
-                        } else {
-                            database.watchLaterList.remove(video.getUuid());
-                            Toast.makeText(this, "Aus 'Später-Ansehen' entfernt", Toast.LENGTH_SHORT).show();
-                        }
-                        textListener.onQueryTextSubmit(videos_search.getQuery().toString());
-                        setResult(RESULT_OK);
-                        Database.saveAll();
+                        CustomUtility.isOnline(this, () -> {
+                            isInWatchLater[0] = !isInWatchLater[0];
+                            view.findViewById(R.id.dialog_video_watchLater_background).setBackground(isInWatchLater[0] ? CustomUtility.drawableBuilder_rectangle(0x96868686, 7, false) : null);
+                            if (isInWatchLater[0]) {
+                                database.watchLaterList.add(video.getUuid());
+                                Toast.makeText(this, "Zu 'Später-Ansehen' hinzugefügt", Toast.LENGTH_SHORT).show();
+                            } else {
+                                database.watchLaterList.remove(video.getUuid());
+                                Toast.makeText(this, "Aus 'Später-Ansehen' entfernt", Toast.LENGTH_SHORT).show();
+                            }
+                            textListener.onQueryTextSubmit(videos_search.getQuery().toString());
+                            setResult(RESULT_OK);
+                            Database.saveAll();
+                        });
                     });
 
                     view.findViewById(R.id.dialog_video_editViews).setOnClickListener(view1 ->
@@ -661,8 +680,7 @@ public class VideoActivity extends AppCompatActivity {
                                     .setOnDialogShown(customDialog1 -> isBrowserActive = true) // ToDo: umbenennen
                                     .setOnDialogDismiss(customDialog1 -> isBrowserActive = false)
                                     .show();
-                        }
-                        else
+                        } else
                             internetDialog[0].show();
                     });
 

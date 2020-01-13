@@ -70,7 +70,7 @@ import java.util.stream.Collectors;
 import top.defaults.drawabletoolbox.DrawableBuilder;
 
 
-public class Utility implements java.io.Serializable{
+public class Utility implements java.io.Serializable {
 
     //  --------------- isOnline --------------->
     static public boolean isOnline(Context context) {
@@ -81,6 +81,7 @@ public class Utility implements java.io.Serializable{
             return false;
         }
     }
+
     // ToDo: in seperatem Thread
     static public boolean isOnline() {
         Runtime runtime = Runtime.getRuntime();
@@ -96,11 +97,11 @@ public class Utility implements java.io.Serializable{
         return false;
     }
 
-    public static void isOnline(Runnable onTrue, Runnable onFalse){
+    public static void isOnline(Runnable onTrue, Runnable onFalse) {
 
     }
 
-    public static void isOnline(OnResult onResult){
+    public static void isOnline(OnResult onResult) {
 
     }
 
@@ -109,7 +110,7 @@ public class Utility implements java.io.Serializable{
     }
 
     private class PingThread extends Thread {
-//        String name;
+        //        String name;
         Runnable onTrue;
         Runnable onFalse;
         OnResult onResult;
@@ -145,7 +146,8 @@ public class Utility implements java.io.Serializable{
             } else {
                 if (onFalse != null) onFalse.run();
                 if (onResult != null) onResult.runOnResult(false);
-                if (context != null) Toast.makeText(context, "Keine Internetverbindung", Toast.LENGTH_SHORT).show();
+                if (context != null)
+                    Toast.makeText(context, "Keine Internetverbindung", Toast.LENGTH_SHORT).show();
             }
         }
 
@@ -302,54 +304,73 @@ public class Utility implements java.io.Serializable{
     //  <--------------- OnClickListener ---------------
 
     //  ----- Filter ----->
-    private static boolean contains(String all, String sub) {
-        return all.toLowerCase().contains(sub.toLowerCase());
-    }
-
     //  ----- ... in Videos ----->
     public static boolean containedInVideo(String query, Video video, HashSet<VideoActivity.FILTER_TYPE> filterTypeSet) {
         if (video.getUuid().equals(query)) return true;
         if (filterTypeSet.contains(VideoActivity.FILTER_TYPE.NAME)) {
-            if (contains(video.getName(), query))
+            if (containedInVideo(video.getName(), query, filterTypeSet.size() == 1))
                 return true;
         }
         if (filterTypeSet.contains(VideoActivity.FILTER_TYPE.ACTOR)) {
-            if (containedInActors(query, video.getDarstellerList()))
+            if (containedInActors(query, video.getDarstellerList(), filterTypeSet.size() == 1))
                 return true;
         }
         if (filterTypeSet.contains(VideoActivity.FILTER_TYPE.GENRE)) {
-            if (containedInGenre(query, video.getGenreList()))
+            if (containedInGenre(query, video.getGenreList(), filterTypeSet.size() == 1))
                 return true;
         }
         if (filterTypeSet.contains(VideoActivity.FILTER_TYPE.STUDIO)) {
-            return containedInStudio(query, video.getStudioList());
+            return containedInStudio(query, video.getStudioList(), filterTypeSet.size() == 1);
         }
         return false;
     }
 
-    private static boolean containedInActors(String query, List<String> actorUuids) {
+    private static boolean containedInVideo(String all, String sub, boolean exact) {
+        if (exact)
+            return all.equals(sub);
+        else
+            return all.toLowerCase().contains(sub.toLowerCase());
+    }
+
+    private static boolean containedInActors(String query, List<String> actorUuids, boolean exact) {
         Database database = Database.getInstance();
         for (String actorUUid : actorUuids) {
-            if (database.darstellerMap.get(actorUUid).getName().equals(query))
-                return true;
+            if (exact) {
+                if (database.darstellerMap.get(actorUUid).getName().equals(query))
+                    return true;
+            } else {
+                if (database.darstellerMap.get(actorUUid).getName().toLowerCase().contains(query.toLowerCase()))
+                    return true;
+            }
+
         }
         return false;
     }
 
-    private static boolean containedInGenre(String query, List<String> genreUuids) {
+    private static boolean containedInGenre(String query, List<String> genreUuids, boolean exact) {
         Database database = Database.getInstance();
         for (String genreUUid : genreUuids) {
-            if (database.genreMap.get(genreUUid).getName().equals(query))
-                return true;
+            if (exact) {
+                if (database.genreMap.get(genreUUid).getName().equals(query))
+                    return true;
+            } else {
+                if (database.genreMap.get(genreUUid).getName().toLowerCase().contains(query.toLowerCase()))
+                    return true;
+            }
         }
         return false;
     }
 
-    private static boolean containedInStudio(String query, List<String> studioUuids) {
+    private static boolean containedInStudio(String query, List<String> studioUuids, boolean exact) {
         Database database = Database.getInstance();
         for (String studioUUid : studioUuids) {
-            if (database.studioMap.get(studioUUid).getName().equals(query))
-                return true;
+            if (exact) {
+                if (database.studioMap.get(studioUUid).getName().equals(query))
+                    return true;
+            } else {
+                if (database.studioMap.get(studioUUid).getName().toLowerCase().contains(query.toLowerCase()))
+                    return true;
+            }
         }
         return false;
     }
@@ -391,10 +412,10 @@ public class Utility implements java.io.Serializable{
 
         return filterTypeSet.contains(OweActivity.FILTER_TYPE.PERSON) && owe.getItemList().stream().anyMatch(item -> Database.getInstance().personMap.get(item.getPersonId()).getName().toLowerCase().contains(query));
 
-//        if (filterTypeSet.contains(KnowledgeActivity.FILTER_TYPE.CATEGORY)) {
+//        if (filterTypeSet.containedInVideo(KnowledgeActivity.FILTER_TYPE.CATEGORY)) {
 ////            for (ParentClass category : getMapFromDatabase(CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES).values()) {
 //            for (String categoryId : owe.getCategoryIdList()) {
-//                if (getObjectFromDatabase(CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES, categoryId).getName().toLowerCase().contains(query))
+//                if (getObjectFromDatabase(CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES, categoryId).getName().toLowerCase().containedInVideo(query))
 //                    return true;
 //            }
 //        }
@@ -435,6 +456,7 @@ public class Utility implements java.io.Serializable{
 
 
     private static Date currentDate;
+
     //  --------------- FilmCalender --------------->
     public static void setupFilmCalender(Context context, CompactCalendarView calendarView, FrameLayout layout, List<Video> videoList, boolean openVideo) {
         calendarView.removeAllEvents();
@@ -499,7 +521,7 @@ public class Utility implements java.io.Serializable{
                 currentDate = dateClicked;
                 selectedDate[0] = dateClicked;
 //                if (videoList.size() == 1)
-                    setButtons(layout, calendarView.getEvents(dateClicked).size(), calendarView, videoList, customRecycler);
+                setButtons(layout, calendarView.getEvents(dateClicked).size(), calendarView, videoList, customRecycler);
                 loadVideoList(calendarView.getEvents(dateClicked), layout, customRecycler);
             }
 
@@ -597,7 +619,7 @@ public class Utility implements java.io.Serializable{
                 currentDate = dateClicked;
                 selectedDate[0] = dateClicked;
 //                if (episodeList.size() == 1)
-                    setButtons(layout, calendarView.getEvents(dateClicked).size(), calendarView, episodeList, customRecycler);
+                setButtons(layout, calendarView.getEvents(dateClicked).size(), calendarView, episodeList, customRecycler);
                 loadVideoList(calendarView.getEvents(dateClicked), layout, customRecycler);
             }
 
@@ -709,20 +731,20 @@ public class Utility implements java.io.Serializable{
 
 
     //  ------------------------- Checks ------------------------->
-    public static boolean isUrl(String text){
+    public static boolean isUrl(String text) {
         return text.matches("(?i)^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?!(?:10|127)(?:\\.\\d{1,3}){3})(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?(?:[/?#]\\S*)?$");
     }
     //  <------------------------- Checks -------------------------
 
 
     //  ------------------------- SubString ------------------------->
-    public static String subString(String s, int start){
+    public static String subString(String s, int start) {
         if (start < 0)
             start = s.length() + start;
         return s.substring(start);
     }
 
-    public static String subString(String s, int start, int end){
+    public static String subString(String s, int start, int end) {
         if (start < 0)
             start = s.length() + start;
         if (end < 0)
@@ -758,7 +780,7 @@ public class Utility implements java.io.Serializable{
 
     }
 
-    public static boolean isUpcoming(Date date){
+    public static boolean isUpcoming(Date date) {
         if (date == null)
             return false;
         return new Date().before(date);
@@ -1140,7 +1162,6 @@ public class Utility implements java.io.Serializable{
     //  <--------------- SquareView ---------------
 
 
-
 //    //  ------------------------- ViewAspectRatio ------------------------->
 //    public static void applyAspectRatioWidth(View view, double aspectRatio){
 //        ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
@@ -1176,7 +1197,7 @@ public class Utility implements java.io.Serializable{
 
 
     //  ------------------------- ScaleMatchingParent ------------------------->
-    public static void scaleMatchingParentWidth(View view){
+    public static void scaleMatchingParentWidth(View view) {
         view.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
             ViewGroup parent = (ViewGroup) v.getParent();
             int parentWidth = parent.getWidth();
@@ -1239,4 +1260,27 @@ public class Utility implements java.io.Serializable{
         return Arrays.stream(collections).flatMap(Collection::stream).collect(Collectors.toList());
     }
     //  <--------------- ConcatCollections ---------------
+
+
+    //  ------------------------- ifNotNull ------------------------->
+    public static <E> boolean ifNotNull(E e, ExecuteIfNotNull<E> executeIfNotNull){
+        if (e == null)
+            return false;
+        executeIfNotNull.runExecuteIfNotNull(e);
+        return true;
+    }
+
+    public static <E> boolean ifNotNull(E e, ExecuteIfNotNull<E> executeIfNotNull, Runnable executeIfNull){
+        if (e == null) {
+            executeIfNull.run();
+            return false;
+        }
+        executeIfNotNull.runExecuteIfNotNull(e);
+        return true;
+    }
+
+    public interface ExecuteIfNotNull<E> {
+        void runExecuteIfNotNull(E e);
+    }
+    //  <------------------------- ifNotNull -------------------------
 }

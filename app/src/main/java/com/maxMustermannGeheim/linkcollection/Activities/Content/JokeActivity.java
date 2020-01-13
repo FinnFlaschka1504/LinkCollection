@@ -113,7 +113,7 @@ public class JokeActivity extends AppCompatActivity {
             videos_search.setOnQueryTextListener(textListener);
 
             if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_ADD))
-                showEditOrNewDialog(null);
+                addOrEditDialog[0] = showEditOrNewDialog(null);
 
 //            findViewById(R.id.importJokes).setOnClickListener(v -> {
 //                CustomDialog.Builder(this)

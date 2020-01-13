@@ -159,7 +159,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
             if (fireSearch)
                 videos_search.setQuery(searchQuery, true);
             if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_ADD))
-                showEditOrNewDialog(null);
+                addOrEditDialog[0] = showEditOrNewDialog(null);
         };
 
         if (database == null || !Database.isReady()) {

@@ -2,10 +2,12 @@ package com.maxMustermannGeheim.linkcollection.Activities.Content;
 
 import android.annotation.SuppressLint;
 import android.app.Dialog;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -26,6 +28,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -48,11 +51,11 @@ import java.util.stream.Collectors;
 public class KnowledgeActivity extends AppCompatActivity {
 
 
-    enum SORT_TYPE{
+    enum SORT_TYPE {
         NAME, RATING, LATEST
     }
 
-    public enum FILTER_TYPE{
+    public enum FILTER_TYPE {
         NAME, CATEGORY, CONTENT
     }
 
@@ -61,7 +64,6 @@ public class KnowledgeActivity extends AppCompatActivity {
     private SORT_TYPE sort_type = SORT_TYPE.LATEST;
     Database database = Database.getInstance();
     private CustomRecycler customRecycler_List;
-    private CustomDialog[] addOrEditDialog = new CustomDialog[]{null};
     private String searchQuery = "";
     private SharedPreferences mySPR_daten;
     private SearchView.OnQueryTextListener textListener;
@@ -121,6 +123,65 @@ public class KnowledgeActivity extends AppCompatActivity {
 
             if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_ADD))
                 showEditOrNewDialog(null);
+
+            if (getIntent().getAction() != null && getIntent().getAction().equals("android.intent.action.SEND")) {
+                CharSequence text;
+                text = getIntent().getClipData().getItemAt(0).getText();
+                if (text == null) {
+                    text = getIntent().getStringExtra(Intent.EXTRA_TEXT);
+                }
+
+                if (text != null) {
+                    List<Knowledge> knowledgeList = database.knowledgeMap.values().stream().sorted((o1, o2) -> o1.getLastChanged().compareTo(o2.getLastChanged()) * -1).collect(Collectors.toList());
+                    com.finn.androidUtilities.CustomDialog selectDialog = com.finn.androidUtilities.CustomDialog.Builder(this);
+                    CharSequence finalText = text;
+                    CustomRecycler<String> customRecycler = new CustomRecycler<String>(this)
+                            .enableDivider()
+                            .disableCustomRipple()
+                            .setGetActiveObjectList(() -> knowledgeList.stream().map(ParentClass::getName).collect(Collectors.toList()))
+                            .setOnClickListener((customRecycler1, itemView, s, index) -> {
+                                Knowledge knowledge = knowledgeList.get(index);
+                                Pair<CustomDialog,Knowledge> customDialogKnowledgePair = showEditOrNewDialog(knowledge);
+                                CustomDialog sourcesDialog = showSourcesDialog(customDialogKnowledgePair.second, customDialogKnowledgePair.first.findViewById(R.id.dialog_editOrAddKnowledge_sources), true);
+                                TextInputLayout dialog_sources_url = sourcesDialog.findViewById(R.id.dialog_sources_url);
+                                dialog_sources_url.getEditText().setText(finalText);
+
+                                selectDialog.dismiss();
+                            });
+
+                    selectDialog
+                            .setTitle("Wissen Auswählen")
+                            .addButton("Neu", customDialog -> {
+                                Pair<CustomDialog,Knowledge> customDialogKnowledgePair = showEditOrNewDialog(null);
+                                CustomDialog sourcesDialog = showSourcesDialog(customDialogKnowledgePair.second, customDialogKnowledgePair.first.findViewById(R.id.dialog_editOrAddKnowledge_sources), true);
+                                TextInputLayout dialog_sources_url = sourcesDialog.findViewById(R.id.dialog_sources_url);
+                                dialog_sources_url.getEditText().setText(finalText);
+                            })
+                            .colorLastAddedButton()
+                            .alignPreviousButtonsLeft()
+                            .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.BACK_BUTTON)
+                            .setView(customRecycler.generateRecyclerView())
+                            .disableScroll()
+                            .show();
+                    //                    isShared = true;
+//                    if (Utility.isUrl(text.toString())) {
+//                        String url = text.toString();
+//                        Video video = new Video("").setUrl(url);
+//                        if (url.contains("lookmovie")) {
+//                            String last = new CustomList<>(url.split("/")).getLast();
+//                            if (last != null) {
+//                                CustomList<String> list = new CustomList<>(last.split("-"));
+//                                if (list.getLast().matches("\\d+"))
+//                                    list.removeLast();
+//                                video.setName(String.join(" ", list));
+//                            }
+//                        }
+//                        showEditOrNewDialog(video);
+//                    } else
+//                        showEditOrNewDialog(new Video(text.toString()));
+                }
+            }
+
         };
 
         if (database == null || !Database.isReady()) {
@@ -128,8 +189,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                 database = newDatabase;
                 whenLoaded.run();
             }, false);
-        }
-        else
+        } else
             whenLoaded.run();
 
     }
@@ -140,8 +200,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     if (searchQuery.equals("")) {
                         allKnowledgeList = new ArrayList<>(database.knowledgeMap.values());
                         return toExpandableList(sortList(allKnowledgeList));
-                    }
-                    else
+                    } else
                         return toExpandableList(filterList(allKnowledgeList));
                 })
 
@@ -157,18 +216,16 @@ public class KnowledgeActivity extends AppCompatActivity {
                     if (knowledge.getRating() > 0) {
                         itemView.findViewById(R.id.listItem_knowledge_rating_layout).setVisibility(View.VISIBLE);
                         ((TextView) itemView.findViewById(R.id.listItem_knowledge_rating)).setText(String.valueOf(knowledge.getRating()));
-                    }
-                    else
+                    } else
                         itemView.findViewById(R.id.listItem_knowledge_rating_layout).setVisibility(View.GONE);
 
 
                     ((TextView) itemView.findViewById(R.id.listItem_knowledge_content)).setSingleLine(!expanded);
                 }))
 
-
                 .addSubOnClickListener(R.id.listItem_knowledge_details, (customRecycler, view, knowledgeExpandable, index) -> detailDialog = showDetailDialog(knowledgeExpandable.getObject()), false)
                 .setOnLongClickListener((customRecycler, view, knowledgeExpandable, index) -> {
-                    addOrEditDialog[0] = showEditOrNewDialog(knowledgeExpandable.getObject());
+                    showEditOrNewDialog(knowledgeExpandable.getObject());
                 })
                 .generate();
     }
@@ -203,10 +260,12 @@ public class KnowledgeActivity extends AppCompatActivity {
         customRecycler_List.reload();
     }
 
-    private CustomDialog showEditOrNewDialog(Knowledge knowledge) {
+    private Pair<CustomDialog,Knowledge> showEditOrNewDialog(Knowledge knowledge) {
         if (!Utility.isOnline(this))
             return null;
         setResult(RESULT_OK);
+
+        // ToDo: Quellen teilbar machen
 
         final Knowledge[] newKnowledge = {null};
         List<String> categoriesNames = new ArrayList<>();
@@ -214,9 +273,9 @@ public class KnowledgeActivity extends AppCompatActivity {
         if (knowledge != null) {
             newKnowledge[0] = knowledge.clone();
             newKnowledge[0].getCategoryIdList().forEach(uuid -> categoriesNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
-            newKnowledge[0].getSources().forEach(nameUrlPair  -> sourcesNames.add(nameUrlPair.get(0)));
+            newKnowledge[0].getSources().forEach(nameUrlPair -> sourcesNames.add(nameUrlPair.get(0)));
         }
-        CustomDialog returnDialog =  CustomDialog.Builder(this)
+        CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle(knowledge == null ? "Neues Wissen" : "Wissen Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_knowledge)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL);
@@ -236,7 +295,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                             customDialog.dismiss();
                         })
                         .show();
-                }, false)
+            }, false)
                     .alignPreviousButtonsLeft();
 
         returnDialog
@@ -248,7 +307,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     }
                     String content = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddKnowledge_content)).getText().toString().trim();
 //
-                    if (content.equals("")){
+                    if (content.equals("")) {
                         CustomDialog.Builder(this)
                                 .setTitle("Ohne Inhalt speichern?")
                                 .setText("Möchtest du wirklich ohne einen Inhalt speichern")
@@ -256,8 +315,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                                 .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 ->
                                         saveKnowledge(customDialog, titel, content, newKnowledge, knowledge))
                                 .show();
-                    }
-                    else
+                    } else
                         saveKnowledge(customDialog, titel, content, newKnowledge, knowledge);
 
                 }, false)
@@ -272,20 +330,19 @@ public class KnowledgeActivity extends AppCompatActivity {
                         ((TextView) view.findViewById(R.id.dialog_editOrAddKnowledge_sources)).setText(String.join(", ", sourcesNames));
                         view.findViewById(R.id.dialog_editOrAddKnowledge_sources).setSelected(true);
                         ((RatingBar) view.findViewById(R.id.dialog_editOrAddKnowledge_rating)).setRating(newKnowledge[0].getRating());
-                    }
-                    else
+                    } else
                         newKnowledge[0] = new Knowledge("");
 
 
                     view.findViewById(R.id.dialog_editOrAddKnowledge_editCategories).setOnClickListener(view1 ->
-                            Utility.showEditItemDialog(this, addOrEditDialog[0], newKnowledge[0].getCategoryIdList(), newKnowledge[0], CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES));
+                            Utility.showEditItemDialog(this, customDialog, newKnowledge[0].getCategoryIdList(), newKnowledge[0], CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES));
                     view.findViewById(R.id.dialog_editOrAddKnowledge_editSources).setOnClickListener(view1 ->
-                                    showSourcesDialog(newKnowledge[0], view.findViewById(R.id.dialog_editOrAddKnowledge_sources), true));
+                            showSourcesDialog(newKnowledge[0], view.findViewById(R.id.dialog_editOrAddKnowledge_sources), true));
 //                    view.findViewById(R.id.dialog_editOrAddKnowledge_editStudio).setOnClickListener(view1 ->
 //                            Utility.showEditItemDialog(this, addOrEditDialog, newKnowledge[0].getStudioList(), newKnowledge[0], ParentClass.OBJECT_TYPE.STUDIO ));
                 })
                 .show();
-        return returnDialog;
+        return Pair.create(returnDialog, newKnowledge[0]);
     }
 
     private CustomDialog showDetailDialog(Knowledge knowledge) {
@@ -339,7 +396,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                             .show();
                 }, false)
                 .addButton("Bearbeiten", customDialog ->
-                        addOrEditDialog[0] = showEditOrNewDialog(knowledge), false)
+                        showEditOrNewDialog(knowledge), false)
                 .setSetViewContent((customDialog, view, reload) -> {
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_title)).setText(knowledge.getName());
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_content)).setText(knowledge.getContent());
@@ -350,7 +407,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     ((RatingBar) view.findViewById(R.id.dialog_detailKnowledge_rating)).setRating(knowledge.getRating());
 
                     view.findViewById(R.id.dialog_detailKnowledge_listSources).setOnClickListener(v -> {
-                        showSourcesDialog(knowledge, view.findViewById(R.id.dialog_detailKnowledge_sources),false);
+                        showSourcesDialog(knowledge, view.findViewById(R.id.dialog_detailKnowledge_sources), false);
                     });
                 })
                 .setOnDialogDismiss(customDialog -> detailDialog = null);
@@ -440,7 +497,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         int id = item.getItemId();
         switch (id) {
             case R.id.taskBar_knowledge_add:
-                addOrEditDialog[0] = showEditOrNewDialog(null);
+                showEditOrNewDialog(null);
                 break;
             case R.id.taskBar_knowledge_random:
                 showRandomDialog();
@@ -510,7 +567,7 @@ public class KnowledgeActivity extends AppCompatActivity {
     }
 
     //  ----- Sources ----->
-    private void showSourcesDialog(Knowledge knowledge, TextView sourcesText, boolean edit) {
+    private CustomDialog showSourcesDialog(Knowledge knowledge, TextView sourcesText, boolean edit) {
         int buttonId_add = View.generateViewId();
         TextValidation nameValidation = (textInputLayout, changeErrorMessage) -> {
             String text = textInputLayout.getEditText().getText().toString().trim();
@@ -652,8 +709,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                             List<String> newSource = Arrays.asList(dialog_sources_name.getEditText().getText().toString().trim()
                                     , dialog_sources_url.getEditText().getText().toString().trim());
                             knowledge.getSources().add(newSource);
-                        }
-                        else {
+                        } else {
                             currentSource[0].clear();
                             currentSource[0].add(dialog_sources_name.getEditText().getText().toString().trim());
                             currentSource[0].add(dialog_sources_url.getEditText().getText().toString().trim());
@@ -673,7 +729,8 @@ public class KnowledgeActivity extends AppCompatActivity {
                     dialog_sources_url.requestFocus();
                     Utility.changeWindowKeyboard(this, dialog_sources_url, true);
                 }, buttonId_add, false)
-                .addButton("Zurück", customDialog -> {})
+                .addButton("Zurück", customDialog -> {
+                })
                 .setObjectExtra(sourcesText)
                 .setOnDialogDismiss(customDialog -> ((TextView) customDialog.getObjectExtra()).setText(
                         knowledge.getSources().stream().map(strings -> strings.get(0)).collect(Collectors.joining(", "))
@@ -681,6 +738,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .show();
         if (edit)
             sourcesDialog.findViewById(buttonId_add).setVisibility(View.GONE);
+        return sourcesDialog;
     }
 
     private boolean validation(TextValidation nameValidation, TextValidation urlValidation, TextInputLayout dialog_sources_name
@@ -701,14 +759,12 @@ public class KnowledgeActivity extends AppCompatActivity {
     private String getDomainFromUrl(String url, boolean shortened) {
         Pattern pattern = Pattern.compile("(?<=://)[^/]*");
         Matcher matcher = pattern.matcher(url);
-        if (matcher.find())
-        {
+        if (matcher.find()) {
             String substring = matcher.group(0); //.substring(3);
             if (shortened) {
                 String[] split = substring.split("\\.");
                 return split[split.length - 2];
-            }
-            else
+            } else
                 return substring;
         }
         return null;

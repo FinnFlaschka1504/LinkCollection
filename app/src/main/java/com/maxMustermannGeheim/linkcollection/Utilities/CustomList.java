@@ -31,6 +31,14 @@ public class CustomList<E> extends ArrayList<E> {
         if (objects != null)
             addAll(Arrays.asList(objects));
     }
+
+    public static <E> CustomList<E> cast(@NonNull Collection<? extends E> c){
+        return new CustomList<>(c);
+    }
+
+    public static <E> CustomList<E> cast(E[] objects){
+        return new CustomList<>(objects);
+    }
 //  <----- Constructors -----
 
 
@@ -44,6 +52,8 @@ public class CustomList<E> extends ArrayList<E> {
     }
     //  <------------------------- Random -------------------------
 
+
+    //  ------------------------- get... ------------------------->
     public E getLast() {
         if (isEmpty())
             return null;
@@ -57,6 +67,19 @@ public class CustomList<E> extends ArrayList<E> {
         else
             return super.get(index);
     }
+
+    public E getSmallest() {
+        if (isEmpty() || !(get(0) instanceof Comparable))
+            return null;
+        return stream().min((o1, o2) -> ((Comparable<E>) o1).compareTo(o2)).orElse(null);
+    }
+
+    public E getBiggest() {
+        if (isEmpty() || !(get(0) instanceof Comparable))
+            return null;
+        return stream().max((o1, o2) -> ((Comparable<E>) o1).compareTo(o2)).orElse(null);
+    }
+    //  <------------------------- get... -------------------------
 
     public CustomList<E> add(E... e) {
         Collections.addAll(this, e);

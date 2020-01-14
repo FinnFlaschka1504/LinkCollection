@@ -11,6 +11,7 @@
         android:id="@+id/taskBar_show_random"
         android:icon="@drawable/ic_random"
         android:title="Zufall"
+        android:visible="false"
         app:showAsAction="always" />
     <item
         android:id="@+id/taskBar_show_sort"

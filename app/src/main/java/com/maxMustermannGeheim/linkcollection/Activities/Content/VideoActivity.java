@@ -4,10 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.icu.util.DateInterval;
-import android.icu.util.LocaleData;
 import android.os.Bundle;
-import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.util.Pair;
 import android.view.Menu;
@@ -39,7 +36,6 @@ import com.finn.androidUtilities.CustomUtility;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.firebase.database.DatabaseReference;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
@@ -90,6 +86,10 @@ public class VideoActivity extends AppCompatActivity {
         NAME, VIEWS, RATING, LATEST
     }
 
+    enum MODE {
+        ALL, LATER, UPCOMING
+    }
+
     public enum FILTER_TYPE {
         NAME, ACTOR, GENRE, STUDIO
     }
@@ -102,6 +102,7 @@ public class VideoActivity extends AppCompatActivity {
     private boolean scrolling = true;
     private SORT_TYPE sort_type = SORT_TYPE.LATEST;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.ACTOR, FILTER_TYPE.GENRE, FILTER_TYPE.STUDIO));
+    private MODE mode = MODE.ALL;
     private SearchView.OnQueryTextListener textListener;
     private boolean reverse = false;
     private String singular;
@@ -162,10 +163,15 @@ public class VideoActivity extends AppCompatActivity {
 
             String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
             if (extraSearch != null) {
-                videos_search.setQuery(extraSearch, true);
+                if (extraSearch.equals(WATCH_LATER_SEARCH))
+                    mode = MODE.LATER;
+                else if (extraSearch.equals(UPCOMING_SEARCH))
+                    mode = MODE.UPCOMING;
+                else
+                    videos_search.setQuery(extraSearch, false);
+                textListener.onQueryTextSubmit(videos_search.getQuery().toString());
             }
         }
-
     }
 
     public static void showLaterMenu(AppCompatActivity activity, View view) {
@@ -233,40 +239,35 @@ public class VideoActivity extends AppCompatActivity {
                 @Override
                 public boolean onQueryTextChange(String query) {
                     filterdVideoList = new ArrayList<>(allVideoList);
+                    if (mode.equals(MODE.LATER)) {
+                        filterdVideoList = new ArrayList<>();
+                        List<String> unableToFindList = new ArrayList<>();
+                        for (String videoUuid : database.watchLaterList) {
+                            Video video = database.videoMap.get(videoUuid);
+                            if (video == null)
+                                unableToFindList.add(videoUuid);
+                            else
+                                filterdVideoList.add(video);
+                        }
+                        if (!unableToFindList.isEmpty()) {
+                            CustomDialog.Builder(that)
+                                    .setTitle("Problem beim Laden der Liste!")
+                                    .setText((unableToFindList.size() == 1 ? "Ein " + singular + " konnte" : unableToFindList.size() + " " + plural + " konnten") + " nicht gefunden werden")
+                                    .setObjectExtra(unableToFindList)
+                                    .addButton("Ignorieren", null)
+                                    .addButton("Entfernen", customDialog -> {
+                                        database.watchLaterList.removeAll(((ArrayList<String>) customDialog.getObjectExtra()));
+                                        Toast.makeText(that, "Entfernt", Toast.LENGTH_SHORT).show();
+                                        Database.saveAll();
+                                        setResult(RESULT_OK);
+                                    })
+                                    .show();
+                        }
+                    }
+                    if (mode.equals(MODE.UPCOMING)) {
+                        filterdVideoList = allVideoList.stream().filter(Video::isUpcomming).collect(Collectors.toList());
+                    }
                     if (!query.trim().equals("")) {
-                        if (query.trim().equals(WATCH_LATER_SEARCH)) {
-                            filterdVideoList = new ArrayList<>();
-                            List<String> unableToFindList = new ArrayList<>();
-                            for (String videoUuid : database.watchLaterList) {
-                                Video video = database.videoMap.get(videoUuid);
-                                if (video == null)
-                                    unableToFindList.add(videoUuid);
-                                else
-                                    filterdVideoList.add(video);
-                            }
-                            if (!unableToFindList.isEmpty()) {
-                                CustomDialog.Builder(that)
-                                        .setTitle("Problem beim Laden der Liste!")
-                                        .setText((unableToFindList.size() == 1 ? "Ein " + singular + " konnte" : unableToFindList.size() + " " + plural + " konnten") + " nicht gefunden werden")
-                                        .setObjectExtra(unableToFindList)
-                                        .addButton("Ignorieren", null)
-                                        .addButton("Entfernen", customDialog -> {
-                                            database.watchLaterList.removeAll(((ArrayList<String>) customDialog.getObjectExtra()));
-                                            Toast.makeText(that, "Entfernt", Toast.LENGTH_SHORT).show();
-                                            Database.saveAll();
-                                            setResult(RESULT_OK);
-                                        })
-                                        .show();
-                            }
-                            reLoadVideoRecycler();
-                            return true;
-                        }
-                        if (query.trim().equals(UPCOMING_SEARCH)) {
-                            filterdVideoList = allVideoList.stream().filter(Video::isUpcomming).collect(Collectors.toList());
-                            reLoadVideoRecycler();
-                            return true;
-                        }
-
                         if (query.contains("|")) {
                             Stream<Video> resultStream = null;
                             for (String subQuery : query.split("\\|")) {
@@ -279,7 +280,7 @@ public class VideoActivity extends AppCompatActivity {
                                 filterdVideoList = resultStream.collect(Collectors.toList());
                             }
                         } else {
-                            Stream<Video> filteredStream = allVideoList.stream();
+                            Stream<Video> filteredStream = filterdVideoList.stream();
                             for (String subQuery : query.split("&"))
                                 filteredStream = filteredStream.filter(video -> Utility.containedInVideo(subQuery.trim(), video, filterTypeSet));
                             filterdVideoList = filteredStream.collect(Collectors.toList());
@@ -320,6 +321,8 @@ public class VideoActivity extends AppCompatActivity {
                         addOrEditDialog[0] = showEditOrNewDialog(new Video(text.toString()));
                 }
             }
+
+            Database.saveAll();
 
         };
 
@@ -929,15 +932,21 @@ public class VideoActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.task_bar_video, menu);
 
-        Menu subMenu = menu.findItem(R.id.taskBar_filter).getSubMenu();
-        subMenu.findItem(R.id.taskBar_video_filterByName)
+        menu.findItem(R.id.taskBar_video_filterByName)
                 .setChecked(filterTypeSet.contains(FILTER_TYPE.NAME));
-        subMenu.findItem(R.id.taskBar_video_filterByDarsteller)
+        menu.findItem(R.id.taskBar_video_filterByDarsteller)
                 .setChecked(filterTypeSet.contains(FILTER_TYPE.ACTOR));
-        subMenu.findItem(R.id.taskBar_video_filterByStudio)
+        menu.findItem(R.id.taskBar_video_filterByStudio)
                 .setChecked(filterTypeSet.contains(FILTER_TYPE.STUDIO));
-        subMenu.findItem(R.id.taskBar_video_filterByGenre)
+        menu.findItem(R.id.taskBar_video_filterByGenre)
                 .setChecked(filterTypeSet.contains(FILTER_TYPE.GENRE));
+
+        if (mode.equals(MODE.ALL))
+            menu.findItem(R.id.taskBar_video_modeAll).setChecked(true);
+        if (mode.equals(MODE.LATER))
+            menu.findItem(R.id.taskBar_video_modeLater).setChecked(true);
+        if (mode.equals(MODE.UPCOMING))
+            menu.findItem(R.id.taskBar_video_modeUpcoming).setChecked(true);
         return true;
     }
 
@@ -1044,6 +1053,22 @@ public class VideoActivity extends AppCompatActivity {
                 textListener.onQueryTextChange(videos_search.getQuery().toString());
                 break;
 
+            case R.id.taskBar_video_modeAll:
+                mode = MODE.ALL;
+                item.setChecked(true);
+                textListener.onQueryTextChange(videos_search.getQuery().toString());
+                break;
+            case R.id.taskBar_video_modeLater:
+                mode = MODE.LATER;
+                item.setChecked(true);
+                textListener.onQueryTextChange(videos_search.getQuery().toString());
+                break;
+            case R.id.taskBar_video_modeUpcoming:
+                mode = MODE.UPCOMING;
+                item.setChecked(true);
+                textListener.onQueryTextChange(videos_search.getQuery().toString());
+                break;
+
             case android.R.id.home:
                 if (delete) {
                     videos_confirmDelete.setVisibility(View.GONE);
@@ -1053,7 +1078,6 @@ public class VideoActivity extends AppCompatActivity {
                 }
                 finish();
                 break;
-
         }
         return true;
     }

@@ -26,6 +26,7 @@ public class Video extends ParentClass {
     private String imagePath;
     private List<String> translationList = new ArrayList<>();
     private int tmdId;
+    private boolean watchLater;
 
     public Video(String name) {
         uuid = "video_" + UUID.randomUUID().toString();
@@ -182,6 +183,15 @@ public class Video extends ParentClass {
 
     public Video setTmdId(int tmdId) {
         this.tmdId = tmdId;
+        return this;
+    }
+
+    public boolean isWatchLater() {
+        return watchLater;
+    }
+
+    public Video setWatchLater(boolean watchLater) {
+        this.watchLater = watchLater;
         return this;
     }
 

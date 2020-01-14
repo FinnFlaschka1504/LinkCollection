@@ -63,6 +63,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     public static final int START_SHOW_CATEGORY = 16;
     public static final int START_SHOW_GENRE = 16;
     public static final int START_SHOW_FROM_CALENDER = 17;
+    public static final int START_SHOW_NEXT_EPISODE = 18;
 
     private static Database database;
     private static SharedPreferences mySPR_daten;
@@ -436,6 +437,15 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
     public void showLaterMenu_show(View view) {
         ShowActivity.showLaterMenu(this, view);
+    }
+
+    public void showNextEpisode(View view) {
+        ShowActivity.showNextEpisode(this, view, false);
+    }
+
+    public static boolean showNextEpisode_longClick(View view) {
+        ShowActivity.showNextEpisode((AppCompatActivity) view.getContext(), view, true);
+        return true;
     }
 
     public void showNewEpisodesDialog(View view) {

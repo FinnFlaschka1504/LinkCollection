@@ -211,6 +211,7 @@
                 </com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout>
 
                 <com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout
+                    android:id="@+id/main_show_nextEpisode"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_margin="8dp"
@@ -220,7 +221,7 @@
                     android:elevation="3dp"
                     android:foreground="@drawable/ripple"
                     android:gravity="center"
-                    android:onClick="showLaterMenu_show"
+                    android:onClick="showNextEpisode"
                     android:orientation="vertical">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
@@ -230,8 +231,9 @@
                         <ImageView
                             android:layout_width="0dp"
                             android:layout_height="0dp"
+                            android:layout_margin="10dp"
                             android:alpha="0.075"
-                            android:src="@drawable/ic_time"
+                            android:src="@drawable/ic_play_next"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
@@ -252,11 +254,10 @@
                             app:layout_constraintTop_toTopOf="parent">
 
                             <TextView
-                                android:id="@+id/main_shows_watchLater_label"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginBottom="8dp"
-                                android:text="Später"
+                                android:text="Nächste"
                                 android:textAlignment="center"
                                 android:textSize="24sp"
                                 android:textStyle="bold" />
@@ -270,6 +271,7 @@
                     </androidx.constraintlayout.widget.ConstraintLayout>
 
                 </com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout>
+
             </LinearLayout>
 
             <LinearLayout
@@ -406,6 +408,7 @@
                             app:layout_constraintTop_toTopOf="parent">
 
                             <TextView
+                                android:id="@+id/main_shows_watchLater_label"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginBottom="8dp"

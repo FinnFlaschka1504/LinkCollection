@@ -168,7 +168,6 @@ public class Utility implements java.io.Serializable {
             return false;
         }
     }
-
     //  <--------------- isOnline ---------------
 
     public static void restartApp(Context context) {
@@ -220,6 +219,15 @@ public class Utility implements java.io.Serializable {
             return String.format(Locale.GERMANY, "%.2f €", amount);
     }
 
+    //  ------------------------- watchLater ------------------------->
+    public static List<Video> getWatchLaterList(){
+        if (!Database.isReady())
+            return new ArrayList<>();
+        Database database = Database.getInstance();
+
+        return database.videoMap.values().stream().filter(Video::isWatchLater).collect(Collectors.toList());
+    }
+    //  <------------------------- watchLater -------------------------
 
     //  --------------- Copy --------------->
     public static <T> T deepCopy(T t) {

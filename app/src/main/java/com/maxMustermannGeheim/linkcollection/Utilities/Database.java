@@ -421,6 +421,8 @@ public class Database {
     }
 
     private static boolean hasChanges() {
+//        if (true)
+//            return true;
         final boolean[] result = {false};
         for (Map.Entry<String, Content> contentEntry : contentMap.entrySet()) {
             Content content = contentEntry.getValue();

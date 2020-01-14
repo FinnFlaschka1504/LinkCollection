@@ -63,6 +63,21 @@
                 android:id="@+id/taskBar_video_filterByStudio"
                 android:checkable="true"
                 android:title="Nach Studio" />
+            <item android:title="Modus">
+                <menu >
+                    <group android:checkableBehavior="single">
+                        <item
+                            android:id="@+id/taskBar_video_modeAll"
+                            android:title="Alle" />
+                        <item
+                            android:id="@+id/taskBar_video_modeLater"
+                            android:title="Später ansehen" />
+                        <item
+                            android:id="@+id/taskBar_video_modeUpcoming"
+                            android:title="Bevorstehende" />
+                    </group>
+                </menu>
+            </item>
         </menu>
     </item>
     <item

@@ -220,6 +220,9 @@ public class Utility implements java.io.Serializable {
     }
 
     //  ------------------------- watchLater ------------------------->
+    public static List<String> getWatchLaterList_uuid(){
+        return getWatchLaterList().stream().map(ParentClass::getUuid).collect(Collectors.toList());
+    }
     public static List<Video> getWatchLaterList(){
         if (!Database.isReady())
             return new ArrayList<>();

@@ -178,7 +178,7 @@ public class VideoActivity extends AppCompatActivity {
         if (!Database.isReady())
             return;
 
-        int watchLaterCount = Database.getInstance().watchLaterList.size();
+        int watchLaterCount = Utility.getWatchLaterList().size();
         int upcomingCount = (int) Database.getInstance().videoMap.values().stream().filter(Video::isUpcomming).count();
         CustomMenu.Builder(activity, view.findViewById(R.id.main_watchLaterCount_label))
                 .setMenus((customMenu, items) -> {
@@ -200,8 +200,9 @@ public class VideoActivity extends AppCompatActivity {
     private void loadDatabase() {
         @SuppressLint("RestrictedApi") Runnable whenLoaded = () -> {
             for (Video video : database.videoMap.values()) {
-                if (video.getDateList().isEmpty() && !video.isUpcomming() && !database.watchLaterList.contains(video.getUuid()))
-                    database.watchLaterList.add(video.getUuid());
+                if (video.getDateList().isEmpty() && !video.isUpcomming() && !Utility.getWatchLaterList().contains(video))
+                    video.setWatchLater(true);
+//                    database.watchLaterList.add(video.getUuid());
             }
 
             setContentView(R.layout.activity_video);
@@ -240,29 +241,29 @@ public class VideoActivity extends AppCompatActivity {
                 public boolean onQueryTextChange(String query) {
                     filterdVideoList = new ArrayList<>(allVideoList);
                     if (mode.equals(MODE.LATER)) {
-                        filterdVideoList = new ArrayList<>();
-                        List<String> unableToFindList = new ArrayList<>();
-                        for (String videoUuid : database.watchLaterList) {
-                            Video video = database.videoMap.get(videoUuid);
-                            if (video == null)
-                                unableToFindList.add(videoUuid);
-                            else
-                                filterdVideoList.add(video);
-                        }
-                        if (!unableToFindList.isEmpty()) {
-                            CustomDialog.Builder(that)
-                                    .setTitle("Problem beim Laden der Liste!")
-                                    .setText((unableToFindList.size() == 1 ? "Ein " + singular + " konnte" : unableToFindList.size() + " " + plural + " konnten") + " nicht gefunden werden")
-                                    .setObjectExtra(unableToFindList)
-                                    .addButton("Ignorieren", null)
-                                    .addButton("Entfernen", customDialog -> {
-                                        database.watchLaterList.removeAll(((ArrayList<String>) customDialog.getObjectExtra()));
-                                        Toast.makeText(that, "Entfernt", Toast.LENGTH_SHORT).show();
-                                        Database.saveAll();
-                                        setResult(RESULT_OK);
-                                    })
-                                    .show();
-                        }
+                        filterdVideoList = Utility.getWatchLaterList();
+//                        List<String> unableToFindList = new ArrayList<>();
+//                        for (String videoUuid : database.watchLaterList) {
+//                            Video video = database.videoMap.get(videoUuid);
+//                            if (video == null)
+//                                unableToFindList.add(videoUuid);
+//                            else
+//                                filterdVideoList.add(video);
+//                        }
+//                        if (!unableToFindList.isEmpty()) {
+//                            CustomDialog.Builder(that)
+//                                    .setTitle("Problem beim Laden der Liste!")
+//                                    .setText((unableToFindList.size() == 1 ? "Ein " + singular + " konnte" : unableToFindList.size() + " " + plural + " konnten") + " nicht gefunden werden")
+//                                    .setObjectExtra(unableToFindList)
+//                                    .addButton("Ignorieren", null)
+//                                    .addButton("Entfernen", customDialog -> {
+//                                        database.watchLaterList.removeAll(((ArrayList<String>) customDialog.getObjectExtra()));
+//                                        Toast.makeText(that, "Entfernt", Toast.LENGTH_SHORT).show();
+//                                        Database.saveAll();
+//                                        setResult(RESULT_OK);
+//                                    })
+//                                    .show();
+//                        }
                     }
                     if (mode.equals(MODE.UPCOMING)) {
                         filterdVideoList = allVideoList.stream().filter(Video::isUpcomming).collect(Collectors.toList());
@@ -399,7 +400,7 @@ public class VideoActivity extends AppCompatActivity {
                     } else
                         itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.GONE);
 
-                    itemView.findViewById(R.id.listItem_video_later).setVisibility(database.watchLaterList.contains(video.getUuid()) ? View.VISIBLE : View.GONE);
+                    itemView.findViewById(R.id.listItem_video_later).setVisibility(Utility.getWatchLaterList().contains(video) ? View.VISIBLE : View.GONE);
                     itemView.findViewById(R.id.listItem_video_upcoming).setVisibility(video.isUpcomming() ? View.VISIBLE : View.GONE);
 
                     List<String> darstellerNames = new ArrayList<>();
@@ -462,8 +463,8 @@ public class VideoActivity extends AppCompatActivity {
                 .addButton("Öffnen mit...", customDialog -> openUrl(video.getUrl(), true), false)
                 .setSetViewContent((customDialog, view, reload) -> {
                     if (reload && views[0] != video.getDateList().size()) {
-                        if (views[0] < video.getDateList().size() && database.watchLaterList.contains(video.getUuid())) {
-                            database.watchLaterList.remove(video.getUuid());
+                        if (views[0] < video.getDateList().size() && Utility.getWatchLaterList().contains(video)) {
+                            video.setWatchLater(false);
                             Database.saveAll();
                             textListener.onQueryTextSubmit(videos_search.getQuery().toString());
                         }
@@ -529,7 +530,7 @@ public class VideoActivity extends AppCompatActivity {
                     }
 
 
-                    final boolean[] isInWatchLater = {database.watchLaterList.contains(video.getUuid())};
+                    final boolean[] isInWatchLater = {Utility.getWatchLaterList().contains(video)};
 //                    view.findViewById(R.id.dialog_video_watchLater_background).setPressed(isInWatchLater[0]);
                     view.findViewById(R.id.dialog_video_watchLater_background).setBackground(isInWatchLater[0] ? CustomUtility.drawableBuilder_rectangle(0x96868686, 7, false) : null);
                     view.findViewById(R.id.dialog_video_watchLater).setOnClickListener(view1 -> {
@@ -537,10 +538,10 @@ public class VideoActivity extends AppCompatActivity {
                             isInWatchLater[0] = !isInWatchLater[0];
                             view.findViewById(R.id.dialog_video_watchLater_background).setBackground(isInWatchLater[0] ? CustomUtility.drawableBuilder_rectangle(0x96868686, 7, false) : null);
                             if (isInWatchLater[0]) {
-                                database.watchLaterList.add(video.getUuid());
+                                video.setWatchLater(true);
                                 Toast.makeText(this, "Zu 'Später-Ansehen' hinzugefügt", Toast.LENGTH_SHORT).show();
                             } else {
-                                database.watchLaterList.remove(video.getUuid());
+                                video.setWatchLater(false);
                                 Toast.makeText(this, "Aus 'Später-Ansehen' entfernt", Toast.LENGTH_SHORT).show();
                             }
                             textListener.onQueryTextSubmit(videos_search.getQuery().toString());
@@ -549,8 +550,7 @@ public class VideoActivity extends AppCompatActivity {
                         });
                     });
 
-                    view.findViewById(R.id.dialog_video_editViews).setOnClickListener(view1 ->
-                            showCalenderDialog(Arrays.asList(video), detailDialog));
+                    view.findViewById(R.id.dialog_video_editViews).setOnClickListener(view1 -> showCalenderDialog(Arrays.asList(video), detailDialog));
                     view.findViewById(R.id.dialog_video_editViews).setOnLongClickListener(view1 -> {
                         boolean before = video.addDate(new Date(), true);
                         Utility.showCenteredToast(this, "Ansicht Hinzugefügt" + (before ? "\n(Gestern)" : ""));
@@ -563,6 +563,8 @@ public class VideoActivity extends AppCompatActivity {
                         Toast.makeText(this, "Context Click", Toast.LENGTH_SHORT).show();
                         return true;
                     });
+                    view.findViewById(R.id.dialog_video_internet).setOnClickListener(v -> Utility.openUrl(this, "https://www.themoviedb.org/movie/" + video.getTmdId(), true));
+
                 })
                 .setOnDialogDismiss(customDialog -> detailDialog = null);
         returnDialog.show();
@@ -604,7 +606,7 @@ public class VideoActivity extends AppCompatActivity {
             editVideo[0] = video.clone();
         }
         Helpers.TextInputHelper helper = new Helpers.TextInputHelper();
-        final boolean[] checked = {video != null && database.watchLaterList.contains(video.getUuid())};
+        final boolean[] checked = {video != null && Utility.getWatchLaterList().contains(video)};
         @SuppressLint("SetJavaScriptEnabled") CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle(video == null ? "Neu: " + singular : singular + " Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
@@ -903,7 +905,7 @@ public class VideoActivity extends AppCompatActivity {
         boolean addedYesterday = false;
         boolean upcomming = false;
         if (checked)
-            database.watchLaterList.add(video.getUuid());
+            video.setWatchLater(true);
         else if (neuesVideo) {
             if (!(upcomming = video.isUpcomming()))
                 addedYesterday = video.addDate(new Date(), true);

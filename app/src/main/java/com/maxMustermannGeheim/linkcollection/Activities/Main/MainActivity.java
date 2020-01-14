@@ -519,6 +519,18 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     }
 
     @Override
+    protected void onResume() {
+        if (main_offline != null) {
+            if (main_offline.getVisibility() == View.VISIBLE) {
+                main_offline.setVisibility(View.GONE);
+                loadDatabase(false);
+            }
+        }
+
+        super.onResume();
+    }
+
+    @Override
     protected void onStop() {
         Database.saveAll();
         super.onStop();

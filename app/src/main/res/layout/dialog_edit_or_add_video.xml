@@ -39,6 +39,7 @@
                     android:id="@+id/dialog_editOrAddVideo_Titel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:dropDownHeight="300dp"
                     android:inputType="textCapSentences"
                     android:selectAllOnFocus="true"
                     android:singleLine="true" />

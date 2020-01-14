@@ -117,6 +117,13 @@
             tools:text="Staffeln: *, Folgen: *, " />
 
         <ImageView
+            android:id="@+id/dialog_detailShow_internet"
+            style="@style/ImageButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:srcCompat="@drawable/ic_internet" />
+
+        <ImageView
             android:id="@+id/dialog_detailShow_notification"
             style="@style/ImageButtonStyle"
             android:layout_width="wrap_content"

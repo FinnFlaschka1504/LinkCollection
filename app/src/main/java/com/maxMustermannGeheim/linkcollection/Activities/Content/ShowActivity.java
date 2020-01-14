@@ -400,7 +400,6 @@ public class ShowActivity extends AppCompatActivity {
 
                 .finish()
                 .sort(() -> sort_type);
-        // ToDo: ansichten reversed funktioniert nicht
 
 //        switch (sort_type) {
 //            case NAME:
@@ -805,6 +804,9 @@ public class ShowActivity extends AppCompatActivity {
                         reLoadRecycler();
                     });
                     view.findViewById(R.id.dialog_detailShow_list).setOnClickListener(view1 -> showSeasonDialog(show));
+                    view.findViewById(R.id.dialog_detailShow_internet).setOnClickListener(v -> {
+                        Utility.openUrl(this, "https://www.themoviedb.org/tv/" + show.getTmdbId(), true);
+                    });
 
                     if (show.getImagePath() != null && !show.getImagePath().isEmpty()) {
                         ImageView dialog_video_poster = view.findViewById(R.id.dialog_detailShow_poster);
@@ -928,7 +930,6 @@ public class ShowActivity extends AppCompatActivity {
             builder.append("Folgen: ", new StyleSpan(Typeface.BOLD_ITALIC), Spanned.SPAN_COMPOSING)
                     .append(String.valueOf(show.getAllEpisodesCount()));
         }
-        // ToDo: releaseDate etc.
         return builder;
     }
 

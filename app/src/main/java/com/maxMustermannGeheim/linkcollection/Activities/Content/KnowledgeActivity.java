@@ -265,8 +265,6 @@ public class KnowledgeActivity extends AppCompatActivity {
             return null;
         setResult(RESULT_OK);
 
-        // ToDo: Quellen teilbar machen
-
         final Knowledge[] newKnowledge = {null};
         List<String> categoriesNames = new ArrayList<>();
         List<String> sourcesNames = new ArrayList<>();

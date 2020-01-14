@@ -78,7 +78,7 @@ public class Database {
     public Map<String, Darsteller> darstellerMap = new HashMap<>();
     public Map<String, Studio> studioMap = new HashMap<>();
     public Map<String, Genre> genreMap = new HashMap<>();
-    public List<String> watchLaterList = new ArrayList<>();
+//    public List<String> watchLaterList = new ArrayList<>();
     
     public static final String KNOWLEDGE = "KNOWLEDGE";
     public static final String KNOWLEDGE_MAP = "KNOWLEDGE_MAP";
@@ -116,7 +116,7 @@ public class Database {
                 new Content<Map,Studio>(Studio.class, studioMap, databaseCode_content, VIDEOS, STUDIO_MAP),
                 new Content<Map,Darsteller>(Darsteller.class, darstellerMap, databaseCode_content, VIDEOS, DARSTELLER_MAP),
                 new Content<Map,Genre>(Genre.class, genreMap, databaseCode_content, VIDEOS, GENRE_MAP),
-                new Content<List,String>(String.class, watchLaterList, databaseCode_content, VIDEOS, WATCH_LATER_LIST),
+//                new Content<List,String>(String.class, watchLaterList, databaseCode_content, VIDEOS, WATCH_LATER_LIST),
 
                 new Content<Map, Knowledge>(Knowledge.class, knowledgeMap, databaseCode_content, KNOWLEDGE, KNOWLEDGE_MAP),
                 new Content<Map, KnowledgeCategory>(KnowledgeCategory.class, knowledgeCategoryMap, databaseCode_content, KNOWLEDGE, KNOWLEDGE_CATEGORY_MAP),

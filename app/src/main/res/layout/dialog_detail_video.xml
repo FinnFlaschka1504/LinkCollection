@@ -168,6 +168,13 @@
                 tools:text="1" />
 
             <ImageView
+                android:id="@+id/dialog_video_internet"
+                style="@style/ImageButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:srcCompat="@drawable/ic_internet" />
+
+            <ImageView
                 android:id="@+id/dialog_video_editViews"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

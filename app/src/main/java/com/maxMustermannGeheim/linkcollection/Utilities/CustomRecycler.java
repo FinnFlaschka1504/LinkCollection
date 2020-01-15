@@ -212,7 +212,7 @@ public class CustomRecycler<T>{
     }
 
     public interface SetItemContent<E> {
-        void runSetCellContent(View itemView, E e);
+        void runSetCellContent(CustomRecycler<E> customRecycler, View itemView, E e);
     }
 
     public CustomRecycler<T> setSetItemContent(SetItemContent<T> setItemContent) {
@@ -393,7 +393,7 @@ public class CustomRecycler<T>{
 
         @Override
         public void onBindViewHolder(ViewHolder viewHolder, int position) {
-            setItemContent.runSetCellContent(viewHolder.itemView, (T) dataSet.get(position));
+            setItemContent.runSetCellContent(CustomRecycler.this, viewHolder.itemView, (T) dataSet.get(position));
         }
 
         @Override
@@ -591,7 +591,7 @@ public class CustomRecycler<T>{
                     if (currentObject[0] == null)
                         layoutView.setVisibility(View.GONE);
                     else{
-                        setItemContent.runSetCellContent(layoutView, currentObject[0]);
+                        setItemContent.runSetCellContent(CustomRecycler.this, layoutView, currentObject[0]);
                         layoutView.setVisibility(View.VISIBLE);
                     }
                 })

@@ -45,25 +45,27 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     public static final String ACTION_ADD = "ACTION_ADD";
 
 
-    public static final int START_VIDEOS = 1;
-    public static final int START_ACTOR = 2;
-    public static final int START_STUDIO = 3;
-    public static final int START_GENRE = 4;
-    public static final int START_VIDEO_FROM_CALENDER = 5;
-    public static final int START_WATCH_LATER = 6;
-    public static final int START_UPCOMING = 7;
-    public static final int START_SETTINGS = 8;
-    public static final int START_KNOWLEDGE = 9;
-    public static final int START_KNOWLEDGE_CATEGORY = 10;
-    public static final int START_OWE = 11;
-    public static final int START_PERSON = 12;
-    public static final int START_JOKE = 13;
-    public static final int START_JOKE_CATEGORY = 14;
-    public static final int START_SHOW = 15;
-    public static final int START_SHOW_CATEGORY = 16;
-    public static final int START_SHOW_GENRE = 16;
-    public static final int START_SHOW_FROM_CALENDER = 17;
-    public static final int START_SHOW_NEXT_EPISODE = 18;
+    private static int count; // 19
+    public static final int START_VIDEOS = ++count;
+    public static final int START_ACTOR = ++count;
+    public static final int START_STUDIO = ++count;
+    public static final int START_GENRE = ++count;
+    public static final int START_VIDEO_FROM_CALENDER = ++count;
+    public static final int START_SEEN = ++count;
+    public static final int START_WATCH_LATER = ++count;
+    public static final int START_UPCOMING = ++count;
+    public static final int START_SETTINGS = ++count;
+    public static final int START_KNOWLEDGE = ++count;
+    public static final int START_KNOWLEDGE_CATEGORY = ++count;
+    public static final int START_OWE = ++count;
+    public static final int START_PERSON = ++count;
+    public static final int START_JOKE = ++count;
+    public static final int START_JOKE_CATEGORY = ++count;
+    public static final int START_SHOW = ++count;
+    public static final int START_SHOW_CATEGORY = ++count;
+    public static final int START_SHOW_GENRE = ++count;
+    public static final int START_SHOW_FROM_CALENDER = ++count;
+    public static final int START_SHOW_NEXT_EPISODE = ++count;
 
     private static Database database;
     private static SharedPreferences mySPR_daten;
@@ -106,7 +108,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //        CustomDialog.Builder(this)
 //                .setTitle("Test")
 ////                .setView(new Button(this))
-////                .setEdit(new CustomDialog.EditBuilder().disableSelectAll().setText("Text").disableButtonByDefault().setHint("Test").setInputType(Helpers.TextInputHelper.INPUT_TYPE.E_MAIL)
+////                .setEdit(new CustomDialog.EditBuilder().disableSelectAll().setName("Text").disableButtonByDefault().setHint("Test").setInputType(Helpers.TextInputHelper.INPUT_TYPE.E_MAIL)
 //////                        .allowEmpty()
 //////                        .setValidation((validator, text) -> {
 //////                            if (text.matches("(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])"))
@@ -324,7 +326,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     }
 
     public void showLaterMenu(View view) {
-        VideoActivity.showLaterMenu(this, view);
+        VideoActivity.showModeMenu(this, view);
     }
 //  <----- VIDEO -----
 

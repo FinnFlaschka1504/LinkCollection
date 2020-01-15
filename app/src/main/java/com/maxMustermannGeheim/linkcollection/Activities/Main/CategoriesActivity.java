@@ -251,7 +251,7 @@ public class CategoriesActivity extends AppCompatActivity {
         customRecycler = new CustomRecycler<Pair<ParentClass, Integer>>(this, findViewById(R.id.catigorys_recycler))
                 .setItemLayout(R.layout.list_item_catigory_item)
                 .setGetActiveObjectList(() -> sortList(filterList(allDatenObjektPairList)))
-                .setSetItemContent((itemView, parentClassIntegerPair) -> {
+                .setSetItemContent((customRecycler, itemView, parentClassIntegerPair) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_catigoryItem_name)).setText(parentClassIntegerPair.first.getName());
 
                     if (catigory == CATEGORIES.PERSON) {

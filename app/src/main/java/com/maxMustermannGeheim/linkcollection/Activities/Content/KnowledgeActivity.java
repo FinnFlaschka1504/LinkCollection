@@ -11,6 +11,7 @@ import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -40,9 +41,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -71,6 +74,8 @@ public class KnowledgeActivity extends AppCompatActivity {
     private ArrayList<Knowledge> allKnowledgeList;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.CATEGORY, FILTER_TYPE.CONTENT));
     private CustomDialog detailDialog;
+
+    // ToDo: Stichpunkte
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -138,7 +143,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     CustomRecycler<String> customRecycler = new CustomRecycler<String>(this)
                             .enableDivider()
                             .disableCustomRipple()
-                            .setGetActiveObjectList(() -> knowledgeList.stream().map(ParentClass::getName).collect(Collectors.toList()))
+                            .setGetActiveObjectList(customRecycler1 -> knowledgeList.stream().map(ParentClass::getName).collect(Collectors.toList()))
                             .setOnClickListener((customRecycler1, itemView, s, index) -> {
                                 Knowledge knowledge = knowledgeList.get(index);
                                 Pair<CustomDialog,Knowledge> customDialogKnowledgePair = showEditOrNewDialog(knowledge);
@@ -182,6 +187,8 @@ public class KnowledgeActivity extends AppCompatActivity {
                 }
             }
 
+//            database.knowledgeMap.values().forEach(knowledge -> knowledge.setItemList(Arrays.asList(new Knowledge.Item())));
+//            Database.saveAll();
         };
 
         if (database == null || !Database.isReady()) {
@@ -196,7 +203,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 
     private void loadRecycler() {
         customRecycler_List = new CustomRecycler<CustomRecycler.Expandable<Knowledge>>(this, findViewById(R.id.recycler))
-                .setGetActiveObjectList(() -> {
+                .setGetActiveObjectList(customRecycler -> {
                     if (searchQuery.equals("")) {
                         allKnowledgeList = new ArrayList<>(database.knowledgeMap.values());
                         return toExpandableList(sortList(allKnowledgeList));
@@ -204,7 +211,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                         return toExpandableList(filterList(allKnowledgeList));
                 })
 
-                .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper<Knowledge>(R.layout.list_item_knowledge, (itemView, knowledge, expanded) -> {
+                .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper<Knowledge>(R.layout.list_item_knowledge, (customRecycler1, itemView, knowledge, expanded) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_knowledge_title)).setText(knowledge.getName());
                     ((TextView) itemView.findViewById(R.id.listItem_knowledge_content)).setText(knowledge.getContent());
 
@@ -319,6 +326,46 @@ public class KnowledgeActivity extends AppCompatActivity {
                 }, false)
                 .disableLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {
+                    Map<EditText, TextWatcher> map = new HashMap<>();
+                    CustomRecycler<Knowledge.Item> contentList = new CustomRecycler<Knowledge.Item>(this, view.findViewById(R.id.dialog_editOrAddKnowledge_list))
+                            .setItemLayout(R.layout.list_item_knowledge_list)
+                            .setSetItemContent((customRecycler, itemView, item) -> {
+                                Knowledge newKnow = newKnowledge[0];
+                                EditText listItem_knowledgeList_text = itemView.findViewById(R.id.listItem_knowledgeList_text);
+                                listItem_knowledgeList_text.setText(item.getName());
+                                listItem_knowledgeList_text.setOnEditorActionListener((v, actionId, event) -> {
+                                    if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                                        newKnow.newItem(item);
+                                        customRecycler.reload();
+
+                                        return true;
+                                    }
+                                    return false;
+                                });
+                                if (map.containsKey(listItem_knowledgeList_text))
+                                    listItem_knowledgeList_text.removeTextChangedListener(map.get(listItem_knowledgeList_text));
+                                TextWatcher watcher = new TextWatcher() {
+                                    @Override
+                                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                                    }
+
+                                    @Override
+                                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                                    }
+
+                                    @Override
+                                    public void afterTextChanged(Editable s) {
+                                        customRecycler.getRecycler().getChildAdapterPosition(itemView);
+                                        item.setName(s.toString());
+                                    }
+                                };
+                                listItem_knowledgeList_text.addTextChangedListener(watcher);
+                                map.put(listItem_knowledgeList_text, watcher);
+                            });
+
+                    // -------------------------------------
+
                     new Helpers.TextInputHelper().defaultDialogValidation(customDialog).addValidator(view.findViewById(R.id.dialog_editOrAddKnowledge_Titel_layout));
                     if (newKnowledge[0] != null) {
                         ((EditText) view.findViewById(R.id.dialog_editOrAddKnowledge_Titel)).setText(newKnowledge[0].getName());
@@ -330,6 +377,10 @@ public class KnowledgeActivity extends AppCompatActivity {
                         ((RatingBar) view.findViewById(R.id.dialog_editOrAddKnowledge_rating)).setRating(newKnowledge[0].getRating());
                     } else
                         newKnowledge[0] = new Knowledge("");
+
+                    contentList
+                            .setGetActiveObjectList(customRecycler -> newKnowledge[0].getItemList())
+                            .generate();
 
 
                     view.findViewById(R.id.dialog_editOrAddKnowledge_editCategories).setOnClickListener(view1 ->
@@ -665,12 +716,12 @@ public class KnowledgeActivity extends AppCompatActivity {
 
                     CustomRecycler sources_customRecycler = new CustomRecycler<List<String>>(this, view.findViewById(R.id.dialog_sources_sources))
                             .setItemLayout(R.layout.list_item_source_or_item)
-                            .setGetActiveObjectList(() -> {
+                            .setGetActiveObjectList(customRecycler -> {
                                 List<List<String>> sources = knowledge.getSources();
                                 view.findViewById(R.id.dialog_sources_noSources).setVisibility(sources.isEmpty() ? View.VISIBLE : View.GONE);
                                 return sources;
                             })
-                            .setSetItemContent((itemView, nameUrlPair) -> {
+                            .setSetItemContent((customRecycler, itemView, nameUrlPair) -> {
                                 ((TextView) itemView.findViewById(R.id.listItem_source_name)).setText(nameUrlPair.get(0));
                                 ((TextView) itemView.findViewById(R.id.listItem_source_content)).setText(nameUrlPair.get(1));
                             })

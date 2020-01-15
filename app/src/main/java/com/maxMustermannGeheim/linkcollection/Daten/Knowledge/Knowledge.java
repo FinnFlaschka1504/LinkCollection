@@ -1,14 +1,11 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Knowledge;
 
-import android.util.Pair;
-
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
-import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 public class Knowledge extends ParentClass {
@@ -18,6 +15,7 @@ public class Knowledge extends ParentClass {
     private List<String> categoryIdList = new ArrayList<>();
     private Float rating = -1f;
     private Date lastChanged;
+    private List<Item> itemList = new ArrayList<>(Arrays.asList(new Item()));
 
     public Knowledge() {
     }
@@ -67,6 +65,47 @@ public class Knowledge extends ParentClass {
         this.lastChanged = lastChanged;
         return this;
     }
+
+
+    //  ------------------------- ItemList ------------------------->
+    public List<Item> getItemList() {
+        return itemList;
+    }
+
+    public Knowledge setItemList(List<Item> itemList) {
+        this.itemList = itemList;
+        return this;
+    }
+
+    public Item newItem(Item previousItem) {
+        Item newItem = new Item();
+        itemList.add(itemList.indexOf(previousItem) + 1, newItem);
+        return newItem;
+    }
+
+    public static class Item extends ParentClass{
+        private List<Item> children = new ArrayList<>();
+
+        public Item() {
+            uuid = "knowledgeItem_" + UUID.randomUUID().toString();
+            name = "";
+        }
+
+        public Item(String name) {
+            uuid = "knowledgeItem_" + UUID.randomUUID().toString();
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public Item setName(String name) {
+            this.name = name;
+            return this;
+        }
+    }
+    //  <------------------------- ItemList -------------------------
 
     @Override
     public Knowledge clone() {

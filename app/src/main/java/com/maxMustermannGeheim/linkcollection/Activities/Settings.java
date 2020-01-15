@@ -56,6 +56,7 @@ public class Settings extends AppCompatActivity {
 //    public static final String SETTING_OTHERS_DARK_MODE = "SETTING_OTHERS_DARK_MODE";
     public static final String SETTING_VIDEO_SHOW_RELEASE = "SETTING_VIDEO_SHOW_RELEASE";
     public static final String SETTING_VIDEO_AUTO_SEARCH = "SETTING_VIDEO_AUTO_SEARCH";
+    public static final String SETTING_VIDEO_TMDB_SHORTCUT = "SETTING_VIDEO_TMDB_SHORTCUT";
 
     public static final String SETTING_SPACE_SHOWN_ = "SETTING_SPACE_SHOWN_";
     public static final String SETTING_SPACE_NAMES_ = "SETTING_SPACE_NAMES_";
@@ -95,6 +96,7 @@ public class Settings extends AppCompatActivity {
 
         settingsMap.put(SETTING_VIDEO_SHOW_RELEASE, "true");
         settingsMap.put(SETTING_VIDEO_AUTO_SEARCH, "true");
+        settingsMap.put(SETTING_VIDEO_TMDB_SHORTCUT, "true");
 //        settingsMap.put(SETTING_FINANCES_SWAP_LABLES, "false");
 ////        settingsMap.put(SETTING_OTHERS_USER, Database.getInstance().loggedInUserId);
 ////        settingsMap.put(SETTING_OTHERS_DARK_MODE, context.getResources().getString(R.string.automatically));
@@ -144,13 +146,15 @@ public class Settings extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.main_watchLaterCount)).setText(String.valueOf(Utility.getWatchLaterList().size()));
                 })
                 .setSettingsDialog(new Utility.Triple<>(R.layout.dialog_settings_video, (customDialog, view, space) -> {
-                    ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showRelease)).setChecked(Boolean.parseBoolean(getSingleSetting(context, SETTING_VIDEO_SHOW_RELEASE)));
-                    ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_autoSearch)).setChecked(Boolean.parseBoolean(getSingleSetting(context, SETTING_VIDEO_AUTO_SEARCH)));
+                    ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showRelease)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_RELEASE));
+                    ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_autoSearch)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_AUTO_SEARCH));
+                    ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_tmdbShortcut)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_TMDB_SHORTCUT));
                 }, new Space.OnClick() {
                     @Override
                     public void runOnClick(CustomDialog customDialog, Space space) {
                         changeSetting(SETTING_VIDEO_SHOW_RELEASE, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_showRelease)).isChecked()));
                         changeSetting(SETTING_VIDEO_AUTO_SEARCH, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_autoSearch)).isChecked()));
+                        changeSetting(SETTING_VIDEO_TMDB_SHORTCUT, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_tmdbShortcut)).isChecked()));
                     }
                 })));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_show), context.getString(R.string.bottomMenu_shows)).setActivity(ShowActivity.class).setItemId(Space.SPACE_SHOW).setIconId(R.drawable.ic_shows).setFragmentLayoutId(R.layout.main_fragment_shows)
@@ -287,7 +291,7 @@ public class Settings extends AppCompatActivity {
         spaceRecycler_customRecycler = new CustomRecycler<Space>(this, spaceRecycler)
                 .setItemLayout(R.layout.list_item_space_setting)
                 .setGetActiveObjectList(() -> allSpaces.stream().filter(Space::isShown).collect(Collectors.toList()))
-                .setSetItemContent((itemView, space) -> ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getPlural()))
+                .setSetItemContent((customRecycler, itemView, space) -> ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getPlural()))
                 .removeLastDivider()
                 .setOnClickListener((customRecycler, itemView, space, index) -> space.showSettingsDialog(this))
                 .setDividerMargin_inDp(16)
@@ -330,7 +334,7 @@ public class Settings extends AppCompatActivity {
                     .setView(new CustomRecycler<Space>(this)
                             .setItemLayout(R.layout.list_item_space_shown)
                             .setObjectList(allSpaces)
-                            .setSetItemContent((itemView, space) -> {
+                            .setSetItemContent((customRecycler, itemView, space) -> {
                                 ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getPlural());
 
                                 ((CheckBox) itemView.findViewById(R.id.list_spaceSetting_shown)).setChecked(space.isShown());

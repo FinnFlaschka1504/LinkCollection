@@ -113,6 +113,7 @@
             android:layout_marginLeft="8dp"
             android:visibility="gone"
             app:srcCompat="@drawable/ic_download"
+            tools:srcCompat="@drawable/simpsons_movie_poster"
             tools:visibility="visible" />
 
     </LinearLayout>
@@ -202,6 +203,7 @@
                     android:id="@+id/dialog_video_watchLater"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:backgroundTint="@color/colorDrawable"
                     android:clickable="true"
                     android:padding="5dp"
                     app:layout_constraintBottom_toBottomOf="parent"

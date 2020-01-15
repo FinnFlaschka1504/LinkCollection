@@ -484,7 +484,7 @@ public class Utility implements java.io.Serializable {
         Database database = Database.getInstance();
         CustomRecycler customRecycler = new CustomRecycler<>(context, layout.findViewById(R.id.fragmentCalender_videoList))
                 .setItemLayout(R.layout.list_item_video)
-                .setSetItemContent((itemView, object) -> {
+                .setSetItemContent((customRecycler1, itemView, object) -> {
                     itemView.findViewById(R.id.listItem_video_details).setVisibility(View.GONE);
                     itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.GONE);
 
@@ -585,7 +585,7 @@ public class Utility implements java.io.Serializable {
         Database database = Database.getInstance();
         CustomRecycler<Event> customRecycler = new CustomRecycler<Event>(context, layout.findViewById(R.id.fragmentCalender_videoList))
                 .setItemLayout(R.layout.list_item_episode)
-                .setSetItemContent((itemView, event) -> {
+                .setSetItemContent((customRecycler1, itemView, event) -> {
                     itemView.findViewById(R.id.listItem_episode_seen).setVisibility(View.GONE);
 
 
@@ -935,7 +935,7 @@ public class Utility implements java.io.Serializable {
                 .setItemLayout(R.layout.list_item_bubble)
                 .setObjectList(selectedUuidList)
                 .hideDivider()
-                .setSetItemContent((itemView, uuid) -> {
+                .setSetItemContent((customRecycler, itemView, uuid) -> {
                     ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(getObjectFromDatabase(category, uuid).getName());
                     dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_nothingSelected).setVisibility(View.GONE);
                 })
@@ -971,7 +971,7 @@ public class Utility implements java.io.Serializable {
                     return getMapFromDatabase(category).values().stream().filter(parentClass -> parentClass.getName().toLowerCase().contains(searchQuery[0].toLowerCase()))
                             .sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList());
                 })
-                .setSetItemContent((itemView, parentClass) -> {
+                .setSetItemContent((customRecycler, itemView, parentClass) -> {
                     ((TextView) itemView.findViewById(R.id.selectList_name)).setText(parentClass.getName());
 
                     ((CheckBox) itemView.findViewById(R.id.selectList_selected)).setChecked(selectedUuidList.contains(parentClass.getUuid()));

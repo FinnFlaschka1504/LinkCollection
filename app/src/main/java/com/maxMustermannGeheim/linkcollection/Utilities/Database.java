@@ -49,7 +49,7 @@ public class Database {
 
     private static Database database;
     private static Map<String, Object> lastUploaded_contentMap;
-//    public static Set<Pair<Boolean,Object>> changePairSet = new HashSet<>();
+    //    public static Set<Pair<Boolean,Object>> changePairSet = new HashSet<>();
     public static List<Utility.Triple<Boolean, String[], Object>> updateList = new ArrayList<>();
     private static DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
     private static List<OnInstanceFinishedLoading> onInstanceFinishedLoadingList = new ArrayList<>();
@@ -79,7 +79,7 @@ public class Database {
     public Map<String, Studio> studioMap = new HashMap<>();
     public Map<String, Genre> genreMap = new HashMap<>();
 //    public List<String> watchLaterList = new ArrayList<>();
-    
+
     public static final String KNOWLEDGE = "KNOWLEDGE";
     public static final String KNOWLEDGE_MAP = "KNOWLEDGE_MAP";
     public static final String KNOWLEDGE_CATEGORY_MAP = "KNOWLEDGE_CATEGORY_MAP";
@@ -104,18 +104,19 @@ public class Database {
     public static final String SHOW_WATCH_LATER_LIST = "SHOW_WATCH_LATER_LIST";
     public Map<String, Show> showMap = new HashMap<>();
     public Map<String, ShowGenre> showGenreMap = new HashMap<>();
-    public Map<Show,Map<Integer,Map<String, Show.Episode>>> tempShowSeasonEpisodeMap = new HashMap<>();
+    public Map<Show, Map<Integer, Map<String, Show.Episode>>> tempShowSeasonEpisodeMap = new HashMap<>();
     public List<String> showWatchLaterList = new ArrayList<>();
 
     private List<Content> contentList;
+
     {
         Content databaseCode_content = new Content<String, String>(String.class, "databaseCode", DATABASE_CODE).setSaveOnline(false);
         contentList = Arrays.asList(
                 databaseCode_content,
-                new Content<Map,Video>(Video.class, videoMap, databaseCode_content, VIDEOS, VIDEO_MAP),
-                new Content<Map,Studio>(Studio.class, studioMap, databaseCode_content, VIDEOS, STUDIO_MAP),
-                new Content<Map,Darsteller>(Darsteller.class, darstellerMap, databaseCode_content, VIDEOS, DARSTELLER_MAP),
-                new Content<Map,Genre>(Genre.class, genreMap, databaseCode_content, VIDEOS, GENRE_MAP),
+                new Content<Map, Video>(Video.class, videoMap, databaseCode_content, VIDEOS, VIDEO_MAP),
+                new Content<Map, Studio>(Studio.class, studioMap, databaseCode_content, VIDEOS, STUDIO_MAP),
+                new Content<Map, Darsteller>(Darsteller.class, darstellerMap, databaseCode_content, VIDEOS, DARSTELLER_MAP),
+                new Content<Map, Genre>(Genre.class, genreMap, databaseCode_content, VIDEOS, GENRE_MAP),
 //                new Content<List,String>(String.class, watchLaterList, databaseCode_content, VIDEOS, WATCH_LATER_LIST),
 
                 new Content<Map, Knowledge>(Knowledge.class, knowledgeMap, databaseCode_content, KNOWLEDGE, KNOWLEDGE_MAP),
@@ -129,13 +130,16 @@ public class Database {
 
                 new Content<Map, Show>(Show.class, showMap, databaseCode_content, SHOWS, SHOW_MAP),
                 new Content<Map, ShowGenre>(ShowGenre.class, showGenreMap, databaseCode_content, SHOWS, SHOW_GENRE_MAP),
-                new Content<List,String>(String.class, showWatchLaterList, databaseCode_content, SHOWS, SHOW_WATCH_LATER_LIST)
+                new Content<List, String>(String.class, showWatchLaterList, databaseCode_content, SHOWS, SHOW_WATCH_LATER_LIST)
         );
     }
     //  <----- Content deklaration -----
 
     private static Map<String, Content> contentMap = new HashMap<>();
-    {for (Content content : contentList) contentMap.put(content.key, content);}
+
+    {
+        for (Content content : contentList) contentMap.put(content.key, content);
+    }
 
 
     private Database(boolean online) {
@@ -145,7 +149,7 @@ public class Database {
             startLoadDataFromFirebase();
     }
 
-//  ----- getInstances ----->
+    //  ----- getInstances ----->
     public static Database getInstance() {
 //        Log.d(TAG, "getInstance: alt");
         return database;
@@ -154,6 +158,7 @@ public class Database {
     public static Database getInstance(SharedPreferences mySPR_daten, OnInstanceFinishedLoading onInstanceFinishedLoading) {
         return getInstance(mySPR_daten, onInstanceFinishedLoading, false);
     }
+
     public static Database getInstance(SharedPreferences mySPR_daten, OnInstanceFinishedLoading onInstanceFinishedLoading, boolean createNew) {
         Log.d(TAG, "getInstance: new " + onInstanceFinishedLoadingList.size());
         Database.mySPR_daten = mySPR_daten;
@@ -217,7 +222,7 @@ public class Database {
 //  <----- getInstances -----
 
 
-//  ----- Content management ----->
+    //  ----- Content management ----->
     public class Content<T, V> {
         public String fieldName;
         public String key;
@@ -260,6 +265,7 @@ public class Database {
         public Map<String, V> getMapFromString(String mapString) {
             return gson.fromJson(mapString, TypeToken.getParameterized(HashMap.class, String.class, tClass).getType());
         }
+
         //  <----- Get Map From ... -----
         public List<V> getListFromDataSnapshot(DataSnapshot dataSnapshot) {
             if (dataSnapshot.getValue() != null) {
@@ -276,7 +282,7 @@ public class Database {
             return gson.fromJson(mapString, TypeToken.getParameterized(List.class, tClass).getType());
         }
 
-    //  <----- Get List From ... -----
+        //  <----- Get List From ... -----
 
         //  ----- ChangeListener ----->
         public Content addChangeListener() {
@@ -331,8 +337,7 @@ public class Database {
                     return o;
                 else if (o instanceof Content) {
                     return ((Content) o).getCorrespondingValue();
-                }
-                else
+                } else
                     return null;
             }).toArray(String[]::new);
         }
@@ -359,7 +364,7 @@ public class Database {
                 if (syncDatabaseToContentMap)
                     content.content = field.get(this);
                 else
-                    field.set(this,content.content);
+                    field.set(this, content.content);
             } catch (NoSuchFieldException e) {
                 return null;
             } catch (IllegalAccessException ignored) {
@@ -374,17 +379,17 @@ public class Database {
         return contentMap;
     }
 
-    public Map<String,Object> getSimpleContentMap() {
+    public Map<String, Object> getSimpleContentMap() {
         Map<String, Content> contentMap = getContentMap(true);
-        Map<String,Object> simpleContentMap = new HashMap<>();
+        Map<String, Object> simpleContentMap = new HashMap<>();
         for (Map.Entry<String, Content> contentEntry : contentMap.entrySet()) {
             simpleContentMap.put(contentEntry.getKey(), contentEntry.getValue().getContent());
         }
         return simpleContentMap;
     }
 
-    public Map<String,Object> deepCopySimpleContentMap() {
-        Map<String,Object> deepCopy = new HashMap<>();
+    public Map<String, Object> deepCopySimpleContentMap() {
+        Map<String, Object> deepCopy = new HashMap<>();
         Map<String, Object> simpleContentMap = database.getSimpleContentMap();
         HashMap<String, Object> hashMap = gson.fromJson(gson.toJson(simpleContentMap), HashMap.class);
         for (Map.Entry<String, Object> entry : hashMap.entrySet()) {
@@ -423,14 +428,15 @@ public class Database {
     private static boolean hasChanges() {
 //        if (true)
 //            return true;
+        Log.d(TAG, "hasChanges: ");
         final boolean[] result = {false};
         for (Map.Entry<String, Content> contentEntry : contentMap.entrySet()) {
             Content content = contentEntry.getValue();
             Object contentObject_new = content.getContent();
             Object contentObject_old = lastUploaded_contentMap.get(contentEntry.getKey());
             if (contentObject_new instanceof Map && contentObject_old instanceof Map) {
-                Map<String,Object> contentObjectMap_new = (Map) contentObject_new;
-                Map<String,Object> contentObjectMap_old = (Map) contentObject_old;
+                Map<String, Object> contentObjectMap_new = (Map) contentObject_new;
+                Map<String, Object> contentObjectMap_old = (Map) contentObject_old;
 
                 Set<Map.Entry<String, Object>> newEntries = contentObjectMap_new.entrySet();
                 Set<Map.Entry<String, Object>> addedOrChangedEntries = new HashSet<>(newEntries);
@@ -532,6 +538,7 @@ public class Database {
         }
 
     }
+
     private void writeAllToFirebase() {
         for (Content content : getContentMap(true).values()) {
             if (content.saveOnline)
@@ -541,7 +548,7 @@ public class Database {
 //  <----- Content management -----
 
 
-//  ----- checks ----->
+    //  ----- checks ----->
     public boolean isOnline() {
         return online;
     }
@@ -560,10 +567,11 @@ public class Database {
 //  <----- checks -----
 
 
-//  ----- Get data from Firebase ----->
+    //  ----- Get data from Firebase ----->
     public interface OnInstanceFinishedLoading {
         void runOnInstanceFinishedLoading(Database database);
     }
+
     private void startLoadDataFromFirebase() {
         loaded = false;
         loadContentFromFirebase();
@@ -587,8 +595,7 @@ public class Database {
                         finishedLoading();
                     }
                 }, content.getPathArray());
-            }
-            else if (content.getContent() instanceof List) {
+            } else if (content.getContent() instanceof List) {
                 List list = (List) content.getContent();
                 list.clear();
                 loadingCount++;
@@ -611,18 +618,17 @@ public class Database {
         database.syncDatabaseAndContentMap();
         database.loaded = true;
 
+        lastUploaded_contentMap = database.deepCopySimpleContentMap();
+
         if (reload)
             fireDatabaseReloadListener();
+
         new ArrayList<>(onInstanceFinishedLoadingList).forEach(onInstanceFinishedLoading -> {
             if (!reload)
                 onInstanceFinishedLoading.runOnInstanceFinishedLoading(database);
             onInstanceFinishedLoadingList.remove(onInstanceFinishedLoading);
         });
 
-//        lastUploaded_database = Utility.deepCopy(database);
-
-        lastUploaded_contentMap = database.deepCopySimpleContentMap();
-        String BREAKPOINT = null;
     }
 //  <----- Get data from Firebase -----
 
@@ -636,7 +642,7 @@ public class Database {
         void onFailed(DatabaseError databaseError);
     }
 
-    public static void databaseCall_read(OnDatabaseCallFinished onDatabaseCallFinished, String... stepList){
+    public static void databaseCall_read(OnDatabaseCallFinished onDatabaseCallFinished, String... stepList) {
         accessChilds(databaseReference, stepList).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -650,7 +656,7 @@ public class Database {
         });
     }
 
-    public static void databaseCall_read(OnDatabaseCallFinished onDatabaseCallFinished, OnDatabaseCallFailed onDatabaseCallFailed, String... stepList){
+    public static void databaseCall_read(OnDatabaseCallFinished onDatabaseCallFinished, OnDatabaseCallFailed onDatabaseCallFailed, String... stepList) {
         accessChilds(databaseReference, stepList).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -664,11 +670,11 @@ public class Database {
         });
     }
 
-    public static void databaseCall_write(Object object, String... stepList){
+    public static void databaseCall_write(Object object, String... stepList) {
         accessChilds(databaseReference, stepList).setValue(object);
     }
 
-    public static void databaseCall_delete(String... stepList){
+    public static void databaseCall_delete(String... stepList) {
         accessChilds(databaseReference, stepList).removeValue();
     }
 
@@ -687,10 +693,11 @@ public class Database {
 //  <----- Firebase Call -----
 
 
-//  ----- Change Listener ----->
+    //  ----- Change Listener ----->
     public interface OnChangeListener {
         void runOnChangeListener();
     }
+
     public interface OnChangeListener_updateData {
         void runOnChangeListener_updateData(DataSnapshot dataSnapshot, Database database, ChangeListener<ParentClass> changeListener);
     }
@@ -715,6 +722,7 @@ public class Database {
 
                 fireOnChangeListeners();
             }
+
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
             }
@@ -731,17 +739,21 @@ public class Database {
         private void addOnChangeListener_firebase() {
             accessChilds(databaseReference, (String[]) this.listenerPath.toArray()).addValueEventListener(onChangeListener);
         }
+
         private void removeOnChangeListener_firebase() {
             accessChilds(databaseReference, (String[]) this.listenerPath.toArray()).removeEventListener(onChangeListener);
         }
+
         public OnChangeListener addOnChangeListener(OnChangeListener onChangeListener) {
             onChangeListenerList.add(onChangeListener);
             return onChangeListener;
         }
+
         public boolean removeOnChangeListener(OnChangeListener onChangeListener) {
             return onChangeListenerList.remove(onChangeListener);
         }
-        private void fireOnChangeListeners(){
+
+        private void fireOnChangeListeners() {
             saveDatabase_offline(mySPR_daten);
             onChangeListenerList.forEach(OnChangeListener::runOnChangeListener);
         }
@@ -752,7 +764,7 @@ public class Database {
             if (dataSnapshot.getValue() == null)
                 return newMap;
 
-            for (DataSnapshot snapshot :  dataSnapshot.getChildren()){
+            for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                 T standardArticle = snapshot.getValue(tClass);
                 newMap.put(((ParentClass) standardArticle).getUuid(), standardArticle);
             }
@@ -762,18 +774,20 @@ public class Database {
 //  <----- Change Listener -----
 
 
-//  ----- Database-Reload-Listener ----->
+    //  ----- Database-Reload-Listener ----->
     public interface DatabaseReloadListener {
         void runDatabaseReloadListener(Database database);
     }
 
     private static void fireDatabaseReloadListener() {
-        reloadListenerList.forEach(databaseReloadListener ->  databaseReloadListener.runDatabaseReloadListener(database));
+        reloadListenerList.forEach(databaseReloadListener -> databaseReloadListener.runDatabaseReloadListener(database));
     }
+
     public static DatabaseReloadListener addDatabaseReloadListener(DatabaseReloadListener databaseReloadListener) {
         reloadListenerList.add(databaseReloadListener);
         return databaseReloadListener;
     }
+
     public static void removeDatabaseReloadListener(DatabaseReloadListener databaseReloadListener) {
         if (databaseReloadListener == null)
             reloadListenerList.clear();
@@ -783,7 +797,7 @@ public class Database {
 //  <----- Database-Reload-Listener -----
 
 
-//  ----- Sonstige ----->
+    //  ----- Sonstige ----->
     public void generateData() {
     }
 //  <----- Sonstige -----

@@ -152,7 +152,7 @@ public class JokeActivity extends AppCompatActivity {
 
     private void loadRecycler() {
         customRecycler_List = new CustomRecycler<CustomRecycler.Expandable<Joke>>(this, findViewById(R.id.recycler))
-                .setGetActiveObjectList(() -> {
+                .setGetActiveObjectList(customRecycler -> {
                     if (searchQuery.equals("")) {
                         allJokeList = new ArrayList<>(database.jokeMap.values());
                         return toExpandableList(sortList(allJokeList));
@@ -161,7 +161,7 @@ public class JokeActivity extends AppCompatActivity {
                         return toExpandableList(filterList(allJokeList));
                 })
 
-                .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper<Joke>(R.layout.list_item_joke, (itemView, joke, expanded) -> {
+                .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper<Joke>(R.layout.list_item_joke, (customRecycler1, itemView, joke, expanded) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_joke_title_label)).setText(joke.getPunchLine() == null || joke.getPunchLine().isEmpty() ? "Witz:" : "Aufbau:");
                     itemView.findViewById(R.id.listItem_joke_punchLine_layout).setVisibility(joke.getPunchLine() == null || joke.getPunchLine().isEmpty() ? View.GONE : View.VISIBLE);
 
@@ -385,13 +385,13 @@ public class JokeActivity extends AppCompatActivity {
 
                     Toast.makeText(this, "Neu", Toast.LENGTH_SHORT).show();
                     randomJoke[0] = randomJokeList.removeRandom();
-//                    ((TextView) customDialog.findViewById(R.id.dialog_detailJoke_title_label)).setText(randomJoke[0].getPunchLine() == null || randomJoke[0].getPunchLine().isEmpty() ? "Witz:" : "Aufbau:");
+//                    ((TextView) customDialog.findViewById(R.id.dialog_detailJoke_title_label)).setName(randomJoke[0].getPunchLine() == null || randomJoke[0].getPunchLine().isEmpty() ? "Witz:" : "Aufbau:");
 //                    customDialog.findViewById(R.id.dialog_detailJoke_punchLine_layout).setVisibility(randomJoke[0].getPunchLine() == null || randomJoke[0].getPunchLine().isEmpty() ? View.GONE : View.VISIBLE);
 //
-//                    ((TextView) customDialog.findViewById(R.id.dialog_detailJoke_title)).setText(randomJoke[0].getName());
-//                    ((TextView) customDialog.findViewById(R.id.dialog_detailJoke_punchLine)).setText(randomJoke[0].getPunchLine());
+//                    ((TextView) customDialog.findViewById(R.id.dialog_detailJoke_title)).setName(randomJoke[0].getName());
+//                    ((TextView) customDialog.findViewById(R.id.dialog_detailJoke_punchLine)).setName(randomJoke[0].getPunchLine());
 //
-//                    ((TextView) customDialog.findViewById(R.id.dialog_detailJoke_categories)).setText(
+//                    ((TextView) customDialog.findViewById(R.id.dialog_detailJoke_categories)).setName(
 //                            randomJoke[0].getCategoryIdList().stream().map(uuid -> database.jokeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                     customDialog.reloadView();
                 }, false)
@@ -503,7 +503,7 @@ public class JokeActivity extends AppCompatActivity {
 //    private void showSourcesDialog(Joke joke, TextView sourcesText, boolean edit) {
 //        int buttonId_add = View.generateViewId();
 //        TextValidation nameValidation = (textInputLayout, changeErrorMessage) -> {
-//            String text = textInputLayout.getEditText().getText().toString().trim();
+//            String text = textInputLayout.getEditText().getName().toString().trim();
 //
 //            if (text.isEmpty()) {
 //                if (changeErrorMessage)
@@ -516,7 +516,7 @@ public class JokeActivity extends AppCompatActivity {
 //            }
 //        };
 //        TextValidation urlValidation = (textInputLayout, changeErrorMessage) -> {
-//            String text = textInputLayout.getEditText().getText().toString().trim();
+//            String text = textInputLayout.getEditText().getName().toString().trim();
 //
 //            if (text.isEmpty()) {
 //                textInputLayout.setError("Das Feld darf nicht leer sein!");
@@ -575,17 +575,17 @@ public class JokeActivity extends AppCompatActivity {
 //                        @Override
 //                        public void afterTextChanged(Editable s) {
 //                            if (urlValidation.runTextValidation(dialog_sources_url, true)) {
-//                                if (dialog_sources_name.getEditText().getText().toString().isEmpty()) {
+//                                if (dialog_sources_name.getEditText().getName().toString().isEmpty()) {
 //                                    String domainName = getDomainFromUrl(s.toString(), true);
-//                                    dialog_sources_name.getEditText().setText(domainName);
+//                                    dialog_sources_name.getEditText().setName(domainName);
 //                                }
 //                            }
 //                            validation(nameValidation, urlValidation, dialog_sources_name, dialog_sources_url, false, true, dialog_sources_save);
 //                        }
 //                    });
 //                    Runnable hideEdit = () -> {
-//                        dialog_sources_name.getEditText().setText("");
-//                        dialog_sources_url.getEditText().setText("");
+//                        dialog_sources_name.getEditText().setName("");
+//                        dialog_sources_url.getEditText().setName("");
 //                        dialog_sources_name.setError(null);
 //                        dialog_sources_url.setError(null);
 //                        dialog_sources_editLayout.setVisibility(View.GONE);
@@ -606,8 +606,8 @@ public class JokeActivity extends AppCompatActivity {
 //                                return sources;
 //                            })
 //                            .setSetItemContent((CustomRecycler.SetItemContent<List<String>>)(itemView, nameUrlPair) -> {
-//                                ((TextView) itemView.findViewById(R.id.listItem_source_name)).setText(nameUrlPair.get(0));
-//                                ((TextView) itemView.findViewById(R.id.listItem_source_content)).setText(nameUrlPair.get(1));
+//                                ((TextView) itemView.findViewById(R.id.listItem_source_name)).setName(nameUrlPair.get(0));
+//                                ((TextView) itemView.findViewById(R.id.listItem_source_content)).setName(nameUrlPair.get(1));
 //                            })
 //                            .hideDivider()
 //                            .useCustomRipple()
@@ -617,8 +617,8 @@ public class JokeActivity extends AppCompatActivity {
 //                                dialog.findViewById(R.id.dialog_sources_editLayout).setVisibility(View.VISIBLE);
 //                                dialog.findViewById(buttonId_add).setVisibility(View.GONE);
 //                                dialog.findViewById(R.id.dialog_sources_delete).setVisibility(View.VISIBLE);
-//                                dialog_sources_name.getEditText().setText(stringList.get(0));
-//                                dialog_sources_url.getEditText().setText(stringList.get(1));
+//                                dialog_sources_name.getEditText().setName(stringList.get(0));
+//                                dialog_sources_url.getEditText().setName(stringList.get(1));
 //                                currentSource[0] = stringList;
 //                            })
 //                            .generate();
@@ -626,7 +626,7 @@ public class JokeActivity extends AppCompatActivity {
 //                    view.findViewById(R.id.dialog_sources_delete).setOnClickListener(v -> {
 //                        CustomDialog.Builder(this)
 //                                .setTitle("Quelle Löschen")
-//                                .setText("Willst du wirklich die Quelle '" + currentSource[0].get(0) + "' löschen?")
+//                                .setName("Willst du wirklich die Quelle '" + currentSource[0].get(0) + "' löschen?")
 //                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
 //                                .addButton(CustomDialog.YES_BUTTON, (customDialog1, dialog) -> {
 //                                    joke.getSources().remove(currentSource[0]);
@@ -641,14 +641,14 @@ public class JokeActivity extends AppCompatActivity {
 //                        if (!nameValidation.runTextValidation(dialog_sources_name, true) | !urlValidation.runTextValidation(dialog_sources_url, true))
 //                            return;
 //                        if (currentSource[0] == null) {
-//                            List<String> newSource = Arrays.asList(dialog_sources_name.getEditText().getText().toString().trim()
-//                                    , dialog_sources_url.getEditText().getText().toString().trim());
+//                            List<String> newSource = Arrays.asList(dialog_sources_name.getEditText().getName().toString().trim()
+//                                    , dialog_sources_url.getEditText().getName().toString().trim());
 //                            joke.getSources().add(newSource);
 //                        }
 //                        else {
 //                            currentSource[0].clear();
-//                            currentSource[0].add(dialog_sources_name.getEditText().getText().toString().trim());
-//                            currentSource[0].add(dialog_sources_url.getEditText().getText().toString().trim());
+//                            currentSource[0].add(dialog_sources_name.getEditText().getName().toString().trim());
+//                            currentSource[0].add(dialog_sources_url.getEditText().getName().toString().trim());
 //                        }
 //                        Database.saveAll();
 //                        sources_customRecycler.reload();
@@ -667,7 +667,7 @@ public class JokeActivity extends AppCompatActivity {
 //                }, buttonId_add, false)
 //                .addButton("Zurück", (customDialog, dialog) -> {})
 //                .setObjectExtra(sourcesText)
-//                .setOnDialogDismiss(customDialog -> ((TextView) customDialog.getObjectExtra()).setText(
+//                .setOnDialogDismiss(customDialog -> ((TextView) customDialog.getObjectExtra()).setName(
 //                        joke.getSources().stream().map(strings -> strings.get(0)).collect(Collectors.joining(", "))
 //                ))
 //                .show();

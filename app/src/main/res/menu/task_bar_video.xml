@@ -70,6 +70,9 @@
                             android:id="@+id/taskBar_video_modeAll"
                             android:title="Alle" />
                         <item
+                            android:id="@+id/taskBar_video_modeSeen"
+                            android:title="Bereits gesehen" />
+                        <item
                             android:id="@+id/taskBar_video_modeLater"
                             android:title="Später ansehen" />
                         <item

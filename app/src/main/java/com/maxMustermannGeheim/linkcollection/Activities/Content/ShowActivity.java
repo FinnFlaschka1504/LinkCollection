@@ -1,7 +1,6 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Content;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -45,7 +44,6 @@ import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
-import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
@@ -215,7 +213,7 @@ public class ShowActivity extends AppCompatActivity {
 //                            if (!unableToFindList.isEmpty()) {
 //                                CustomDialog.Builder(that)
 //                                        .setTitle("Problem beim Laden der Liste!")
-//                                        .setText((unableToFindList.size() == 1 ? "Ein " + singular + " konnte" : unableToFindList.size() + " " + plural + " konnten") + " nicht gefunden werden")
+//                                        .setName((unableToFindList.size() == 1 ? "Ein " + singular + " konnte" : unableToFindList.size() + " " + plural + " konnten") + " nicht gefunden werden")
 //                                        .setObjectExtra(unableToFindList)
 //                                        .addButton("Ignorieren", null)
 //                                        .addButton("Entfernen", customDialog -> {
@@ -304,7 +302,7 @@ public class ShowActivity extends AppCompatActivity {
                             .enableDivider()
                             .removeLastDivider()
                             .disableCustomRipple()
-                            .setGetActiveObjectList(() -> showList.stream().map(ParentClass::getName).collect(Collectors.toList()))
+                            .setGetActiveObjectList(customRecycler1 -> showList.stream().map(ParentClass::getName).collect(Collectors.toList()))
                             .setOnClickListener((customRecycler1, itemView, s, index) -> {
                                 show[0] = showList.get(index);
                                 onDecided.run();
@@ -468,7 +466,7 @@ public class ShowActivity extends AppCompatActivity {
                     noItem.setVisibility(filterdList.isEmpty() ? View.VISIBLE : View.GONE);
                     return filterdList;
                 })
-                .setSetItemContent((itemView, show) -> {
+                .setSetItemContent((customRecycler, itemView, show) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_show_Titel)).setText(show.getName());
                     int views = getViews(getEpisodeList(show));
                     if (views > 0) {
@@ -555,7 +553,7 @@ public class ShowActivity extends AppCompatActivity {
                                         .enableExpandByDefault()
                                         .customizeRecycler(subRecycler -> {
                                             subRecycler
-                                                    .setSetItemContent((itemView, episode1) -> {
+                                                    .setSetItemContent((customRecycler2, itemView, episode1) -> {
                                                         Utility.setMargins(itemView, 8, 5, 8, 5);
                                                         itemView.findViewById(R.id.listItem_episode_seen).setVisibility(View.GONE);
 
@@ -631,7 +629,7 @@ public class ShowActivity extends AppCompatActivity {
         Database database = Database.getInstance();
         CustomDialog customDialog = CustomDialog.Builder(activity);
         com.finn.androidUtilities.CustomRecycler<Expandable<Show.Episode>> expandableCustomRecycler = new com.finn.androidUtilities.CustomRecycler<Expandable<Show.Episode>>(activity)
-                .setGetActiveObjectList(() -> {
+                .setGetActiveObjectList(customRecycler -> {
                     List<Show.Episode> alreadyAiredList = Utility.concatenateCollections(database.showMap.values(), Show::getAlreadyAiredList);
                     return new Expandable.ToGroupExpandableList<Show.Episode, Show.Episode, String>()
                             .runToGroupExpandableList(alreadyAiredList, Show.Episode::getShowId, (s, m) -> String.format(Locale.getDefault(), "%s (%d)",
@@ -641,7 +639,7 @@ public class ShowActivity extends AppCompatActivity {
                         .setExpandMatching(expandable -> expandable.getList().stream().anyMatch(episode -> !episode.isWatched()))
                         .customizeRecycler(subRecycler -> {
                             subRecycler
-                                    .setSetItemContent((itemView, episode) -> {
+                                    .setSetItemContent((customRecycler1, itemView, episode) -> {
                                         Utility.setMargins(itemView, 8, 5, 8, 5);
                                         itemView.findViewById(R.id.listItem_episode_seen).setVisibility(View.GONE);
 
@@ -985,7 +983,7 @@ public class ShowActivity extends AppCompatActivity {
         CustomRecycler<Show.Season> seasonRecycler = new CustomRecycler<Show.Season>(this)
                 .setGetActiveObjectList(show::getSeasonList)
                 .setItemLayout(R.layout.list_item_season)
-                .setSetItemContent((itemView, season) -> {
+                .setSetItemContent((customRecycler, itemView, season) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_season_number)).setText(String.valueOf(season.getSeasonNumber()));
                     ((TextView) itemView.findViewById(R.id.listItem_season_name)).setText(season.getName());
                     if (season.getAirDate() != null)
@@ -1072,7 +1070,7 @@ public class ShowActivity extends AppCompatActivity {
                     return episodeList;
                 })
                 .setItemLayout(R.layout.list_item_episode)
-                .setSetItemContent((itemView, episode) -> {
+                .setSetItemContent((customRecycler, itemView, episode) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(episode.getEpisodeNumber()));
                     ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode.getName());
                     if (episode.getAirDate() != null)
@@ -1650,27 +1648,27 @@ public class ShowActivity extends AppCompatActivity {
 //                .addButton("Nochmal", customDialog -> {
 //                    Toast.makeText(this, "Neu", Toast.LENGTH_SHORT).show();
 //                    randomShow = filterdShowList.get((int) (Math.random() * filterdShowList.size()));
-//                    ((TextView) customDialog.findViewById(R.id.dialog_show_Titel)).setText(randomShow.getName());
+//                    ((TextView) customDialog.findViewById(R.id.dialog_show_Titel)).setName(randomShow.getName());
 //
 //                    List<String> darstellerNames_neu = new ArrayList<>();
 //                    randomShow.getDarstellerList().forEach(uuid -> darstellerNames_neu.add(database.darstellerMap.get(uuid).getName()));
-//                    ((TextView) customDialog.findViewById(R.id.dialog_show_Darsteller)).setText(String.join(", ", darstellerNames_neu));
+//                    ((TextView) customDialog.findViewById(R.id.dialog_show_Darsteller)).setName(String.join(", ", darstellerNames_neu));
 //
 //                    List<String> studioNames_neu = new ArrayList<>();
 //                    randomShow.getStudioList().forEach(uuid -> studioNames_neu.add(database.studioMap.get(uuid).getName()));
-//                    ((TextView) customDialog.findViewById(R.id.dialog_show_Studio)).setText(String.join(", ", studioNames_neu));
+//                    ((TextView) customDialog.findViewById(R.id.dialog_show_Studio)).setName(String.join(", ", studioNames_neu));
 //
 //                    List<String> genreNames_neu = new ArrayList<>();
 //                    randomShow.getGenreList().forEach(uuid -> genreNames_neu.add(database.genreMap.get(uuid).getName()));
-//                    ((TextView) customDialog.findViewById(R.id.dialog_show_Genre)).setText(String.join(", ", genreNames_neu));
+//                    ((TextView) customDialog.findViewById(R.id.dialog_show_Genre)).setName(String.join(", ", genreNames_neu));
 //
 //                }, false)
 //                .addButton("Öffnen", customDialog -> openUrl(randomShow.getUrl(), false), false)
 //                .setSetViewContent((customDialog, view) -> {
-//                    ((TextView) view.findViewById(R.id.dialog_show_Titel)).setText(randomShow.getName());
-//                    ((TextView) view.findViewById(R.id.dialog_show_Darsteller)).setText(String.join(", ", darstellerNames));
-//                    ((TextView) view.findViewById(R.id.dialog_show_Studio)).setText(String.join(", ", studioNames));
-//                    ((TextView) view.findViewById(R.id.dialog_show_Genre)).setText(String.join(", ", genreNames));
+//                    ((TextView) view.findViewById(R.id.dialog_show_Titel)).setName(randomShow.getName());
+//                    ((TextView) view.findViewById(R.id.dialog_show_Darsteller)).setName(String.join(", ", darstellerNames));
+//                    ((TextView) view.findViewById(R.id.dialog_show_Studio)).setName(String.join(", ", studioNames));
+//                    ((TextView) view.findViewById(R.id.dialog_show_Genre)).setName(String.join(", ", genreNames));
 //                    view.findViewById(R.id.dialog_show_Darsteller).setSelected(true);
 //
 //                })

@@ -1,12 +1,14 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Knowledge;
 
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class Knowledge extends ParentClass {
 
@@ -27,6 +29,10 @@ public class Knowledge extends ParentClass {
 
     public String getContent() {
         return content;
+    }
+
+    public boolean hasContent() {
+        return content != null && !content.isEmpty();
     }
 
     public void setContent(String content) {
@@ -72,6 +78,10 @@ public class Knowledge extends ParentClass {
         return itemList;
     }
 
+    public String itemListToString() {
+        return itemList.stream().map(item -> "• " + item.getName()).collect(Collectors.joining("\n\n"));
+    }
+
     public Knowledge setItemList(List<Item> itemList) {
         this.itemList = itemList;
         return this;
@@ -81,6 +91,18 @@ public class Knowledge extends ParentClass {
         Item newItem = new Item();
         itemList.add(itemList.indexOf(previousItem) + 1, newItem);
         return newItem;
+    }
+
+    public boolean removeItem(Item item) {
+        return itemList.remove(item);
+    }
+
+    public boolean hasItems() {
+        return itemList.stream().anyMatch(item -> !item.getName().isEmpty());
+    }
+
+    public void clearItemList() {
+        itemList = new ArrayList<>(Arrays.asList(new Item()));
     }
 
     public static class Item extends ParentClass{
@@ -104,11 +126,18 @@ public class Knowledge extends ParentClass {
             this.name = name;
             return this;
         }
+
+        @Override
+        public Item clone() {
+            return (Item) super.clone();
+        }
     }
     //  <------------------------- ItemList -------------------------
 
     @Override
     public Knowledge clone() {
-        return (Knowledge) super.clone();
+        Knowledge clone = (Knowledge) super.clone();
+        clone.setItemList(itemList.stream().map(Item::clone).collect(Collectors.toList()));
+        return clone;
     }
 }

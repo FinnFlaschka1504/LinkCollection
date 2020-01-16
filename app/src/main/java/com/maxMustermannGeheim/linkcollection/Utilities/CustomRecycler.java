@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DividerItemDecoration;
@@ -116,7 +117,7 @@ public class CustomRecycler<T>{
         return recycler;
     }
 
-    public CustomRecycler<T> setItemLayout(int layoutId) {
+    public CustomRecycler<T> setItemLayout(@LayoutRes int layoutId) {
         this.layoutId = layoutId;
         return this;
     }

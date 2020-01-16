@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -28,6 +29,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -65,6 +67,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import top.defaults.drawabletoolbox.DrawableBuilder;
@@ -234,39 +237,8 @@ public class Utility implements java.io.Serializable {
 
     //  --------------- Copy --------------->
     public static <T> T deepCopy(T t) {
-//        try {
-//            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-//            ObjectOutputStream outputStrm = new ObjectOutputStream(outputStream);
-//            outputStrm.writeObject(t);
-//            ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
-//            ObjectInputStream objInputStream = new ObjectInputStream(inputStream);
-//            return (T) objInputStream.readObject();
-//        } catch (Exception e) {
-//            return null;
-//        }
-
-//        Gson gson = new Gson();
-//        return (T) gson.fromJson(gson.toJson(t, t.getClass()), t.getClass());
-
-
-//        Gson gson = new GsonBuilder()
-//                .excludeFieldsWithoutExposeAnnotation()
-//                .excludeFieldsWithModifiers(TRANSIENT) // STATIC|TRANSIENT in the default configuration
-//                .create();
-//
-//        return (T) gson.fromJson(gson.toJson(t), t.getClass());
-
-//        final ObjectMapper objMapper = new ObjectMapper();
-//        String jsonStr = null;
-//        try {
-//            jsonStr = objMapper.writeValueAsString(t);
-//            return (T) objMapper.readValue(jsonStr, t.getClass());
-//        } catch (IOException e) {
-//            String BREAKPOINT = null;
-//            return null;
-//        }
-
-        return t;
+        Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
+        return (T) gson.fromJson(gson.toJson(t), t.getClass());
     }
     //  <--------------- Copy ---------------
 
@@ -1294,4 +1266,59 @@ public class Utility implements java.io.Serializable {
         void runExecuteIfNotNull(E e);
     }
     //  <------------------------- ifNotNull -------------------------
+
+
+    //  ------------------------- Reflections ------------------------->
+    public static List<TextWatcher> removeTextListeners(TextView view){
+        List<TextWatcher> returnList = null;
+        try {
+            Field mListeners = TextView.class.getDeclaredField("mListeners");
+            mListeners.setAccessible(true);
+            returnList = (List<TextWatcher>) mListeners.get(view);
+            mListeners.set(view, null);
+        } catch (IllegalAccessException | NoSuchFieldException ignored) {
+        }
+        return returnList;
+    }
+    //  <------------------------- Reflections -------------------------
+
+
+    //  ------------------------- EasyLogic ------------------------->
+    public static Boolean boolOr(Object what, Object... to){
+        if (to.length == 0)
+            return null;
+
+        for (Object o : to) {
+            if (Objects.equals(what, o))
+                return true;
+        }
+        return false;
+    }
+
+    public static Boolean boolXOr(Object what, Object... to){
+        if (to.length == 0)
+            return null;
+
+        boolean found = false;
+        for (Object o : to) {
+            if (Objects.equals(what, o)) {
+                if (found)
+                    return false;
+                found = true;
+            }
+        }
+        return found;
+    }
+
+    public static Boolean boolAnd(Object what, Object... to){
+        if (to.length == 0)
+            return null;
+
+        for (Object o : to) {
+            if (!Objects.equals(what, o))
+                return false;
+        }
+        return true;
+    }
+    //  <------------------------- EasyLogic -------------------------
 }

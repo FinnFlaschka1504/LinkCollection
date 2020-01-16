@@ -10,8 +10,8 @@ import android.text.TextWatcher;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
-import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -23,6 +23,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.finn.androidUtilities.CustomRecycler;
 import com.google.android.material.textfield.TextInputLayout;
@@ -32,6 +33,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -41,11 +43,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -213,7 +213,33 @@ public class KnowledgeActivity extends AppCompatActivity {
 
                 .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper<Knowledge>(R.layout.list_item_knowledge, (customRecycler1, itemView, knowledge, expanded) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_knowledge_title)).setText(knowledge.getName());
-                    ((TextView) itemView.findViewById(R.id.listItem_knowledge_content)).setText(knowledge.getContent());
+
+                    TextView listItem_knowledge_content = itemView.findViewById(R.id.listItem_knowledge_content);
+                    RecyclerView listItem_knowledge_list = itemView.findViewById(R.id.listItem_knowledge_list);
+                    if (knowledge.hasContent()) {
+                        listItem_knowledge_content.setVisibility(View.VISIBLE);
+                        listItem_knowledge_list.setVisibility(View.GONE);
+                        listItem_knowledge_content.setText(knowledge.getContent());
+                    } else if (knowledge.hasItems()) {
+                        if (expanded) {
+                            listItem_knowledge_list.setVisibility(View.VISIBLE);
+                            listItem_knowledge_content.setVisibility(View.GONE);
+                            new CustomRecycler<Knowledge.Item>(this, listItem_knowledge_list)
+                                    .setObjectList(knowledge.getItemList())
+                                    .setItemLayout(R.layout.list_item_knowledge_list_text)
+                                    .setSetItemContent((customRecycler2, itemView1, item) -> ((TextView) itemView1.findViewById(R.id.listItem_knowledgeList_text)).setText(item.getName()))
+                                    .generateRecyclerView().setOnTouchListener((v, event) -> itemView.onTouchEvent(event));
+                        } else {
+                            listItem_knowledge_content.setVisibility(View.VISIBLE);
+                            listItem_knowledge_list.setVisibility(View.GONE);
+                            listItem_knowledge_content.setText(knowledge.itemListToString());
+                        }
+                    } else {
+                        listItem_knowledge_content.setVisibility(View.VISIBLE);
+                        listItem_knowledge_list.setVisibility(View.GONE);
+                        listItem_knowledge_content.setText("");
+                    }
+                    listItem_knowledge_content.setSingleLine(!expanded);
 
 
                     ((TextView) itemView.findViewById(R.id.listItem_knowledge_categories)).setText(String.join(", ",
@@ -227,7 +253,6 @@ public class KnowledgeActivity extends AppCompatActivity {
                         itemView.findViewById(R.id.listItem_knowledge_rating_layout).setVisibility(View.GONE);
 
 
-                    ((TextView) itemView.findViewById(R.id.listItem_knowledge_content)).setSingleLine(!expanded);
                 }))
 
                 .addSubOnClickListener(R.id.listItem_knowledge_details, (customRecycler, view, knowledgeExpandable, index) -> detailDialog = showDetailDialog(knowledgeExpandable.getObject()), false)
@@ -287,18 +312,20 @@ public class KnowledgeActivity extends AppCompatActivity {
 
         if (knowledge != null)
             returnDialog.addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
-                CustomDialog.Builder(this)
+                com.finn.androidUtilities.CustomDialog.Builder(this)
                         .setTitle("Löschen")
                         .setText("Willst du wirklich '" + knowledge.getName() + "' löschen?")
-                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
-                        .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                        .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                        .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
                             database.knowledgeMap.remove(knowledge.getUuid());
                             Database.saveAll();
                             reLoadRecycler();
                             if (detailDialog != null)
                                 detailDialog.dismiss();
                             customDialog.dismiss();
+                            Toast.makeText(this, "Wissen gelöscht", Toast.LENGTH_SHORT).show();
                         })
+                        .enableColoredActionButtons()
                         .show();
             }, false)
                     .alignPreviousButtonsLeft();
@@ -312,64 +339,120 @@ public class KnowledgeActivity extends AppCompatActivity {
                     }
                     String content = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddKnowledge_content)).getText().toString().trim();
 //
-                    if (content.equals("")) {
-                        CustomDialog.Builder(this)
+                    if (content.equals("") && !newKnowledge[0].hasItems()) {
+                        com.finn.androidUtilities.CustomDialog.Builder(this)
                                 .setTitle("Ohne Inhalt speichern?")
                                 .setText("Möchtest du wirklich ohne einen Inhalt speichern")
-                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
-                                .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 ->
-                                        saveKnowledge(customDialog, titel, content, newKnowledge, knowledge))
+                                .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 ->
+                                        saveKnowledge(customDialog, titel, content, newKnowledge[0], knowledge))
+                                .enableColoredActionButtons()
                                 .show();
                     } else
-                        saveKnowledge(customDialog, titel, content, newKnowledge, knowledge);
+                        saveKnowledge(customDialog, titel, content, newKnowledge[0], knowledge);
 
                 }, false)
                 .disableLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {
-                    Map<EditText, TextWatcher> map = new HashMap<>();
+                    final Integer[] focusIndex = {null};
+                    CustomRecycler.CustomRecyclerInterface<Knowledge.Item> recyclerInterface = customRecycler -> {
+                        RecyclerView recycler = customRecycler.getRecycler();
+                        int matchParentMeasureSpec = View.MeasureSpec.makeMeasureSpec(((View) recycler.getParent()).getWidth(), View.MeasureSpec.EXACTLY);
+                        int wrapContentMeasureSpec = View.MeasureSpec.makeMeasureSpec(Utility.dpToPx(280), View.MeasureSpec.AT_MOST);
+                        recycler.measure(matchParentMeasureSpec, wrapContentMeasureSpec);
+                        if (recycler.getHeight() > Utility.dpToPx(280))
+                            customRecycler.getRecycler().setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Utility.dpToPx(280)));
+                        else if (recycler.getMeasuredHeight() < Utility.dpToPx(280))
+                            customRecycler.getRecycler().setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                    };
                     CustomRecycler<Knowledge.Item> contentList = new CustomRecycler<Knowledge.Item>(this, view.findViewById(R.id.dialog_editOrAddKnowledge_list))
                             .setItemLayout(R.layout.list_item_knowledge_list)
+                            .setOnReload(recyclerInterface)
+                            .setOnGenerate(recyclerInterface)
+                            .enableDragAndDrop(objectList -> newKnowledge[0].setItemList(objectList))
                             .setSetItemContent((customRecycler, itemView, item) -> {
                                 Knowledge newKnow = newKnowledge[0];
                                 EditText listItem_knowledgeList_text = itemView.findViewById(R.id.listItem_knowledgeList_text);
+                                Utility.removeTextListeners(listItem_knowledgeList_text);
                                 listItem_knowledgeList_text.setText(item.getName());
-                                listItem_knowledgeList_text.setOnEditorActionListener((v, actionId, event) -> {
-                                    if (actionId == EditorInfo.IME_ACTION_NEXT) {
-                                        newKnow.newItem(item);
-                                        customRecycler.reload();
-
-                                        return true;
-                                    }
-                                    return false;
+                                int index = customRecycler.getObjectList().indexOf(item);
+                                final View listItem_knowledgeList_remove = itemView.findViewById(R.id.listItem_knowledgeList_remove);
+                                listItem_knowledgeList_remove.setVisibility(item.getName().length() == 0 && index != 0 ? View.VISIBLE : View.GONE);
+                                listItem_knowledgeList_remove.setOnClickListener(v -> {
+                                    focusIndex[0] = index - 1;
+                                    newKnow.removeItem(item);
+                                    customRecycler.reload();
                                 });
-                                if (map.containsKey(listItem_knowledgeList_text))
-                                    listItem_knowledgeList_text.removeTextChangedListener(map.get(listItem_knowledgeList_text));
-                                TextWatcher watcher = new TextWatcher() {
+                                if (focusIndex[0] != null) {
+                                    if (focusIndex[0] == index) {
+                                        listItem_knowledgeList_text.requestFocus();
+                                        focusIndex[0] = null;
+                                    }
+                                }
+                                listItem_knowledgeList_text.addTextChangedListener(new TextWatcher() {
                                     @Override
                                     public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
                                     }
 
                                     @Override
                                     public void onTextChanged(CharSequence s, int start, int before, int count) {
+                                        RecyclerView recycler = customRecycler.getRecycler();
+                                        int index = recycler.getChildAdapterPosition(itemView);
+                                        customRecycler.getObjectList().get(index).setName(s.toString());
+                                        listItem_knowledgeList_remove.setVisibility(s.length() == 0 && index != 0 ? View.VISIBLE : View.GONE);
+
+                                        int matchParentMeasureSpec = View.MeasureSpec.makeMeasureSpec(((View) recycler.getParent()).getWidth(), View.MeasureSpec.EXACTLY);
+                                        int wrapContentMeasureSpec = View.MeasureSpec.makeMeasureSpec(Utility.dpToPx(280), View.MeasureSpec.AT_MOST);
+                                        recycler.measure(matchParentMeasureSpec, wrapContentMeasureSpec);
+                                        if (recycler.getHeight() > Utility.dpToPx(280))
+                                            customRecycler.getRecycler().setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Utility.dpToPx(280)));
+                                        else if (recycler.getMeasuredHeight() < Utility.dpToPx(280))
+                                            customRecycler.getRecycler().setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+                                        if (before == 0 && s.toString().endsWith("\n\n")) {
+                                            focusIndex[0] = index + 1;
+                                            newKnow.newItem(item);
+                                            item.setName(item.getName().trim());
+                                            customRecycler.reload();
+//                                        customRecycler.scrollTo(focusIndex[0], false);
+                                        }
+
                                     }
 
                                     @Override
                                     public void afterTextChanged(Editable s) {
-                                        customRecycler.getRecycler().getChildAdapterPosition(itemView);
-                                        item.setName(s.toString());
+//                                        RecyclerView recycler = customRecycler.getRecycler();
+//                                        int index = recycler.getChildAdapterPosition(itemView);
+//                                        customRecycler.getObjectList().get(index).setName(s.toString());
+//                                        listItem_knowledgeList_remove.setVisibility(s.length() == 0 && index != 0 ? View.VISIBLE : View.GONE);
+//
+//                                        int matchParentMeasureSpec = View.MeasureSpec.makeMeasureSpec(((View) recycler.getParent()).getWidth(), View.MeasureSpec.EXACTLY);
+//                                        int wrapContentMeasureSpec = View.MeasureSpec.makeMeasureSpec(Utility.dpToPx(280), View.MeasureSpec.AT_MOST);
+//                                        recycler.measure(matchParentMeasureSpec, wrapContentMeasureSpec);
+//                                        if (recycler.getHeight() > Utility.dpToPx(280))
+//                                            customRecycler.getRecycler().setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Utility.dpToPx(280)));
+//                                        else if (recycler.getMeasuredHeight() < Utility.dpToPx(280))
+//                                            customRecycler.getRecycler().setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+//
+//
+//                                        if (s.toString().endsWith("\n\n")) {
+//                                            focusIndex[0] = index + 1;
+//                                            newKnow.newItem(item);
+//                                            item.setName(item.getName().trim());
+//                                            customRecycler.reload();
+////                                        customRecycler.scrollTo(focusIndex[0], false);
+//                                        }
                                     }
-                                };
-                                listItem_knowledgeList_text.addTextChangedListener(watcher);
-                                map.put(listItem_knowledgeList_text, watcher);
+                                });
                             });
 
                     // -------------------------------------
 
                     new Helpers.TextInputHelper().defaultDialogValidation(customDialog).addValidator(view.findViewById(R.id.dialog_editOrAddKnowledge_Titel_layout));
+                    EditText dialog_editOrAddKnowledge_content = view.findViewById(R.id.dialog_editOrAddKnowledge_content);
                     if (newKnowledge[0] != null) {
                         ((EditText) view.findViewById(R.id.dialog_editOrAddKnowledge_Titel)).setText(newKnowledge[0].getName());
-                        ((EditText) view.findViewById(R.id.dialog_editOrAddKnowledge_content)).setText(knowledge.getContent());
+                        dialog_editOrAddKnowledge_content.setText(knowledge.getContent());
                         ((TextView) view.findViewById(R.id.dialog_editOrAddKnowledge_categories)).setText(String.join(", ", categoriesNames));
                         view.findViewById(R.id.dialog_editOrAddKnowledge_categories).setSelected(true);
                         ((TextView) view.findViewById(R.id.dialog_editOrAddKnowledge_sources)).setText(String.join(", ", sourcesNames));
@@ -383,12 +466,82 @@ public class KnowledgeActivity extends AppCompatActivity {
                             .generate();
 
 
+                    View layoutContent = view.findViewById(R.id.dialog_editOrAddKnowledge_content_layout);
+                    View layoutList = view.findViewById(R.id.dialog_editOrAddKnowledge_list_layout);
+                    if (newKnowledge[0].hasItems()) {
+                        layoutContent.setVisibility(View.GONE);
+                        layoutList.setVisibility(View.VISIBLE);
+                    }
+                    view.findViewById(R.id.dialog_editOrAddKnowledge_content_label).setOnClickListener(view1 -> {
+                        Runnable change = () -> {
+                            layoutContent.setVisibility(View.GONE);
+                            layoutList.setVisibility(View.VISIBLE);
+                        };
+
+                        final String[] content = {dialog_editOrAddKnowledge_content.getText().toString().trim()};
+                        if (!content[0].isEmpty()) {
+                            com.finn.androidUtilities.CustomDialog.Builder(this)
+                                    .setTitle("Inhalt Vorhanden")
+                                    .setText("Das Wissen hat bereits einen Inhalt.\nSoll versucht werden diesen zu übernehmen, oder soll er verworfen werden?")
+                                    .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
+                                    .addButton("Verwerfen", customDialog1 -> {
+                                        dialog_editOrAddKnowledge_content.setText("");
+                                        newKnowledge[0].setContent(null);
+                                        change.run();
+                                    })
+                                    .addButton("Übernehmen", customDialog1 -> {
+                                        dialog_editOrAddKnowledge_content.setText("");
+                                        newKnowledge[0].setContent(null);
+                                        List<Knowledge.Item> itemList = newKnowledge[0].getItemList();
+                                        itemList.clear();
+                                        if (content[0].startsWith("• "))
+                                            content[0] = content[0].substring(2);
+                                        for (String s : content[0].split("• "))
+                                            itemList.add(new Knowledge.Item(s.trim()));
+                                        contentList.reload();
+                                        change.run();
+
+                                    })
+                                    .colorLastAddedButton()
+                                    .show();
+                        } else
+                            change.run();
+
+                    });
+                    view.findViewById(R.id.dialog_editOrAddKnowledge_list_label).setOnClickListener(view1 -> {
+                        Runnable change = () -> {
+                            layoutList.setVisibility(View.GONE);
+                            layoutContent.setVisibility(View.VISIBLE);
+                        };
+
+                        if (newKnowledge[0].hasItems()) {
+                            com.finn.androidUtilities.CustomDialog.Builder(this)
+                                    .setTitle("Inhalt Vorhanden")
+                                    .setText("Das Wissen hat bereits einen Inhalt.\nSoll versucht werden diesen zu übernehmen, oder soll er verworfen werden?")
+                                    .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
+                                    .addButton("Verwerfen", customDialog1 -> {
+                                        newKnowledge[0].clearItemList();
+                                        contentList.reload();
+                                        change.run();
+                                    })
+                                    .addButton("Übernehmen", customDialog1 -> {
+                                        String content = newKnowledge[0].itemListToString();
+                                        dialog_editOrAddKnowledge_content.setText(content);
+                                        newKnowledge[0].setContent(content);
+                                        newKnowledge[0].clearItemList();
+                                        contentList.reload();
+                                        change.run();
+                                    })
+                                    .colorLastAddedButton()
+                                    .show();
+                        } else
+                            change.run();
+                    });
+
                     view.findViewById(R.id.dialog_editOrAddKnowledge_editCategories).setOnClickListener(view1 ->
                             Utility.showEditItemDialog(this, customDialog, newKnowledge[0].getCategoryIdList(), newKnowledge[0], CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES));
                     view.findViewById(R.id.dialog_editOrAddKnowledge_editSources).setOnClickListener(view1 ->
                             showSourcesDialog(newKnowledge[0], view.findViewById(R.id.dialog_editOrAddKnowledge_sources), true));
-//                    view.findViewById(R.id.dialog_editOrAddKnowledge_editStudio).setOnClickListener(view1 ->
-//                            Utility.showEditItemDialog(this, addOrEditDialog, newKnowledge[0].getStudioList(), newKnowledge[0], ParentClass.OBJECT_TYPE.STUDIO ));
                 })
                 .show();
         return Pair.create(returnDialog, newKnowledge[0]);
@@ -448,7 +601,30 @@ public class KnowledgeActivity extends AppCompatActivity {
                         showEditOrNewDialog(knowledge), false)
                 .setSetViewContent((customDialog, view, reload) -> {
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_title)).setText(knowledge.getName());
-                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_content)).setText(knowledge.getContent());
+
+                    TextView listItem_knowledge_content = view.findViewById(R.id.dialog_detailKnowledge_content);
+                    RecyclerView listItem_knowledge_list = view.findViewById(R.id.dialog_detailKnowledge_list);
+                    if (knowledge.hasContent()) {
+                        listItem_knowledge_content.setVisibility(View.VISIBLE);
+                        listItem_knowledge_list.setVisibility(View.GONE);
+                        listItem_knowledge_content.setText(knowledge.getContent());
+                    } else if (knowledge.hasItems()) {
+                        listItem_knowledge_list.setVisibility(View.VISIBLE);
+                        listItem_knowledge_content.setVisibility(View.GONE);
+                        new CustomRecycler<Knowledge.Item>(this, listItem_knowledge_list)
+                                .setObjectList(knowledge.getItemList())
+                                .hideOverscroll()
+                                .setItemLayout(R.layout.list_item_knowledge_list_text)
+                                .setSetItemContent((customRecycler2, itemView1, item) -> ((TextView) itemView1.findViewById(R.id.listItem_knowledgeList_text)).setText(item.getName()))
+                                .generateRecyclerView();
+                    } else {
+                        listItem_knowledge_content.setVisibility(View.VISIBLE);
+                        listItem_knowledge_list.setVisibility(View.GONE);
+                        listItem_knowledge_content.setText("");
+                    }
+
+
+
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_categories)).setText(String.join(", ", categoriesNames));
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_sources)).setText(knowledge.getSources().stream().map(strings -> strings.get(0)).collect(Collectors.joining(", ")));
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_lastChanged)).setText(String.format("%s Uhr", new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.GERMANY).format(knowledge.getLastChanged())));
@@ -464,17 +640,23 @@ public class KnowledgeActivity extends AppCompatActivity {
         return returnDialog;
     }
 
-    private void saveKnowledge(CustomDialog dialog, String titel, String content, Knowledge[] newKnowledge, Knowledge knowledge) {
+    private void saveKnowledge(CustomDialog dialog, String titel, String content, Knowledge newKnowledge, Knowledge knowledge) {
 
         if (knowledge == null)
-            knowledge = newKnowledge[0];
+            knowledge = newKnowledge;
+
+        // ToDo: deepCopy item list und dann hier kürzen und zurückschreiben
 
         knowledge.setName(titel);
         knowledge.setContent(content);
-        knowledge.setCategoryIdList(newKnowledge[0].getCategoryIdList());
-        knowledge.setSources(newKnowledge[0].getSources());
+        knowledge.setCategoryIdList(newKnowledge.getCategoryIdList());
+        knowledge.setSources(newKnowledge.getSources());
         knowledge.setRating(((RatingBar) dialog.findViewById(R.id.dialog_editOrAddKnowledge_rating)).getRating());
         knowledge.setLastChanged(new Date());
+        knowledge.setItemList(newKnowledge.getItemList().stream().filter(item -> {
+            item.setName(item.getName().trim());
+            return !item.getName().isEmpty();
+        }).collect(Collectors.toList()));
 
         database.knowledgeMap.put(knowledge.getUuid(), knowledge);
         reLoadRecycler();
@@ -489,36 +671,53 @@ public class KnowledgeActivity extends AppCompatActivity {
     }
 
     private void showRandomDialog() {
-        List<Knowledge> filterdKnowledgeList = filterList(allKnowledgeList);
+        CustomList<Knowledge> filterdKnowledgeList = new CustomList<>(filterList(allKnowledgeList));
         if (filterdKnowledgeList.isEmpty()) {
             Toast.makeText(this, "Nichts zum Zeigen", Toast.LENGTH_SHORT).show();
             return;
         }
-        final Knowledge[] randomKnowledge = {filterdKnowledgeList.get((int) (Math.random() * filterdKnowledgeList.size()))};
-        List<String> categoryNames = new ArrayList<>();
-        randomKnowledge[0].getCategoryIdList().forEach(uuid -> categoryNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
 
         CustomDialog.Builder(this)
                 .setTitle("Zufälliges Wissen")
                 .setView(R.layout.dialog_detail_knowledge)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Nochmal", customDialog -> {
+                    if (filterdKnowledgeList.isEmpty()) {
+                        Toast.makeText(this, "Wissen erschöpft", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
                     Toast.makeText(this, "Neu", Toast.LENGTH_SHORT).show();
-                    randomKnowledge[0] = filterdKnowledgeList.get((int) (Math.random() * filterdKnowledgeList.size()));
-                    ((TextView) customDialog.findViewById(R.id.dialog_detailKnowledge_title)).setText(randomKnowledge[0].getName());
-                    ((TextView) customDialog.findViewById(R.id.dialog_detailKnowledge_content)).setText(randomKnowledge[0].getContent());
-
-                    List<String> darstellerNames_neu = new ArrayList<>();
-                    randomKnowledge[0].getCategoryIdList().forEach(uuid -> darstellerNames_neu.add(database.knowledgeCategoryMap.get(uuid).getName()));
-                    ((TextView) customDialog.findViewById(R.id.dialog_detailKnowledge_categories)).setText(String.join(", ", darstellerNames_neu));
-
+                    customDialog.reloadView();
 
                 }, false)
-//                .addButton("Öffnen", customDialog -> openUrl(randomKnowledge[0], false), false)
                 .setSetViewContent((customDialog, view, reload) -> {
-                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_title)).setText(randomKnowledge[0].getName());
-                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_content)).setText(randomKnowledge[0].getContent());
-                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_categories)).setText(String.join(", ", categoryNames));
+                    Knowledge randomKnowledge = filterdKnowledgeList.removeRandom();
+
+                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_title)).setText(randomKnowledge.getName());
+
+                    TextView listItem_knowledge_content = view.findViewById(R.id.dialog_detailKnowledge_content);
+                    RecyclerView listItem_knowledge_list = view.findViewById(R.id.dialog_detailKnowledge_list);
+                    if (randomKnowledge.hasContent()) {
+                        listItem_knowledge_content.setVisibility(View.VISIBLE);
+                        listItem_knowledge_list.setVisibility(View.GONE);
+                        listItem_knowledge_content.setText(randomKnowledge.getContent());
+                    } else if (randomKnowledge.hasItems()) {
+                        listItem_knowledge_list.setVisibility(View.VISIBLE);
+                        listItem_knowledge_content.setVisibility(View.GONE);
+                        new CustomRecycler<Knowledge.Item>(this, listItem_knowledge_list)
+                                .setObjectList(randomKnowledge.getItemList())
+                                .hideOverscroll()
+                                .setItemLayout(R.layout.list_item_knowledge_list_text)
+                                .setSetItemContent((customRecycler2, itemView1, item) -> ((TextView) itemView1.findViewById(R.id.listItem_knowledgeList_text)).setText(item.getName()))
+                                .generateRecyclerView();
+                    } else {
+                        listItem_knowledge_content.setVisibility(View.VISIBLE);
+                        listItem_knowledge_list.setVisibility(View.GONE);
+                        listItem_knowledge_content.setText("");
+                    }
+
+                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_categories)).setText(
+                            randomKnowledge.getCategoryIdList().stream().map(uuid -> database.knowledgeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", ")));
 
                 })
                 .show();
@@ -781,6 +980,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .addButton("Zurück", customDialog -> {
                 })
                 .setObjectExtra(sourcesText)
+                .disableScroll()
                 .setOnDialogDismiss(customDialog -> ((TextView) customDialog.getObjectExtra()).setText(
                         knowledge.getSources().stream().map(strings -> strings.get(0)).collect(Collectors.joining(", "))
                 ))

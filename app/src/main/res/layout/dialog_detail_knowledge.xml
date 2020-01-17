@@ -45,12 +45,26 @@
                 android:text="Inhalt:"
                 android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/dialog_detailKnowledge_content"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                tools:text="Inhalt.." />
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/dialog_detailKnowledge_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    tools:text="Inhalt.." />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/dialog_detailKnowledge_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1" />
+
+            </LinearLayout>
+
         </LinearLayout>
 
         <LinearLayout

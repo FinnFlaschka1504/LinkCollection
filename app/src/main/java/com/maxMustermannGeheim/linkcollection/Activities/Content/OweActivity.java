@@ -381,7 +381,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
     private CustomDialog showDetailDialog(Owe owe) {
         setResult(RESULT_OK);
         CustomDialog returnDialog = CustomDialog.Builder(this)
-                .setTitle("Deteil Ansicht")
+                .setTitle("Detail Ansicht")
                 .setView(R.layout.dialog_detail_owe)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Bearbeiten", customDialog -> addOrEditDialog[0] = showEditOrNewDialog(owe), false)

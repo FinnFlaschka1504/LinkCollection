@@ -81,6 +81,19 @@ public class CustomList<E> extends ArrayList<E> {
     }
     //  <------------------------- get... -------------------------
 
+
+    //  ------------------------- set... ------------------------->
+
+    @Override
+    public E set(int index, E element) {
+        if (index >= 0)
+            return super.set(index, element);
+        else
+            return super.set(size() - index, element);
+    }
+
+    //  <------------------------- set... -------------------------
+
     public CustomList<E> add(E... e) {
         Collections.addAll(this, e);
         return this;

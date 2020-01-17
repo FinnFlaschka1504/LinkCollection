@@ -444,7 +444,7 @@ public class VideoActivity extends AppCompatActivity {
         setResult(RESULT_OK);
         final int[] views = {video.getDateList().size()};
         CustomDialog returnDialog = CustomDialog.Builder(this)
-                .setTitle("Deteil Ansicht")
+                .setTitle("Detail Ansicht")
                 .setView(R.layout.dialog_detail_video)
                 .addButton("Bearbeiten", customDialog ->
                         addOrEditDialog[0] = showEditOrNewDialog(video), false)
@@ -606,11 +606,11 @@ public class VideoActivity extends AppCompatActivity {
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     String titel = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_Titel)).getText().toString().trim();
-                    if (titel.isEmpty()) {
-                        Toast.makeText(this, "Einen Titel eingeben", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_Url)).getText().toString().trim();
+//                    if (titel.isEmpty()) {
+//                        Toast.makeText(this, "Einen Titel eingeben", Toast.LENGTH_SHORT).show();
+//                        return;
+//                    }
+                    String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_url)).getText().toString().trim();
 //                    if (url.equals("") && !checked){
 //                        CustomDialog.Builder(this)
 //                        .setTitle("Ohne URL speichern?")
@@ -621,7 +621,23 @@ public class VideoActivity extends AppCompatActivity {
 //                        .show();
 //                    }
 //                    else
-                    saveVideo(customDialog, video, titel, url, checked[0], editVideo);
+                    if (!editVideo[0].hasRating() && !Utility.boolOr(((RatingBar) customDialog.findViewById(R.id.dialog_editOrAddVideo_rating)).getRating(),-1f, 0f))
+                        com.finn.androidUtilities.CustomDialog.Builder(this)
+                                .setTitle("Ansicht Hinzufügen?")
+                                .setText("Soll eine neue Ansicht zu dem Video hinzugefügt werden?")
+                                .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.NO_BUTTON, customDialog1 -> saveVideo(customDialog, video, titel, url, checked[0], editVideo))
+                                .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
+                                    boolean before = editVideo[0].addDate(new Date(), true);
+                                    editVideo[0].setWatchLater(false);
+                                    checked[0] = false;
+                                    Utility.showCenteredToast(this, "Ansicht Hinzugefügt" + (before ? "\n(Gestern)" : ""));
+                                    saveVideo(customDialog, video, titel, url, checked[0], editVideo);
+                                })
+                                .enableColoredActionButtons()
+                                .show();
+                    else
+                        saveVideo(customDialog, video, titel, url, checked[0], editVideo);
 
                 }, false)
                 .disableLastAddedButton()
@@ -629,7 +645,7 @@ public class VideoActivity extends AppCompatActivity {
                     final com.finn.androidUtilities.CustomDialog[] internetDialog = {null};
                     TextInputLayout dialog_editOrAddVideo_Titel_layout = view.findViewById(R.id.dialog_editOrAddVideo_Titel_layout);
 
-                    TextInputLayout dialog_editOrAddVideo_Url_layout = view.findViewById(R.id.dialog_editOrAddVideo_Url_layout);
+                    TextInputLayout dialog_editOrAddVideo_Url_layout = view.findViewById(R.id.dialog_editOrAddVideo_url_layout);
 
                     view.findViewById(R.id.dialog_editOrAddVideo_internet).setOnClickListener(v -> {
                         final boolean[] isJsEnabled = {false};
@@ -707,11 +723,45 @@ public class VideoActivity extends AppCompatActivity {
                         checked[0] = isChecked;
                         helper.validate(dialog_editOrAddVideo_Url_layout);
                     });
-                    if (video == null || isShared)
+                    View dialog_editOrAddVideo_title_label = customDialog.findViewById(R.id.dialog_editOrAddVideo_title_label);
+                    if (video == null || isShared) {
                         helper.setValidation(dialog_editOrAddVideo_Titel_layout, (validator, text) -> {
-                            if (database.videoMap.values().stream().anyMatch(show1 -> show1.getName().toLowerCase().equals(text.toLowerCase())))
-                                validator.setInvalid("Schon vorhanden!");
+                            if (database.videoMap.values().stream().anyMatch(video1 -> video1.getName().toLowerCase().equals(text.toLowerCase()))) {
+                                dialog_editOrAddVideo_title_label.setClickable(true);
+                                validator.setInvalid("Schon vorhanden! (Klicke auf das Label)");
+                            }
+                            else
+                                dialog_editOrAddVideo_title_label.setClickable(false);
                         });
+                    }
+                    dialog_editOrAddVideo_title_label.setOnClickListener(v -> {
+                        String text = dialog_editOrAddVideo_Titel_layout.getEditText().getText().toString().toLowerCase();
+                        database.videoMap.values().stream().filter(video1 -> video1.getName().toLowerCase().equals(text)).findAny().ifPresent(video1 -> {
+                            Runnable openEdit = () -> {
+                                customDialog.dismiss();
+                                isShared = false;
+                                CustomDialog newDialog = showEditOrNewDialog(video1);
+                                if (!Utility.stringExists(video1.getUrl())) {
+                                    ((EditText) newDialog.findViewById(R.id.dialog_editOrAddVideo_url)).setText(dialog_editOrAddVideo_Url_layout.getEditText().getText().toString());
+                                }
+                            };
+
+                            if (video1.getDateList().isEmpty())
+                                openEdit.run();
+                            else {
+                                com.finn.androidUtilities.CustomDialog.Builder(this)
+                                        .setTitle("Details Oder Bearbeiten")
+                                        .setText("Mochtest du Details, oder Bearbeiten öffen?")
+                                        .addButton("Details", customDialog1 -> {
+                                            customDialog.dismiss();
+                                            showDetailDialog(video1);
+                                        })
+                                        .addButton("Bearbeiten", customDialog1 -> openEdit.run())
+                                        .enableExpandButtons()
+                                        .show();
+                            }
+                        });
+                    });
 
                     if (editVideo[0] != null) {
                         AutoCompleteTextView dialog_editOrAddVideo_Titel = view.findViewById(R.id.dialog_editOrAddVideo_Titel);
@@ -746,7 +796,7 @@ public class VideoActivity extends AppCompatActivity {
                                 editVideo[0].getGenreList().stream().map(uuid -> database.genreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                         view.findViewById(R.id.dialog_editOrAddVideo_Genre).setSelected(true);
                         if (!reload)
-                            ((EditText) view.findViewById(R.id.dialog_editOrAddVideo_Url)).setText(editVideo[0].getUrl());
+                            ((EditText) view.findViewById(R.id.dialog_editOrAddVideo_url)).setText(editVideo[0].getUrl());
                         if (editVideo[0].getRelease() != null) {
                             ((LazyDatePicker) view.findViewById(R.id.dialog_editOrAddVideo_datePicker)).setDate(editVideo[0].getRelease());
                         }
@@ -754,7 +804,7 @@ public class VideoActivity extends AppCompatActivity {
                         dialog_editOrAddVideo_watchLater.setVisibility(Utility.isUpcoming(editVideo[0].getRelease()) || (video != null && !video.getName().isEmpty()) ? View.GONE : View.VISIBLE);
                         int visibility = Utility.isUpcoming(editVideo[0].getRelease())/* && (video == null || !video.getName().isEmpty())*/ ? View.GONE : View.VISIBLE;
                         view.findViewById(R.id.dialog_editOrAddVideo_rating_layout).setVisibility(visibility);
-                        view.findViewById(R.id.dialog_editOrAddVideo_Url_allLayout).setVisibility(visibility);
+                        view.findViewById(R.id.dialog_editOrAddVideo_url_allLayout).setVisibility(visibility);
 
                         ((RatingBar) view.findViewById(R.id.dialog_editOrAddVideo_rating)).setRating(editVideo[0].getRating());
                     } else {

@@ -148,12 +148,12 @@ public class SquareLayout extends LinearLayout {
 //
 //
 ////        ViewGroup.LayoutParams layoutParams = getLayoutParams();
-////        int matchParentMeasureSpec = MeasureSpec.makeMeasureSpec(((View) getParent()).getWidth(), MeasureSpec.EXACTLY);
+////        int matchParentMeasureSpec = MeasureSpec.makeMeasureSpec(((View) _getParent()).getWidth(), MeasureSpec.EXACTLY);
 ////        int wrapContentMeasureSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
 ////        measure(matchParentMeasureSpec, wrapContentMeasureSpec);
 ////        int height = getMeasuredHeight();
 ////
-////        int matchParentMeasureSpec_width = MeasureSpec.makeMeasureSpec(((View) getParent()).getHeight(), MeasureSpec.EXACTLY);
+////        int matchParentMeasureSpec_width = MeasureSpec.makeMeasureSpec(((View) _getParent()).getHeight(), MeasureSpec.EXACTLY);
 ////        int wrapContentMeasureSpec_width = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
 ////        measure(wrapContentMeasureSpec_width, matchParentMeasureSpec_width);
 ////        int width = getMeasuredWidth();

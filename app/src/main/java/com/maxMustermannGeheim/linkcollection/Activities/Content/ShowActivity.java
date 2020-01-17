@@ -708,6 +708,12 @@ public class ShowActivity extends AppCompatActivity {
 
                     List<Show> showList = database.showMap.values().stream().filter(Show::isNotifyNew).collect(Collectors.toList());
                     final int[] pending = {showList.size()};
+
+                    if (showList.isEmpty())
+                        Toast.makeText(activity, "Nichts zum aktuallisieren markiert", Toast.LENGTH_SHORT).show();
+                    else
+                        Toast.makeText(activity, "Aktuallisieren", Toast.LENGTH_SHORT).show();
+
                     showList.forEach(show ->
                             ShowActivity.apiDetailRequest(activity, show.getTmdbId(), show, () -> {
                                 if (pending[0] > 1) {
@@ -759,7 +765,7 @@ public class ShowActivity extends AppCompatActivity {
     private CustomDialog showDetailDialog(Show show) {
         setResult(RESULT_OK);
         return CustomDialog.Builder(this)
-                .setTitle("Deteil Ansicht")
+                .setTitle("Detail Ansicht")
                 .setView(R.layout.dialog_detail_show)
                 .addButton("Historie", customDialog -> {
                     List<Pair<Date, Show.Episode>> list = new ArrayList<>();
@@ -1411,7 +1417,7 @@ public class ShowActivity extends AppCompatActivity {
                 "?api_key=09e015a2106437cbc33bf79eb512b32d&language=de";
         RequestQueue requestQueue = Volley.newRequestQueue(activity);
 
-        Toast toast = Toast.makeText(activity, "Deteils werden geladen..", Toast.LENGTH_LONG);
+        Toast toast = Toast.makeText(activity, "Details werden geladen..", Toast.LENGTH_LONG);
         if (!update)
             toast.show();
 

@@ -11,6 +11,7 @@
     <color name="colorTileBackground">@android:color/background_light</color>
     <color name="colorDrawable">@color/colorDayNightContent</color>
     <color name="colorText">@color/colorDayNightContent</color>
+    <color name="colorText_hover">#999999</color>
     <color name="colorDayNightContent">#757575</color>
     <color name="colorBackground">#fafafa</color>
     <color name="colorBackgroundLight">#ffffff</color>

@@ -370,6 +370,12 @@ public class Utility implements java.io.Serializable {
                     return true;
             }
         }
+        if (filterTypeSet.contains(KnowledgeActivity.FILTER_TYPE.CONTENT)) {
+            if (knowledge.hasContent() && knowledge.getContent().toLowerCase().contains(query.toLowerCase()))
+                return true;
+            if (knowledge.hasItems() && knowledge.itemListToString().toLowerCase().contains(query.toLowerCase()))
+                return true;
+        }
 
         return false;
     }
@@ -1149,7 +1155,7 @@ public class Utility implements java.io.Serializable {
 //    public static void applyAspectRatioWidth(View view, double aspectRatio){
 //        ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
 //
-//        int matchParentMeasureSpec = View.MeasureSpec.makeMeasureSpec(((View) view.getParent()).getWidth(), View.MeasureSpec.EXACTLY);
+//        int matchParentMeasureSpec = View.MeasureSpec.makeMeasureSpec(((View) view._getParent()).getWidth(), View.MeasureSpec.EXACTLY);
 //        int wrapContentMeasureSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
 //        view.measure(matchParentMeasureSpec, wrapContentMeasureSpec);
 //        int height = view.getMeasuredHeight();
@@ -1159,7 +1165,7 @@ public class Utility implements java.io.Serializable {
 //    public static void applyAspectRatioHeight(View view, double aspectRatio){
 //        ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
 //
-////        int matchParentMeasureSpec_width = View.MeasureSpec.makeMeasureSpec(((View) view.getParent()).getHeight(), View.MeasureSpec.EXACTLY);
+////        int matchParentMeasureSpec_width = View.MeasureSpec.makeMeasureSpec(((View) view._getParent()).getHeight(), View.MeasureSpec.EXACTLY);
 ////        int wrapContentMeasureSpec_width = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
 ////        view.measure(wrapContentMeasureSpec_width, matchParentMeasureSpec_width);
 ////        int width = view.getMeasuredWidth();
@@ -1284,7 +1290,7 @@ public class Utility implements java.io.Serializable {
 
 
     //  ------------------------- EasyLogic ------------------------->
-    public static Boolean boolOr(Object what, Object... to){
+    public static <T> Boolean boolOr(T what, T... to){
         if (to.length == 0)
             return null;
 
@@ -1295,7 +1301,7 @@ public class Utility implements java.io.Serializable {
         return false;
     }
 
-    public static Boolean boolXOr(Object what, Object... to){
+    public static <T> Boolean boolXOr(T what, T... to){
         if (to.length == 0)
             return null;
 
@@ -1310,7 +1316,7 @@ public class Utility implements java.io.Serializable {
         return found;
     }
 
-    public static Boolean boolAnd(Object what, Object... to){
+    public static <T> Boolean boolAnd(T what, T... to){
         if (to.length == 0)
             return null;
 
@@ -1319,6 +1325,12 @@ public class Utility implements java.io.Serializable {
                 return false;
         }
         return true;
+    }
+
+    // ---
+
+    public static boolean stringExists(String s){
+        return s != null && !s.trim().isEmpty();
     }
     //  <------------------------- EasyLogic -------------------------
 }

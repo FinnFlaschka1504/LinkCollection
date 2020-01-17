@@ -1,7 +1,6 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Knowledge;
 
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -87,15 +86,23 @@ public class Knowledge extends ParentClass {
         return this;
     }
 
-    public Item newItem(Item previousItem) {
+    public static Item newItem(List<Item> itemList, Item previousItem) {
         Item newItem = new Item();
         itemList.add(itemList.indexOf(previousItem) + 1, newItem);
         return newItem;
     }
 
-    public boolean removeItem(Item item) {
-        return itemList.remove(item);
+    public static Item previousItem(List<Item> itemList, Item item) {
+        int index = itemList.indexOf(item);
+        if (index == 0)
+            return null;
+        else
+            return itemList.get(index - 1);
     }
+
+//    public boolean removeItem(Item item) {
+//        return itemList.remove(item);
+//    }
 
     public boolean hasItems() {
         return itemList.stream().anyMatch(item -> !item.getName().isEmpty());
@@ -106,7 +113,8 @@ public class Knowledge extends ParentClass {
     }
 
     public static class Item extends ParentClass{
-        private List<Item> children = new ArrayList<>();
+        private List<Item> childrenList = new ArrayList<>();
+//        private Item parent;
 
         public Item() {
             uuid = "knowledgeItem_" + UUID.randomUUID().toString();
@@ -127,9 +135,54 @@ public class Knowledge extends ParentClass {
             return this;
         }
 
+//        public Item _getParent() {
+//            return parent;
+//        }
+//
+//        public Item _setParent(Item parent) {
+//            this.parent = parent;
+//            return this;
+//        }
+
+        public List<Item> getChildrenList() {
+            return childrenList;
+        }
+
+        public Item setChildrenList(List<Item> childrenList) {
+            this.childrenList = childrenList;
+            return this;
+        }
+
+        public Item addChild(Item item) {
+            if (item == null)
+                item = new Item();
+            else
+                item.setName(item.getName().trim());
+
+            childrenList.add(item);
+            return item;
+        }
+
+        public boolean hasChild_real() {
+            return childrenList.stream().anyMatch(item -> !item.getName().isEmpty());
+        }
+
+        public boolean hasChild() {
+            return !childrenList.isEmpty();
+        }
+
+        public int getDepth() {
+            return 0;
+//            return parent == null ? 0 : parent.getDepth() + 1;
+        }
+
+
         @Override
         public Item clone() {
-            return (Item) super.clone();
+            Item clone = (Item) super.clone();
+            if (!childrenList.isEmpty())
+                clone.setChildrenList(childrenList.stream().map(Item::clone).collect(Collectors.toList()));
+            return clone;
         }
     }
     //  <------------------------- ItemList -------------------------

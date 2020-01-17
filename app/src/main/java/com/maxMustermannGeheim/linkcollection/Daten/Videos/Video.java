@@ -143,6 +143,10 @@ public class Video extends ParentClass {
         return this;
     }
 
+    public boolean hasRating() {
+        return !(rating == -1 || rating == 0);
+    }
+
     public Date getRelease() {
         return release;
     }

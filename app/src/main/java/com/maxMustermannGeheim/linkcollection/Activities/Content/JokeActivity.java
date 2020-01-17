@@ -303,7 +303,7 @@ public class JokeActivity extends AppCompatActivity {
     private CustomDialog showDetailDialog(Joke joke) {
         setResult(RESULT_OK);
         CustomDialog returnDialog = CustomDialog.Builder(this)
-                .setTitle("Deteil Ansicht")
+                .setTitle("Detail Ansicht")
                 .setView(R.layout.dialog_detail_joke)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Bearbeiten", customDialog -> addOrEditDialog[0] = showEditOrNewDialog(joke), false)

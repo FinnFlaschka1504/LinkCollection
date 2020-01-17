@@ -10,7 +10,6 @@ import android.text.TextWatcher;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -19,6 +18,7 @@ import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.Switch;
+import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -66,7 +66,7 @@ public class KnowledgeActivity extends AppCompatActivity {
     private boolean reverse;
     private SORT_TYPE sort_type = SORT_TYPE.LATEST;
     Database database = Database.getInstance();
-    private CustomRecycler customRecycler_List;
+    private CustomRecycler<? extends CustomRecycler.Expandable<Knowledge>> customRecycler_List;
     private String searchQuery = "";
     private SharedPreferences mySPR_daten;
     private SearchView.OnQueryTextListener textListener;
@@ -224,11 +224,12 @@ public class KnowledgeActivity extends AppCompatActivity {
                         if (expanded) {
                             listItem_knowledge_list.setVisibility(View.VISIBLE);
                             listItem_knowledge_content.setVisibility(View.GONE);
-                            new CustomRecycler<Knowledge.Item>(this, listItem_knowledge_list)
-                                    .setObjectList(knowledge.getItemList())
-                                    .setItemLayout(R.layout.list_item_knowledge_list_text)
-                                    .setSetItemContent((customRecycler2, itemView1, item) -> ((TextView) itemView1.findViewById(R.id.listItem_knowledgeList_text)).setText(item.getName()))
-                                    .generateRecyclerView().setOnTouchListener((v, event) -> itemView.onTouchEvent(event));
+                            generateItemTextRecycler(listItem_knowledge_list, knowledge.getItemList(), itemView).getRecycler().setOnTouchListener((v, event) -> itemView.onTouchEvent(event));
+//                            new CustomRecycler<Knowledge.Item>(this, listItem_knowledge_list)
+//                                    .setObjectList(knowledge.getItemList())
+//                                    .setItemLayout(R.layout.list_item_knowledge_list_text)
+//                                    .setSetItemContent((customRecycler2, itemView1, item) -> ((TextView) itemView1.findViewById(R.id.listItem_knowledgeList_text)).setText(item.getName()))
+//                                    .generateRecyclerView().setOnTouchListener((v, event) -> itemView.onTouchEvent(event));
                         } else {
                             listItem_knowledge_content.setVisibility(View.VISIBLE);
                             listItem_knowledge_list.setVisibility(View.GONE);
@@ -325,7 +326,6 @@ public class KnowledgeActivity extends AppCompatActivity {
                             customDialog.dismiss();
                             Toast.makeText(this, "Wissen gelöscht", Toast.LENGTH_SHORT).show();
                         })
-                        .enableColoredActionButtons()
                         .show();
             }, false)
                     .alignPreviousButtonsLeft();
@@ -346,7 +346,6 @@ public class KnowledgeActivity extends AppCompatActivity {
                                 .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.YES_NO)
                                 .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 ->
                                         saveKnowledge(customDialog, titel, content, newKnowledge[0], knowledge))
-                                .enableColoredActionButtons()
                                 .show();
                     } else
                         saveKnowledge(customDialog, titel, content, newKnowledge[0], knowledge);
@@ -354,7 +353,6 @@ public class KnowledgeActivity extends AppCompatActivity {
                 }, false)
                 .disableLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {
-                    final Integer[] focusIndex = {null};
                     CustomRecycler.CustomRecyclerInterface<Knowledge.Item> recyclerInterface = customRecycler -> {
                         RecyclerView recycler = customRecycler.getRecycler();
                         int matchParentMeasureSpec = View.MeasureSpec.makeMeasureSpec(((View) recycler.getParent()).getWidth(), View.MeasureSpec.EXACTLY);
@@ -365,86 +363,9 @@ public class KnowledgeActivity extends AppCompatActivity {
                         else if (recycler.getMeasuredHeight() < Utility.dpToPx(280))
                             customRecycler.getRecycler().setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
                     };
-                    CustomRecycler<Knowledge.Item> contentList = new CustomRecycler<Knowledge.Item>(this, view.findViewById(R.id.dialog_editOrAddKnowledge_list))
-                            .setItemLayout(R.layout.list_item_knowledge_list)
+                    CustomRecycler<Knowledge.Item> contentRecycler = new CustomRecycler<Knowledge.Item>(this, view.findViewById(R.id.dialog_editOrAddKnowledge_list))
                             .setOnReload(recyclerInterface)
-                            .setOnGenerate(recyclerInterface)
-                            .enableDragAndDrop(objectList -> newKnowledge[0].setItemList(objectList))
-                            .setSetItemContent((customRecycler, itemView, item) -> {
-                                Knowledge newKnow = newKnowledge[0];
-                                EditText listItem_knowledgeList_text = itemView.findViewById(R.id.listItem_knowledgeList_text);
-                                Utility.removeTextListeners(listItem_knowledgeList_text);
-                                listItem_knowledgeList_text.setText(item.getName());
-                                int index = customRecycler.getObjectList().indexOf(item);
-                                final View listItem_knowledgeList_remove = itemView.findViewById(R.id.listItem_knowledgeList_remove);
-                                listItem_knowledgeList_remove.setVisibility(item.getName().length() == 0 && index != 0 ? View.VISIBLE : View.GONE);
-                                listItem_knowledgeList_remove.setOnClickListener(v -> {
-                                    focusIndex[0] = index - 1;
-                                    newKnow.removeItem(item);
-                                    customRecycler.reload();
-                                });
-                                if (focusIndex[0] != null) {
-                                    if (focusIndex[0] == index) {
-                                        listItem_knowledgeList_text.requestFocus();
-                                        focusIndex[0] = null;
-                                    }
-                                }
-                                listItem_knowledgeList_text.addTextChangedListener(new TextWatcher() {
-                                    @Override
-                                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                                    }
-
-                                    @Override
-                                    public void onTextChanged(CharSequence s, int start, int before, int count) {
-                                        RecyclerView recycler = customRecycler.getRecycler();
-                                        int index = recycler.getChildAdapterPosition(itemView);
-                                        customRecycler.getObjectList().get(index).setName(s.toString());
-                                        listItem_knowledgeList_remove.setVisibility(s.length() == 0 && index != 0 ? View.VISIBLE : View.GONE);
-
-                                        int matchParentMeasureSpec = View.MeasureSpec.makeMeasureSpec(((View) recycler.getParent()).getWidth(), View.MeasureSpec.EXACTLY);
-                                        int wrapContentMeasureSpec = View.MeasureSpec.makeMeasureSpec(Utility.dpToPx(280), View.MeasureSpec.AT_MOST);
-                                        recycler.measure(matchParentMeasureSpec, wrapContentMeasureSpec);
-                                        if (recycler.getHeight() > Utility.dpToPx(280))
-                                            customRecycler.getRecycler().setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Utility.dpToPx(280)));
-                                        else if (recycler.getMeasuredHeight() < Utility.dpToPx(280))
-                                            customRecycler.getRecycler().setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-
-                                        if (before == 0 && s.toString().endsWith("\n\n")) {
-                                            focusIndex[0] = index + 1;
-                                            newKnow.newItem(item);
-                                            item.setName(item.getName().trim());
-                                            customRecycler.reload();
-//                                        customRecycler.scrollTo(focusIndex[0], false);
-                                        }
-
-                                    }
-
-                                    @Override
-                                    public void afterTextChanged(Editable s) {
-//                                        RecyclerView recycler = customRecycler.getRecycler();
-//                                        int index = recycler.getChildAdapterPosition(itemView);
-//                                        customRecycler.getObjectList().get(index).setName(s.toString());
-//                                        listItem_knowledgeList_remove.setVisibility(s.length() == 0 && index != 0 ? View.VISIBLE : View.GONE);
-//
-//                                        int matchParentMeasureSpec = View.MeasureSpec.makeMeasureSpec(((View) recycler.getParent()).getWidth(), View.MeasureSpec.EXACTLY);
-//                                        int wrapContentMeasureSpec = View.MeasureSpec.makeMeasureSpec(Utility.dpToPx(280), View.MeasureSpec.AT_MOST);
-//                                        recycler.measure(matchParentMeasureSpec, wrapContentMeasureSpec);
-//                                        if (recycler.getHeight() > Utility.dpToPx(280))
-//                                            customRecycler.getRecycler().setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Utility.dpToPx(280)));
-//                                        else if (recycler.getMeasuredHeight() < Utility.dpToPx(280))
-//                                            customRecycler.getRecycler().setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-//
-//
-//                                        if (s.toString().endsWith("\n\n")) {
-//                                            focusIndex[0] = index + 1;
-//                                            newKnow.newItem(item);
-//                                            item.setName(item.getName().trim());
-//                                            customRecycler.reload();
-////                                        customRecycler.scrollTo(focusIndex[0], false);
-//                                        }
-                                    }
-                                });
-                            });
+                            .setOnGenerate(recyclerInterface);
 
                     // -------------------------------------
 
@@ -461,9 +382,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     } else
                         newKnowledge[0] = new Knowledge("");
 
-                    contentList
-                            .setGetActiveObjectList(customRecycler -> newKnowledge[0].getItemList())
-                            .generate();
+                    generateItemRecycler(newKnowledge[0].getItemList(), contentRecycler, null, 0, new CustomList[]{null}, new CustomList<>());
 
 
                     View layoutContent = view.findViewById(R.id.dialog_editOrAddKnowledge_content_layout);
@@ -498,7 +417,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                                             content[0] = content[0].substring(2);
                                         for (String s : content[0].split("• "))
                                             itemList.add(new Knowledge.Item(s.trim()));
-                                        contentList.reload();
+                                        contentRecycler.reload();
                                         change.run();
 
                                     })
@@ -521,7 +440,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                                     .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
                                     .addButton("Verwerfen", customDialog1 -> {
                                         newKnowledge[0].clearItemList();
-                                        contentList.reload();
+                                        contentRecycler.reload();
                                         change.run();
                                     })
                                     .addButton("Übernehmen", customDialog1 -> {
@@ -529,7 +448,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                                         dialog_editOrAddKnowledge_content.setText(content);
                                         newKnowledge[0].setContent(content);
                                         newKnowledge[0].clearItemList();
-                                        contentList.reload();
+                                        contentRecycler.reload();
                                         change.run();
                                     })
                                     .colorLastAddedButton()
@@ -547,12 +466,136 @@ public class KnowledgeActivity extends AppCompatActivity {
         return Pair.create(returnDialog, newKnowledge[0]);
     }
 
+    private void generateItemRecycler(List<Knowledge.Item> itemList, CustomRecycler<Knowledge.Item> itemRecycler, CustomRecycler<Knowledge.Item> parentRecycler, int depth, CustomList[] focusIndex, CustomList<Integer> posList) {
+        itemRecycler
+                .setItemLayout(R.layout.list_item_knowledge_list)
+                .enableDragAndDrop(objectList -> {
+                    itemList.clear();
+                    itemList.addAll(objectList);
+//                    itemRecycler.reload();
+                }) // ToDo: funktion zu customRecycler hinzufügen wo per id View zum ziehen übergeben wird
+                .setSetItemContent((customRecycler, itemView, item) -> {
+                    RecyclerView recycler = customRecycler.getRecycler();
+//                    int index = recycler.getChildAdapterPosition(itemView);
+                    int index = customRecycler.getObjectList().indexOf(item);
+                    CustomList<Integer> thisPosList = new CustomList<>(posList).add(new Integer[]{index});
+
+//                    ((TextView) itemView.findViewById(R.id.listItem_knowledgeList_marker)).setText(thisPosList.stream().map(String::valueOf).collect(Collectors.joining("-")));
+
+                    EditText listItem_knowledgeList_text = itemView.findViewById(R.id.listItem_knowledgeList_text);
+                    Utility.removeTextListeners(listItem_knowledgeList_text);
+                    listItem_knowledgeList_text.setText(item.getName());
+                    final View listItem_knowledgeList_remove = itemView.findViewById(R.id.listItem_knowledgeList_remove);
+                    listItem_knowledgeList_remove.setVisibility(item.getName().trim().isEmpty() && (index != 0 || depth != 0) ? View.VISIBLE : View.GONE);
+                    listItem_knowledgeList_remove.setOnClickListener(v -> {
+                        Runnable onDelete = () -> {
+                            if (index == 0) {
+                                thisPosList.removeLast();
+                                focusIndex[0] = thisPosList;
+                                itemList.remove(item);
+                                parentRecycler.reload();
+                            } else {
+                                thisPosList.add(thisPosList.removeLast() - 1);
+                                focusIndex[0] = thisPosList;
+                                itemList.remove(item);
+                                customRecycler.reload();
+                            }
+                        };
+
+                        if (item.hasChild_real()) {
+                            com.finn.androidUtilities.CustomDialog.Builder(this)
+                                    .setTitle("Stichpunkt löschen")
+                                    .setText("Der Stichpunkt besitzt selber noch Unter-Spichpunkte\nWillst du trotzdem löschen?")
+                                    .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                    .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.YES_BUTTON, customRecycler1 -> onDelete.run())
+                                    .show();
+                        } else
+                            onDelete.run();
+
+
+                    });
+
+                    if (focusIndex[0] != null) {
+                        if (focusIndex[0].equals(thisPosList)) {
+                            listItem_knowledgeList_text.requestFocus();
+                            listItem_knowledgeList_text.setSelection(listItem_knowledgeList_text.getText().toString().length());
+                            focusIndex[0] = null;
+                        }
+                    }
+                    listItem_knowledgeList_text.addTextChangedListener(new TextWatcher() {
+                        @Override
+                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                        }
+
+                        @Override
+                        public void onTextChanged(CharSequence s, int start, int before, int count) {
+                            customRecycler.getObjectList().get(index).setName(s.toString());
+                            listItem_knowledgeList_remove.setVisibility(item.getName().trim().isEmpty() && (index != 0 || depth != 0) ? View.VISIBLE : View.GONE);
+
+                            if (depth == 0) {
+                                int matchParentMeasureSpec = View.MeasureSpec.makeMeasureSpec(((View) recycler.getParent()).getWidth(), View.MeasureSpec.EXACTLY);
+                                int wrapContentMeasureSpec = View.MeasureSpec.makeMeasureSpec(Utility.dpToPx(280), View.MeasureSpec.AT_MOST);
+                                recycler.measure(matchParentMeasureSpec, wrapContentMeasureSpec);
+                                if (recycler.getHeight() > Utility.dpToPx(280))
+                                    customRecycler.getRecycler().setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Utility.dpToPx(280)));
+                                else if (recycler.getMeasuredHeight() < Utility.dpToPx(280))
+                                    customRecycler.getRecycler().setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                            }
+
+                            if (before == 0 && s.toString().startsWith("   ") && !s.toString().endsWith("\n\n")) {
+                                Knowledge.Item previousItem = Knowledge.previousItem(itemList, item);
+
+                                if (previousItem == null)
+                                    return;
+
+                                itemList.remove(item);
+                                previousItem.addChild(item);
+                                String BREAKPOINT = null;
+
+
+                                focusIndex[0] = thisPosList.add(new Integer[]{thisPosList.removeLast() - 1}).add(new Integer[]{0});
+
+
+                                customRecycler.reload();
+                            }
+                            if (before == 0 && s.toString().endsWith("\n\n")) {
+
+                                focusIndex[0] = thisPosList.add(new Integer[]{thisPosList.removeLast() + 1});
+
+
+                                Knowledge.newItem(itemList, item);
+                                item.setName(item.getName().trim());
+                                customRecycler.reload();
+                            }
+
+                        }
+
+                        @Override
+                        public void afterTextChanged(Editable s) {
+                        }
+                    });
+
+                    RecyclerView listItem_knowledgeList_recycler = itemView.findViewById(R.id.listItem_knowledgeList_recycler);
+                    TableRow listItem_knowledgeList_recycler_row = itemView.findViewById(R.id.listItem_knowledgeList_recycler_row);
+                    if (item.hasChild()) {
+                        listItem_knowledgeList_recycler_row.setVisibility(View.VISIBLE);
+
+                        generateItemRecycler(item.getChildrenList(), new CustomRecycler<>(this, listItem_knowledgeList_recycler), itemRecycler, depth + 1,
+                                focusIndex, thisPosList);
+                    }
+                    else
+                        listItem_knowledgeList_recycler_row.setVisibility(View.GONE);
+                })
+                .setGetActiveObjectList(customRecycler -> itemList)
+                .generate();
+    }
+
     private CustomDialog showDetailDialog(Knowledge knowledge) {
         setResult(RESULT_OK);
         List<String> categoriesNames = new ArrayList<>();
         knowledge.getCategoryIdList().forEach(uuid -> categoriesNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
         CustomDialog returnDialog = CustomDialog.Builder(this)
-                .setTitle("Deteil Ansicht")
+                .setTitle("Detail Ansicht")
                 .setView(R.layout.dialog_detail_knowledge)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Teilen", customDialog -> {
@@ -602,25 +645,21 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .setSetViewContent((customDialog, view, reload) -> {
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_title)).setText(knowledge.getName());
 
-                    TextView listItem_knowledge_content = view.findViewById(R.id.dialog_detailKnowledge_content);
-                    RecyclerView listItem_knowledge_list = view.findViewById(R.id.dialog_detailKnowledge_list);
+                    TextView dialog_detailKnowledge_content = view.findViewById(R.id.dialog_detailKnowledge_content);
+                    RecyclerView dialog_detailKnowledge_list = view.findViewById(R.id.dialog_detailKnowledge_list);
                     if (knowledge.hasContent()) {
-                        listItem_knowledge_content.setVisibility(View.VISIBLE);
-                        listItem_knowledge_list.setVisibility(View.GONE);
-                        listItem_knowledge_content.setText(knowledge.getContent());
+                        dialog_detailKnowledge_content.setVisibility(View.VISIBLE);
+                        dialog_detailKnowledge_list.setVisibility(View.GONE);
+                        dialog_detailKnowledge_content.setText(knowledge.getContent());
                     } else if (knowledge.hasItems()) {
-                        listItem_knowledge_list.setVisibility(View.VISIBLE);
-                        listItem_knowledge_content.setVisibility(View.GONE);
-                        new CustomRecycler<Knowledge.Item>(this, listItem_knowledge_list)
-                                .setObjectList(knowledge.getItemList())
-                                .hideOverscroll()
-                                .setItemLayout(R.layout.list_item_knowledge_list_text)
-                                .setSetItemContent((customRecycler2, itemView1, item) -> ((TextView) itemView1.findViewById(R.id.listItem_knowledgeList_text)).setText(item.getName()))
-                                .generateRecyclerView();
+                        dialog_detailKnowledge_list.setVisibility(View.VISIBLE);
+                        dialog_detailKnowledge_content.setVisibility(View.GONE);
+                        List<Knowledge.Item> itemList = knowledge.getItemList();
+                        generateItemTextRecycler(dialog_detailKnowledge_list, itemList, null);
                     } else {
-                        listItem_knowledge_content.setVisibility(View.VISIBLE);
-                        listItem_knowledge_list.setVisibility(View.GONE);
-                        listItem_knowledge_content.setText("");
+                        dialog_detailKnowledge_content.setVisibility(View.VISIBLE);
+                        dialog_detailKnowledge_list.setVisibility(View.GONE);
+                        dialog_detailKnowledge_content.setText("");
                     }
 
 
@@ -639,6 +678,30 @@ public class KnowledgeActivity extends AppCompatActivity {
         returnDialog.show();
         return returnDialog;
     }
+
+    private CustomRecycler<Knowledge.Item> generateItemTextRecycler(RecyclerView recycler, List<Knowledge.Item> itemList, View targetView) {
+        return new CustomRecycler<Knowledge.Item>(this, recycler)
+                .setObjectList(itemList)
+                .hideOverscroll()
+                .setItemLayout(R.layout.list_item_knowledge_list_text)
+                .setSetItemContent((customRecycler2, itemView1, item) -> {
+                    ((TextView) itemView1.findViewById(R.id.listItem_knowledgeList_text)).setText(item.getName());
+
+                    RecyclerView childRecycler = itemView1.findViewById(R.id.listItem_knowledgeList_list);
+                    TableRow listItem_knowledgeList_listRow = itemView1.findViewById(R.id.listItem_knowledgeList_listRow);
+                    if (item.hasChild_real()) {
+                        listItem_knowledgeList_listRow.setVisibility(View.VISIBLE);
+                        CustomRecycler<Knowledge.Item> recycler1 = generateItemTextRecycler(childRecycler, item.getChildrenList(), targetView);
+                        if (targetView != null) {
+                            recycler1.getRecycler().setOnTouchListener((v, event) -> targetView.onTouchEvent(event));
+                        }
+                    }
+                    else
+                        listItem_knowledgeList_listRow.setVisibility(View.GONE);
+                })
+                .generate();
+    }
+
 
     private void saveKnowledge(CustomDialog dialog, String titel, String content, Knowledge newKnowledge, Knowledge knowledge) {
 
@@ -704,12 +767,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     } else if (randomKnowledge.hasItems()) {
                         listItem_knowledge_list.setVisibility(View.VISIBLE);
                         listItem_knowledge_content.setVisibility(View.GONE);
-                        new CustomRecycler<Knowledge.Item>(this, listItem_knowledge_list)
-                                .setObjectList(randomKnowledge.getItemList())
-                                .hideOverscroll()
-                                .setItemLayout(R.layout.list_item_knowledge_list_text)
-                                .setSetItemContent((customRecycler2, itemView1, item) -> ((TextView) itemView1.findViewById(R.id.listItem_knowledgeList_text)).setText(item.getName()))
-                                .generateRecyclerView();
+                        generateItemTextRecycler(listItem_knowledge_list, randomKnowledge.getItemList(), null);
                     } else {
                         listItem_knowledge_content.setVisibility(View.VISIBLE);
                         listItem_knowledge_list.setVisibility(View.GONE);

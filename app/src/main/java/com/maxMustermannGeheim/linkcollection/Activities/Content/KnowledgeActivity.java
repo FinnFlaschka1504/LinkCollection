@@ -4,9 +4,15 @@ import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.Spannable;
+import android.text.SpannableString;
 import android.text.TextWatcher;
+import android.text.style.StrikethroughSpan;
+import android.text.style.StyleSpan;
+import android.text.style.UnderlineSpan;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -38,6 +44,8 @@ import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,6 +55,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -219,7 +228,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     if (knowledge.hasContent()) {
                         listItem_knowledge_content.setVisibility(View.VISIBLE);
                         listItem_knowledge_list.setVisibility(View.GONE);
-                        listItem_knowledge_content.setText(knowledge.getContent());
+                        listItem_knowledge_content.setText(applyFormatting(knowledge.getContent()));
                     } else if (knowledge.hasItems()) {
                         if (expanded) {
                             listItem_knowledge_list.setVisibility(View.VISIBLE);
@@ -233,7 +242,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                         } else {
                             listItem_knowledge_content.setVisibility(View.VISIBLE);
                             listItem_knowledge_list.setVisibility(View.GONE);
-                            listItem_knowledge_content.setText(knowledge.itemListToString());
+                            listItem_knowledge_content.setText(applyFormatting(knowledge.itemListToString()));
                         }
                     } else {
                         listItem_knowledge_content.setVisibility(View.VISIBLE);
@@ -382,7 +391,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     } else
                         newKnowledge[0] = new Knowledge("");
 
-                    generateItemRecycler(newKnowledge[0].getItemList(), contentRecycler, null, 0, new CustomList[]{null}, new CustomList<>());
+                    generateItemRecycler(newKnowledge[0].getItemList(), contentRecycler, null, contentRecycler, 0, new CustomList[]{null}, new CustomList<>());
 
 
                     View layoutContent = view.findViewById(R.id.dialog_editOrAddKnowledge_content_layout);
@@ -466,14 +475,16 @@ public class KnowledgeActivity extends AppCompatActivity {
         return Pair.create(returnDialog, newKnowledge[0]);
     }
 
-    private void generateItemRecycler(List<Knowledge.Item> itemList, CustomRecycler<Knowledge.Item> itemRecycler, CustomRecycler<Knowledge.Item> parentRecycler, int depth, CustomList[] focusIndex, CustomList<Integer> posList) {
+    private void generateItemRecycler(List<Knowledge.Item> itemList, CustomRecycler<Knowledge.Item> itemRecycler, CustomRecycler<Knowledge.Item> parentRecycler, CustomRecycler<Knowledge.Item> baseRecycler, int depth, CustomList[] focusIndex, CustomList<Integer> posList) {
         itemRecycler
                 .setItemLayout(R.layout.list_item_knowledge_list)
-                .enableDragAndDrop(objectList -> {
+                .enableDragAndDrop((customRecycler, objectList) -> {
                     itemList.clear();
                     itemList.addAll(objectList);
 //                    itemRecycler.reload();
-                }) // ToDo: funktion zu customRecycler hinzufügen wo per id View zum ziehen übergeben wird
+                })
+                // ToDo: funktion zu customRecycler hinzufügen wo per id View zum ziehen übergeben wird
+                //  und beim hinzufügen von elemenz zur tierferen ebene den letzten index übergeben
                 .setSetItemContent((customRecycler, itemView, item) -> {
                     RecyclerView recycler = customRecycler.getRecycler();
 //                    int index = recycler.getChildAdapterPosition(itemView);
@@ -532,15 +543,15 @@ public class KnowledgeActivity extends AppCompatActivity {
                             customRecycler.getObjectList().get(index).setName(s.toString());
                             listItem_knowledgeList_remove.setVisibility(item.getName().trim().isEmpty() && (index != 0 || depth != 0) ? View.VISIBLE : View.GONE);
 
-                            if (depth == 0) {
-                                int matchParentMeasureSpec = View.MeasureSpec.makeMeasureSpec(((View) recycler.getParent()).getWidth(), View.MeasureSpec.EXACTLY);
-                                int wrapContentMeasureSpec = View.MeasureSpec.makeMeasureSpec(Utility.dpToPx(280), View.MeasureSpec.AT_MOST);
-                                recycler.measure(matchParentMeasureSpec, wrapContentMeasureSpec);
-                                if (recycler.getHeight() > Utility.dpToPx(280))
-                                    customRecycler.getRecycler().setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Utility.dpToPx(280)));
-                                else if (recycler.getMeasuredHeight() < Utility.dpToPx(280))
-                                    customRecycler.getRecycler().setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-                            }
+                            RecyclerView baseRecyclerView = baseRecycler.getRecycler();
+                            int matchParentMeasureSpec = View.MeasureSpec.makeMeasureSpec(((View) baseRecyclerView.getParent()).getWidth(), View.MeasureSpec.EXACTLY);
+                            int wrapContentMeasureSpec = View.MeasureSpec.makeMeasureSpec(Utility.dpToPx(280), View.MeasureSpec.AT_MOST);
+                            baseRecyclerView.measure(matchParentMeasureSpec, wrapContentMeasureSpec);
+                            if (baseRecyclerView.getHeight() > Utility.dpToPx(280))
+                                baseRecyclerView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Utility.dpToPx(280)));
+                            else if (baseRecyclerView.getMeasuredHeight() < Utility.dpToPx(280))
+                                baseRecyclerView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
 
                             if (before == 0 && s.toString().startsWith("   ") && !s.toString().endsWith("\n\n")) {
                                 Knowledge.Item previousItem = Knowledge.previousItem(itemList, item);
@@ -580,8 +591,8 @@ public class KnowledgeActivity extends AppCompatActivity {
                     if (item.hasChild()) {
                         listItem_knowledgeList_recycler_row.setVisibility(View.VISIBLE);
 
-                        generateItemRecycler(item.getChildrenList(), new CustomRecycler<>(this, listItem_knowledgeList_recycler), itemRecycler, depth + 1,
-                                focusIndex, thisPosList);
+                        generateItemRecycler(item.getChildrenList(), new CustomRecycler<>(this, listItem_knowledgeList_recycler), itemRecycler, baseRecycler,
+                                depth + 1, focusIndex, thisPosList);
                     }
                     else
                         listItem_knowledgeList_recycler_row.setVisibility(View.GONE);
@@ -650,7 +661,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     if (knowledge.hasContent()) {
                         dialog_detailKnowledge_content.setVisibility(View.VISIBLE);
                         dialog_detailKnowledge_list.setVisibility(View.GONE);
-                        dialog_detailKnowledge_content.setText(knowledge.getContent());
+                        dialog_detailKnowledge_content.setText(applyFormatting(knowledge.getContent()));
                     } else if (knowledge.hasItems()) {
                         dialog_detailKnowledge_list.setVisibility(View.VISIBLE);
                         dialog_detailKnowledge_content.setVisibility(View.GONE);
@@ -685,7 +696,8 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .hideOverscroll()
                 .setItemLayout(R.layout.list_item_knowledge_list_text)
                 .setSetItemContent((customRecycler2, itemView1, item) -> {
-                    ((TextView) itemView1.findViewById(R.id.listItem_knowledgeList_text)).setText(item.getName());
+
+                    ((TextView) itemView1.findViewById(R.id.listItem_knowledgeList_text)).setText(applyFormatting(item.getName()));
 
                     RecyclerView childRecycler = itemView1.findViewById(R.id.listItem_knowledgeList_list);
                     TableRow listItem_knowledgeList_listRow = itemView1.findViewById(R.id.listItem_knowledgeList_listRow);
@@ -702,13 +714,90 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .generate();
     }
 
+    private SpannableString applyFormatting(String s) {
+        // ^ Überschrift; * fett;  ~ durch;  / kursiv; _ unterstr
+        List<Pair<Integer,Integer>> captionMatches = new ArrayList<>();
+        List<Pair<Integer,Integer>> boldMatches = new ArrayList<>();
+        List<Pair<Integer,Integer>> strikeMatches = new ArrayList<>();
+        List<Pair<Integer,Integer>> italicMatches = new ArrayList<>();
+        List<Pair<Integer,Integer>> underlineMatches = new ArrayList<>();
+
+//        Pattern pattern = Pattern.compile("((?<=[\\s]|)\\^([^\\s].*?[^\\s]|[^\\s])\\^(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\*([^\\s].*?[^\\s]|[^\\s])\\*(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\~([^\\s].*?[^\\s]|[^\\s])\\~(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\/([^\\s].*?[^\\s]|[^\\s])\\/(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\_([^\\s].*?[^\\s]|[^\\s])\\_(?![^\\s\\.!\\?,:;]))");
+        Pattern pattern = Pattern.compile("(?<=[\\s]|)(\\*|\\/|\\_|\\^|\\~)([^\\s].*?[^\\s]|[^\\s])\\1(?![^\\s\\.!\\?,:;])");
+        while (true) {
+            Matcher matcher = pattern.matcher(s);
+            if (matcher.find()) {
+                MatchResult matchResult = matcher.toMatchResult();
+                String match = matcher.group(0);
+                switch (match.substring(0, 1)) {
+                    case "^":
+                        captionMatches.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
+                        break;
+                    case "*":
+                        boldMatches.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
+                        break;
+                    case "~":
+                        strikeMatches.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
+                        break;
+                    case "/":
+                        italicMatches.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
+                        break;
+                    case "_":
+                        underlineMatches.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
+                        break;
+                }
+                s = matcher.replaceFirst(Utility.subString(match,1, -1));
+            }
+            else
+                break;
+        }
+
+
+//        s = findAndReplace("^", s, captionMatches);
+//        s = findAndReplace("*", s, boldMatches);
+//        s = findAndReplace("~", s, strikeMatches);
+//        s = findAndReplace("/", s, italicMatches);
+//        s = findAndReplace("_", s, underlineMatches);
+
+        SpannableString resultSpan = new SpannableString(s);
+
+        captionMatches.forEach(pair -> resultSpan.setSpan(new StyleSpan(Typeface.BOLD), pair.first, pair.second, Spannable.SPAN_COMPOSING));
+        captionMatches.forEach(pair -> resultSpan.setSpan(new UnderlineSpan(), pair.first, pair.second, Spannable.SPAN_COMPOSING));
+
+        boldMatches.forEach(pair -> resultSpan.setSpan(new StyleSpan(Typeface.BOLD), pair.first, pair.second, Spannable.SPAN_COMPOSING));
+
+        strikeMatches.forEach(pair -> resultSpan.setSpan(new StrikethroughSpan(), pair.first, pair.second, Spannable.SPAN_COMPOSING));
+
+        italicMatches.forEach(pair -> resultSpan.setSpan(new StyleSpan(Typeface.ITALIC), pair.first, pair.second, Spannable.SPAN_COMPOSING));
+
+        underlineMatches.forEach(pair -> resultSpan.setSpan(new UnderlineSpan(), pair.first, pair.second, Spannable.SPAN_COMPOSING));
+
+        return resultSpan;
+    }
+
+//    @NotNull
+//    private String findAndReplace(String delimiter, String s, List<Pair<Integer, Integer>> resultList) {
+//        while (s.contains(delimiter)) {
+//            Pattern pattern = Pattern.compile(String.format("(?<![^\\s])\\%s([^\\s].*?[^\\s]|[^\\s])\\%s(?![^\\s\\.!\\?,:;])", delimiter, delimiter));
+//            Matcher matcher = pattern.matcher(s);
+//            if (matcher.find()) {
+//                MatchResult matchResult = matcher.toMatchResult();
+//                resultList.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
+//                String match = matcher.group(0);
+//                s = matcher.replaceFirst(Utility.subString(match,1, -1));
+//            }
+//            else
+//                break;
+//        }
+//        return s;
+//    }
+
 
     private void saveKnowledge(CustomDialog dialog, String titel, String content, Knowledge newKnowledge, Knowledge knowledge) {
 
         if (knowledge == null)
             knowledge = newKnowledge;
 
-        // ToDo: deepCopy item list und dann hier kürzen und zurückschreiben
 
         knowledge.setName(titel);
         knowledge.setContent(content);
@@ -719,7 +808,8 @@ public class KnowledgeActivity extends AppCompatActivity {
         knowledge.setItemList(newKnowledge.getItemList().stream().filter(item -> {
             item.setName(item.getName().trim());
             return !item.getName().isEmpty();
-        }).collect(Collectors.toList()));
+        }).collect(Collectors.toCollection(CustomList::new)).executeIf(ArrayList::isEmpty, customList ->
+                customList.add(new Knowledge.Item())));
 
         database.knowledgeMap.put(knowledge.getUuid(), knowledge);
         reLoadRecycler();
@@ -734,8 +824,8 @@ public class KnowledgeActivity extends AppCompatActivity {
     }
 
     private void showRandomDialog() {
-        CustomList<Knowledge> filterdKnowledgeList = new CustomList<>(filterList(allKnowledgeList));
-        if (filterdKnowledgeList.isEmpty()) {
+        CustomList<Knowledge> filteredKnowledgeList = new CustomList<>(filterList(allKnowledgeList));
+        if (filteredKnowledgeList.isEmpty()) {
             Toast.makeText(this, "Nichts zum Zeigen", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -745,7 +835,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .setView(R.layout.dialog_detail_knowledge)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Nochmal", customDialog -> {
-                    if (filterdKnowledgeList.isEmpty()) {
+                    if (filteredKnowledgeList.isEmpty()) {
                         Toast.makeText(this, "Wissen erschöpft", Toast.LENGTH_SHORT).show();
                         return;
                     }
@@ -754,7 +844,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 
                 }, false)
                 .setSetViewContent((customDialog, view, reload) -> {
-                    Knowledge randomKnowledge = filterdKnowledgeList.removeRandom();
+                    Knowledge randomKnowledge = filteredKnowledgeList.removeRandom();
 
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_title)).setText(randomKnowledge.getName());
 
@@ -763,7 +853,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     if (randomKnowledge.hasContent()) {
                         listItem_knowledge_content.setVisibility(View.VISIBLE);
                         listItem_knowledge_list.setVisibility(View.GONE);
-                        listItem_knowledge_content.setText(randomKnowledge.getContent());
+                        listItem_knowledge_content.setText(applyFormatting(randomKnowledge.getContent()));
                     } else if (randomKnowledge.hasItems()) {
                         listItem_knowledge_list.setVisibility(View.VISIBLE);
                         listItem_knowledge_content.setVisibility(View.GONE);

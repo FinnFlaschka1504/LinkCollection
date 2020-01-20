@@ -632,6 +632,7 @@ public class ShowActivity extends AppCompatActivity {
                 .setGetActiveObjectList(customRecycler -> {
                     List<Show.Episode> alreadyAiredList = Utility.concatenateCollections(database.showMap.values(), Show::getAlreadyAiredList);
                     return new Expandable.ToGroupExpandableList<Show.Episode, Show.Episode, String>()
+                            .keepExpandedState(customRecycler)
                             .runToGroupExpandableList(alreadyAiredList, Show.Episode::getShowId, (s, m) -> String.format(Locale.getDefault(), "%s (%d)",
                                     database.showMap.get(s).getName(), m.size()), episode -> episode);
                 })

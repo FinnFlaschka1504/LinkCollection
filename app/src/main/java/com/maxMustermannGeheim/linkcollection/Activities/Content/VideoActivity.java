@@ -621,7 +621,7 @@ public class VideoActivity extends AppCompatActivity {
 //                        .show();
 //                    }
 //                    else
-                    if (!editVideo[0].hasRating() && !Utility.boolOr(((RatingBar) customDialog.findViewById(R.id.dialog_editOrAddVideo_rating)).getRating(),-1f, 0f))
+                    if (editVideo[0].isWatchLater() && !editVideo[0].hasRating() && !Utility.boolOr(((RatingBar) customDialog.findViewById(R.id.dialog_editOrAddVideo_rating)).getRating(),-1f, 0f))
                         com.finn.androidUtilities.CustomDialog.Builder(this)
                                 .setTitle("Ansicht Hinzufügen?")
                                 .setText("Soll eine neue Ansicht zu dem Video hinzugefügt werden?")
@@ -667,7 +667,7 @@ public class VideoActivity extends AppCompatActivity {
 //                                                webView.reload();
 ////                                            ((FloatingActionButton) v1).setbati
 //                                        });
-                                        view1.findViewById(R.id.dialog_videoInternet_getSelection).setOnClickListener(v1 -> {
+                                        Runnable getSelection = () -> {
                                             webSettings.setJavaScriptEnabled(true);
                                             webView.evaluateJavascript("(function(){return window.getSelection().toString()})()", value -> {
                                                 value = Utility.subString(value, 1, -1);
@@ -680,7 +680,15 @@ public class VideoActivity extends AppCompatActivity {
                                                 }
                                             });
                                             webSettings.setJavaScriptEnabled(false);
+                                        };
+
+                                        webView.setOnContextClickListener(v1 -> {
+                                            getSelection.run();
+                                            return true;
                                         });
+
+
+                                        view1.findViewById(R.id.dialog_videoInternet_getSelection).setOnClickListener(v1 -> getSelection.run());
                                     })
                                     .setOnBackPressedListener(customDialog1 -> {
                                         if (webView != null && webView.canGoBack()) {

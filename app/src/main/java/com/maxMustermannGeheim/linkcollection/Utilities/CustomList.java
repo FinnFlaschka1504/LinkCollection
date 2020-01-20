@@ -83,7 +83,6 @@ public class CustomList<E> extends ArrayList<E> {
 
 
     //  ------------------------- set... ------------------------->
-
     @Override
     public E set(int index, E element) {
         if (index >= 0)
@@ -91,7 +90,6 @@ public class CustomList<E> extends ArrayList<E> {
         else
             return super.set(size() - index, element);
     }
-
     //  <------------------------- set... -------------------------
 
     public CustomList<E> add(E... e) {
@@ -123,6 +121,7 @@ public class CustomList<E> extends ArrayList<E> {
         else
             return get(indexOf(e) + 1);
     }
+    
     public E previous(E e) {
 //        if (get(0).equals(e))
 //            return getLast();
@@ -171,7 +170,15 @@ public class CustomList<E> extends ArrayList<E> {
         return foundAt[0];
     }
 
+    public CustomList<E> executeIf(Predicate<CustomList<E>> predicate, ListInterface<E> executeOnTrue) {
+        if (predicate.test(this))
+            executeOnTrue.runListInterface(this);
+        return this;
+    }
 
+    public interface ListInterface<E> {
+        void runListInterface(CustomList<E> customList);
+    }
 //    @NonNull
 //    @Override
 //    public E[] toArray() {

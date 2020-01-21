@@ -208,7 +208,7 @@ public class JokeActivity extends AppCompatActivity {
     }
 
     private List<CustomRecycler.Expandable<Joke>> toExpandableList(List<Joke> jokeList) {
-        return jokeList.stream().map(joke -> new CustomRecycler.Expandable<>(joke.getName(), joke)).collect(Collectors.toList());
+        return new CustomRecycler.Expandable.ToExpandableList<Joke,Joke>().keepExpandedState(customRecycler_List).runToExpandableList(jokeList, null);
     }
 
     private List<Joke> filterList(ArrayList<Joke> allJokeList) {

@@ -4,12 +4,14 @@ import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.TextWatcher;
+import android.text.style.ForegroundColorSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
@@ -32,6 +34,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.finn.androidUtilities.CustomRecycler;
+import com.google.android.gms.common.util.Hex;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
@@ -43,8 +46,6 @@ import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
-
-import org.jetbrains.annotations.NotNull;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -75,7 +76,7 @@ public class KnowledgeActivity extends AppCompatActivity {
     private boolean reverse;
     private SORT_TYPE sort_type = SORT_TYPE.LATEST;
     Database database = Database.getInstance();
-    private CustomRecycler<? extends CustomRecycler.Expandable<Knowledge>> customRecycler_List;
+    private CustomRecycler<CustomRecycler.Expandable<Knowledge>> customRecycler_List;
     private String searchQuery = "";
     private SharedPreferences mySPR_daten;
     private SearchView.OnQueryTextListener textListener;
@@ -110,7 +111,6 @@ public class KnowledgeActivity extends AppCompatActivity {
                 videos_search.setQuery(extraSearch, true);
             }
         }
-
     }
 
     private void loadDatabase() {
@@ -228,7 +228,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     if (knowledge.hasContent()) {
                         listItem_knowledge_content.setVisibility(View.VISIBLE);
                         listItem_knowledge_list.setVisibility(View.GONE);
-                        listItem_knowledge_content.setText(applyFormatting(knowledge.getContent()));
+                        listItem_knowledge_content.setText(applyFormatting_text(knowledge.getContent()));
                     } else if (knowledge.hasItems()) {
                         if (expanded) {
                             listItem_knowledge_list.setVisibility(View.VISIBLE);
@@ -242,7 +242,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                         } else {
                             listItem_knowledge_content.setVisibility(View.VISIBLE);
                             listItem_knowledge_list.setVisibility(View.GONE);
-                            listItem_knowledge_content.setText(applyFormatting(knowledge.itemListToString()));
+                            listItem_knowledge_content.setText(applyFormatting_text(knowledge.itemListToString()));
                         }
                     } else {
                         listItem_knowledge_content.setVisibility(View.VISIBLE);
@@ -272,10 +272,9 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .generate();
     }
 
-    private List<CustomRecycler.Expandable<Knowledge>> toExpandableList(List<Knowledge> jokeList) {
-        return jokeList.stream().map(joke -> new CustomRecycler.Expandable<>(joke.getName(), joke)).collect(Collectors.toList());
+    private List<CustomRecycler.Expandable<Knowledge>> toExpandableList(List<Knowledge> knowledgeList) {
+        return new CustomRecycler.Expandable.ToExpandableList<Knowledge, Knowledge>().keepExpandedState(customRecycler_List).runToExpandableList(knowledgeList, null);
     }
-
 
     private List<Knowledge> filterList(ArrayList<Knowledge> allKnowledgeList) {
         return sortList(allKnowledgeList.stream().filter(knowledge -> Utility.containedInKnowledge(searchQuery, knowledge, filterTypeSet)).collect(Collectors.toList()));
@@ -380,9 +379,24 @@ public class KnowledgeActivity extends AppCompatActivity {
 
                     new Helpers.TextInputHelper().defaultDialogValidation(customDialog).addValidator(view.findViewById(R.id.dialog_editOrAddKnowledge_Titel_layout));
                     EditText dialog_editOrAddKnowledge_content = view.findViewById(R.id.dialog_editOrAddKnowledge_content);
+                    dialog_editOrAddKnowledge_content.addTextChangedListener(new TextWatcher() {
+                        @Override
+                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                        @Override
+                        public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+                        @Override
+                        public void afterTextChanged(Editable s) {
+                            applyFormatting_edit(s);
+                        }
+                    });
                     if (newKnowledge[0] != null) {
                         ((EditText) view.findViewById(R.id.dialog_editOrAddKnowledge_Titel)).setText(newKnowledge[0].getName());
-                        dialog_editOrAddKnowledge_content.setText(knowledge.getContent());
+                        if (Utility.stringExists(newKnowledge[0].getContent())) {
+                            dialog_editOrAddKnowledge_content.setText(newKnowledge[0].getContent());
+                            applyFormatting_edit(dialog_editOrAddKnowledge_content.getText());
+                        }
                         ((TextView) view.findViewById(R.id.dialog_editOrAddKnowledge_categories)).setText(String.join(", ", categoriesNames));
                         view.findViewById(R.id.dialog_editOrAddKnowledge_categories).setSelected(true);
                         ((TextView) view.findViewById(R.id.dialog_editOrAddKnowledge_sources)).setText(String.join(", ", sourcesNames));
@@ -475,19 +489,18 @@ public class KnowledgeActivity extends AppCompatActivity {
         return Pair.create(returnDialog, newKnowledge[0]);
     }
 
-    private void generateItemRecycler(List<Knowledge.Item> itemList, CustomRecycler<Knowledge.Item> itemRecycler, CustomRecycler<Knowledge.Item> parentRecycler, CustomRecycler<Knowledge.Item> baseRecycler, int depth, CustomList[] focusIndex, CustomList<Integer> posList) {
+    private void generateItemRecycler(List<Knowledge.Item> itemList, CustomRecycler<Knowledge.Item> itemRecycler, CustomRecycler<Knowledge.Item> parentRecycler,
+                                      CustomRecycler<Knowledge.Item> baseRecycler, int depth, CustomList[] focusIndex, CustomList<Integer> posList) {
         itemRecycler
                 .setItemLayout(R.layout.list_item_knowledge_list)
-                .enableDragAndDrop((customRecycler, objectList) -> {
+                .enableDragAndDrop(R.id.listItem_knowledgeList_marker, (customRecycler, objectList) -> {
                     itemList.clear();
                     itemList.addAll(objectList);
 //                    itemRecycler.reload();
-                })
+                }, true)
                 // ToDo: funktion zu customRecycler hinzufügen wo per id View zum ziehen übergeben wird
                 //  und beim hinzufügen von elemenz zur tierferen ebene den letzten index übergeben
                 .setSetItemContent((customRecycler, itemView, item) -> {
-                    RecyclerView recycler = customRecycler.getRecycler();
-//                    int index = recycler.getChildAdapterPosition(itemView);
                     int index = customRecycler.getObjectList().indexOf(item);
                     CustomList<Integer> thisPosList = new CustomList<>(posList).add(new Integer[]{index});
 
@@ -496,6 +509,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     EditText listItem_knowledgeList_text = itemView.findViewById(R.id.listItem_knowledgeList_text);
                     Utility.removeTextListeners(listItem_knowledgeList_text);
                     listItem_knowledgeList_text.setText(item.getName());
+                    applyFormatting_edit(listItem_knowledgeList_text.getText());
                     final View listItem_knowledgeList_remove = itemView.findViewById(R.id.listItem_knowledgeList_remove);
                     listItem_knowledgeList_remove.setVisibility(item.getName().trim().isEmpty() && (index != 0 || depth != 0) ? View.VISIBLE : View.GONE);
                     listItem_knowledgeList_remove.setOnClickListener(v -> {
@@ -533,6 +547,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                             focusIndex[0] = null;
                         }
                     }
+                    final boolean[] add = {false};
                     listItem_knowledgeList_text.addTextChangedListener(new TextWatcher() {
                         @Override
                         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -540,6 +555,11 @@ public class KnowledgeActivity extends AppCompatActivity {
 
                         @Override
                         public void onTextChanged(CharSequence s, int start, int before, int count) {
+                            add[0] = before == 0;
+                        }
+
+                        @Override
+                        public void afterTextChanged(Editable s) {
                             customRecycler.getObjectList().get(index).setName(s.toString());
                             listItem_knowledgeList_remove.setVisibility(item.getName().trim().isEmpty() && (index != 0 || depth != 0) ? View.VISIBLE : View.GONE);
 
@@ -553,7 +573,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                                 baseRecyclerView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 
 
-                            if (before == 0 && s.toString().startsWith("   ") && !s.toString().endsWith("\n\n")) {
+                            if (add[0] && s.toString().startsWith("   ") && !s.toString().endsWith("\n\n")) {
                                 Knowledge.Item previousItem = Knowledge.previousItem(itemList, item);
 
                                 if (previousItem == null)
@@ -561,28 +581,25 @@ public class KnowledgeActivity extends AppCompatActivity {
 
                                 itemList.remove(item);
                                 previousItem.addChild(item);
-                                String BREAKPOINT = null;
-
 
                                 focusIndex[0] = thisPosList.add(new Integer[]{thisPosList.removeLast() - 1}).add(new Integer[]{0});
 
-
                                 customRecycler.reload();
+
+                                return;
                             }
-                            if (before == 0 && s.toString().endsWith("\n\n")) {
-
+                            if (add[0] && s.toString().endsWith("\n\n")) {
                                 focusIndex[0] = thisPosList.add(new Integer[]{thisPosList.removeLast() + 1});
-
 
                                 Knowledge.newItem(itemList, item);
                                 item.setName(item.getName().trim());
                                 customRecycler.reload();
+
+                                return;
                             }
 
-                        }
+                            applyFormatting_edit(s);
 
-                        @Override
-                        public void afterTextChanged(Editable s) {
                         }
                     });
 
@@ -661,7 +678,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     if (knowledge.hasContent()) {
                         dialog_detailKnowledge_content.setVisibility(View.VISIBLE);
                         dialog_detailKnowledge_list.setVisibility(View.GONE);
-                        dialog_detailKnowledge_content.setText(applyFormatting(knowledge.getContent()));
+                        dialog_detailKnowledge_content.setText(applyFormatting_text(knowledge.getContent()));
                     } else if (knowledge.hasItems()) {
                         dialog_detailKnowledge_list.setVisibility(View.VISIBLE);
                         dialog_detailKnowledge_content.setVisibility(View.GONE);
@@ -697,7 +714,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .setItemLayout(R.layout.list_item_knowledge_list_text)
                 .setSetItemContent((customRecycler2, itemView1, item) -> {
 
-                    ((TextView) itemView1.findViewById(R.id.listItem_knowledgeList_text)).setText(applyFormatting(item.getName()));
+                    ((TextView) itemView1.findViewById(R.id.listItem_knowledgeList_text)).setText(applyFormatting_text(item.getName()));
 
                     RecyclerView childRecycler = itemView1.findViewById(R.id.listItem_knowledgeList_list);
                     TableRow listItem_knowledgeList_listRow = itemView1.findViewById(R.id.listItem_knowledgeList_listRow);
@@ -714,7 +731,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .generate();
     }
 
-    private SpannableString applyFormatting(String s) {
+    private SpannableString applyFormatting_text(String s) {
         // ^ Überschrift; * fett;  ~ durch;  / kursiv; _ unterstr
         List<Pair<Integer,Integer>> captionMatches = new ArrayList<>();
         List<Pair<Integer,Integer>> boldMatches = new ArrayList<>();
@@ -723,7 +740,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         List<Pair<Integer,Integer>> underlineMatches = new ArrayList<>();
 
 //        Pattern pattern = Pattern.compile("((?<=[\\s]|)\\^([^\\s].*?[^\\s]|[^\\s])\\^(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\*([^\\s].*?[^\\s]|[^\\s])\\*(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\~([^\\s].*?[^\\s]|[^\\s])\\~(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\/([^\\s].*?[^\\s]|[^\\s])\\/(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\_([^\\s].*?[^\\s]|[^\\s])\\_(?![^\\s\\.!\\?,:;]))");
-        Pattern pattern = Pattern.compile("(?<=[\\s]|)(\\*|\\/|\\_|\\^|\\~)([^\\s].*?[^\\s]|[^\\s])\\1(?![^\\s\\.!\\?,:;])");
+        Pattern pattern = Pattern.compile("(?<![^\\W_])(\\*|\\/|\\_|\\^|\\~)([^\\s]|[^\\s].*?[^\\s])\\1(?![^\\W_])");
         while (true) {
             Matcher matcher = pattern.matcher(s);
             if (matcher.find()) {
@@ -775,6 +792,66 @@ public class KnowledgeActivity extends AppCompatActivity {
         return resultSpan;
     }
 
+    private void applyFormatting_edit(Editable s) {
+        // ^ Überschrift; * fett;  ~ durch;  / kursiv; _ unterstr
+        new CustomList<>(s.getSpans(0, s.length(), StyleSpan.class)).forEach(s::removeSpan);
+        new CustomList<>(s.getSpans(0, s.length(), UnderlineSpan.class)).forEach(s::removeSpan);
+        new CustomList<>(s.getSpans(0, s.length(), StrikethroughSpan.class)).forEach(s::removeSpan);
+        new CustomList<>(s.getSpans(0, s.length(), ForegroundColorSpan.class)).forEach(s::removeSpan);
+
+        List<Pair<Integer,Integer>> captionMatches = new ArrayList<>();
+        List<Pair<Integer,Integer>> boldMatches = new ArrayList<>();
+        List<Pair<Integer,Integer>> strikeMatches = new ArrayList<>();
+        List<Pair<Integer,Integer>> italicMatches = new ArrayList<>();
+        List<Pair<Integer,Integer>> underlineMatches = new ArrayList<>();
+
+        Pattern pattern = Pattern.compile("(?<![^\\W_])(\\*|\\/|\\_|\\^|\\~)([^\\s]|[^\\s].*?[^\\s])\\1(?![^\\W_])");
+        Matcher matcher = pattern.matcher(s);
+        while (true) {
+            if (matcher.find()) {
+                MatchResult matchResult = matcher.toMatchResult();
+                String match = matcher.group(0);
+                switch (match.substring(0, 1)) {
+                    case "^":
+                        captionMatches.add(new Pair<>(matchResult.start() + 1, matchResult.end() - 1));
+                        break;
+                    case "*":
+                        boldMatches.add(new Pair<>(matchResult.start() + 1, matchResult.end() - 1));
+                        break;
+                    case "~":
+                        strikeMatches.add(new Pair<>(matchResult.start() + 1, matchResult.end() - 1));
+                        break;
+                    case "/":
+                        italicMatches.add(new Pair<>(matchResult.start() + 1, matchResult.end() - 1));
+                        break;
+                    case "_":
+                        underlineMatches.add(new Pair<>(matchResult.start() + 1, matchResult.end() - 1));
+                        break;
+                }
+            }
+            else
+                break;
+        }
+
+
+        captionMatches.forEach(pair -> s.setSpan(new StyleSpan(Typeface.BOLD), pair.first, pair.second, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE));
+        captionMatches.forEach(pair -> s.setSpan(new UnderlineSpan(), pair.first, pair.second, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE));
+
+        boldMatches.forEach(pair -> s.setSpan(new StyleSpan(Typeface.BOLD), pair.first, pair.second, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE));
+
+        strikeMatches.forEach(pair -> s.setSpan(new StrikethroughSpan(), pair.first, pair.second, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE));
+
+        italicMatches.forEach(pair -> s.setSpan(new StyleSpan(Typeface.ITALIC), pair.first, pair.second, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE));
+
+        underlineMatches.forEach(pair -> s.setSpan(new UnderlineSpan(), pair.first, pair.second, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE));
+
+        int color = Utility.setAlphaOfColor(getColor(R.color.colorText), 0x80);
+        Utility.concatenateCollections(captionMatches, boldMatches, strikeMatches, italicMatches, underlineMatches).forEach(pair -> {
+            s.setSpan(new ForegroundColorSpan(color),pair.first - 1, pair.first, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            s.setSpan(new ForegroundColorSpan(color),pair.second, pair.second + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        });
+    }
+
 //    @NotNull
 //    private String findAndReplace(String delimiter, String s, List<Pair<Integer, Integer>> resultList) {
 //        while (s.contains(delimiter)) {
@@ -791,7 +868,6 @@ public class KnowledgeActivity extends AppCompatActivity {
 //        }
 //        return s;
 //    }
-
 
     private void saveKnowledge(CustomDialog dialog, String titel, String content, Knowledge newKnowledge, Knowledge knowledge) {
 
@@ -853,7 +929,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     if (randomKnowledge.hasContent()) {
                         listItem_knowledge_content.setVisibility(View.VISIBLE);
                         listItem_knowledge_list.setVisibility(View.GONE);
-                        listItem_knowledge_content.setText(applyFormatting(randomKnowledge.getContent()));
+                        listItem_knowledge_content.setText(applyFormatting_text(randomKnowledge.getContent()));
                     } else if (randomKnowledge.hasItems()) {
                         listItem_knowledge_list.setVisibility(View.VISIBLE);
                         listItem_knowledge_content.setVisibility(View.GONE);

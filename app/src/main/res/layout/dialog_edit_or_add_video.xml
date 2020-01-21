@@ -226,7 +226,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="8dp"
-                android:text="Bewerting:"
+                android:text="Bewertung:"
                 android:textStyle="bold" />
 
             <RatingBar
@@ -236,7 +236,8 @@
                 android:max="5"
                 android:numStars="5"
                 android:rating="-1"
-                android:stepSize="0.5" />
+                android:stepSize="0.5"/>
+
 
         </LinearLayout>
 

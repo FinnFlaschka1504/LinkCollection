@@ -85,7 +85,6 @@ public class Utility implements java.io.Serializable {
         }
     }
 
-    // ToDo: in seperatem Thread
     static public boolean isOnline() {
         Runtime runtime = Runtime.getRuntime();
         try {
@@ -1208,7 +1207,7 @@ public class Utility implements java.io.Serializable {
     //  <------------------------- ScaleMatchingParent -------------------------
 
 
-    //  --------------- DrawableBuilder --------------->
+    //  --------------- Generated Visuals --------------->
     public static Drawable drawableBuilder_rectangle(int color, int corners, boolean ripple) {
         DrawableBuilder drawableBuilder = new DrawableBuilder()
                 .rectangle()
@@ -1227,7 +1226,11 @@ public class Utility implements java.io.Serializable {
                 .solidColor(color)
                 .build();
     }
-    //  <--------------- DrawableBuilder ---------------
+
+    public static int setAlphaOfColor(int color, int alpha){
+        return (color & 0x00ffffff) | (alpha << 24);
+    }
+    //  <--------------- Generated Visuals ---------------
 
 
     //  --------------- ConcatCollections --------------->

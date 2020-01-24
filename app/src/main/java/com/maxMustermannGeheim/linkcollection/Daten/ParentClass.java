@@ -7,11 +7,23 @@ import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
+import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
+import com.scottyab.aescrypt.AESCrypt;
 
 import java.lang.reflect.Field;
+import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.KeyGenerator;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
 
 public class ParentClass implements Cloneable {
     protected String uuid;
@@ -38,7 +50,7 @@ public class ParentClass implements Cloneable {
         return this;
     }
 
-    public static ParentClass newCategoy(CategoriesActivity.CATEGORIES object_type, String name) {
+    public static ParentClass newCategory(CategoriesActivity.CATEGORIES object_type, String name) {
         switch (object_type) {
             case DARSTELLER:
                 return new Darsteller(name);
@@ -150,4 +162,24 @@ public class ParentClass implements Cloneable {
     }
     //  <--------------- DynamicEqual ---------------
 
+
+    //  ------------------------- Encryption ------------------------->
+    public boolean encrypt(String key) {
+        try {
+            if (Utility.stringExists(name)) name = AESCrypt.encrypt(key, name);
+            return true;
+        } catch (GeneralSecurityException e) {
+            return false;
+        }
+    }
+
+    public boolean decrypt(String key) {
+        try {
+            if (Utility.stringExists(name)) name = AESCrypt.decrypt(key, name);
+            return true;
+        } catch (GeneralSecurityException e) {
+            return false;
+        }
+    }
+    //  <------------------------- Encryption -------------------------
 }

@@ -1,11 +1,11 @@
 package com.maxMustermannGeheim.linkcollection.Utilities;
 
+import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Typeface;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.Spannable;
-import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
@@ -14,14 +14,20 @@ import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
 import android.util.Pair;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.RatingBar;
+import android.widget.SeekBar;
 
 import androidx.annotation.NonNull;
 
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.R;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -30,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import me.zhanghai.android.materialratingbar.MaterialRatingBar;
 
 public class Helpers {
     //  ----- TextInput ----->
@@ -667,6 +675,7 @@ public class Helpers {
             allReversed = reversed;
             return this;
         }
+
         public class Sorter<E> {
             private SortHelper<T> parent;
             private boolean reversed;
@@ -821,4 +830,158 @@ public class Helpers {
 
     }
     //  <------------------------- SortHelper -------------------------
+
+
+    //  ------------------------- RatingHelper ------------------------->
+    public static class RatingHelper {
+        private FrameLayout layout;
+        private SeekBar seekBar;
+        private MaterialRatingBar ratingBar;
+        private float rating;
+        private int stars = 5;
+        private float stepSize = 0.25f;
+        private RatingBar.OnRatingBarChangeListener onRatingBarChangeListener;
+        //  ------------------------- Constructors ------------------------->
+        public RatingHelper(FrameLayout layout) {
+            this.layout = layout;
+            seekBar = layout.findViewById(R.id.customRating_seekBar);
+            ratingBar = layout.findViewById(R.id.customRating_ratingBar);
+
+            if (seekBar == null || ratingBar == null)
+                return;
+
+            initialize();
+        }
+
+        public RatingHelper(FrameLayout layout, SeekBar seekBar, MaterialRatingBar ratingBar) {
+            this.layout = layout;
+            this.seekBar = seekBar;
+            this.ratingBar = ratingBar;
+        }
+        //  <------------------------- Constructors -------------------------
+
+
+        //  ------------------------- Getters & Setters ------------------------->
+        public FrameLayout getLayout() {
+            return layout;
+        }
+
+        public RatingHelper setLayout(FrameLayout layout) {
+            this.layout = layout;
+            return this;
+        }
+
+        public SeekBar getSeekBar() {
+            return seekBar;
+        }
+
+        public RatingHelper setSeekBar(SeekBar seekBar) {
+            this.seekBar = seekBar;
+            return this;
+        }
+
+        public MaterialRatingBar getRatingBar() {
+            return ratingBar;
+        }
+
+        public RatingHelper setRatingBar(MaterialRatingBar ratingBar) {
+            this.ratingBar = ratingBar;
+            return this;
+        }
+
+        public RatingHelper setRating(float rating) {
+            seekBar.setProgress((int) (rating * factor()));
+            return this;
+        }
+
+        public float getRating() {
+            return rating;
+        }
+
+        public int getStars() {
+            return stars;
+        }
+
+        public RatingHelper setStars(int stars) {
+            this.stars = stars;
+            ratingBar.setNumStars(stars);
+            seekBar.setMax((int) (stars * factor()));
+            return this;
+        }
+
+        public float getStepSize() {
+            return stepSize;
+        }
+
+        public RatingHelper setStepSize(float stepSize) {
+            this.stepSize = stepSize;
+            seekBar.setMax((int) (stars * factor()));
+            return this;
+        }
+
+        public RatingHelper setOnRatingBarChangeListener(RatingBar.OnRatingBarChangeListener onRatingBarChangeListener) {
+            this.onRatingBarChangeListener = onRatingBarChangeListener;
+            return this;
+        }
+        //  <------------------------- Getters & Setters -------------------------
+
+
+
+        RatingHelper initialize() {
+            seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    rating = ((float) progress) / factor();
+                    ratingBar.setRating(rating);
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {}
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+                    if (onRatingBarChangeListener != null)
+                        onRatingBarChangeListener.onRatingChanged(ratingBar, rating, true);
+                }
+            });
+
+            return this;
+        }
+
+        //  ------------------------- Convenience ------------------------->
+        private float factor() {
+            return 1f / stepSize;
+        }
+
+        public RatingHelper wrapContent() {
+            layout.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            ratingBar.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.MATCH_PARENT));
+            seekBar.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+            return this;
+        }
+
+        public RatingHelper matchParent() {
+            layout.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            ratingBar.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+            seekBar.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+            return this;
+        }
+
+        public RatingHelper imitateOriginalSize() {
+            layout.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            ratingBar.setLayoutParams(new FrameLayout.LayoutParams(Utility.dpToPx(240), FrameLayout.LayoutParams.MATCH_PARENT));
+            seekBar.setLayoutParams(new FrameLayout.LayoutParams(Utility.dpToPx(272), FrameLayout.LayoutParams.MATCH_PARENT));
+            return this;
+        }
+        //  <------------------------- Convenience -------------------------
+
+        public static RatingHelper inflate(Context context){
+            LinearLayout inflate = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.custom_rating, null);
+            FrameLayout frameLayout = inflate.findViewById(R.id.customRating_layout);
+            inflate.removeAllViews();
+            return new RatingHelper(frameLayout);
+        }
+    }
+    //  <------------------------- RatingHelper -------------------------
+
 }

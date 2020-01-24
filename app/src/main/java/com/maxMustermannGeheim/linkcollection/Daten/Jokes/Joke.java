@@ -1,7 +1,10 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Jokes;
 
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
+import com.scottyab.aescrypt.AESCrypt;
 
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -67,6 +70,31 @@ public class Joke extends ParentClass {
 //        joke.addedDate = this.addedDate;
 //        return joke;
 //    }
+
+    //  ------------------------- Encryption ------------------------->
+    @Override
+    public boolean encrypt(String key) {
+        try {
+            if (Utility.stringExists(name)) name = AESCrypt.encrypt(key, name);
+            if (Utility.stringExists(punchLine)) punchLine = AESCrypt.encrypt(key, punchLine);
+            return true;
+        } catch (GeneralSecurityException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean decrypt(String key) {
+        try {
+            if (Utility.stringExists(name)) name = AESCrypt.decrypt(key, name);
+            if (Utility.stringExists(punchLine)) punchLine = AESCrypt.decrypt(key, punchLine);
+            return true;
+        } catch (GeneralSecurityException e) {
+            return false;
+        }
+    }
+    //  <------------------------- Encryption -------------------------
+
 
     @Override
     public Joke clone() {

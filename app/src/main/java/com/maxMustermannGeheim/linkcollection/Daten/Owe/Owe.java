@@ -3,7 +3,10 @@ package com.maxMustermannGeheim.linkcollection.Daten.Owe;
 import androidx.annotation.NonNull;
 
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
+import com.scottyab.aescrypt.AESCrypt;
 
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -85,6 +88,33 @@ public class Owe extends ParentClass {
         return this;
     }
 
+    //  ------------------------- Encryption ------------------------->
+    @Override
+    public boolean encrypt(String key) {
+        try {
+            if (Utility.stringExists(name)) name = AESCrypt.encrypt(key, name);
+            if (Utility.stringExists(description)) description = AESCrypt.encrypt(key, description);
+            if (!itemList.isEmpty()) itemList.forEach(item -> item.encrypt(key));
+            return true;
+        } catch (GeneralSecurityException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean decrypt(String key) {
+        try {
+            if (Utility.stringExists(name)) name = AESCrypt.decrypt(key, name);
+            if (Utility.stringExists(description)) description = AESCrypt.decrypt(key, description);
+            if (!itemList.isEmpty()) itemList.forEach(item -> item.decrypt(key));
+            return true;
+        } catch (GeneralSecurityException e) {
+            return false;
+        }
+    }
+    //  <------------------------- Encryption -------------------------
+
+
     public static class Item extends ParentClass{
         private double amount;
         private String personId;
@@ -124,8 +154,6 @@ public class Owe extends ParentClass {
             this.open = open;
             return this;
         }
-
-
     }
 
 //    public Owe cloneOwe() {

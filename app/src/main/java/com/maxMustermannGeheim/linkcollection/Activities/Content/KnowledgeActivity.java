@@ -38,6 +38,7 @@ import com.google.android.gms.common.util.Hex;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
@@ -85,13 +86,17 @@ public class KnowledgeActivity extends AppCompatActivity {
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.CATEGORY, FILTER_TYPE.CONTENT));
     private CustomDialog detailDialog;
 
-    // ToDo: Stichpunkte
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_knowledge);
 
+        database = Database.getInstance();
+        if (database == null)
+            setContentView(R.layout.loading_screen);
+        else
+            setContentView(R.layout.activity_knowledge);
+
+        Settings.startSettings_ifNeeded(this);
         mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
         loadDatabase();
@@ -966,6 +971,9 @@ public class KnowledgeActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        if (!Database.isReady())
+            return true;
+
         int id = item.getItemId();
         switch (id) {
             case R.id.taskBar_knowledge_add:

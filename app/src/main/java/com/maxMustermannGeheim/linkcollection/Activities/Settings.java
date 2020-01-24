@@ -2,11 +2,13 @@ package com.maxMustermannGeheim.linkcollection.Activities;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Pair;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -21,11 +23,22 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
+import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
+import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
+import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
+import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
+import com.maxMustermannGeheim.linkcollection.Daten.Owe.Person;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
+import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
@@ -61,6 +74,9 @@ public class Settings extends AppCompatActivity {
     public static final String SETTING_SPACE_SHOWN_ = "SETTING_SPACE_SHOWN_";
     public static final String SETTING_SPACE_NAMES_ = "SETTING_SPACE_NAMES_";
     public static final String SETTING_SPACE_ORDER = "SETTING_SPACE_ORDER";
+    public static final String SETTING_SPACE_ENCRYPTED_ = "SETTING_SPACE_ENCRYPTED_";
+    public static final String SETTING_SPACE_ENCRYPTION_PASSWORD = "SETTING_SPACE_ENCRYPTION_PASSWORD";
+
     public static Map<String, String> settingsMap = new HashMap<>();
 
     static public Database database = Database.getInstance();
@@ -71,6 +87,8 @@ public class Settings extends AppCompatActivity {
     Button settings_others_changeDatabaseCode;
     TextView settings_others_activeSpaces;
     Button settings_others_spaceSelector;
+    TextView settings_others_encryptedSpaces;
+    Button settings_others_encryptedSelector;
 
     Database.DatabaseReloadListener databaseReloadListener;
     CustomRecycler spaceRecycler_customRecycler;
@@ -91,12 +109,13 @@ public class Settings extends AppCompatActivity {
     }
 
     private static void applySettingsMap(Context context) {
-        if (!Database.isReady())
-            return;
+//        if (!Database.isReady())
+//            return;
 
         settingsMap.put(SETTING_VIDEO_SHOW_RELEASE, "true");
         settingsMap.put(SETTING_VIDEO_AUTO_SEARCH, "true");
         settingsMap.put(SETTING_VIDEO_TMDB_SHORTCUT, "true");
+        settingsMap.put(SETTING_SPACE_ENCRYPTION_PASSWORD, "Passwort");
 //        settingsMap.put(SETTING_FINANCES_SWAP_LABLES, "false");
 ////        settingsMap.put(SETTING_OTHERS_USER, Database.getInstance().loggedInUserId);
 ////        settingsMap.put(SETTING_OTHERS_DARK_MODE, context.getResources().getString(R.string.automatically));
@@ -118,7 +137,7 @@ public class Settings extends AppCompatActivity {
         return Boolean.parseBoolean(getSingleSetting(context, key));
     }
 
-        private static void saveSettings() {
+    private static void saveSettings() {
         SharedPreferences.Editor editor = mySPR_settings.edit();
 
         for (Map.Entry<String, String> entry : settingsMap.entrySet()) {
@@ -145,6 +164,7 @@ public class Settings extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.main_daysCount)).setText(String.valueOf(dateSet.size()));
                     ((TextView) view.findViewById(R.id.main_watchLaterCount)).setText(String.valueOf(Utility.getWatchLaterList().size()));
                 })
+                .setAssociatedClasses(Video.class, Darsteller.class, Studio.class, Genre.class)
                 .setSettingsDialog(new Utility.Triple<>(R.layout.dialog_settings_video, (customDialog, view, space) -> {
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showRelease)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_RELEASE));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_autoSearch)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_AUTO_SEARCH));
@@ -185,6 +205,7 @@ public class Settings extends AppCompatActivity {
 
                     view.findViewById(R.id.main_show_nextEpisode).setOnLongClickListener(MainActivity::showNextEpisode_longClick);
                 })
+                .setAssociatedClasses(Show.class, ShowGenre.class)
                 .setSettingsDialog(null));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_knowledge), context.getString(R.string.bottomMenu_knowledge)).setActivity(KnowledgeActivity.class).setItemId(Space.SPACE_KNOWLEDGE).setIconId(R.drawable.ic_knowledge).setFragmentLayoutId(R.layout.main_fragment_knowledge)
                 .setSetLayout((space, view) -> {
@@ -192,6 +213,7 @@ public class Settings extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.main_knowledge_Count)).setText(String.valueOf(database.knowledgeMap.size()));
                     ((TextView) view.findViewById(R.id.main_knowledge_categoryCount)).setText(String.valueOf(database.knowledgeCategoryMap.size()));
                 })
+                .setAssociatedClasses(Knowledge.class, KnowledgeCategory.class)
                 .setSettingsDialog(null));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_owe), context.getString(R.string.bottomMenu_owe)).setActivity(OweActivity.class).setItemId(Space.SPACE_OWE).setIconId(R.drawable.ic_euro).setFragmentLayoutId(R.layout.main_fragment_owe)
                 .setSetLayout((space, view) -> {
@@ -206,6 +228,7 @@ public class Settings extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.main_owe_countAll)).setText(String.valueOf(database.oweMap.values().stream().filter(Owe::isOpen).count()));
                     ((TextView) view.findViewById(R.id.main_owe_countPerson)).setText(String.valueOf(database.personMap.size()));
                 })
+                .setAssociatedClasses(Owe.class, Person.class)
                 .setSettingsDialog(null));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_joke), context.getString(R.string.bottomMenu_jokes)).setActivity(JokeActivity.class).setItemId(Space.SPACE_JOKE).setIconId(R.drawable.ic_jokes).setFragmentLayoutId(R.layout.main_fragment_joke)
                 .setSetLayout((space, view) -> {
@@ -214,12 +237,14 @@ public class Settings extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.main_joke_Count)).setText(String.valueOf(database.jokeMap.size()));
                     ((TextView) view.findViewById(R.id.main_joke_categoryCount)).setText(String.valueOf(database.jokeCategoryMap.size()));
                 })
+                .setAssociatedClasses(Joke.class, JokeCategory.class)
                 .setSettingsDialog(null));
 
 
         for (Space space : allSpaces) {
             settingsMap.put(SETTING_SPACE_SHOWN_ + space.getItemId(), String.valueOf(space.isShown()));
             settingsMap.put(SETTING_SPACE_NAMES_ + space.getItemId(), space.getName() + "|" + space.getPlural());
+            settingsMap.put(SETTING_SPACE_ENCRYPTED_ + space.getItemId(), String.valueOf(space.isEncrypted()));
         }
     }
 
@@ -234,6 +259,7 @@ public class Settings extends AppCompatActivity {
                 space.setPlural(singPlur[1]).setName(singPlur[0]);
             }
 
+            space.setEncrypted(Boolean.parseBoolean(settingsMap.get(SETTING_SPACE_ENCRYPTED_ + space.getItemId())));
         }
         String spaceOrder_string = mySPR_settings.getString(SETTING_SPACE_ORDER, null);
         if (spaceOrder_string != null) {
@@ -258,6 +284,10 @@ public class Settings extends AppCompatActivity {
         for (Map.Entry<String, String> entry : settingsMap.entrySet()) {
             entry.setValue(mySPR_settings.getString(entry.getKey(), entry.getValue()));
         }
+    }
+
+    public static boolean isLoaded(){
+        return mySPR_settings != null;
     }
 //  <----- Static -----
 
@@ -285,13 +315,20 @@ public class Settings extends AppCompatActivity {
         settings_others_changeDatabaseCode = findViewById(R.id.settings_others_changeDatabaseCode);
         settings_others_activeSpaces = findViewById(R.id.settings_others_activeSpaces);
         settings_others_spaceSelector = findViewById(R.id.settings_others_spaceSelector);
+        settings_others_encryptedSpaces = findViewById(R.id.settings_others_encryptedSpaces);
+        settings_others_encryptedSelector = findViewById(R.id.settings_others_encryptedSelector);
     }
 
     private void setSettings() {
         spaceRecycler_customRecycler = new CustomRecycler<Space>(this, spaceRecycler)
                 .setItemLayout(R.layout.list_item_space_setting)
                 .setGetActiveObjectList(() -> allSpaces.stream().filter(Space::isShown).collect(Collectors.toList()))
-                .setSetItemContent((customRecycler, itemView, space) -> ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getPlural()))
+                .setSetItemContent((customRecycler, itemView, space) -> {
+                    ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getPlural());
+                    ImageView list_spaceSetting_lock = itemView.findViewById(R.id.list_spaceSetting_lock);
+                    list_spaceSetting_lock.setImageResource(space.isEncrypted() ? R.drawable.ic_lock_closed : R.drawable.ic_lock_open);
+                    list_spaceSetting_lock.setColorFilter(space.isEncrypted() ? getColor(R.color.colorGreen) : Color.RED);
+                })
                 .removeLastDivider()
                 .setOnClickListener((customRecycler, itemView, space, index) -> space.showSettingsDialog(this))
                 .setDividerMargin_inDp(16)
@@ -308,6 +345,11 @@ public class Settings extends AppCompatActivity {
 
         settings_others_activeSpaces.setText(
                 allSpaces.stream().filter(Space::isShown).map(ParentClass::getName).collect(Collectors.joining(", "))
+        );
+
+
+        settings_others_encryptedSpaces.setText(
+                allSpaces.stream().filter(Space::isEncrypted).map(ParentClass::getName).collect(Collectors.joining(", "))
         );
     }
 
@@ -368,6 +410,57 @@ public class Settings extends AppCompatActivity {
                     .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
                     .show();
         });
+
+        settings_others_encryptedSelector.setOnClickListener(v -> {
+            Set<String> spaceSet = allSpaces.stream().filter(Space::isEncrypted).map(ParentClass::getName).collect(Collectors.toSet());
+            com.finn.androidUtilities.CustomDialog.Builder(this)
+                    .setTitle("Bereiche Auswählen")
+                    .setView(new CustomRecycler<Space>(this)
+                            .setItemLayout(R.layout.list_item_space_shown)
+                            .setObjectList(allSpaces.stream().filter(Space::isShown).collect(Collectors.toList()))
+                            .setSetItemContent((customRecycler, itemView, space) -> {
+                                ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getPlural());
+
+                                ((CheckBox) itemView.findViewById(R.id.list_spaceSetting_shown)).setChecked(space.isEncrypted());
+                            })
+                            .removeLastDivider()
+                            .setOnClickListener((customRecycler, itemView, space, index) -> {
+                                CheckBox list_spaceSetting_shown = itemView.findViewById(R.id.list_spaceSetting_shown);
+                                boolean checked = list_spaceSetting_shown.isChecked();
+
+                                list_spaceSetting_shown.setChecked(!checked);
+                                space.setEncrypted(!checked);
+                                settings_others_activeSpaces.setText(
+                                        allSpaces.stream().filter(Space::isEncrypted).map(ParentClass::getName).collect(Collectors.joining(", "))
+                                );
+                            })
+                            .deaktivateCustomRipple()
+                            .setDividerMargin_inDp(16)
+                            .generateRecyclerView())
+                    .setOnDialogDismiss(dialog -> {
+                        updateSpaceStatusSettings();
+                        if (!spaceSet.equals(allSpaces.stream().filter(Space::isEncrypted).map(ParentClass::getName).collect(Collectors.toSet()))) {
+                            Database.saveAll(true);
+                        }
+                    })
+                    .addButton("Passwort Ändern", customDialog -> {
+                        com.finn.androidUtilities.CustomDialog.Builder(this)
+                                .setTitle("Passwort Festlegen")
+                                .setEdit(new com.finn.androidUtilities.CustomDialog.EditBuilder().setHint("Neues Passwort eingeben"))
+                                .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                                .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                                    String newPassword = customDialog1.getEditText();
+                                    changeSetting(SETTING_SPACE_ENCRYPTION_PASSWORD, newPassword);
+                                    Toast.makeText(this, "Passwort wurde zu '" + newPassword + "' geändert", Toast.LENGTH_SHORT).show();
+                                    Database.saveAll(true);
+                                })
+                                .show();
+                    }, false)
+                    .alignPreviousButtonsLeft()
+                    .colorLastAddedButton()
+                    .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.BACK_BUTTON)
+                    .show();
+        });
     }
 
     public static class Space extends ParentClass {
@@ -386,7 +479,9 @@ public class Settings extends AppCompatActivity {
         private Fragment fragment;
         private SetLayout setLayout;
         private Class activity;
+        private boolean encrypted;
         BuildSettingsDialog buildSettingsDialog;
+        private CustomList<Class> associatedClasses = new CustomList<>();
 
         public Space(String name, String plural) {
             this.name = name;
@@ -451,6 +546,15 @@ public class Settings extends AppCompatActivity {
             return fragment != null;
         }
 
+        public Space setAssociatedClasses(Class... classes) {
+            associatedClasses = new CustomList<>(classes);
+            return this;
+        }
+
+        public CustomList<Class> getAssociatedClasses() {
+            return associatedClasses;
+        }
+
         private interface SetLayout {
             void runSetLayout(Space space, View view);
         }
@@ -471,6 +575,19 @@ public class Settings extends AppCompatActivity {
 
         public Class getActivity() {
             return activity;
+        }
+
+        public boolean isEncrypted() {
+            return encrypted;
+        }
+
+        public Space setEncrypted(boolean encrypted) {
+            this.encrypted = encrypted;
+            return this;
+        }
+
+        public static boolean needsToBeEncrypted(Class aClass) {
+            return Utility.concatenateCollections(allSpaces.stream().filter(Space::isEncrypted).collect(Collectors.toList()), Space::getAssociatedClasses).contains(aClass);
         }
 
         //  ----- SettingsDialog ----->
@@ -564,10 +681,14 @@ public class Settings extends AppCompatActivity {
     void updateSpaceStatusSettings() {
         for (Space space : allSpaces) {
             changeSetting(SETTING_SPACE_SHOWN_ + space.getItemId(), String.valueOf(space.isShown()));
+            changeSetting(SETTING_SPACE_ENCRYPTED_ + space.getItemId(), String.valueOf(space.isEncrypted()));
         }
 
         settings_others_activeSpaces.setText(
                 allSpaces.stream().filter(Space::isShown).map(ParentClass::getName).collect(Collectors.joining(", ")));
+
+        settings_others_encryptedSpaces.setText(
+                allSpaces.stream().filter(Space::isEncrypted).map(ParentClass::getName).collect(Collectors.joining(", ")));
 
         spaceRecycler_customRecycler.reload();
     }

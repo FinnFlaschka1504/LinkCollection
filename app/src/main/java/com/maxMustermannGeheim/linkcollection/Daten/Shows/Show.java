@@ -3,8 +3,10 @@ package com.maxMustermannGeheim.linkcollection.Daten.Shows;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
+import com.scottyab.aescrypt.AESCrypt;
 
 import java.lang.reflect.Field;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -172,6 +174,33 @@ public class Show extends ParentClass{
         }
     }
 
+    //  ------------------------- Encryption ------------------------->
+    public boolean encrypt(String key) {
+        try {
+            if (Utility.stringExists(name)) name = AESCrypt.encrypt(key, name);
+            if (Utility.stringExists(imagePath)) imagePath = AESCrypt.encrypt(key, imagePath);
+            if (!alreadyAiredList.isEmpty()) alreadyAiredList.forEach(episode -> episode.encrypt(key));
+            if (!seasonList.isEmpty()) seasonList.forEach(season -> season.encrypt(key));
+            return true;
+        } catch (GeneralSecurityException e) {
+            return false;
+        }
+    }
+
+    public boolean decrypt(String key) {
+        try {
+            if (Utility.stringExists(name)) name = AESCrypt.decrypt(key, name);
+            if (Utility.stringExists(imagePath)) imagePath = AESCrypt.decrypt(key, imagePath);
+            if (!alreadyAiredList.isEmpty()) alreadyAiredList.forEach(episode -> episode.decrypt(key));
+            if (!seasonList.isEmpty()) seasonList.forEach(season -> season.decrypt(key));
+            return true;
+        } catch (GeneralSecurityException e) {
+            return false;
+        }
+    }
+    //  <------------------------- Encryption -------------------------
+
+
     //  ----- Classes ----->
     public static class Season extends ParentClass{
         private int episodesCount;
@@ -242,6 +271,30 @@ public class Show extends ParentClass{
             this.showId = showId;
             return this;
         }
+
+        //  ------------------------- Encryption ------------------------->
+        @Override
+        public boolean encrypt(String key) {
+            try {
+                if (Utility.stringExists(name)) name = AESCrypt.encrypt(key, name);
+                if (!episodeMap.isEmpty()) episodeMap.values().forEach(episode -> episode.encrypt(key));
+                return true;
+            } catch (GeneralSecurityException e) {
+                return false;
+            }
+        }
+
+        @Override
+        public boolean decrypt(String key) {
+            try {
+                if (Utility.stringExists(name)) name = AESCrypt.decrypt(key, name);
+                if (!episodeMap.isEmpty()) episodeMap.values().forEach(episode -> episode.decrypt(key));
+                return true;
+            } catch (GeneralSecurityException e) {
+                return false;
+            }
+        }
+        //  <------------------------- Encryption -------------------------
     }
 
     public static class Episode extends ParentClass{

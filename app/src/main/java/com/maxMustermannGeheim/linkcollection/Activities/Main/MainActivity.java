@@ -29,6 +29,7 @@ import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomInternetHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
 import java.util.ArrayList;
@@ -79,6 +80,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         if (savedInstanceState == null)
             setContentView(R.layout.loading_screen);
         else
@@ -87,6 +89,8 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
         mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_DATA, MODE_PRIVATE);
         mySPR_settings = getSharedPreferences(SHARED_PREFERENCES_SETTINGS, MODE_PRIVATE);
+
+        Settings.startSettings_ifNeeded(this);
 
         if (Database.exists())
             Database.removeDatabaseReloadListener(null);
@@ -102,6 +106,19 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         });
 
         CustomInternetHelper.initialize(this);
+
+
+        // ------
+
+//        com.finn.androidUtilities.CustomDialog.Builder(this)
+//                .setTitle("Rating-Test")
+//                .setView(R.layout.custom_rating)
+//                .setSetViewContent((customDialog, view, reload) -> {
+//                    new Helpers.RatingHelper(view.findViewById(R.id.customRating_layout));
+//                })
+//                .disableScroll()
+//                .show();
+
 //        new CustomRecycler<String>(this).isRecyclerScrollable();
 
 //        int buttonId = View.generateViewId();
@@ -188,7 +205,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     private void setLayout() {
         BottomNavigationView bottomNavigationView = findViewById(R.id.main_bottom_navigation);
 
-        Settings.startSettings_ifNeeded(this);
+//        Settings.startSettings_ifNeeded(this);
 
         ShortcutManager shortcutManager = getSystemService(ShortcutManager.class);
         List<ShortcutInfo> shortcutInfoList = new ArrayList<>();

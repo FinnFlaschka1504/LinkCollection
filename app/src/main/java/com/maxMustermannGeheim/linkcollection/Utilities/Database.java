@@ -16,6 +16,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
+import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
@@ -60,7 +61,7 @@ public class Database {
     private static boolean reload = false;
     private static List<DatabaseReloadListener> reloadListenerList = new ArrayList<>();
     private static boolean syncDatabaseToContentMap = true;
-    private Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
+    private static Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
 
 
     //  ----- Content deklaration ----->
@@ -192,7 +193,7 @@ public class Database {
 
             for (Map.Entry<String, Content> entry : contentMap.entrySet()) {
                 Content content = entry.getValue();
-                if (!content.saveLocal) continue;
+                if (!content.saveOffline) continue;
 
                 String content_string = mySPR_daten.getString(content.key, "--Leer--");
                 if (!content_string.equals("--Leer--")) {
@@ -223,11 +224,11 @@ public class Database {
 
 
     //  ----- Content management ----->
-    public class Content<T, V> {
+    public class Content<T, V> implements Cloneable {
         public String fieldName;
         public String key;
         public Object content;
-        public Boolean saveLocal = true;
+        public Boolean saveOffline = true;
         public Boolean saveOnline = true;
         public Class<V> tClass;
         private boolean reassign;
@@ -342,14 +343,24 @@ public class Database {
             }).toArray(String[]::new);
         }
 
-        public Content setSaveLocal(Boolean saveLocal) {
-            this.saveLocal = saveLocal;
+        public Content setSaveOffline(Boolean saveOffline) {
+            this.saveOffline = saveOffline;
             return this;
         }
 
         public Content setSaveOnline(Boolean saveOnline) {
             this.saveOnline = saveOnline;
             return this;
+        }
+
+        @NonNull
+        @Override
+        protected Content clone(){
+            try {
+                return (Content) super.clone();
+            } catch (CloneNotSupportedException e) {
+                return null;
+            }
         }
     }
 
@@ -379,18 +390,33 @@ public class Database {
         return contentMap;
     }
 
-    public Map<String, Object> getSimpleContentMap() {
+    public Map<String, Object> getSimpleContentMap(boolean includeOnline, boolean includeOffline) {
         Map<String, Content> contentMap = getContentMap(true);
         Map<String, Object> simpleContentMap = new HashMap<>();
         for (Map.Entry<String, Content> contentEntry : contentMap.entrySet()) {
-            simpleContentMap.put(contentEntry.getKey(), contentEntry.getValue().getContent());
+            if ((includeOnline && contentEntry.getValue().saveOnline) || (includeOffline && contentEntry.getValue().saveOffline))
+                simpleContentMap.put(contentEntry.getKey(), contentEntry.getValue().getContent());
         }
         return simpleContentMap;
     }
 
-    public Map<String, Object> deepCopySimpleContentMap() {
+
+    public Map<String, Content> deepCopyContentMap(boolean includeOnline, boolean includeOffline) {
+        Map<String, Content> deepCopy = new HashMap<>();
+        Map<String, Object> simpleContentMap = database.deepCopySimpleContentMap(includeOnline, includeOffline);
+
+        for (Map.Entry<String, Content> entry : contentMap.entrySet()) {
+            Content contentClone = entry.getValue().clone();
+            contentClone.content = simpleContentMap.get(entry.getKey());
+            deepCopy.put(entry.getKey(), contentClone);
+        }
+
+        return deepCopy;
+    }
+
+    public Map<String, Object> deepCopySimpleContentMap(boolean includeOnline, boolean includeOffline) {
         Map<String, Object> deepCopy = new HashMap<>();
-        Map<String, Object> simpleContentMap = database.getSimpleContentMap();
+        Map<String, Object> simpleContentMap = database.getSimpleContentMap(includeOnline, includeOffline);
         HashMap<String, Object> hashMap = gson.fromJson(gson.toJson(simpleContentMap), HashMap.class);
         for (Map.Entry<String, Object> entry : hashMap.entrySet()) {
             if (!(entry.getValue() instanceof LinkedTreeMap)) {
@@ -405,22 +431,34 @@ public class Database {
         return deepCopy;
     }
 
+
+
     public static boolean saveAll() {
+        return saveAll(false);
+    }
+    public static boolean saveAll(boolean forceAll) {
         Log.d(TAG, "saveAll: ");
 
-        if (!Database.isReady() || !database.isOnline() || !Database.hasChanges())
+        if (!Database.isReady() || !database.isOnline() || (!forceAll && !Database.hasChanges()))
             return false;
+
+        // ToDo: extremer overhead da alle verschlüsselt werden, aber wenn passwort geändert müssen alle geändert werden
+        //  auch alles speichern wenn neues item als verschlüsselt markiert wirde, oder anders herum
+        //  speicherung darf bereits vorhandene Objekte nicht verändern
+        //  möglich dass forceAll als paremeter hinzugefügt
+        //  zewi scenarien: einzelne elemente sollen gespeichert werden -> objekte in updateList verschlüsseln | wenn alle dann contentMap zwischenspeichern, deepCopy anfertigen diese dann verschlüsseln und hochlande; anschließend zurücksetzen
+
 
         database.saveDatabase_offline(mySPR_daten);
         if (Utility.isOnline()) {
-            if (updateList.isEmpty())
-                database.writeAllToFirebase();
+            if (updateList.isEmpty() || forceAll)
+                database.writeAllToFirebase(forceAll);
             else
                 database.writeAllToFirebase(updateList);
         }
 
         updateList.clear();
-        lastUploaded_contentMap = database.deepCopySimpleContentMap();
+        lastUploaded_contentMap = database.deepCopySimpleContentMap(true, true);
 
         return true;
     }
@@ -507,8 +545,13 @@ public class Database {
 
     private static void addChangeToList(Content content, Boolean type, Object o) {
         CustomList<String> path = new CustomList<>(content.getPathArray());
-        if (o instanceof ParentClass)
+        if (o instanceof ParentClass) {
             path.add(new String[]{((ParentClass) o).getUuid()});
+            if (Settings.Space.needsToBeEncrypted(o.getClass())) {
+                o = gson.fromJson(gson.toJson(o), o.getClass());
+                ((ParentClass) o).encrypt(Settings.mySPR_settings.getString(Settings.SETTING_SPACE_ENCRYPTION_PASSWORD, "Passwort"));
+            }
+        }
 
         updateList.add(new Utility.Triple<>(type, path.toArray(new String[0]), o));
     }
@@ -517,7 +560,7 @@ public class Database {
         SharedPreferences.Editor editor = mySPR_daten.edit();
 
         for (Content content : getContentMap(true).values()) {
-            if (!content.saveLocal) continue;
+            if (!content.saveOffline) continue;
 
             if (content.content instanceof String)
                 editor.putString(content.key, (String) content.content);
@@ -539,10 +582,32 @@ public class Database {
 
     }
 
-    private void writeAllToFirebase() {
-        for (Content content : getContentMap(true).values()) {
-            if (content.saveOnline)
+    private void writeAllToFirebase(boolean copy) {
+        Map<String, Content> contentMap;
+        if (copy) {
+            contentMap = deepCopyContentMap(true, false);
+
+            String key = Settings.mySPR_settings.getString(Settings.SETTING_SPACE_ENCRYPTION_PASSWORD, "Passwort");
+            Settings.Space.allSpaces.stream().filter(Settings.Space::isEncrypted).forEach(space -> {
+                space.getAssociatedClasses().forEach(aClass -> {
+                    contentMap.values().stream().filter(content -> content.tClass.isAssignableFrom(aClass)).findFirst().ifPresent(contentObject -> {
+                        Object content = contentObject.getContent();
+                        if (content instanceof Map) {
+                            ((Map) content).values().forEach(o -> ((ParentClass) o).encrypt(key));
+                        } else if (content instanceof List) {
+                        }
+                    });
+                });
+            });
+
+        }
+        else
+            contentMap = getContentMap(true);
+
+        for (Content content : contentMap.values()) {
+            if (content.saveOnline) {
                 databaseCall_write(content.content, content.getPathArray());
+            }
         }
     }
 //  <----- Content management -----
@@ -615,10 +680,27 @@ public class Database {
 
     private static void finishedLoading() {
         Log.d(TAG, "finishedLoading: " + reload);
+
+        // decrypt
+        if (database.online && Settings.isLoaded()) {
+            String key = Settings.mySPR_settings.getString(Settings.SETTING_SPACE_ENCRYPTION_PASSWORD, "Passwort");
+            Settings.Space.allSpaces.stream().filter(Settings.Space::isEncrypted).forEach(space -> {
+                space.getAssociatedClasses().forEach(aClass -> {
+                    contentMap.values().stream().filter(content -> content.tClass.isAssignableFrom(aClass)).findFirst().ifPresent(contentObject -> {
+                        Object content = contentObject.getContent();
+                        if (content instanceof Map) {
+                            ((Map) content).values().forEach(o -> ((ParentClass) o).decrypt(key));
+                        } else if (content instanceof List) {
+                        }
+                    });
+                });
+            });
+        }
+
         database.syncDatabaseAndContentMap();
         database.loaded = true;
 
-        lastUploaded_contentMap = database.deepCopySimpleContentMap();
+        lastUploaded_contentMap = database.deepCopySimpleContentMap(true, true);
 
         if (reload)
             fireDatabaseReloadListener();

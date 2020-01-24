@@ -1,7 +1,10 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Knowledge;
 
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
+import com.scottyab.aescrypt.AESCrypt;
 
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -71,6 +74,43 @@ public class Knowledge extends ParentClass {
         return this;
     }
 
+    //  ------------------------- Encryption ------------------------->
+    @Override
+    public boolean encrypt(String key) {
+        try {
+            if (Utility.stringExists(name)) name = AESCrypt.encrypt(key, name);
+            if (Utility.stringExists(content)) content = AESCrypt.encrypt(key, content);
+            for (List<String> list : sources) {
+                for (int i = 0; i < list.size(); i++) {
+                    list.set(i, AESCrypt.encrypt(key, list.get(i)));
+                }
+            }
+            if (!itemList.isEmpty()) itemList.forEach(item -> item.encrypt(key));
+            return true;
+        } catch (GeneralSecurityException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean decrypt(String key) {
+        try {
+            if (Utility.stringExists(name)) name = AESCrypt.decrypt(key, name);
+            if (Utility.stringExists(content)) content = AESCrypt.decrypt(key, content);
+            for (List<String> list : sources) {
+                for (int i = 0; i < list.size(); i++) {
+                    list.set(i, AESCrypt.decrypt(key, list.get(i)));
+                }
+            }
+            if (!itemList.isEmpty()) itemList.forEach(item -> item.decrypt(key));
+            return true;
+        } catch (GeneralSecurityException e) {
+            return false;
+        }
+    }
+    //  <------------------------- Encryption -------------------------
+
+
 
     //  ------------------------- ItemList ------------------------->
     public List<Item> getItemList() {
@@ -99,10 +139,6 @@ public class Knowledge extends ParentClass {
         else
             return itemList.get(index - 1);
     }
-
-//    public boolean removeItem(Item item) {
-//        return itemList.remove(item);
-//    }
 
     public boolean hasItems() {
         return itemList.stream().anyMatch(item -> !item.getName().isEmpty());
@@ -171,10 +207,29 @@ public class Knowledge extends ParentClass {
             return !childrenList.isEmpty();
         }
 
-        public int getDepth() {
-            return 0;
-//            return parent == null ? 0 : parent.getDepth() + 1;
+        //  ------------------------- Encryption ------------------------->
+        @Override
+        public boolean encrypt(String key) {
+            try {
+                if (Utility.stringExists(name)) name = AESCrypt.encrypt(key, name);
+                if (!childrenList.isEmpty()) childrenList.forEach(item -> item.encrypt(key));
+                return true;
+            } catch (GeneralSecurityException e) {
+                return false;
+            }
         }
+
+        @Override
+        public boolean decrypt(String key) {
+            try {
+                if (Utility.stringExists(name)) name = AESCrypt.decrypt(key, name);
+                if (!childrenList.isEmpty()) childrenList.forEach(item -> item.decrypt(key));
+                return true;
+            } catch (GeneralSecurityException e) {
+                return false;
+            }
+        }
+        //  <------------------------- Encryption -------------------------
 
 
         @Override

@@ -834,7 +834,7 @@ public class Utility implements java.io.Serializable {
                             .setTitle(editType_string + " Hinzufügen")
                             .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                             .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
-                                ParentClass parentClass = ParentClass.newCategoy(category, customDialog1.getEditText());
+                                ParentClass parentClass = ParentClass.newCategory(category, customDialog1.getEditText());
                                 switch (category) {
                                     case DARSTELLER:
                                         database.darstellerMap.put(parentClass.getUuid(), (Darsteller) parentClass);
@@ -1027,6 +1027,33 @@ public class Utility implements java.io.Serializable {
             this.second = second;
             this.third = third;
         }
+
+        public A getFirst() {
+            return first;
+        }
+
+        public Triple<A, B, C> setFirst(A first) {
+            this.first = first;
+            return this;
+        }
+
+        public B getSecond() {
+            return second;
+        }
+
+        public Triple<A, B, C> setSecond(B second) {
+            this.second = second;
+            return this;
+        }
+
+        public C getThird() {
+            return third;
+        }
+
+        public Triple<A, B, C> setThird(C third) {
+            this.third = third;
+            return this;
+        }
     }
 
     public static class Quadruple<A, B, C, D> {
@@ -1040,6 +1067,42 @@ public class Utility implements java.io.Serializable {
             this.second = second;
             this.third = third;
             this.fourth = fourth;
+        }
+
+        public A getFirst() {
+            return first;
+        }
+
+        public Quadruple<A, B, C, D> setFirst(A first) {
+            this.first = first;
+            return this;
+        }
+
+        public B getSecond() {
+            return second;
+        }
+
+        public Quadruple<A, B, C, D> setSecond(B second) {
+            this.second = second;
+            return this;
+        }
+
+        public C getThird() {
+            return third;
+        }
+
+        public Quadruple<A, B, C, D> setThird(C third) {
+            this.third = third;
+            return this;
+        }
+
+        public D getFourth() {
+            return fourth;
+        }
+
+        public Quadruple<A, B, C, D> setFourth(D fourth) {
+            this.fourth = fourth;
+            return this;
         }
     }
 

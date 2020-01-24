@@ -621,7 +621,7 @@ public class VideoActivity extends AppCompatActivity {
 //                        .show();
 //                    }
 //                    else
-                    if (editVideo[0].isWatchLater() && !editVideo[0].hasRating() && !Utility.boolOr(((RatingBar) customDialog.findViewById(R.id.dialog_editOrAddVideo_rating)).getRating(),-1f, 0f))
+                    if (editVideo[0].isWatchLater() && !editVideo[0].hasRating() && !Utility.boolOr(((RatingBar) customDialog.findViewById(R.id.customRating_ratingBar)).getRating(),-1f, 0f))
                         com.finn.androidUtilities.CustomDialog.Builder(this)
                                 .setTitle("Ansicht Hinzufügen?")
                                 .setText("Soll eine neue Ansicht zu dem Video hinzugefügt werden?")
@@ -771,6 +771,8 @@ public class VideoActivity extends AppCompatActivity {
                         });
                     });
 
+                    Helpers.RatingHelper ratingHelper = new Helpers.RatingHelper(view.findViewById(R.id.customRating_layout));
+
                     if (editVideo[0] != null) {
                         AutoCompleteTextView dialog_editOrAddVideo_Titel = view.findViewById(R.id.dialog_editOrAddVideo_Titel);
                         dialog_editOrAddVideo_Titel.setText(editVideo[0].getName());
@@ -814,7 +816,8 @@ public class VideoActivity extends AppCompatActivity {
                         view.findViewById(R.id.dialog_editOrAddVideo_rating_layout).setVisibility(visibility);
                         view.findViewById(R.id.dialog_editOrAddVideo_url_allLayout).setVisibility(visibility);
 
-                        ((RatingBar) view.findViewById(R.id.dialog_editOrAddVideo_rating)).setRating(editVideo[0].getRating());
+                        ratingHelper.setRating(editVideo[0].getRating());
+//                        ((RatingBar) view.findViewById(R.id.dialog_editOrAddVideo_rating)).setRating(editVideo[0].getRating());
                     } else {
                         dialog_editOrAddVideo_watchLater.setVisibility(View.VISIBLE);
                         editVideo[0] = new Video("");
@@ -950,7 +953,7 @@ public class VideoActivity extends AppCompatActivity {
 //        videoNeu.setStudioList(editVideo[0].getStudioList());
 //        videoNeu.setGenreList(editVideo[0].getGenreList());
         video.setUrl(url);
-        video.setRating(((RatingBar) dialog.findViewById(R.id.dialog_editOrAddVideo_rating)).getRating());
+        video.setRating(((RatingBar) dialog.findViewById(R.id.customRating_ratingBar)).getRating());
 //        videoNeu.setImagePath(editVideo[0].getImagePath());
         video.setRelease(((LazyDatePicker) dialog.findViewById(R.id.dialog_editOrAddVideo_datePicker)).getDate());
 
@@ -1009,6 +1012,9 @@ public class VideoActivity extends AppCompatActivity {
     @SuppressLint("RestrictedApi")
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        if (!Database.isReady())
+            return true;
+
         int id = item.getItemId();
         switch (id) {
             case R.id.taskBar_video_add:

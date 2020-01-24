@@ -18,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.finn.androidUtilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
@@ -68,6 +69,7 @@ public class JokeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_joke);
 
+        Settings.startSettings_ifNeeded(this);
         mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
         loadDatabase();

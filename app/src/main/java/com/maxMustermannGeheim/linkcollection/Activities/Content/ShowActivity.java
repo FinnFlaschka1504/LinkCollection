@@ -22,7 +22,6 @@ import android.widget.AutoCompleteTextView;
 import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.TextView;
@@ -38,6 +37,7 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.finn.androidUtilities.CustomUtility;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;
@@ -1104,15 +1104,19 @@ public class ShowActivity extends AppCompatActivity {
                         return;
                     selectedEpisode[0] = episode;
                     if (episode.getRating() == -1 || episode.getRating() == 0) {
-                        RatingBar ratingBar = new RatingBar(this);
-                        ratingBar.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-                        ratingBar.setRating(-1);
-                        ratingBar.setMax(5);
-                        ratingBar.setStepSize(0.5f);
-                        ratingBar.setNumStars(5);
-                        ratingBar.setBackground(getDrawable(R.drawable.tile_background));
-                        CustomPopupWindow customPopupWindow = CustomPopupWindow.Builder(itemView, ratingBar).setPositionRelativeToAnchor(CustomPopupWindow.POSITION_RELATIVE_TO_ANCHOR.TOP).show();
-                        ratingBar.setOnRatingBarChangeListener((ratingBar1, rating, fromUser) -> {
+//                        RatingBar ratingBar = new RatingBar(this);
+//                        ratingBar.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+//                        ratingBar.setRating(-1);
+//                        ratingBar.setMax(5);
+//                        ratingBar.setStepSize(0.5f);
+//                        ratingBar.setNumStars(5);
+                        Helpers.RatingHelper ratingHelper = Helpers.RatingHelper.inflate(this);
+                        FrameLayout frameLayout = ratingHelper.getLayout();
+                        frameLayout.setBackground(getDrawable(R.drawable.tile_background));
+                        CustomUtility.setMargins(ratingHelper.getRatingBar(), -1, 10);
+                        CustomPopupWindow customPopupWindow = CustomPopupWindow.Builder(itemView, frameLayout).setPositionRelativeToAnchor(CustomPopupWindow.POSITION_RELATIVE_TO_ANCHOR.CENTER_VERTICAL).show();
+
+                        ratingHelper.setOnRatingBarChangeListener((ratingBar1, rating, fromUser) -> {
                             selectedEpisode[0].setRating(rating);
                             addView.run();
                             customRecycler.reload();
@@ -1171,7 +1175,7 @@ public class ShowActivity extends AppCompatActivity {
                 .setView(R.layout.dialog_detail_episode)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
-                    episode.setRating(((RatingBar) customDialog.findViewById(R.id.dialog_detailEpisode_rating)).getRating());
+                    episode.setRating(((RatingBar) customDialog.findViewById(R.id.customRating_ratingBar)).getRating());
 
                     if (!episode.isWatched() && episode.getDateList().isEmpty()) {
                         episode.setWatched(true);
@@ -1188,8 +1192,9 @@ public class ShowActivity extends AppCompatActivity {
                         helper.appendColor("  ✓", getColor(R.color.colorGreen));
                     ((TextView) view.findViewById(R.id.dialog_detailEpisode_views)).setText(helper.get());
                     ((TextView) view.findViewById(R.id.dialog_detailEpisode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode.getAirDate()));
-                    RatingBar dialog_detailEpisode_rating = view.findViewById(R.id.dialog_detailEpisode_rating);
-                    dialog_detailEpisode_rating.setRating(episode.getRating());
+
+                    RatingBar dialog_detailEpisode_rating = new Helpers.RatingHelper(view.findViewById(R.id.customRating_layout)).setRating(episode.getRating()).getRatingBar();
+//                    dialog_detailEpisode_rating.setRating(episode.getRating());
                     CustomDialog.ButtonHelper actionButton = customDialog.getActionButton();
                     dialog_detailEpisode_rating.setOnRatingBarChangeListener((ratingBar, rating, fromUser) -> {
                         actionButton.setEnabled(rating != episode.getRating());

@@ -37,6 +37,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.maltaisn.calcdialog.CalcDialog;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Person;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
@@ -94,6 +95,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_owe);
 
+        Settings.startSettings_ifNeeded(this);
         mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
         CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);

@@ -3,7 +3,9 @@ package com.maxMustermannGeheim.linkcollection.Daten.Videos;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
+import com.scottyab.aescrypt.AESCrypt;
 
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -218,5 +220,34 @@ public class Video extends ParentClass {
     public Video clone() {
         return (Video) super.clone();
     }
+
+
+    //  ------------------------- Encryption ------------------------->
+    @Override
+    public boolean encrypt(String key) {
+        try {
+            if (Utility.stringExists(name)) name = AESCrypt.encrypt(key, name);
+            if (Utility.stringExists(url)) url = AESCrypt.encrypt(key, url);
+            if (Utility.stringExists(imagePath)) imagePath = AESCrypt.encrypt(key, imagePath);
+            if (!translationList.isEmpty()) for (int i = 0; i < translationList.size(); i++) translationList.set(i, AESCrypt.encrypt(key, translationList.get(i)));
+            return true;
+        } catch (GeneralSecurityException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean decrypt(String key) {
+        try {
+            if (Utility.stringExists(name)) name = AESCrypt.decrypt(key, name);
+            if (Utility.stringExists(url)) url = AESCrypt.decrypt(key, url);
+            if (Utility.stringExists(imagePath)) imagePath = AESCrypt.decrypt(key, imagePath);
+            if (!translationList.isEmpty()) for (int i = 0; i < translationList.size(); i++) translationList.set(i, AESCrypt.decrypt(key, translationList.get(i)));
+            return true;
+        } catch (GeneralSecurityException e) {
+            return false;
+        }
+    }
+    //  <------------------------- Encryption -------------------------
 
 }

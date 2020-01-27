@@ -523,7 +523,6 @@ public class CustomRecycler<T>{
         return recycler;
     }
 
-
     public RecyclerView reloadNew() {
         mAdapter = new MyAdapter(objectList);
         this.recycler.setAdapter(mAdapter);

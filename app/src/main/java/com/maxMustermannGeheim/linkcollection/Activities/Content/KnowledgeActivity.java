@@ -911,10 +911,9 @@ public class KnowledgeActivity extends AppCompatActivity {
             return;
         }
 
-        CustomDialog.Builder(this)
+        com.finn.androidUtilities.CustomDialog.Builder(this)
                 .setTitle("Zufälliges Wissen")
                 .setView(R.layout.dialog_detail_knowledge)
-                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Nochmal", customDialog -> {
                     if (filteredKnowledgeList.isEmpty()) {
                         Toast.makeText(this, "Wissen erschöpft", Toast.LENGTH_SHORT).show();
@@ -924,6 +923,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     customDialog.reloadView();
 
                 }, false)
+                .colorLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {
                     Knowledge randomKnowledge = filteredKnowledgeList.removeRandom();
 

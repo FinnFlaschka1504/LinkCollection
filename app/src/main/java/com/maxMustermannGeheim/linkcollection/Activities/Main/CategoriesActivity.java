@@ -12,6 +12,8 @@ import android.text.style.StyleSpan;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.CheckBox;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -89,6 +91,8 @@ public class CategoriesActivity extends AppCompatActivity {
     private Database database = Database.getInstance();
     SharedPreferences mySPR_daten;
     private String searchQuerry = "";
+    private boolean multiSelectMode;
+    private List<ParentClass> selectedList = new ArrayList<>();
 
     private CustomRecycler customRecycler;
     private SearchView catigorys_search;
@@ -281,26 +285,38 @@ public class CategoriesActivity extends AppCompatActivity {
                         ((TextView) itemView.findViewById(R.id.userlistItem_catigoryItem_count)).setText(stringBuilder);
                     } else
                         ((TextView) itemView.findViewById(R.id.userlistItem_catigoryItem_count)).setText(String.valueOf(parentClassIntegerPair.second));
+
+                    CheckBox userListItem_categoryItem_check = itemView.findViewById(R.id.userlistItem_catigoryItem_ckeck);
+                    userListItem_categoryItem_check.setVisibility(multiSelectMode ? View.VISIBLE : View.GONE);
+                    userListItem_categoryItem_check.setChecked(selectedList.contains(parentClassIntegerPair.first));
                 })
                 .setRowOrColumnCount(columnCount)
                 .hideDivider()
-                .setOnClickListener((customRecycler, view, object, index) -> {
-                    startActivityForResult(new Intent(this, catigory.getSearchIn())
-                                    .putExtra(EXTRA_SEARCH, object.first.getName())
-                                    .putExtra(EXTRA_SEARCH_CATEGORY, catigory),
-                            START_CATIGORY_SEARCH);
+                .setOnClickListener((customRecycler, view, parentClassIntegerPair, index) -> {
+                    if (!multiSelectMode) {
+                        startActivityForResult(new Intent(this, catigory.getSearchIn())
+                                        .putExtra(EXTRA_SEARCH, parentClassIntegerPair.first.getName())
+                                        .putExtra(EXTRA_SEARCH_CATEGORY, catigory),
+                                START_CATIGORY_SEARCH);
+                    } else {
+                        if (selectedList.contains(parentClassIntegerPair.first))
+                            selectedList.remove(parentClassIntegerPair.first);
+                        else
+                            selectedList.add(parentClassIntegerPair.first);
+                        customRecycler.update(index);
+                    }
                 })
                 .setOnLongClickListener((customRecycler, view, item, index) -> {
                     if (!Utility.isOnline(this))
                         return;
                     ParentClass parentClass = item.first;
-                    CustomDialog.Builder(this)
+                    com.finn.androidUtilities.CustomDialog.Builder(this)
                             .setTitle(catigory.getSingular() + " Umbenennen, oder Löschen")
-                            .setEdit(new CustomDialog.EditBuilder()
+                            .setEdit(new com.finn.androidUtilities.CustomDialog.EditBuilder()
                                     .setText(parentClass.getName())
                                     .setHint("Name"))
-                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
-                            .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
+                            .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                            .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
                                 CustomDialog.Builder(this)
                                         .setTitle("Löschen")
                                         .setText("Wirklich '" + item.first.getName() + "' löschen?")
@@ -312,7 +328,7 @@ public class CategoriesActivity extends AppCompatActivity {
                                         .show();
                             }, false)
                             .alignPreviousButtonsLeft()
-                            .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
+                            .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
                                 if (!Utility.isOnline(this))
                                     return;
                                 item.first.setName(customDialog.getEditText());
@@ -420,10 +436,47 @@ public class CategoriesActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         switch (id) {
-            case R.id.taskBar_catigory__random:
+            case R.id.taskBar_catigory_multiSelect:
+                if (selectedList.isEmpty()) {
+                    multiSelectMode = !multiSelectMode;
+                    reLoadRecycler();
+                } else {
+                    if (selectedList.size() == 1) {
+                        startActivityForResult(new Intent(this, catigory.getSearchIn())
+                                        .putExtra(EXTRA_SEARCH, selectedList.get(0).getName())
+                                        .putExtra(EXTRA_SEARCH_CATEGORY, catigory),
+                                START_CATIGORY_SEARCH);
+                        break;
+                    }
+                    com.finn.androidUtilities.CustomDialog.Builder(this)
+                            .setTitle("Aktion Auswählen")
+                            .setText("Möchtest du als '&', oder '|' suchen, oder die Auswahl zurücksetzen?")
+                            .addButton("Zurücksetzen", customDialog -> {
+                                multiSelectMode = false;
+                                selectedList.clear();
+                                reLoadRecycler();
+                            })
+                            .alignPreviousButtonsLeft()
+                            .addButton("&", customDialog -> {
+                                startActivityForResult(new Intent(this, catigory.getSearchIn())
+                                                .putExtra(EXTRA_SEARCH, selectedList.stream().map(ParentClass::getName).collect(Collectors.joining(" & ")))
+                                                .putExtra(EXTRA_SEARCH_CATEGORY, catigory),
+                                        START_CATIGORY_SEARCH);
+                            })
+                            .colorLastAddedButton()
+                            .addButton("|", customDialog -> {
+                                startActivityForResult(new Intent(this, catigory.getSearchIn())
+                                                .putExtra(EXTRA_SEARCH, selectedList.stream().map(ParentClass::getName).collect(Collectors.joining(" | ")))
+                                                .putExtra(EXTRA_SEARCH_CATEGORY, catigory),
+                                        START_CATIGORY_SEARCH);
+                            })
+                            .colorLastAddedButton()
+                            .show();
+                }
+                break;
+            case R.id.taskBar_catigory_random:
                 showRandomDialog();
                 break;
-
             case R.id.taskBar_catigory__sortByName:
                 sort_type = SORT_TYPE.NAME;
                 item.setChecked(true);
@@ -434,7 +487,6 @@ public class CategoriesActivity extends AppCompatActivity {
                 item.setChecked(true);
                 reLoadRecycler();
                 break;
-
             case R.id.taskBar_catigory__showAs:
                 if (columnCount == 2) {
                     columnCount = 1;

@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RatingBar;
@@ -320,7 +321,10 @@ public class JokeActivity extends AppCompatActivity {
                     view.findViewById(R.id.dialog_detailJoke_details).setVisibility(View.VISIBLE);
                     ((RatingBar) view.findViewById(R.id.dialog_detailJoke_rating)).setRating(joke.getRating());
                 })
-                .setOnDialogDismiss(customDialog -> detailDialog = null);
+                .setOnDialogDismiss(customDialog -> {
+                    detailDialog = null;
+                    Utility.ifNotNull(customDialog.getObjectExtra(), o -> ((com.finn.androidUtilities.CustomDialog) o).reloadView());
+                });
         returnDialog.show();
         return returnDialog;
     }
@@ -357,10 +361,12 @@ public class JokeActivity extends AppCompatActivity {
         final Joke[] randomJoke = {randomJokeList.removeRandom()};
         int ratingButtonId = View.generateViewId();
 
-        CustomDialog.Builder(this)
+        com.finn.androidUtilities.CustomDialog.Builder(this)
                 .setTitle("Zufälliger Witz")
                 .setView(R.layout.dialog_detail_joke)
-                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
+                .addButton(R.drawable.ic_info, customDialog -> showDetailDialog(randomJoke[0]).setObjectExtra(customDialog), null, false)
+                .colorLastAddedButton()
+                .alignPreviousButtonsLeft()
                 .addButton("", customDialog -> {
                     RatingBar ratingBar = new RatingBar(this);
                     ratingBar.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
@@ -397,6 +403,7 @@ public class JokeActivity extends AppCompatActivity {
 //                            randomJoke[0].getCategoryIdList().stream().map(uuid -> database.jokeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                     customDialog.reloadView();
                 }, false)
+                .colorLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_title_label)).setText(randomJoke[0].getPunchLine() == null || randomJoke[0].getPunchLine().isEmpty() ? "Witz:" : "Aufbau:");
                     view.findViewById(R.id.dialog_detailJoke_punchLine_layout).setVisibility(randomJoke[0].getPunchLine() == null || randomJoke[0].getPunchLine().isEmpty() ? View.GONE : View.VISIBLE);
@@ -406,7 +413,7 @@ public class JokeActivity extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_categories)).setText(
                             randomJoke[0].getCategoryIdList().stream().map(uuid -> database.jokeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", ")));
 
-                    customDialog.getButton(ratingButtonId).getButton().setText(randomJoke[0].getRating() != -1f && randomJoke[0].getRating() != -0f ? randomJoke[0].getRating() + " ☆" : "☆");
+                    ((Button) customDialog.getButton(ratingButtonId).getButton()).setText(randomJoke[0].getRating() != -1f && randomJoke[0].getRating() != -0f ? randomJoke[0].getRating() + " ☆" : "☆");
 
                 })
                 .show();

@@ -682,13 +682,16 @@ public class VideoActivity extends AppCompatActivity {
                                             webSettings.setJavaScriptEnabled(false);
                                         };
 
-                                        webView.setOnContextClickListener(v1 -> {
+                                        View.OnContextClickListener listener = v1 -> {
                                             getSelection.run();
+                                            customDialog1.dismiss();
                                             return true;
-                                        });
+                                        };
+                                        webView.setOnContextClickListener(listener);
 
-
-                                        view1.findViewById(R.id.dialog_videoInternet_getSelection).setOnClickListener(v1 -> getSelection.run());
+                                        FloatingActionButton dialog_videoInternet_getSelection = view1.findViewById(R.id.dialog_videoInternet_getSelection);
+                                        dialog_videoInternet_getSelection.setOnContextClickListener(listener);
+                                        dialog_videoInternet_getSelection.setOnClickListener(v1 -> getSelection.run());
                                     })
                                     .setOnBackPressedListener(customDialog1 -> {
                                         if (webView != null && webView.canGoBack()) {
@@ -1161,10 +1164,10 @@ public class VideoActivity extends AppCompatActivity {
         }
         randomVideo = randomList.removeRandom();
 
-        CustomDialog.Builder(this)
+        com.finn.androidUtilities.CustomDialog.Builder(this)
                 .setTitle("Zufällig")
                 .setView(R.layout.dialog_detail_video)
-                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
+                .addButton("Öffnen", customDialog -> openUrl(randomVideo.getUrl(), false), false)
                 .addButton("Nochmal", customDialog -> {
                     if (randomList.isEmpty()) {
                         Toast.makeText(this, "Kein neuer " + singular + " vorhanden", Toast.LENGTH_SHORT).show();
@@ -1174,7 +1177,7 @@ public class VideoActivity extends AppCompatActivity {
                     randomVideo = randomList.removeRandom();
                     customDialog.reloadView();
                 }, false)
-                .addButton("Öffnen", customDialog -> openUrl(randomVideo.getUrl(), false), false)
+                .colorLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {
                     ((TextView) view.findViewById(R.id.dialog_video_Titel)).setText(randomVideo.getName());
                     ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(

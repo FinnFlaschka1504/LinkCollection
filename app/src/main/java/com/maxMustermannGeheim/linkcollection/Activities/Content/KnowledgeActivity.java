@@ -30,6 +30,7 @@ import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -380,6 +381,27 @@ public class KnowledgeActivity extends AppCompatActivity {
                             .setOnReload(recyclerInterface)
                             .setOnGenerate(recyclerInterface);
 
+//                    contentRecycler.getRecycler().setNestedScrollingEnabled(false);
+//                    contentRecycler.getRecycler().stopScroll();
+//                    final boolean[] enabled = {true};
+//                    contentRecycler.getRecycler().addOnScrollListener(new RecyclerView.OnScrollListener() {
+//                        @Override
+//                        public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+//                            if (enabled[0])
+//                                super.onScrollStateChanged(recyclerView, newState);
+//                            else
+//                                recyclerView.stopScroll();
+//                        }
+//
+//                        @Override
+//                        public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+//                            if (enabled[0])
+//                                super.onScrolled(recyclerView, dx, dy);
+//                            else
+//                                recyclerView.stopScroll();
+//                        }
+//                    });
+
                     // -------------------------------------
 
                     new Helpers.TextInputHelper().defaultDialogValidation(customDialog).addValidator(view.findViewById(R.id.dialog_editOrAddKnowledge_Titel_layout));
@@ -415,9 +437,9 @@ public class KnowledgeActivity extends AppCompatActivity {
 
                     View layoutContent = view.findViewById(R.id.dialog_editOrAddKnowledge_content_layout);
                     View layoutList = view.findViewById(R.id.dialog_editOrAddKnowledge_list_layout);
-                    if (newKnowledge[0].hasItems()) {
-                        layoutContent.setVisibility(View.GONE);
-                        layoutList.setVisibility(View.VISIBLE);
+                    if (!newKnowledge[0].hasItems()) {
+                        layoutContent.setVisibility(View.VISIBLE);
+                        layoutList.setVisibility(View.GONE);
                     }
                     view.findViewById(R.id.dialog_editOrAddKnowledge_content_label).setOnClickListener(view1 -> {
                         Runnable change = () -> {
@@ -503,8 +525,6 @@ public class KnowledgeActivity extends AppCompatActivity {
                     itemList.addAll(objectList);
 //                    itemRecycler.reload();
                 }, true)
-                // ToDo: funktion zu customRecycler hinzufügen wo per id View zum ziehen übergeben wird
-                //  und beim hinzufügen von elemenz zur tierferen ebene den letzten index übergeben
                 .setSetItemContent((customRecycler, itemView, item) -> {
                     int index = customRecycler.getObjectList().indexOf(item);
                     CustomList<Integer> thisPosList = new CustomList<>(posList).add(new Integer[]{index});

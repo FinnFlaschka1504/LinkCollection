@@ -302,6 +302,8 @@ public class VideoActivity extends AppCompatActivity {
                                 CustomList<String> list = new CustomList<>(last.split("-"));
                                 if (list.getLast().matches("\\d+"))
                                     list.removeLast();
+                                if (list.size() != 1 && list.getFirst().matches("\\d+"))
+                                    list.removeFirst();
                                 video.setName(String.join(" ", list));
                             }
                         }
@@ -579,8 +581,6 @@ public class VideoActivity extends AppCompatActivity {
                 .disableScroll()
                 .setDimensions(true, true)
                 .setOnDialogDismiss(customDialog -> {
-//                    ((TextView) detailDialog.findViewById(R.id.dialog_video_views))
-//                            .setName(String.valueOf(videoList.get(0).getDateList().size()));
                     detailDialog.reloadView();
                     this.reLoadVideoRecycler();
                 })
@@ -762,10 +762,10 @@ public class VideoActivity extends AppCompatActivity {
                             else {
                                 com.finn.androidUtilities.CustomDialog.Builder(this)
                                         .setTitle("Details Oder Bearbeiten")
-                                        .setText("Mochtest du Details, oder Bearbeiten öffen?")
+                                        .setText("Möchtest du 'Details', oder 'Bearbeiten' öffen?")
                                         .addButton("Details", customDialog1 -> {
                                             customDialog.dismiss();
-                                            showDetailDialog(video1);
+                                            detailDialog = showDetailDialog(video1);
                                         })
                                         .addButton("Bearbeiten", customDialog1 -> openEdit.run())
                                         .enableExpandButtons()

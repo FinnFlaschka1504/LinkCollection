@@ -60,6 +60,12 @@ public class CustomList<E> extends ArrayList<E> {
         return get(- 1);
     }
 
+    public E getFirst() {
+        if (isEmpty())
+            return null;
+        return get(0);
+    }
+
     @Override
     public E get(int index) {
         if (index < 0)
@@ -88,7 +94,7 @@ public class CustomList<E> extends ArrayList<E> {
         if (index >= 0)
             return super.set(index, element);
         else
-            return super.set(size() - index, element);
+            return super.set(size() + index, element);
     }
     //  <------------------------- set... -------------------------
 
@@ -213,10 +219,18 @@ public class CustomList<E> extends ArrayList<E> {
 
 
     //  ------------------------- remove ------------------------->
+    @Override
+    public E remove(int index) {
+        if (index >= 0)
+            return super.remove(index);
+        else
+            return super.remove(size() + index);
+    }
+
     public E removeLast() {
         if (isEmpty())
             return null;
-        return remove(size() - 1);
+        return remove( - 1);
     }
 
     public E removeFirst() {

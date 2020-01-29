@@ -44,7 +44,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAutoCompleteAdapter;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.ImageAdapterItem;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
+import com.finn.androidUtilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
@@ -598,7 +598,7 @@ public class VideoActivity extends AppCompatActivity {
         if (editVideo[0] != null) {
             editVideo[0] = video.clone();
         }
-        Helpers.TextInputHelper helper = new Helpers.TextInputHelper();
+        com.finn.androidUtilities.Helpers.TextInputHelper helper = new com.finn.androidUtilities.Helpers.TextInputHelper();
         final boolean[] checked = {video != null && Utility.getWatchLaterList().contains(video)};
         @SuppressLint("SetJavaScriptEnabled") CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle(video == null ? "Neu: " + singular : singular + " Bearbeiten")
@@ -713,7 +713,7 @@ public class VideoActivity extends AppCompatActivity {
                     helper.defaultDialogValidation(customDialog).addValidator(dialog_editOrAddVideo_Titel_layout, dialog_editOrAddVideo_Url_layout)
                             .addActionListener(dialog_editOrAddVideo_Titel_layout, (textInputHelper, textInputLayout, actionId, text) -> {
                                 apiRequest(text, customDialog, editVideo[0]);
-                            }, Helpers.TextInputHelper.IME_ACTION.SEARCH)
+                            }, com.finn.androidUtilities.Helpers.TextInputHelper.IME_ACTION.SEARCH)
                             .setValidation(dialog_editOrAddVideo_Url_layout, (validator, text) -> {
                                 if (text.isEmpty() && (checked[0] || Utility.isUpcoming(editVideo[0].getRelease())))
                                     validator.setValid();

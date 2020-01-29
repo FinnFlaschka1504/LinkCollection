@@ -471,7 +471,17 @@ public class Helpers {
             return this;
         }
 
+        public TextInputHelper bindButton(com.finn.androidUtilities.CustomDialog.ButtonHelper buttonToBind) {
+            onValidationResult = buttonToBind::setEnabled;
+            return this;
+        }
+
         public TextInputHelper defaultDialogValidation(CustomDialog customDialog) {
+            bindButton(customDialog.getActionButton());
+            return this;
+        }
+
+        public TextInputHelper defaultDialogValidation(com.finn.androidUtilities.CustomDialog customDialog) {
             bindButton(customDialog.getActionButton());
             return this;
         }

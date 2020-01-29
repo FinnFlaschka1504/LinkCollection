@@ -89,9 +89,10 @@
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/dialog_editOrAddKnowledge_list"
                 android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:clickable="false"
                 android:focusable="false"
-                android:layout_height="wrap_content" />
+                android:nestedScrollingEnabled="true" />
 
 
         </LinearLayout>

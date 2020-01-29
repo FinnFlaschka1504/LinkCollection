@@ -67,6 +67,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <TextView
@@ -80,7 +81,8 @@
                 android:id="@+id/dialog_shareKnowledge_categories"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1" />
+                android:layout_weight="1"
+                tools:text="test\nmip\nmöt" />
 
             <CheckBox
                 android:id="@+id/dialog_shareKnowledge_categories_check"
@@ -118,8 +120,16 @@
             android:id="@+id/dialog_shareKnowledge_format"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
             android:checked="true"
             android:text="Für WhatsApp formatieren" />
+
+        <Switch
+            android:id="@+id/dialog_shareKnowledge_keepFormat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="Formatierungen des Inhalts beibehalten" />
 
     </LinearLayout>
 </LinearLayout>

@@ -9,6 +9,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.util.Pair;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -68,6 +69,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import top.defaults.drawabletoolbox.DrawableBuilder;
@@ -222,10 +224,11 @@ public class Utility implements java.io.Serializable {
     }
 
     //  ------------------------- watchLater ------------------------->
-    public static List<String> getWatchLaterList_uuid(){
+    public static List<String> getWatchLaterList_uuid() {
         return getWatchLaterList().stream().map(ParentClass::getUuid).collect(Collectors.toList());
     }
-    public static List<Video> getWatchLaterList(){
+
+    public static List<Video> getWatchLaterList() {
         if (!Database.isReady())
             return new ArrayList<>();
         Database database = Database.getInstance();
@@ -725,7 +728,7 @@ public class Utility implements java.io.Serializable {
     //  <------------------------- Checks -------------------------
 
 
-    //  ------------------------- SubString ------------------------->
+    //  ------------------------- String ------------------------->
     public static String subString(String s, int start) {
         if (start < 0)
             start = s.length() + start;
@@ -740,7 +743,11 @@ public class Utility implements java.io.Serializable {
 
         return s.substring(start, end);
     }
-    //  <------------------------- SubString -------------------------
+
+    public static String stringReplace(String source, int start, int end, String replacement){
+        return source.substring(0, start) + replacement + source.substring(end);
+    }
+    //  <------------------------- String -------------------------
 
     //  --------------- Time --------------->
     public static Date removeTime(Date date) {
@@ -789,7 +796,7 @@ public class Utility implements java.io.Serializable {
     }
     //  <--------------- Toast ---------------
 
-    public static CustomDialog showEditItemDialog(Context context, CustomDialog addOrEditDialog, List<String> preSelectedUuidList, Object o, CategoriesActivity.CATEGORIES category) {
+    public static CustomDialog showEditItemDialog(Context context, com.finn.androidUtilities.CustomDialog addOrEditDialog, List<String> preSelectedUuidList, Object o, CategoriesActivity.CATEGORIES category) {
         Database database = Database.getInstance();
 
         if (preSelectedUuidList == null)
@@ -1290,7 +1297,7 @@ public class Utility implements java.io.Serializable {
                 .build();
     }
 
-    public static int setAlphaOfColor(int color, int alpha){
+    public static int setAlphaOfColor(int color, int alpha) {
         return (color & 0x00ffffff) | (alpha << 24);
     }
     //  <--------------- Generated Visuals ---------------
@@ -1318,14 +1325,14 @@ public class Utility implements java.io.Serializable {
 
 
     //  ------------------------- ifNotNull ------------------------->
-    public static <E> boolean ifNotNull(E e, ExecuteIfNotNull<E> executeIfNotNull){
+    public static <E> boolean ifNotNull(E e, ExecuteIfNotNull<E> executeIfNotNull) {
         if (e == null)
             return false;
         executeIfNotNull.runExecuteIfNotNull(e);
         return true;
     }
 
-    public static <E> boolean ifNotNull(E e, ExecuteIfNotNull<E> executeIfNotNull, Runnable executeIfNull){
+    public static <E> boolean ifNotNull(E e, ExecuteIfNotNull<E> executeIfNotNull, Runnable executeIfNull) {
         if (e == null) {
             executeIfNull.run();
             return false;
@@ -1337,11 +1344,20 @@ public class Utility implements java.io.Serializable {
     public interface ExecuteIfNotNull<E> {
         void runExecuteIfNotNull(E e);
     }
+
+    public static boolean ignoreNull(Runnable runnable) {
+        try {
+            runnable.run();
+            return true;
+        } catch (NullPointerException e) {
+            return false;
+        }
+    }
     //  <------------------------- ifNotNull -------------------------
 
 
     //  ------------------------- Reflections ------------------------->
-    public static List<TextWatcher> removeTextListeners(TextView view){
+    public static List<TextWatcher> removeTextListeners(TextView view) {
         List<TextWatcher> returnList = null;
         try {
             Field mListeners = TextView.class.getDeclaredField("mListeners");
@@ -1356,7 +1372,7 @@ public class Utility implements java.io.Serializable {
 
 
     //  ------------------------- EasyLogic ------------------------->
-    public static <T> Boolean boolOr(T what, T... to){
+    public static <T> Boolean boolOr(T what, T... to) {
         if (to.length == 0)
             return null;
 
@@ -1367,7 +1383,7 @@ public class Utility implements java.io.Serializable {
         return false;
     }
 
-    public static <T> Boolean boolXOr(T what, T... to){
+    public static <T> Boolean boolXOr(T what, T... to) {
         if (to.length == 0)
             return null;
 
@@ -1382,7 +1398,7 @@ public class Utility implements java.io.Serializable {
         return found;
     }
 
-    public static <T> Boolean boolAnd(T what, T... to){
+    public static <T> Boolean boolAnd(T what, T... to) {
         if (to.length == 0)
             return null;
 
@@ -1395,8 +1411,61 @@ public class Utility implements java.io.Serializable {
 
     // ---
 
-    public static boolean stringExists(String s){
+    public static boolean stringExists(String s) {
         return s != null && !s.trim().isEmpty();
     }
     //  <------------------------- EasyLogic -------------------------
+
+
+    //  ------------------------- Switch Expression ------------------------->
+    public static class SwitchExpression<Input, Output> {
+        private Input input;
+        private List<Pair<Input, ExecuteOnCase>> caseList = new ArrayList<>();
+        private ExecuteOnCase defaultCase;
+
+        public SwitchExpression(Input input) {
+            this.input = input;
+        }
+
+        public static <Input> SwitchExpression<Input, Object> setInput(Input input){
+            return new SwitchExpression<>(input);
+        }
+
+        //  ------------------------- Getters & Setters ------------------------->
+        public Input getInput() {
+            return input;
+        }
+        //  <------------------------- Getters & Setters -------------------------
+
+
+        //  ------------------------- Cases ------------------------->
+        public <Type> SwitchExpression<Input, Type>  addCase(Input inputCase, ExecuteOnCase<Input, Type> executeOnCase) {
+            caseList.add(new Pair<>(inputCase, executeOnCase));
+            return (SwitchExpression<Input, Type>) this;
+        }
+
+        public <Type> SwitchExpression<Input, Type> setDefault(ExecuteOnCase<Input, Type> defaultCase) {
+            this.defaultCase = defaultCase;
+            return (SwitchExpression<Input, Type>) this;
+        }
+
+        public interface ExecuteOnCase<Input, Output> {
+            Output runExecuteOnCase(Input input);
+        }        
+        //  <------------------------- Cases -------------------------
+
+
+        public Output evaluate() {
+            Optional<Pair<Input, ExecuteOnCase>> optional = caseList.stream().filter(inputExecuteOnCasePair -> Objects.equals(input, inputExecuteOnCasePair.first)).findFirst();
+
+            if (optional.isPresent())
+                return (Output) optional.get().second.runExecuteOnCase(input);
+            else if (defaultCase != null) {
+                return (Output) defaultCase.runExecuteOnCase(input);
+            } else {
+                return null;
+            }
+        }
+    }
+    //  <------------------------- Switch Expression -------------------------
 }

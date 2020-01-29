@@ -22,7 +22,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
+import com.finn.androidUtilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomPopupWindow;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -323,7 +323,7 @@ public class JokeActivity extends AppCompatActivity {
                 })
                 .setOnDialogDismiss(customDialog -> {
                     detailDialog = null;
-                    Utility.ifNotNull(customDialog.getObjectExtra(), o -> ((com.finn.androidUtilities.CustomDialog) o).reloadView());
+                    Utility.ifNotNull(customDialog.getPayload(), o -> ((com.finn.androidUtilities.CustomDialog) o).reloadView());
                 });
         returnDialog.show();
         return returnDialog;
@@ -364,7 +364,7 @@ public class JokeActivity extends AppCompatActivity {
         com.finn.androidUtilities.CustomDialog.Builder(this)
                 .setTitle("Zufälliger Witz")
                 .setView(R.layout.dialog_detail_joke)
-                .addButton(R.drawable.ic_info, customDialog -> showDetailDialog(randomJoke[0]).setObjectExtra(customDialog), null, false)
+                .addButton(R.drawable.ic_info, customDialog -> showDetailDialog(randomJoke[0]).setPayload(customDialog), null, false)
                 .colorLastAddedButton()
                 .alignPreviousButtonsLeft()
                 .addButton("", customDialog -> {

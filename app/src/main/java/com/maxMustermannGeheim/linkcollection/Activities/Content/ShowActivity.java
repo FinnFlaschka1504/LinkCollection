@@ -50,11 +50,11 @@ import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAutoCompleteAdapter;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.ImageAdapterItem;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
+import com.finn.androidUtilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomPopupWindow;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
+import com.finn.androidUtilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -459,7 +459,7 @@ public class ShowActivity extends AppCompatActivity {
     private void loadRecycler() {
         customRecycler_ShowList = new CustomRecycler<Show>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_show)
-                .setGetActiveObjectList(() -> {
+                .setGetActiveObjectList(customRecycler -> {
                     CustomList<Show> filterdList = sortList(filterList(new CustomList<>(database.showMap.values())));
                     TextView noItem = findViewById(R.id.no_item);
                     noItem.setText(searchQuery.isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche");
@@ -533,7 +533,6 @@ public class ShowActivity extends AppCompatActivity {
                 .setOnLongClickListener((customRecycler, view, show, index) -> {
                     showEditOrNewDialog(show);
                 })
-                .hideDivider()
                 .generate();
     }
 
@@ -787,7 +786,7 @@ public class ShowActivity extends AppCompatActivity {
                 .addButton("Bearbeiten", customDialog -> {
                     CustomDialog customDialog_edit = showEditOrNewDialog(show);
                     if (customDialog_edit != null)
-                        customDialog_edit.setObjectExtra(customDialog);
+                        customDialog_edit.setPayload(customDialog);
                 }, false)
                 .setSetViewContent((customDialog, view, reload) -> {
                     ((TextView) view.findViewById(R.id.dialog_detailShow_title)).setText(show.getName());
@@ -970,8 +969,8 @@ public class ShowActivity extends AppCompatActivity {
 
         Utility.showCenteredToast(this, singular + " gespeichert" + (checked || upcomming ? "\n(Später ansehen)" : ""));
 
-        if (dialog.getObjectExtra() != null)
-            ((CustomDialog) dialog.getObjectExtra()).reloadView();
+        if (dialog.getPayload() != null)
+            ((CustomDialog) dialog.getPayload()).reloadView();
 
     }
 
@@ -988,7 +987,7 @@ public class ShowActivity extends AppCompatActivity {
         CustomDialog customDialog = CustomDialog.Builder(this);
 
         CustomRecycler<Show.Season> seasonRecycler = new CustomRecycler<Show.Season>(this)
-                .setGetActiveObjectList(show::getSeasonList)
+                .setGetActiveObjectList(customRecycler1 -> show.getSeasonList())
                 .setItemLayout(R.layout.list_item_season)
                 .setSetItemContent((customRecycler, itemView, season) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_season_number)).setText(String.valueOf(season.getSeasonNumber()));
@@ -1026,7 +1025,6 @@ public class ShowActivity extends AppCompatActivity {
                         reLoadRecycler();
                     });
                 })
-                .hideDivider()
                 .generate();
 
         customDialog
@@ -1047,7 +1045,7 @@ public class ShowActivity extends AppCompatActivity {
                 })
                 .alignPreviousButtonsLeft()
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
-                .setObjectExtra(seasonRecycler)
+                .setPayload(seasonRecycler)
                 .setView(seasonRecycler.getRecycler())
                 .disableScroll()
                 .show();
@@ -1070,7 +1068,7 @@ public class ShowActivity extends AppCompatActivity {
             show.setAlreadyAiredList(show.getAlreadyAiredList().stream().filter(episode1 -> episode.getTmdbId() != episode1.getTmdbId()).collect(Collectors.toList()));
         };
         CustomRecycler<Show.Episode> episodeRecycler = new CustomRecycler<Show.Episode>(this)
-                .setGetActiveObjectList(() -> {
+                .setGetActiveObjectList(customRecycler -> {
                     episodeMap.putAll(season.getEpisodeMap());
                     ArrayList<Show.Episode> episodeList = new ArrayList<>(episodeMap.values());
                     episodeList.sort((o1, o2) -> Integer.compare(o1.getEpisodeNumber(), o2.getEpisodeNumber()));
@@ -1137,11 +1135,10 @@ public class ShowActivity extends AppCompatActivity {
                 .setOnClickListener((customRecycler, itemView, episode, index) -> {
                     showEpisodeDetailDialog(customRecycler, episode, false);
                 })
-                .setOnLongClickListener((customRecycler, view, episode, index) -> showResetDialog(Arrays.asList(episode), null, null, customRecycler))
-                .hideDivider();
+                .setOnLongClickListener((customRecycler, view, episode, index) -> showResetDialog(Arrays.asList(episode), null, null, customRecycler));
         CustomDialog.Builder(this)
                 .setTitle(season.getName() + " - Folgen")
-                .addGoToButton((CustomRecycler.GoToFilter<Show.Episode>) (search, episode) -> {
+                .addGoToButton((com.finn.androidUtilities.CustomRecycler.GoToFilter<Show.Episode>) (search, episode) -> {
                     if (String.valueOf(episode.getEpisodeNumber()).equals(search)) {
                         return true;
                     }

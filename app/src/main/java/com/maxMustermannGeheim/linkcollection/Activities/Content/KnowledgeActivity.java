@@ -26,6 +26,7 @@ import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.Switch;
+import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -43,11 +44,11 @@ import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
+import com.finn.androidUtilities.CustomDialog;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -444,8 +445,10 @@ public class KnowledgeActivity extends AppCompatActivity {
                     view.findViewById(R.id.dialog_editOrAddKnowledge_content_label).setOnClickListener(view1 -> {
                         Runnable change = () -> {
                             layoutContent.setVisibility(View.GONE);
+                            Utility.ignoreNull(() -> contentRecycler.getRecycler().getChildAt(0).findViewById(R.id.listItem_knowledgeList_text).requestFocus());
                             layoutList.setVisibility(View.VISIBLE);
                         };
+
 
                         final String[] content = {dialog_editOrAddKnowledge_content.getText().toString().trim()};
                         if (!content[0].isEmpty()) {
@@ -480,6 +483,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     view.findViewById(R.id.dialog_editOrAddKnowledge_list_label).setOnClickListener(view1 -> {
                         Runnable change = () -> {
                             layoutList.setVisibility(View.GONE);
+                            dialog_editOrAddKnowledge_content.requestFocus();
                             layoutContent.setVisibility(View.VISIBLE);
                         };
 
@@ -553,11 +557,11 @@ public class KnowledgeActivity extends AppCompatActivity {
                         };
 
                         if (item.hasChild_real()) {
-                            com.finn.androidUtilities.CustomDialog.Builder(this)
+                            CustomDialog.Builder(this)
                                     .setTitle("Stichpunkt löschen")
                                     .setText("Der Stichpunkt besitzt selber noch Unter-Spichpunkte\nWillst du trotzdem löschen?")
-                                    .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.YES_NO)
-                                    .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.YES_BUTTON, customRecycler1 -> onDelete.run())
+                                    .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                    .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customRecycler1 -> onDelete.run())
                                     .show();
                         } else
                             onDelete.run();
@@ -589,13 +593,21 @@ public class KnowledgeActivity extends AppCompatActivity {
                             listItem_knowledgeList_remove.setVisibility(item.getName().trim().isEmpty() && (index != 0 || depth != 0) ? View.VISIBLE : View.GONE);
 
                             RecyclerView baseRecyclerView = baseRecycler.getRecycler();
+//                            RecyclerView baseRecyclerView = itemRecycler.getRecycler();
                             int matchParentMeasureSpec = View.MeasureSpec.makeMeasureSpec(((View) baseRecyclerView.getParent()).getWidth(), View.MeasureSpec.EXACTLY);
                             int wrapContentMeasureSpec = View.MeasureSpec.makeMeasureSpec(Utility.dpToPx(280), View.MeasureSpec.AT_MOST);
                             baseRecyclerView.measure(matchParentMeasureSpec, wrapContentMeasureSpec);
-                            if (baseRecyclerView.getHeight() > Utility.dpToPx(280))
-                                baseRecyclerView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Utility.dpToPx(280)));
-                            else if (baseRecyclerView.getMeasuredHeight() < Utility.dpToPx(280))
-                                baseRecyclerView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                            if (baseRecyclerView.getHeight() > Utility.dpToPx(280)) {
+                                if (baseRecyclerView.getId() == R.id.dialog_editOrAddKnowledge_list)
+                                    baseRecyclerView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Utility.dpToPx(280)));
+                                else if (baseRecyclerView.getId() == R.id.listItem_knowledgeList_recycler)
+                                    baseRecyclerView.setLayoutParams(new TableRow.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Utility.dpToPx(280)));
+                            } else if (baseRecyclerView.getMeasuredHeight() < Utility.dpToPx(280)) {
+                                if (baseRecyclerView.getId() == R.id.dialog_editOrAddKnowledge_list)
+                                    baseRecyclerView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                                else if (baseRecyclerView.getId() == R.id.listItem_knowledgeList_recycler)
+                                    baseRecyclerView.setLayoutParams(new TableRow.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                            }
 
 
                             if (add[0] && s.toString().startsWith("   ") && !s.toString().endsWith("\n\n")) {
@@ -660,10 +672,29 @@ public class KnowledgeActivity extends AppCompatActivity {
                                     ((EditText) view.findViewById(R.id.dialog_shareKnowledge_title)).setText(knowledge.getName());
                                     ((CheckBox) customDialog1.findViewById(R.id.dialog_shareKnowledge_title_check)).setChecked(true);
                                 }
+
+                                EditText dialog_shareKnowledge_content = view.findViewById(R.id.dialog_shareKnowledge_content);
                                 if (!knowledge.getContent().isEmpty()) {
-                                    ((EditText) view.findViewById(R.id.dialog_shareKnowledge_content)).setText(knowledge.getContent());
+                                    dialog_shareKnowledge_content.setText(knowledge.getContent());
+                                    ((CheckBox) customDialog1.findViewById(R.id.dialog_shareKnowledge_content_check)).setChecked(true);
+                                } else if (knowledge.hasItems()) {
+                                    dialog_shareKnowledge_content.setText(knowledge.itemListToString_complete());
                                     ((CheckBox) customDialog1.findViewById(R.id.dialog_shareKnowledge_content_check)).setChecked(true);
                                 }
+                                applyFormatting_edit(dialog_shareKnowledge_content.getText());
+                                dialog_shareKnowledge_content.addTextChangedListener(new TextWatcher() {
+                                    @Override
+                                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                                    @Override
+                                    public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+                                    @Override
+                                    public void afterTextChanged(Editable s) {
+                                        applyFormatting_edit(s);
+                                    }
+                                });
+
                                 if (!knowledge.getCategoryIdList().isEmpty()) {
                                     ((TextView) view.findViewById(R.id.dialog_shareKnowledge_categories)).setText(knowledge.getCategoryIdList().stream()
                                             .map(uuid -> database.knowledgeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", ")));
@@ -674,6 +705,9 @@ public class KnowledgeActivity extends AppCompatActivity {
                                             .map(nameUrlPair -> nameUrlPair.get(0)).collect(Collectors.joining(", ")));
                                     ((CheckBox) customDialog1.findViewById(R.id.dialog_shareKnowledge_sources_check)).setChecked(true);
                                 }
+
+                                ((Switch) customDialog1.findViewById(R.id.dialog_shareKnowledge_format)).setOnCheckedChangeListener((buttonView, isChecked) ->
+                                        customDialog1.findViewById(R.id.dialog_shareKnowledge_keepFormat).setEnabled(isChecked));
                             })
                             .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                             .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
@@ -681,8 +715,60 @@ public class KnowledgeActivity extends AppCompatActivity {
                                 List<String> textList = new ArrayList<>();
                                 if (((CheckBox) customDialog1.findViewById(R.id.dialog_shareKnowledge_title_check)).isChecked())
                                     textList.add(String.format((format ? "*Titel*:\n%s" : "Titel:\n%s"), ((EditText) customDialog1.findViewById(R.id.dialog_shareKnowledge_title)).getText()));
-                                if (((CheckBox) customDialog1.findViewById(R.id.dialog_shareKnowledge_content_check)).isChecked())
-                                    textList.add(String.format((format ? "*Inhalt*:\n%s" : "Inhalt:\n%s"), ((EditText) customDialog1.findViewById(R.id.dialog_shareKnowledge_content)).getText()));
+                                if (((CheckBox) customDialog1.findViewById(R.id.dialog_shareKnowledge_content_check)).isChecked()) {
+                                    String content = ((EditText) customDialog1.findViewById(R.id.dialog_shareKnowledge_content)).getText().toString();
+                                    if (!format || !((Switch) customDialog1.findViewById(R.id.dialog_shareKnowledge_keepFormat)).isChecked()) {
+                                        Pattern pattern = Pattern.compile("(?<![^\\W_])(\\*|\\/|\\_|\\^|\\~)([^\\s]|[^\\s].*?[^\\s])\\1(?![^\\W_])");
+                                        while (true) {
+                                            Matcher matcher = pattern.matcher(content);
+                                            if (matcher.find()) {
+                                                String match = matcher.group(0);
+                                                content = matcher.replaceFirst(Utility.subString(match, 1, -1));
+                                            } else
+                                                break;
+                                        }
+                                    } else {
+                                        Pattern pattern = Pattern.compile("(?<![^\\W_])(\\*|\\/|\\_|\\^|\\~)([^\\s]|[^\\s].*?[^\\s])\\1(?![^\\W_])");
+                                        int progress = 0;
+                                        while (true) {
+                                            Matcher matcher = pattern.matcher(content);
+                                            if (matcher.find(progress)) {
+                                                String match = matcher.group(0);
+                                                MatchResult matchResult = matcher.toMatchResult();
+
+                                                if (!String.valueOf(content.charAt(matchResult.start() - 1)).matches("\\s|_") || !String.valueOf(content.charAt(matchResult.end() + 1)).matches("\\W|_")) {
+                                                    content = Utility.stringReplace(content, matchResult.start(), matchResult.end(),  Utility.subString(match,1, -1));
+                                                    progress = matchResult.end() - 1;
+                                                    continue;
+                                                }
+
+
+                                                switch (match.substring(0, 1)) {
+                                                    case "^":
+                                                        content = Utility.stringReplace(content, matchResult.start(), matchResult.end(), "*" + Utility.subString(match,1, -1) + "*");
+                                                        progress = matchResult.end() + 1;
+                                                        break;
+                                                    case "/":
+                                                        content = Utility.stringReplace(content, matchResult.start(), matchResult.end(), "_" + Utility.subString(match,1, -1) + "_");
+                                                        progress = matchResult.end() + 1;
+                                                        break;
+                                                    default:
+                                                        progress = matchResult.end() + 1;
+                                                          break;
+                                                    case "_":
+                                                        content = Utility.stringReplace(content, matchResult.start(), matchResult.end(), "```" + Utility.subString(match,1, -1) + "```");
+                                                        progress = matchResult.end() + 5;
+                                                        break;
+                                                }
+
+                                            }
+                                            else
+                                                break;
+                                        }
+
+                                    }
+                                    textList.add(String.format((format ? "*Inhalt*:\n%s" : "Inhalt:\n%s"), content));
+                                }
                                 if (((CheckBox) customDialog1.findViewById(R.id.dialog_shareKnowledge_categories_check)).isChecked())
                                     textList.add(String.format((format ? "*Kategorien*:\n%s" : "Kategorien:\n%s"), knowledge.getCategoryIdList().stream()
                                             .map(uuid -> database.knowledgeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", "))));
@@ -1231,9 +1317,9 @@ public class KnowledgeActivity extends AppCompatActivity {
                 }, buttonId_add, false)
                 .addButton("Zurück", customDialog -> {
                 })
-                .setObjectExtra(sourcesText)
+                .setPayload(sourcesText)
                 .disableScroll()
-                .setOnDialogDismiss(customDialog -> ((TextView) customDialog.getObjectExtra()).setText(
+                .setOnDialogDismiss(customDialog -> ((TextView) customDialog.getPayload()).setText(
                         knowledge.getSources().stream().map(strings -> strings.get(0)).collect(Collectors.joining(", "))
                 ))
                 .show();

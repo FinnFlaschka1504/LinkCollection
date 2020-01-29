@@ -117,9 +117,35 @@ public class Knowledge extends ParentClass {
         return itemList;
     }
 
+
+    //       -------------------- ListToString -------------------->
     public String itemListToString() {
         return itemList.stream().map(item -> "• " + item.getName()).collect(Collectors.joining("\n\n"));
     }
+
+    public String itemListToString_complete() {
+        return itemList.stream().map(item -> subItemToString(item, 0)).collect(Collectors.joining("\n\n"));
+    }
+
+    private String subItemToString(Item item, int depth) {
+        String result = "";
+
+
+
+        result += Utility.SwitchExpression.setInput(depth % 4)
+                .addCase(0, integer -> "► ")
+                .addCase(1, integer -> "» ")
+                .addCase(2, integer -> "• ")
+                .addCase(3, integer -> "◦ ")
+                .evaluate() +
+                item.getName();
+
+        if (item.hasChild_real())
+            result += "\n" + item.getChildrenList().stream().map(subItem -> subItemToString(subItem, depth + 1)).collect(Collectors.joining("\n"));
+
+        return result;
+    }
+    //       <-------------------- ListToString --------------------
 
     public Knowledge setItemList(List<Item> itemList) {
         this.itemList = itemList;
@@ -145,7 +171,8 @@ public class Knowledge extends ParentClass {
     }
 
     public void clearItemList() {
-        itemList = new ArrayList<>(Arrays.asList(new Item()));
+        itemList.clear();
+        itemList.add(new Item());
     }
 
     public static class Item extends ParentClass{

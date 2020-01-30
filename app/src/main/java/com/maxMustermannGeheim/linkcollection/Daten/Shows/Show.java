@@ -1,6 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Shows;
 
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.scottyab.aescrypt.AESCrypt;
@@ -297,12 +298,12 @@ public class Show extends ParentClass{
         //  <------------------------- Encryption -------------------------
     }
 
-    public static class Episode extends ParentClass{
+    public static class Episode extends ParentClass_Ratable {
         private int tmdbId;
         private Date airDate;
         private int episodeNumber;
         private boolean watched;
-        private Float rating = -1f;
+//        private Float rating = -1f;
         private List<Date> dateList = new ArrayList<>();
         private String showId;
         private int seasonNumber;
@@ -358,14 +359,14 @@ public class Show extends ParentClass{
             return this;
         }
 
-        public Float getRating() {
-            return rating;
-        }
-
-        public Episode setRating(Float rating) {
-            this.rating = rating;
-            return this;
-        }
+//        public Float getRating() {
+//            return rating;
+//        }
+//
+//        public Episode setRating(Float rating) {
+//            this.rating = rating;
+//            return this;
+//        }
 
         public List<Date> getDateList() {
             return dateList;

@@ -220,11 +220,17 @@ public class KnowledgeActivity extends AppCompatActivity {
     private void loadRecycler() {
         customRecycler_List = new CustomRecycler<CustomRecycler.Expandable<Knowledge>>(this, findViewById(R.id.recycler))
                 .setGetActiveObjectList(customRecycler -> {
+                    List<CustomRecycler.Expandable<Knowledge>> filteredList;
                     if (searchQuery.equals("")) {
                         allKnowledgeList = new ArrayList<>(database.knowledgeMap.values());
-                        return toExpandableList(sortList(allKnowledgeList));
+                        filteredList = toExpandableList(sortList(allKnowledgeList));
                     } else
-                        return toExpandableList(filterList(allKnowledgeList));
+                        filteredList = toExpandableList(filterList(allKnowledgeList));
+
+                    TextView noItem = findViewById(R.id.no_item);
+                    noItem.setText(searchQuery.isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche");
+                    noItem.setVisibility(filteredList.isEmpty() ? View.VISIBLE : View.GONE);
+                    return filteredList;
                 })
 
                 .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper<Knowledge>(R.layout.list_item_knowledge, (customRecycler1, itemView, knowledge, expanded) -> {

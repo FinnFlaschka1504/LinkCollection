@@ -156,12 +156,19 @@ public class JokeActivity extends AppCompatActivity {
     private void loadRecycler() {
         customRecycler_List = new CustomRecycler<CustomRecycler.Expandable<Joke>>(this, findViewById(R.id.recycler))
                 .setGetActiveObjectList(customRecycler -> {
+                    List<CustomRecycler.Expandable<Joke>> filteredList;
                     if (searchQuery.equals("")) {
                         allJokeList = new ArrayList<>(database.jokeMap.values());
-                        return toExpandableList(sortList(allJokeList));
+                        filteredList = toExpandableList(sortList(allJokeList));
                     }
                     else
-                        return toExpandableList(filterList(allJokeList));
+                        filteredList = toExpandableList(filterList(allJokeList));
+
+                    TextView noItem = findViewById(R.id.no_item);
+                    noItem.setText(searchQuery.isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche");
+                    noItem.setVisibility(filteredList.isEmpty() ? View.VISIBLE : View.GONE);
+                    return filteredList;
+
                 })
 
                 .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper<Joke>(R.layout.list_item_joke, (customRecycler1, itemView, joke, expanded) -> {

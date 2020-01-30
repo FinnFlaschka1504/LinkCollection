@@ -37,7 +37,6 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
-import com.finn.androidUtilities.CustomUtility;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;
@@ -45,6 +44,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
 import com.maxMustermannGeheim.linkcollection.R;
@@ -53,7 +53,6 @@ import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.ImageAdapt
 import com.finn.androidUtilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomPopupWindow;
 import com.finn.androidUtilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
@@ -460,11 +459,11 @@ public class ShowActivity extends AppCompatActivity {
         customRecycler_ShowList = new CustomRecycler<Show>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_show)
                 .setGetActiveObjectList(customRecycler -> {
-                    CustomList<Show> filterdList = sortList(filterList(new CustomList<>(database.showMap.values())));
+                    CustomList<Show> filteredList = sortList(filterList(new CustomList<>(database.showMap.values())));
                     TextView noItem = findViewById(R.id.no_item);
                     noItem.setText(searchQuery.isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche");
-                    noItem.setVisibility(filterdList.isEmpty() ? View.VISIBLE : View.GONE);
-                    return filterdList;
+                    noItem.setVisibility(filteredList.isEmpty() ? View.VISIBLE : View.GONE);
+                    return filteredList;
                 })
                 .setSetItemContent((customRecycler, itemView, show) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_show_Titel)).setText(show.getName());
@@ -1066,7 +1065,11 @@ public class ShowActivity extends AppCompatActivity {
             Utility.showCenteredToast(this, "Ansicht hinzugefügt" + (before ? "\nAutomatisch für gestern hinzugefügt" : ""));
             Show show = database.showMap.get(episode.getShowId());
             show.setAlreadyAiredList(show.getAlreadyAiredList().stream().filter(episode1 -> episode.getTmdbId() != episode1.getTmdbId()).collect(Collectors.toList()));
+
+            if (Database.saveAll())
+                setResult(RESULT_OK);
         };
+
         CustomRecycler<Show.Episode> episodeRecycler = new CustomRecycler<Show.Episode>(this)
                 .setGetActiveObjectList(customRecycler -> {
                     episodeMap.putAll(season.getEpisodeMap());
@@ -1101,25 +1104,8 @@ public class ShowActivity extends AppCompatActivity {
                     if (episode.isWatched())
                         return;
                     selectedEpisode[0] = episode;
-                    if (episode.getRating() == -1 || episode.getRating() == 0) {
-//                        RatingBar ratingBar = new RatingBar(this);
-//                        ratingBar.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-//                        ratingBar.setRating(-1);
-//                        ratingBar.setMax(5);
-//                        ratingBar.setStepSize(0.5f);
-//                        ratingBar.setNumStars(5);
-                        Helpers.RatingHelper ratingHelper = Helpers.RatingHelper.inflate(this);
-                        FrameLayout frameLayout = ratingHelper.getLayout();
-                        frameLayout.setBackground(getDrawable(R.drawable.tile_background));
-                        CustomUtility.setMargins(ratingHelper.getRatingBar(), -1, 10);
-                        CustomPopupWindow customPopupWindow = CustomPopupWindow.Builder(itemView, frameLayout).setPositionRelativeToAnchor(CustomPopupWindow.POSITION_RELATIVE_TO_ANCHOR.CENTER_VERTICAL).show();
-
-                        ratingHelper.setOnRatingBarChangeListener((ratingBar1, rating, fromUser) -> {
-                            selectedEpisode[0].setRating(rating);
-                            addView.run();
-                            customRecycler.reload();
-                            customPopupWindow.dismiss();
-                        });
+                    if (!episode.hasRating()) {
+                        ParentClass_Ratable.showRatingDialog(this, selectedEpisode[0], itemView, false, customRecycler, addView);
                     } else {
                         addView.run();
                         customRecycler.reload();
@@ -1129,13 +1115,18 @@ public class ShowActivity extends AppCompatActivity {
                     if (episode.isWatched())
                         return;
                     selectedEpisode[0] = episode;
-                    addView.run();
-                    customRecycler.reload();
+                    if (!episode.hasRating()){
+                        addView.run();
+                        customRecycler.reload();
+                    } else
+                        ParentClass_Ratable.showRatingDialog(this, selectedEpisode[0], itemView, true, customRecycler, addView);
+
                 })
                 .setOnClickListener((customRecycler, itemView, episode, index) -> {
                     showEpisodeDetailDialog(customRecycler, episode, false);
                 })
                 .setOnLongClickListener((customRecycler, view, episode, index) -> showResetDialog(Arrays.asList(episode), null, null, customRecycler));
+
         CustomDialog.Builder(this)
                 .setTitle(season.getName() + " - Folgen")
                 .addGoToButton((com.finn.androidUtilities.CustomRecycler.GoToFilter<Show.Episode>) (search, episode) -> {
@@ -1259,6 +1250,7 @@ public class ShowActivity extends AppCompatActivity {
                             .show();
 
                 }, false)
+                .enableExpandButtons()
                 .show();
     }
 

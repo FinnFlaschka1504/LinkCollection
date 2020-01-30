@@ -234,9 +234,11 @@ public class VideoActivity extends AppCompatActivity {
                 Database.saveAll();
                 Toast.makeText(this, toDelete.size() + (toDelete.size() == 1 ? " " + singular : " " + plural) + " gelöscht", Toast.LENGTH_SHORT).show();
             });
-            loadVideoRecycler();
 
             videos_search = findViewById(R.id.search);
+
+            loadVideoRecycler();
+
             textListener = new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String s) {
@@ -377,9 +379,16 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     private void loadVideoRecycler() {
-        customRecycler_VideoList = new CustomRecycler<Video>(this, findViewById(R.id.videos_recycler))
+        customRecycler_VideoList = new CustomRecycler<Video>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_video)
-                .setGetActiveObjectList(() -> sortList(filterdVideoList))
+                .setGetActiveObjectList(() -> {
+                    List<Video> filteredList = sortList(filterdVideoList);
+                    TextView noItem = findViewById(R.id.no_item);
+                    noItem.setText(videos_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche");
+                    noItem.setVisibility(filteredList.isEmpty() ? View.VISIBLE : View.GONE);
+                    return filteredList;
+
+                })
 //                .setObjectList(filterdVideoList)
                 .setSetItemContent((customRecycler, itemView, video) -> {
                     itemView.findViewById(R.id.listItem_video_deleteCheck).setVisibility(delete ? View.VISIBLE : View.GONE);

@@ -11,6 +11,7 @@
         android:id="@+id/search"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:inputType="textCapSentences"
         android:focusable="auto"
         android:iconifiedByDefault="false"
         android:queryBackground="@android:color/transparent"
@@ -27,10 +28,23 @@
         android:background="?android:attr/listDivider"
         app:layout_constraintTop_toBottomOf="@id/search" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_constraintTop_toBottomOf="@id/videos_divider" />
+        android:layout_height="match_parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/no_item"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="20dp"
+            android:text="Kein Eintrag"
+            android:textStyle="italic" />
+    </FrameLayout>
 
 </LinearLayout>

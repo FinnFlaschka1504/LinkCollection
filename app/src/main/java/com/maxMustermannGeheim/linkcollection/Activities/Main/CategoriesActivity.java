@@ -120,10 +120,11 @@ public class CategoriesActivity extends AppCompatActivity {
         setDatenObjektIntegerPairLiist();
 
         sortList(allDatenObjektPairList);
-        loadRecycler();
-
 
         catigorys_search = findViewById(R.id.catigorys_search);
+
+        loadRecycler();
+
         textListener = new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String s) {
@@ -254,7 +255,15 @@ public class CategoriesActivity extends AppCompatActivity {
     private void loadRecycler() {
         customRecycler = new CustomRecycler<Pair<ParentClass, Integer>>(this, findViewById(R.id.catigorys_recycler))
                 .setItemLayout(R.layout.list_item_catigory_item)
-                .setGetActiveObjectList(() -> sortList(filterList(allDatenObjektPairList)))
+                .setGetActiveObjectList(() -> {
+                    List<Pair<ParentClass, Integer>> filteredList = sortList(filterList(allDatenObjektPairList));
+
+                    TextView noItem = findViewById(R.id.no_item);
+                    noItem.setText(catigorys_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche");
+                    noItem.setVisibility(filteredList.isEmpty() ? View.VISIBLE : View.GONE);
+                    return filteredList;
+
+                })
                 .setSetItemContent((customRecycler, itemView, parentClassIntegerPair) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_catigoryItem_name)).setText(parentClassIntegerPair.first.getName());
 

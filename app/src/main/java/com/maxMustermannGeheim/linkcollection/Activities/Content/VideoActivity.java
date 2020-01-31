@@ -184,7 +184,7 @@ public class VideoActivity extends AppCompatActivity {
 
         int seenCount = (int) Database.getInstance().videoMap.values().stream().filter(video -> !video.getDateList().isEmpty()).count();
         int watchLaterCount = Utility.getWatchLaterList().size();
-        int upcomingCount = (int) Database.getInstance().videoMap.values().stream().filter(Video::isUpcomming).count();
+        int upcomingCount = (int) Database.getInstance().videoMap.values().stream().filter(Video::isUpcoming).count();
         CustomMenu.Builder(activity, view.findViewById(R.id.main_watchLaterCount_label))
                 .setMenus((customMenu, items) -> {
                     items.add(new CustomMenu.MenuItem(String.format(Locale.getDefault(), "Bereits gesehen (%d)", seenCount), new Pair<>(new Intent(activity, VideoActivity.class)
@@ -208,7 +208,7 @@ public class VideoActivity extends AppCompatActivity {
     private void loadDatabase() {
         @SuppressLint("RestrictedApi") Runnable whenLoaded = () -> {
             for (Video video : database.videoMap.values()) {
-                if (video.getDateList().isEmpty() && !video.isUpcomming() && !Utility.getWatchLaterList().contains(video))
+                if (video.getDateList().isEmpty() && !video.isUpcoming() && !Utility.getWatchLaterList().contains(video))
                     video.setWatchLater(true);
 //                    database.watchLaterList.add(video.getUuid());
             }
@@ -256,7 +256,7 @@ public class VideoActivity extends AppCompatActivity {
                         filterdVideoList = Utility.getWatchLaterList();
                     }
                     else if (mode.equals(MODE.UPCOMING)) {
-                        filterdVideoList = allVideoList.stream().filter(Video::isUpcomming).collect(Collectors.toList());
+                        filterdVideoList = allVideoList.stream().filter(Video::isUpcoming).collect(Collectors.toList());
                     }
                     if (!query.trim().equals("")) {
                         if (query.contains("|")) {
@@ -354,11 +354,11 @@ public class VideoActivity extends AppCompatActivity {
             case LATEST:
                 videoList.sort((video1, video2) -> {
                     if (video1.getDateList().isEmpty() && video2.getDateList().isEmpty()) {
-                        if (video1.isUpcomming() && video2.isUpcomming() || !video1.isUpcomming() && !video2.isUpcomming())
+                        if (video1.isUpcoming() && video2.isUpcoming() || !video1.isUpcoming() && !video2.isUpcoming())
                             return video1.getName().compareTo(video2.getName());
-                        else if (video1.isUpcomming())
+                        else if (video1.isUpcoming())
                             return reverse ? -1 : 1;
-                        else if (video2.isUpcomming())
+                        else if (video2.isUpcoming())
                             return reverse ? 1 : -1;
                     } else if (video1.getDateList().isEmpty())
                         return reverse ? -1 : 1;
@@ -400,7 +400,7 @@ public class VideoActivity extends AppCompatActivity {
                         itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.GONE);
 
                     itemView.findViewById(R.id.listItem_video_later).setVisibility(Utility.getWatchLaterList().contains(video) ? View.VISIBLE : View.GONE);
-                    itemView.findViewById(R.id.listItem_video_upcoming).setVisibility(video.isUpcomming() ? View.VISIBLE : View.GONE);
+                    itemView.findViewById(R.id.listItem_video_upcoming).setVisibility(video.isUpcoming() ? View.VISIBLE : View.GONE);
 
                     List<String> darstellerNames = new ArrayList<>();
                     video.getDarstellerList().forEach(uuid -> darstellerNames.add(database.darstellerMap.get(uuid).getName()));
@@ -570,7 +570,10 @@ public class VideoActivity extends AppCompatActivity {
                         dialog_video_internet.setVisibility(View.GONE);
 
                 })
-                .setOnDialogDismiss(customDialog -> detailDialog = null);
+                .setOnDialogDismiss(customDialog -> {
+                    detailDialog = null;
+                    Utility.ifNotNull(customDialog.getPayload(), o -> ((com.finn.androidUtilities.CustomDialog) o).reloadView());
+                });
         returnDialog.show();
         return returnDialog;
     }
@@ -711,7 +714,7 @@ public class VideoActivity extends AppCompatActivity {
                                     })
                                     .disableScroll()
                                     .setDimensions(true, true)
-                                    .setOnDialogShown(customDialog1 -> isBrowserActive = true) // ToDo: umbenennen
+                                    .setOnDialogShown(customDialog1 -> isBrowserActive = true)
                                     .setOnDialogDismiss(customDialog1 -> isBrowserActive = false)
                                     .show();
                         } else
@@ -974,7 +977,7 @@ public class VideoActivity extends AppCompatActivity {
         if (checked)
             video.setWatchLater(true);
         else if (neuesVideo) {
-            if (!(upcomming = video.isUpcomming()))
+            if (!(upcomming = video.isUpcoming()))
                 addedYesterday = video.addDate(new Date(), true);
         }
 
@@ -1166,7 +1169,7 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     private void showRandomDialog() {
-        CustomList<Video> randomList = new CustomList<>(filterdVideoList).filter(video -> !video.isUpcomming());
+        CustomList<Video> randomList = new CustomList<>(filterdVideoList).filter(video -> !video.isUpcoming());
         if (randomList.isEmpty()) {
             Toast.makeText(this, "Keine " + plural, Toast.LENGTH_SHORT).show();
             return;
@@ -1176,6 +1179,8 @@ public class VideoActivity extends AppCompatActivity {
         com.finn.androidUtilities.CustomDialog.Builder(this)
                 .setTitle("Zufällig")
                 .setView(R.layout.dialog_detail_video)
+                .addButton(R.drawable.ic_info, customDialog -> detailDialog = showDetailDialog(randomVideo).setPayload(customDialog), false)
+                .alignPreviousButtonsLeft()
                 .addButton("Öffnen", customDialog -> openUrl(randomVideo.getUrl(), false), false)
                 .addButton("Nochmal", customDialog -> {
                     if (randomList.isEmpty()) {

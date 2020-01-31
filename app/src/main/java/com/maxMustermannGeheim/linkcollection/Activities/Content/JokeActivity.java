@@ -21,6 +21,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.finn.androidUtilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
@@ -263,7 +264,7 @@ public class JokeActivity extends AppCompatActivity {
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL);
 
         if (joke != null)
-            returnDialog.addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
+            returnDialog.addButton(R.drawable.ic_delete, customDialog -> {
                 CustomDialog.Builder(this)
                         .setTitle("Löschen")
                         .setText("Willst du wirklich '" + joke.getName() + "' löschen?")
@@ -292,12 +293,15 @@ public class JokeActivity extends AppCompatActivity {
                 .disableLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {
                     new Helpers.TextInputHelper().defaultDialogValidation(customDialog).addValidator(view.findViewById(R.id.dialog_editOrAddJoke_titel_layout));
+
+                    Helpers.RatingHelper ratingHelper = new Helpers.RatingHelper(view.findViewById(R.id.customRating_layout));
+
                     if (newJoke[0] != null) {
                         ((EditText) view.findViewById(R.id.dialog_editOrAddJoke_Titel)).setText(newJoke[0].getName());
                         ((EditText) view.findViewById(R.id.dialog_editOrAddJoke_punchLine)).setText(joke.getPunchLine());
                         ((TextView) view.findViewById(R.id.dialog_editOrAddJoke_categories)).setText(String.join(", ", categoriesNames));
                         view.findViewById(R.id.dialog_editOrAddJoke_categories).setSelected(true);
-                        ((RatingBar) view.findViewById(R.id.dialog_editOrAddJoke_rating)).setRating(newJoke[0].getRating());
+                        ratingHelper.setRating(newJoke[0].getRating());
                     }
                     else
                         newJoke[0] = new Joke("").setAddedDate(new Date());
@@ -344,7 +348,7 @@ public class JokeActivity extends AppCompatActivity {
         joke.setName(titel);
         joke.setPunchLine(punchLine);
         joke.setCategoryIdList(newJoke[0].getCategoryIdList());
-        joke.setRating(((RatingBar) customDialog.findViewById(R.id.dialog_editOrAddJoke_rating)).getRating());
+        joke.setRating(((RatingBar) customDialog.findViewById(R.id.customRating_ratingBar)).getRating());
 
         database.jokeMap.put(joke.getUuid(), joke);
 //        customRecycler_List.reload(customRecycler_List.getObjectList().indexOf(joke));
@@ -368,29 +372,17 @@ public class JokeActivity extends AppCompatActivity {
         final Joke[] randomJoke = {randomJokeList.removeRandom()};
         int ratingButtonId = View.generateViewId();
 
-        com.finn.androidUtilities.CustomDialog.Builder(this)
+        CustomDialog.Builder(this)
                 .setTitle("Zufälliger Witz")
                 .setView(R.layout.dialog_detail_joke)
-                .addButton(R.drawable.ic_info, customDialog -> showDetailDialog(randomJoke[0]).setPayload(customDialog), null, false)
-                .colorLastAddedButton()
+                .addButton(R.drawable.ic_info, customDialog -> detailDialog = showDetailDialog(randomJoke[0]).setPayload(customDialog), false)
                 .alignPreviousButtonsLeft()
                 .addButton("", customDialog -> {
-                    RatingBar ratingBar = new RatingBar(this);
-                    ratingBar.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-                    ratingBar.setMax(5);
-                    ratingBar.setStepSize(0.5f);
-                    ratingBar.setNumStars(5);
-                    ratingBar.setRating(randomJoke[0].getRating());
-                    ratingBar.setBackground(getDrawable(R.drawable.tile_background));
-                    CustomPopupWindow customPopupWindow = CustomPopupWindow.Builder(customDialog.getButton(ratingButtonId).getButton(), ratingBar).setPositionRelativeToAnchor(CustomPopupWindow.POSITION_RELATIVE_TO_ANCHOR.TOP).show();
-                    ratingBar.setOnRatingBarChangeListener((ratingBar1, rating, fromUser) -> {
-                        randomJoke[0].setRating(rating);
+                    ParentClass_Ratable.showRatingDialog(this, randomJoke[0], customDialog.getButton(ratingButtonId).getButton(), true, () -> {
                         Database.saveAll();
                         customDialog.reloadView();
                         reLoadRecycler();
-                        customPopupWindow.dismiss();
                     });
-
                 }, ratingButtonId, false)
                 .addButton("Nochmal", customDialog -> {
                     if (randomJokeList.isEmpty()) {

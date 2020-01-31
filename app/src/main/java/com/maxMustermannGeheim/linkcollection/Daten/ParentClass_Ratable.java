@@ -32,22 +32,20 @@ public class ParentClass_Ratable extends ParentClass {
         void runShowRatingDialog(Object object, Anchor anchor, Recycler recycler);
     }
 
-    public static void showRatingDialog(Context context, ParentClass_Ratable object, View anchor, boolean showOldRating, @Nullable CustomRecycler customRecycler, @Nullable Runnable runnable){
+    public static void showRatingDialog(Context context, ParentClass_Ratable ratable, View anchor, boolean showOldRating, @Nullable Runnable runnable){
         Helpers.RatingHelper ratingHelper = Helpers.RatingHelper.inflate(context);
         if (showOldRating)
-            ratingHelper.setRating(object.getRating());
+            ratingHelper.setRating(ratable.getRating());
         FrameLayout frameLayout = ratingHelper.getLayout();
         frameLayout.setBackground(context.getDrawable(R.drawable.tile_background));
         CustomUtility.setMargins(ratingHelper.getRatingBar(), -1, 10);
         CustomPopupWindow customPopupWindow = CustomPopupWindow.Builder(anchor, frameLayout).setPositionRelativeToAnchor(CustomPopupWindow.POSITION_RELATIVE_TO_ANCHOR.CENTER_VERTICAL).show();
 
         ratingHelper.setOnRatingBarChangeListener((ratingBar1, rating, fromUser) -> {
-            object.setRating(rating);
+            ratable.setRating(rating);
+            customPopupWindow.dismiss();
             if (runnable != null)
                 runnable.run();
-            if (customRecycler != null)
-                customRecycler.reload();
-            customPopupWindow.dismiss();
         });
 
     }

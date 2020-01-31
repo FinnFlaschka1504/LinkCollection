@@ -42,7 +42,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Person;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
+import com.finn.androidUtilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -323,7 +323,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL);
 
         if (owe != null)
-            returnDialog.addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
+            returnDialog.addButton(R.drawable.ic_delete, customDialog -> {
                 if (!Utility.isOnline(this))
                     return;
 
@@ -806,9 +806,9 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                     dialog_items_name_edit.showDropDown();
                 }, buttonId_add, false)
                 .addButton("Zurück", customDialog -> {})
-                .setObjectExtra(sourcesText)
+                .setPayload(sourcesText)
                 .setOnDialogDismiss(customDialog -> {
-                    setItemText((TextView) customDialog.getObjectExtra(), owe);
+                    setItemText((TextView) customDialog.getPayload(), owe);
                     reLoadRecycler();
                 })
                 .setOnDialogShown(customDialog -> ((AutoCompleteTextView) ((TextInputLayout) customDialog.findViewById(R.id.dialog_items_name)).getEditText()).showDropDown())

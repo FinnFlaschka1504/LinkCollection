@@ -516,6 +516,7 @@ public class ShowActivity extends AppCompatActivity {
                     CustomDialog.Builder(this)
                             .setTitle("Gehe Zu")
                             .addButton("Ansichten-Historie", customDialog -> showViewHistoryDialog(list))
+                            .addButton("Ansichten-Kalender", customDialog -> showCalenderDialog(show))
                             .addButton("Zuletzt gesehen", customDialog -> onDecided.run())
                             .addButton("Nächste Episode", customDialog -> {
                                 getNextEpisode(episode[0], episode1 -> {
@@ -766,21 +767,28 @@ public class ShowActivity extends AppCompatActivity {
         return CustomDialog.Builder(this)
                 .setTitle("Detail Ansicht")
                 .setView(R.layout.dialog_detail_show)
-                .addButton("Historie", customDialog -> {
-                    List<Pair<Date, Show.Episode>> list = new ArrayList<>();
-                    for (Show.Season season : show.getSeasonList()) {
-                        season.getEpisodeMap().values().forEach(episode -> episode.getDateList()
-                                .forEach(date -> list.add(new Pair<>(date, episode))));
-                    }
-                    if (list.isEmpty()) {
-                        Toast.makeText(this, "Keine Ansichten eingetragen", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-
-                    list.sort((o1, o2) -> o1.first.compareTo(o2.first) * -1);
-
-                    showViewHistoryDialog(list);
-                })
+                .addButton("Ansichten", customDialog -> {
+                    CustomDialog.Builder(this)
+                            .setTitle("Ansichten")
+                            .addButton("Ansichten-Historie", customDialog1 -> {
+                                List<Pair<Date, Show.Episode>> list = new ArrayList<>();
+                                for (Show.Season season : show.getSeasonList()) {
+                                    season.getEpisodeMap().values().forEach(episode -> episode.getDateList()
+                                            .forEach(date -> list.add(new Pair<>(date, episode))));
+                                }
+                                if (list.isEmpty()) {
+                                    Toast.makeText(this, "Keine Ansichten eingetragen", Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
+                                list.sort((o1, o2) -> o1.first.compareTo(o2.first) * -1);
+                                showViewHistoryDialog(list);
+                            })
+                            .addButton("Ansichten-Kalender", customDialog1 -> {
+                                showCalenderDialog(show);
+                            })
+                            .enableExpandButtons()
+                            .show();
+                }, false)
                 .alignPreviousButtonsLeft()
                 .addButton("Bearbeiten", customDialog -> {
                     CustomDialog customDialog_edit = showEditOrNewDialog(show);
@@ -861,7 +869,7 @@ public class ShowActivity extends AppCompatActivity {
                 .setView(R.layout.dialog_edit_or_add_show);
 
         if (show != null) {
-            returnDialog.addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
+            returnDialog.addButton(R.drawable.ic_delete, customDialog -> {
                 CustomDialog.Builder(this)
                         .setTitle("Löschen")
                         .setText("Willst du wirklich '" + show.getName() + "' löschen?")
@@ -1029,19 +1037,30 @@ public class ShowActivity extends AppCompatActivity {
         customDialog
                 .setTitle("Staffeln")
                 .addButton("Historie", customDialog1 -> {
-                    List<Pair<Date, Show.Episode>> list = new ArrayList<>();
-                    for (Show.Season season : show.getSeasonList()) {
-                        season.getEpisodeMap().values().forEach(episode -> episode.getDateList()
-                                .forEach(date -> list.add(new Pair<>(date, episode))));
-                    }
-                    if (list.isEmpty()) {
-                        Toast.makeText(this, "Keine Ansichten eingetragen", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
+                    CustomDialog.Builder(this)
+                            .setTitle("Ansichten")
+                            .addButton("Ansichten-Historie", customDialog2 -> {
+                                List<Pair<Date, Show.Episode>> list = new ArrayList<>();
+                                for (Show.Season season : show.getSeasonList()) {
+                                    season.getEpisodeMap().values().forEach(episode -> episode.getDateList()
+                                            .forEach(date -> list.add(new Pair<>(date, episode))));
+                                }
+                                if (list.isEmpty()) {
+                                    Toast.makeText(this, "Keine Ansichten eingetragen", Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
+                                list.sort((o1, o2) -> o1.first.compareTo(o2.first) * -1);
+                                showViewHistoryDialog(list);
 
-                    list.sort((o1, o2) -> o1.first.compareTo(o2.first) * -1);
-                    showViewHistoryDialog(list);
-                })
+                                customDialog1.dismiss();
+                            })
+                            .addButton("Ansichten-Kalender", customDialog2 -> {
+                                showCalenderDialog(show);
+                                customDialog1.dismiss();
+                            })
+                            .enableExpandButtons()
+                            .show();
+                }, false)
                 .alignPreviousButtonsLeft()
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
                 .setPayload(seasonRecycler)
@@ -1105,7 +1124,10 @@ public class ShowActivity extends AppCompatActivity {
                         return;
                     selectedEpisode[0] = episode;
                     if (!episode.hasRating()) {
-                        ParentClass_Ratable.showRatingDialog(this, selectedEpisode[0], itemView, false, customRecycler, addView);
+                        ParentClass_Ratable.showRatingDialog(this, selectedEpisode[0], itemView, false, () -> {
+                            customRecycler.reload();
+                            addView.run();
+                        });
                     } else {
                         addView.run();
                         customRecycler.reload();
@@ -1119,7 +1141,10 @@ public class ShowActivity extends AppCompatActivity {
                         addView.run();
                         customRecycler.reload();
                     } else
-                        ParentClass_Ratable.showRatingDialog(this, selectedEpisode[0], itemView, true, customRecycler, addView);
+                        ParentClass_Ratable.showRatingDialog(this, selectedEpisode[0], itemView, true, () -> {
+                            customRecycler.reload();
+                            addView.run();
+                        });
 
                 })
                 .setOnClickListener((customRecycler, itemView, episode, index) -> {
@@ -1187,7 +1212,7 @@ public class ShowActivity extends AppCompatActivity {
                     dialog_detailEpisode_rating.setOnRatingBarChangeListener((ratingBar, rating, fromUser) -> {
                         actionButton.setEnabled(rating != episode.getRating());
                     });
-                    view.findViewById(R.id.dialog_detailEpisode_editViews).setOnClickListener(v -> showCalenderDialog(episode, customDialog));
+                    view.findViewById(R.id.dialog_detailEpisode_editViews).setOnClickListener(v -> showEpisodeCalenderDialog(episode, customDialog));
                     view.findViewById(R.id.dialog_detailEpisode_editViews).setOnLongClickListener(v -> {
                         showResetDialog(Arrays.asList(episode), null, customDialog, null);
                         return true;
@@ -1254,7 +1279,29 @@ public class ShowActivity extends AppCompatActivity {
                 .show();
     }
 
-    public void showCalenderDialog(Show.Episode episode, CustomDialog detailDialog) {
+    public void showCalenderDialog(Show show) {
+         com.finn.androidUtilities.CustomDialog.Builder(this)
+                .setTitle(show.getName() + " - Kalender")
+                .setView(R.layout.dialog_edit_views)
+                .setSetViewContent((customDialog, view, reload) -> {
+                    ViewStub stub_groups = view.findViewById(R.id.dialog_editViews_calender);
+                    stub_groups.setLayoutResource(R.layout.fragment_calender);
+                    stub_groups.inflate();
+                    CompactCalendarView calendarView = view.findViewById(R.id.fragmentCalender_calendar);
+                    calendarView.setFirstDayOfWeek(Calendar.MONDAY);
+                    List<Show.Episode> episodeList = new ArrayList<>();
+                    for (Show.Season season : show.getSeasonList()) {
+                        episodeList.addAll(season.getEpisodeMap().values());
+                    }
+                    Utility.setupEpisodeCalender(this, calendarView, ((FrameLayout) view), episodeList, true);
+                })
+                .disableScroll()
+                .enableTitleBackButton()
+                .setDimensions(true, true)
+                .show();
+
+    }
+    public void showEpisodeCalenderDialog(Show.Episode episode, CustomDialog detailDialog) {
         int viewCount = episode.getDateList().size();
         com.finn.androidUtilities.CustomDialog.Builder(this)
                 .setTitle("Ansichten Bearbeiten")

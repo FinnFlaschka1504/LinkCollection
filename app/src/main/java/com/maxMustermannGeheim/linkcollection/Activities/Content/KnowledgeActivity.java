@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Editable;
@@ -26,17 +25,14 @@ import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.Switch;
-import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.finn.androidUtilities.CustomRecycler;
-import com.google.android.gms.common.util.Hex;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
@@ -162,7 +158,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                             .setGetActiveObjectList(customRecycler1 -> knowledgeList.stream().map(ParentClass::getName).collect(Collectors.toList()))
                             .setOnClickListener((customRecycler1, itemView, s, index) -> {
                                 Knowledge knowledge = knowledgeList.get(index);
-                                Pair<CustomDialog,Knowledge> customDialogKnowledgePair = showEditOrNewDialog(knowledge);
+                                Pair<CustomDialog, Knowledge> customDialogKnowledgePair = showEditOrNewDialog(knowledge);
                                 CustomDialog sourcesDialog = showSourcesDialog(customDialogKnowledgePair.second, customDialogKnowledgePair.first.findViewById(R.id.dialog_editOrAddKnowledge_sources), true);
                                 TextInputLayout dialog_sources_url = sourcesDialog.findViewById(R.id.dialog_sources_url);
                                 dialog_sources_url.getEditText().setText(finalText);
@@ -173,7 +169,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     selectDialog
                             .setTitle("Wissen Auswählen")
                             .addButton("Neu", customDialog -> {
-                                Pair<CustomDialog,Knowledge> customDialogKnowledgePair = showEditOrNewDialog(null);
+                                Pair<CustomDialog, Knowledge> customDialogKnowledgePair = showEditOrNewDialog(null);
                                 CustomDialog sourcesDialog = showSourcesDialog(customDialogKnowledgePair.second, customDialogKnowledgePair.first.findViewById(R.id.dialog_editOrAddKnowledge_sources), true);
                                 TextInputLayout dialog_sources_url = sourcesDialog.findViewById(R.id.dialog_sources_url);
                                 dialog_sources_url.getEditText().setText(finalText);
@@ -314,7 +310,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         customRecycler_List.reload();
     }
 
-    private Pair<CustomDialog,Knowledge> showEditOrNewDialog(Knowledge knowledge) {
+    private Pair<CustomDialog, Knowledge> showEditOrNewDialog(Knowledge knowledge) {
         if (!Utility.isOnline(this))
             return null;
         setResult(RESULT_OK);
@@ -333,22 +329,23 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL);
 
         if (knowledge != null)
-            returnDialog.addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
-                com.finn.androidUtilities.CustomDialog.Builder(this)
-                        .setTitle("Löschen")
-                        .setText("Willst du wirklich '" + knowledge.getName() + "' löschen?")
-                        .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
-                        .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
-                            database.knowledgeMap.remove(knowledge.getUuid());
-                            Database.saveAll();
-                            reLoadRecycler();
-                            if (detailDialog != null)
-                                detailDialog.dismiss();
-                            customDialog.dismiss();
-                            Toast.makeText(this, "Wissen gelöscht", Toast.LENGTH_SHORT).show();
-                        })
-                        .show();
-            }, false)
+            returnDialog
+                    .addButton(R.drawable.ic_delete, customDialog -> {
+                        com.finn.androidUtilities.CustomDialog.Builder(this)
+                                .setTitle("Löschen")
+                                .setText("Willst du wirklich '" + knowledge.getName() + "' löschen?")
+                                .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                                .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                                    database.knowledgeMap.remove(knowledge.getUuid());
+                                    Database.saveAll();
+                                    reLoadRecycler();
+                                    if (detailDialog != null)
+                                        detailDialog.dismiss();
+                                    customDialog.dismiss();
+                                    Toast.makeText(this, "Wissen gelöscht", Toast.LENGTH_SHORT).show();
+                                })
+                                .show();
+                    },false)
                     .alignPreviousButtonsLeft();
 
         returnDialog
@@ -361,11 +358,11 @@ public class KnowledgeActivity extends AppCompatActivity {
                     String content = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddKnowledge_content)).getText().toString().trim();
 //
                     if (content.equals("") && !newKnowledge[0].hasItems()) {
-                        com.finn.androidUtilities.CustomDialog.Builder(this)
+                        CustomDialog.Builder(this)
                                 .setTitle("Ohne Inhalt speichern?")
                                 .setText("Möchtest du wirklich ohne einen Inhalt speichern")
-                                .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.YES_NO)
-                                .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 ->
+                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 ->
                                         saveKnowledge(customDialog, titel, content, newKnowledge[0], knowledge))
                                 .show();
                     } else
@@ -411,14 +408,18 @@ public class KnowledgeActivity extends AppCompatActivity {
 
                     // -------------------------------------
 
+                    Helpers.RatingHelper ratingHelper = new Helpers.RatingHelper(view.findViewById(R.id.customRating_layout));
+
                     new Helpers.TextInputHelper().defaultDialogValidation(customDialog).addValidator(view.findViewById(R.id.dialog_editOrAddKnowledge_Titel_layout));
                     EditText dialog_editOrAddKnowledge_content = view.findViewById(R.id.dialog_editOrAddKnowledge_content);
                     dialog_editOrAddKnowledge_content.addTextChangedListener(new TextWatcher() {
                         @Override
-                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                        }
 
                         @Override
-                        public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                        public void onTextChanged(CharSequence s, int start, int before, int count) {
+                        }
 
                         @Override
                         public void afterTextChanged(Editable s) {
@@ -435,7 +436,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                         view.findViewById(R.id.dialog_editOrAddKnowledge_categories).setSelected(true);
                         ((TextView) view.findViewById(R.id.dialog_editOrAddKnowledge_sources)).setText(String.join(", ", sourcesNames));
                         view.findViewById(R.id.dialog_editOrAddKnowledge_sources).setSelected(true);
-                        ((RatingBar) view.findViewById(R.id.dialog_editOrAddKnowledge_rating)).setRating(newKnowledge[0].getRating());
+                        ratingHelper.setRating(newKnowledge[0].getRating());
                     } else
                         newKnowledge[0] = new Knowledge("");
 
@@ -458,10 +459,10 @@ public class KnowledgeActivity extends AppCompatActivity {
 
                         final String[] content = {dialog_editOrAddKnowledge_content.getText().toString().trim()};
                         if (!content[0].isEmpty()) {
-                            com.finn.androidUtilities.CustomDialog.Builder(this)
+                            CustomDialog.Builder(this)
                                     .setTitle("Inhalt Vorhanden")
                                     .setText("Das Wissen hat bereits einen Inhalt.\nSoll versucht werden diesen zu übernehmen, oder soll er verworfen werden?")
-                                    .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
+                                    .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
                                     .addButton("Verwerfen", customDialog1 -> {
                                         dialog_editOrAddKnowledge_content.setText("");
                                         newKnowledge[0].setContent(null);
@@ -494,10 +495,10 @@ public class KnowledgeActivity extends AppCompatActivity {
                         };
 
                         if (newKnowledge[0].hasItems()) {
-                            com.finn.androidUtilities.CustomDialog.Builder(this)
+                            CustomDialog.Builder(this)
                                     .setTitle("Inhalt Vorhanden")
                                     .setText("Das Wissen hat bereits einen Inhalt.\nSoll versucht werden diesen zu übernehmen, oder soll er verworfen werden?")
-                                    .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
+                                    .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
                                     .addButton("Verwerfen", customDialog1 -> {
                                         newKnowledge[0].clearItemList();
                                         contentRecycler.reload();
@@ -653,8 +654,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 
                         generateItemRecycler(item.getChildrenList(), new CustomRecycler<>(this, listItem_knowledgeList_recycler), itemRecycler, baseRecycler,
                                 depth + 1, focusIndex, thisPosList);
-                    }
-                    else
+                    } else
                         listItem_knowledgeList_recycler_row.setVisibility(View.GONE);
                 })
                 .setGetActiveObjectList(customRecycler -> itemList)
@@ -684,16 +684,18 @@ public class KnowledgeActivity extends AppCompatActivity {
                                     dialog_shareKnowledge_content.setText(knowledge.getContent());
                                     ((CheckBox) customDialog1.findViewById(R.id.dialog_shareKnowledge_content_check)).setChecked(true);
                                 } else if (knowledge.hasItems()) {
-                                    dialog_shareKnowledge_content.setText(knowledge.itemListToString_complete());
+                                    dialog_shareKnowledge_content.setText(knowledge.itemListToString_complete(false));
                                     ((CheckBox) customDialog1.findViewById(R.id.dialog_shareKnowledge_content_check)).setChecked(true);
                                 }
                                 applyFormatting_edit(dialog_shareKnowledge_content.getText());
                                 dialog_shareKnowledge_content.addTextChangedListener(new TextWatcher() {
                                     @Override
-                                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                                    public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                                    }
 
                                     @Override
-                                    public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                                    public void onTextChanged(CharSequence s, int start, int before, int count) {
+                                    }
 
                                     @Override
                                     public void afterTextChanged(Editable s) {
@@ -743,7 +745,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                                                 MatchResult matchResult = matcher.toMatchResult();
 
                                                 if (!String.valueOf(content.charAt(matchResult.start() - 1)).matches("\\s|_") || !String.valueOf(content.charAt(matchResult.end() + 1)).matches("\\W|_")) {
-                                                    content = Utility.stringReplace(content, matchResult.start(), matchResult.end(),  Utility.subString(match,1, -1));
+                                                    content = Utility.stringReplace(content, matchResult.start(), matchResult.end(), Utility.subString(match, 1, -1));
                                                     progress = matchResult.end() - 1;
                                                     continue;
                                                 }
@@ -751,24 +753,23 @@ public class KnowledgeActivity extends AppCompatActivity {
 
                                                 switch (match.substring(0, 1)) {
                                                     case "^":
-                                                        content = Utility.stringReplace(content, matchResult.start(), matchResult.end(), "*" + Utility.subString(match,1, -1) + "*");
+                                                        content = Utility.stringReplace(content, matchResult.start(), matchResult.end(), "*" + Utility.subString(match, 1, -1) + "*");
                                                         progress = matchResult.end() + 1;
                                                         break;
                                                     case "/":
-                                                        content = Utility.stringReplace(content, matchResult.start(), matchResult.end(), "_" + Utility.subString(match,1, -1) + "_");
+                                                        content = Utility.stringReplace(content, matchResult.start(), matchResult.end(), "_" + Utility.subString(match, 1, -1) + "_");
                                                         progress = matchResult.end() + 1;
                                                         break;
                                                     default:
                                                         progress = matchResult.end() + 1;
-                                                          break;
+                                                        break;
                                                     case "_":
-                                                        content = Utility.stringReplace(content, matchResult.start(), matchResult.end(), "```" + Utility.subString(match,1, -1) + "```");
+                                                        content = Utility.stringReplace(content, matchResult.start(), matchResult.end(), "```" + Utility.subString(match, 1, -1) + "```");
                                                         progress = matchResult.end() + 5;
                                                         break;
                                                 }
 
-                                            }
-                                            else
+                                            } else
                                                 break;
                                         }
 
@@ -808,7 +809,6 @@ public class KnowledgeActivity extends AppCompatActivity {
                     }
 
 
-
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_categories)).setText(String.join(", ", categoriesNames));
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_sources)).setText(knowledge.getSources().stream().map(strings -> strings.get(0)).collect(Collectors.joining(", ")));
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_lastChanged)).setText(String.format("%s Uhr", new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.GERMANY).format(knowledge.getLastChanged())));
@@ -819,7 +819,10 @@ public class KnowledgeActivity extends AppCompatActivity {
                         showSourcesDialog(knowledge, view.findViewById(R.id.dialog_detailKnowledge_sources), false);
                     });
                 })
-                .setOnDialogDismiss(customDialog -> detailDialog = null);
+                .setOnDialogDismiss(customDialog -> {
+                    detailDialog = null;
+                    Utility.ifNotNull(customDialog.getPayload(), o -> ((com.finn.androidUtilities.CustomDialog) o).reloadView());
+                });
         returnDialog.show();
         return returnDialog;
     }
@@ -841,8 +844,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                         if (targetView != null) {
                             recycler1.getRecycler().setOnTouchListener((v, event) -> targetView.onTouchEvent(event));
                         }
-                    }
-                    else
+                    } else
                         listItem_knowledgeList_listRow.setVisibility(View.GONE);
                 })
                 .generate();
@@ -850,11 +852,11 @@ public class KnowledgeActivity extends AppCompatActivity {
 
     private SpannableString applyFormatting_text(String s) {
         // ^ Überschrift; * fett;  ~ durch;  / kursiv; _ unterstr
-        List<Pair<Integer,Integer>> captionMatches = new ArrayList<>();
-        List<Pair<Integer,Integer>> boldMatches = new ArrayList<>();
-        List<Pair<Integer,Integer>> strikeMatches = new ArrayList<>();
-        List<Pair<Integer,Integer>> italicMatches = new ArrayList<>();
-        List<Pair<Integer,Integer>> underlineMatches = new ArrayList<>();
+        List<Pair<Integer, Integer>> captionMatches = new ArrayList<>();
+        List<Pair<Integer, Integer>> boldMatches = new ArrayList<>();
+        List<Pair<Integer, Integer>> strikeMatches = new ArrayList<>();
+        List<Pair<Integer, Integer>> italicMatches = new ArrayList<>();
+        List<Pair<Integer, Integer>> underlineMatches = new ArrayList<>();
 
 //        Pattern pattern = Pattern.compile("((?<=[\\s]|)\\^([^\\s].*?[^\\s]|[^\\s])\\^(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\*([^\\s].*?[^\\s]|[^\\s])\\*(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\~([^\\s].*?[^\\s]|[^\\s])\\~(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\/([^\\s].*?[^\\s]|[^\\s])\\/(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\_([^\\s].*?[^\\s]|[^\\s])\\_(?![^\\s\\.!\\?,:;]))");
         Pattern pattern = Pattern.compile("(?<![^\\W_])(\\*|\\/|\\_|\\^|\\~)([^\\s]|[^\\s].*?[^\\s])\\1(?![^\\W_])");
@@ -880,9 +882,8 @@ public class KnowledgeActivity extends AppCompatActivity {
                         underlineMatches.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
                         break;
                 }
-                s = matcher.replaceFirst(Utility.subString(match,1, -1));
-            }
-            else
+                s = matcher.replaceFirst(Utility.subString(match, 1, -1));
+            } else
                 break;
         }
 
@@ -916,11 +917,11 @@ public class KnowledgeActivity extends AppCompatActivity {
         new CustomList<>(s.getSpans(0, s.length(), StrikethroughSpan.class)).forEach(s::removeSpan);
         new CustomList<>(s.getSpans(0, s.length(), ForegroundColorSpan.class)).forEach(s::removeSpan);
 
-        List<Pair<Integer,Integer>> captionMatches = new ArrayList<>();
-        List<Pair<Integer,Integer>> boldMatches = new ArrayList<>();
-        List<Pair<Integer,Integer>> strikeMatches = new ArrayList<>();
-        List<Pair<Integer,Integer>> italicMatches = new ArrayList<>();
-        List<Pair<Integer,Integer>> underlineMatches = new ArrayList<>();
+        List<Pair<Integer, Integer>> captionMatches = new ArrayList<>();
+        List<Pair<Integer, Integer>> boldMatches = new ArrayList<>();
+        List<Pair<Integer, Integer>> strikeMatches = new ArrayList<>();
+        List<Pair<Integer, Integer>> italicMatches = new ArrayList<>();
+        List<Pair<Integer, Integer>> underlineMatches = new ArrayList<>();
 
         Pattern pattern = Pattern.compile("(?<![^\\W_])(\\*|\\/|\\_|\\^|\\~)([^\\s]|[^\\s].*?[^\\s])\\1(?![^\\W_])");
         Matcher matcher = pattern.matcher(s);
@@ -945,8 +946,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                         underlineMatches.add(new Pair<>(matchResult.start() + 1, matchResult.end() - 1));
                         break;
                 }
-            }
-            else
+            } else
                 break;
         }
 
@@ -964,8 +964,8 @@ public class KnowledgeActivity extends AppCompatActivity {
 
         int color = Utility.setAlphaOfColor(getColor(R.color.colorText), 0x80);
         Utility.concatenateCollections(captionMatches, boldMatches, strikeMatches, italicMatches, underlineMatches).forEach(pair -> {
-            s.setSpan(new ForegroundColorSpan(color),pair.first - 1, pair.first, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            s.setSpan(new ForegroundColorSpan(color),pair.second, pair.second + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            s.setSpan(new ForegroundColorSpan(color), pair.first - 1, pair.first, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            s.setSpan(new ForegroundColorSpan(color), pair.second, pair.second + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         });
     }
 
@@ -996,7 +996,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         knowledge.setContent(content);
         knowledge.setCategoryIdList(newKnowledge.getCategoryIdList());
         knowledge.setSources(newKnowledge.getSources());
-        knowledge.setRating(((RatingBar) dialog.findViewById(R.id.dialog_editOrAddKnowledge_rating)).getRating());
+        knowledge.setRating(((RatingBar) dialog.findViewById(R.id.customRating_ratingBar)).getRating());
         knowledge.setLastChanged(new Date());
         knowledge.setItemList(newKnowledge.getItemList().stream().filter(item -> {
             item.setName(item.getName().trim());
@@ -1022,35 +1022,38 @@ public class KnowledgeActivity extends AppCompatActivity {
             Toast.makeText(this, "Nichts zum Zeigen", Toast.LENGTH_SHORT).show();
             return;
         }
+        final Knowledge[] randomKnowledge = {filteredKnowledgeList.removeRandom()};
 
         com.finn.androidUtilities.CustomDialog.Builder(this)
                 .setTitle("Zufälliges Wissen")
                 .setView(R.layout.dialog_detail_knowledge)
+                .addButton(R.drawable.ic_info, customDialog -> detailDialog = showDetailDialog(randomKnowledge[0]).setPayload(customDialog), false)
+                .alignPreviousButtonsLeft()
                 .addButton("Nochmal", customDialog -> {
                     if (filteredKnowledgeList.isEmpty()) {
                         Toast.makeText(this, "Wissen erschöpft", Toast.LENGTH_SHORT).show();
                         return;
                     }
                     Toast.makeText(this, "Neu", Toast.LENGTH_SHORT).show();
+                    randomKnowledge[0] = filteredKnowledgeList.removeRandom();
                     customDialog.reloadView();
 
                 }, false)
                 .colorLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {
-                    Knowledge randomKnowledge = filteredKnowledgeList.removeRandom();
 
-                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_title)).setText(randomKnowledge.getName());
+                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_title)).setText(randomKnowledge[0].getName());
 
                     TextView listItem_knowledge_content = view.findViewById(R.id.dialog_detailKnowledge_content);
                     RecyclerView listItem_knowledge_list = view.findViewById(R.id.dialog_detailKnowledge_list);
-                    if (randomKnowledge.hasContent()) {
+                    if (randomKnowledge[0].hasContent()) {
                         listItem_knowledge_content.setVisibility(View.VISIBLE);
                         listItem_knowledge_list.setVisibility(View.GONE);
-                        listItem_knowledge_content.setText(applyFormatting_text(randomKnowledge.getContent()));
-                    } else if (randomKnowledge.hasItems()) {
+                        listItem_knowledge_content.setText(applyFormatting_text(randomKnowledge[0].getContent()));
+                    } else if (randomKnowledge[0].hasItems()) {
                         listItem_knowledge_list.setVisibility(View.VISIBLE);
                         listItem_knowledge_content.setVisibility(View.GONE);
-                        generateItemTextRecycler(listItem_knowledge_list, randomKnowledge.getItemList(), null);
+                        generateItemTextRecycler(listItem_knowledge_list, randomKnowledge[0].getItemList(), null);
                     } else {
                         listItem_knowledge_content.setVisibility(View.VISIBLE);
                         listItem_knowledge_list.setVisibility(View.GONE);
@@ -1058,7 +1061,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     }
 
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_categories)).setText(
-                            randomKnowledge.getCategoryIdList().stream().map(uuid -> database.knowledgeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                            randomKnowledge[0].getCategoryIdList().stream().map(uuid -> database.knowledgeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", ")));
 
                 })
                 .show();

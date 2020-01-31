@@ -1,6 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Videos;
 
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.scottyab.aescrypt.AESCrypt;
@@ -14,14 +15,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class Video extends ParentClass {
+public class Video extends ParentClass_Ratable {
 //    private String uuid = "video_" + UUID.randomUUID().toString();
 //
 //    private String name;
     private String url;
     private List<String> studioList = new ArrayList<>();
     private List<String> darstellerList = new ArrayList<>();
-    private Float rating = -1f;
     private List<Date> dateList = new ArrayList<>();
     private List<String> genreList = new ArrayList<>();
     private Date release;
@@ -135,20 +135,6 @@ public class Video extends ParentClass {
         });
     }
 
-
-    public Float getRating() {
-        return rating;
-    }
-
-    public Video setRating(Float rating) {
-        this.rating = rating;
-        return this;
-    }
-
-    public boolean hasRating() {
-        return !(rating == -1 || rating == 0);
-    }
-
     public Date getRelease() {
         return release;
     }
@@ -158,7 +144,7 @@ public class Video extends ParentClass {
         return this;
     }
 
-    public boolean isUpcomming() {
+    public boolean isUpcoming() {
         if (release != null)
             return new Date().before(release);
         else

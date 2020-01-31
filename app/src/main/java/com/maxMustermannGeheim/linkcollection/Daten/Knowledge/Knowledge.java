@@ -1,6 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Knowledge;
 
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.scottyab.aescrypt.AESCrypt;
 
@@ -12,12 +13,11 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class Knowledge extends ParentClass {
+public class Knowledge extends ParentClass_Ratable {
 
     private String content;
     private List<List<String>> sources = new ArrayList<>();
     private List<String> categoryIdList = new ArrayList<>();
-    private Float rating = -1f;
     private Date lastChanged;
     private List<Item> itemList = new ArrayList<>(Arrays.asList(new Item()));
 
@@ -55,14 +55,6 @@ public class Knowledge extends ParentClass {
 
     public void setCategoryIdList(List<String> categoryIdList) {
         this.categoryIdList = categoryIdList;
-    }
-
-    public Float getRating() {
-        return rating;
-    }
-
-    public void setRating(Float rating) {
-        this.rating = rating;
     }
 
     public Date getLastChanged() {
@@ -123,14 +115,25 @@ public class Knowledge extends ParentClass {
         return itemList.stream().map(item -> "• " + item.getName()).collect(Collectors.joining("\n\n"));
     }
 
-    public String itemListToString_complete() {
-        return itemList.stream().map(item -> subItemToString(item, 0)).collect(Collectors.joining("\n\n"));
+    public String itemListToString_complete(boolean simple) {
+        if (simple)
+            return itemList.stream().map(this::subItemToString_simple).collect(Collectors.joining("\n"));
+        else
+            return itemList.stream().map(item -> subItemToString(item, 0)).collect(Collectors.joining("\n\n"));
     }
 
-    private String subItemToString(Item item, int depth) {
+    private String subItemToString_simple(Item item) {
         String result = "";
 
+        result += item.getName();
 
+        if (item.hasChild_real())
+            result += "\n" + item.getChildrenList().stream().map(this::subItemToString_simple).collect(Collectors.joining("\n"));
+
+        return result;
+    }
+    private String subItemToString(Item item, int depth) {
+        String result = "";
 
         result += Utility.SwitchExpression.setInput(depth % 4)
                 .addCase(0, integer -> "► ")

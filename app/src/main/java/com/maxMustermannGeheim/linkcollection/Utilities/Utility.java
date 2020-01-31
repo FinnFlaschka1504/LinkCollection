@@ -375,7 +375,7 @@ public class Utility implements java.io.Serializable {
         if (filterTypeSet.contains(KnowledgeActivity.FILTER_TYPE.CONTENT)) {
             if (knowledge.hasContent() && knowledge.getContent().toLowerCase().contains(query.toLowerCase()))
                 return true;
-            if (knowledge.hasItems() && knowledge.itemListToString().toLowerCase().contains(query.toLowerCase()))
+            if (knowledge.hasItems() && knowledge.itemListToString_complete(true).toLowerCase().contains(query.toLowerCase()))
                 return true;
         }
 
@@ -589,7 +589,7 @@ public class Utility implements java.io.Serializable {
             customRecycler.setOnClickListener((customRecycler1, view, event, index) ->
             {
                 Show.Episode episode = (Show.Episode) event.getData();
-                ((MainActivity) context).startActivityForResult(new Intent(context, ShowActivity.class)
+                ((AppCompatActivity) context).startActivityForResult(new Intent(context, ShowActivity.class)
                         .putExtra(CategoriesActivity.EXTRA_SEARCH, episode.getShowId())
                         .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.EPISODE)
                         .putExtra(ShowActivity.EXTRA_EPISODE, new Gson().toJson(episode)), MainActivity.START_SHOW_FROM_CALENDER);

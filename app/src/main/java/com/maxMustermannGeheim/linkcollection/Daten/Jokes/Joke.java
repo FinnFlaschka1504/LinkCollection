@@ -1,6 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Jokes;
 
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.scottyab.aescrypt.AESCrypt;
 
@@ -10,9 +11,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-public class Joke extends ParentClass {
+public class Joke extends ParentClass_Ratable {
     String punchLine = "";
-    Float rating = -1f;
     List<String> categoryIdList = new ArrayList<>();
     Date addedDate;
 
@@ -30,15 +30,6 @@ public class Joke extends ParentClass {
 
     public Joke setPunchLine(String punchLine) {
         this.punchLine = punchLine;
-        return this;
-    }
-
-    public Float getRating() {
-        return rating;
-    }
-
-    public Joke setRating(Float rating) {
-        this.rating = rating;
         return this;
     }
 

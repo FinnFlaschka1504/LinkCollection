@@ -267,7 +267,11 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         if (!selectedSpace.hasFragment())
             selectedSpace.setFragment(new SpaceFragment(selectedSpace.getFragmentLayoutId()));
         SpaceFragment.currentSpace = selectedSpace;
-        getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container, selectedSpace.getFragment()).runOnCommit(() -> setCounts(this)).commitAllowingStateLoss();
+        getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container, selectedSpace.getFragment()).runOnCommit(() -> {
+            setCounts(this);
+            if (currentSpace != null)
+                mySPR_settings.edit().putInt(SETTING_LAST_OPEN_SPACE, currentSpace.getItemId()).apply();
+        }).commitAllowingStateLoss();
         currentSpace = selectedSpace;
 
         return true;
@@ -557,8 +561,8 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
     @Override
     protected void onDestroy() {
-        if (currentSpace != null)
-            mySPR_settings.edit().putInt(SETTING_LAST_OPEN_SPACE, currentSpace.getItemId()).apply();
+//        if (currentSpace != null)
+//            mySPR_settings.edit().putInt(SETTING_LAST_OPEN_SPACE, currentSpace.getItemId()).apply();
         CustomInternetHelper.destroyInstance(this);
         super.onDestroy();
     }

@@ -42,6 +42,7 @@
                         android:dropDownHeight="wrap_content"
                         android:hint="Name"
                         android:imeOptions="flagNavigateNext"
+                        android:inputType="textCapSentences"
                         android:singleLine="true" />
                 </com.google.android.material.textfield.TextInputLayout>
 

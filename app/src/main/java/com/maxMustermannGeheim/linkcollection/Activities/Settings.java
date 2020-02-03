@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.finn.androidUtilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -446,7 +447,7 @@ public class Settings extends AppCompatActivity {
                     .addButton("Passwort Ändern", customDialog -> {
                         com.finn.androidUtilities.CustomDialog.Builder(this)
                                 .setTitle("Passwort Festlegen")
-                                .setEdit(new com.finn.androidUtilities.CustomDialog.EditBuilder().setHint("Neues Passwort eingeben"))
+                                .setEdit(new com.finn.androidUtilities.CustomDialog.EditBuilder().setHint("Neues Passwort eingeben").setInputType(Helpers.TextInputHelper.INPUT_TYPE.PASSWORD))
                                 .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                                 .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
                                     String newPassword = customDialog1.getEditText();

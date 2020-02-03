@@ -79,7 +79,7 @@ public class KnowledgeActivity extends AppCompatActivity {
     private String searchQuery = "";
     private SharedPreferences mySPR_daten;
     private SearchView.OnQueryTextListener textListener;
-    private SearchView videos_search;
+    private SearchView knowledge_search;
     private ArrayList<Knowledge> allKnowledgeList;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.CATEGORY, FILTER_TYPE.CONTENT));
     private CustomDialog detailDialog;
@@ -111,7 +111,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 
             String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
             if (extraSearch != null) {
-                videos_search.setQuery(extraSearch, true);
+                knowledge_search.setQuery(extraSearch, true);
             }
         }
     }
@@ -121,7 +121,7 @@ public class KnowledgeActivity extends AppCompatActivity {
             setContentView(R.layout.activity_knowledge);
             loadRecycler();
 
-            videos_search = findViewById(R.id.search);
+            knowledge_search = findViewById(R.id.search);
             textListener = new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String s) {
@@ -136,7 +136,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     return true;
                 }
             };
-            videos_search.setOnQueryTextListener(textListener);
+            knowledge_search.setOnQueryTextListener(textListener);
 
             if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_ADD))
                 showEditOrNewDialog(null);
@@ -286,7 +286,15 @@ public class KnowledgeActivity extends AppCompatActivity {
     }
 
     private List<Knowledge> filterList(ArrayList<Knowledge> allKnowledgeList) {
-        return sortList(allKnowledgeList.stream().filter(knowledge -> Utility.containedInKnowledge(searchQuery, knowledge, filterTypeSet)).collect(Collectors.toList()));
+        CustomList<Knowledge> customList = new CustomList<>(allKnowledgeList);
+
+        if (!searchQuery.isEmpty()) {
+            if (searchQuery.contains("|"))
+                customList.filterOr(searchQuery.split("\\|"), (knowledge, s) -> Utility.containedInKnowledge(s.trim(), knowledge, filterTypeSet), true);
+            else
+                customList.filterAnd(searchQuery.split("&"), (knowledge, s) -> Utility.containedInKnowledge(s.trim(), knowledge, filterTypeSet), true);
+        }
+        return sortList(customList);
     }
 
     private List<Knowledge> sortList(List<Knowledge> knowledgeList) {
@@ -314,6 +322,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         if (!Utility.isOnline(this))
             return null;
         setResult(RESULT_OK);
+        removeFocusFromSearch();
 
         final Knowledge[] newKnowledge = {null};
         List<String> categoriesNames = new ArrayList<>();
@@ -334,9 +343,10 @@ public class KnowledgeActivity extends AppCompatActivity {
                         com.finn.androidUtilities.CustomDialog.Builder(this)
                                 .setTitle("Löschen")
                                 .setText("Willst du wirklich '" + knowledge.getName() + "' löschen?")
-                                .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
-                                .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
                                     database.knowledgeMap.remove(knowledge.getUuid());
+                                    allKnowledgeList.remove(knowledge);
                                     Database.saveAll();
                                     reLoadRecycler();
                                     if (detailDialog != null)
@@ -1004,6 +1014,9 @@ public class KnowledgeActivity extends AppCompatActivity {
         }).collect(Collectors.toCollection(CustomList::new)).executeIf(ArrayList::isEmpty, customList ->
                 customList.add(new Knowledge.Item())));
 
+        if (!database.knowledgeMap.containsValue(knowledge))
+            allKnowledgeList.add(knowledge);
+
         database.knowledgeMap.put(knowledge.getUuid(), knowledge);
         reLoadRecycler();
         dialog.dismiss();
@@ -1017,6 +1030,7 @@ public class KnowledgeActivity extends AppCompatActivity {
     }
 
     private void showRandomDialog() {
+        removeFocusFromSearch();
         CustomList<Knowledge> filteredKnowledgeList = new CustomList<>(filterList(allKnowledgeList));
         if (filteredKnowledgeList.isEmpty()) {
             Toast.makeText(this, "Nichts zum Zeigen", Toast.LENGTH_SHORT).show();
@@ -1129,7 +1143,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     item.setChecked(true);
                 }
                 reLoadRecycler();
-//                textListener.onQueryTextChange(videos_search.getQuery().toString());
+//                textListener.onQueryTextChange(knowledge_search.getQuery().toString());
                 break;
             case R.id.taskBar_knowledge_filterByCategory:
                 if (item.isChecked()) {
@@ -1140,7 +1154,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     item.setChecked(true);
                 }
                 reLoadRecycler();
-//                textListener.onQueryTextChange(videos_search.getQuery().toString());
+//                textListener.onQueryTextChange(knowledge_search.getQuery().toString());
                 break;
             case R.id.taskBar_knowledge_filterByContent:
                 if (item.isChecked()) {
@@ -1366,4 +1380,8 @@ public class KnowledgeActivity extends AppCompatActivity {
         return null;
     }
 //  <----- Sources -----
+
+    private void removeFocusFromSearch() {
+        knowledge_search.clearFocus();
+    }
 }

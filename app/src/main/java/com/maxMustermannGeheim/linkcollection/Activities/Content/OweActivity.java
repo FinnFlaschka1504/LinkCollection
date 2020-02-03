@@ -38,11 +38,13 @@ import com.maltaisn.calcdialog.CalcDialog;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
+import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Person;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.finn.androidUtilities.CustomDialog;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -83,7 +85,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
     private String searchQuery = "";
     private SharedPreferences mySPR_daten;
     private SearchView.OnQueryTextListener textListener;
-    private SearchView videos_search;
+    private SearchView owe_search;
     private ArrayList<Owe> allOweList;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.DESCRIPTION, FILTER_TYPE.PERSON, FILTER_TYPE.OWN, FILTER_TYPE.OTHER
             , FILTER_TYPE.OPEN, FILTER_TYPE.CLOSED));
@@ -142,7 +144,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
             setContentView(R.layout.activity_owe);
             loadRecycler();
 
-            videos_search = findViewById(R.id.search);
+            owe_search = findViewById(R.id.search);
             textListener = new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String s) {
@@ -157,9 +159,9 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                     return true;
                 }
             };
-            videos_search.setOnQueryTextListener(textListener);
+            owe_search.setOnQueryTextListener(textListener);
             if (fireSearch)
-                videos_search.setQuery(searchQuery, true);
+                owe_search.setQuery(searchQuery, true);
             if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_ADD))
                 addOrEditDialog[0] = showEditOrNewDialog(null);
         };
@@ -263,7 +265,15 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
     }
 
     private List<Owe> filterList(ArrayList<Owe> allOweList) {
-        return sortList(allOweList.stream().filter(owe -> Utility.containedInOwe(searchQuery, owe, filterTypeSet)).collect(Collectors.toList()));
+        CustomList<Owe> customList = new CustomList<>(allOweList);
+
+        if (!searchQuery.isEmpty()) {
+            if (searchQuery.contains("|"))
+                customList.filterOr(searchQuery.split("\\|"), (owe, s) -> Utility.containedInOwe(s.trim(), owe, filterTypeSet), true);
+            else
+                customList.filterAnd(searchQuery.split("&"), (owe, s) -> Utility.containedInOwe(s.trim(), owe, filterTypeSet), true);
+        }
+        return sortList(customList);
     }
 
     private List<Owe> sortList(List<Owe> oweList) {
@@ -312,6 +322,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
         if (!Utility.isOnline(this))
             return null;
         setResult(RESULT_OK);
+        removeFocusFromSearch();
 
         final Owe[] newOwe = {null};
         if (owe != null) {
@@ -330,8 +341,8 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                 CustomDialog.Builder(this)
                         .setTitle("Löschen")
                         .setText("Willst du wirklich '" + owe.getName() + "' löschen?")
-                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
-                        .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                        .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
                             database.oweMap.remove(owe.getUuid());
                             Database.saveAll();
                             reLoadRecycler();
@@ -552,7 +563,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                     item.setChecked(true);
                 }
                 reLoadRecycler();
-//                textListener.onQueryTextChange(videos_search.getQuery().toString());
+//                textListener.onQueryTextChange(owe_search.getQuery().toString());
                 break;
             case R.id.taskBar_owe_filterByPerson:
                 if (item.isChecked()) {
@@ -563,7 +574,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                     item.setChecked(true);
                 }
                 reLoadRecycler();
-//                textListener.onQueryTextChange(videos_search.getQuery().toString());
+//                textListener.onQueryTextChange(owe_search.getQuery().toString());
                 break;
             case R.id.taskBar_owe_filterByDescription:
                 if (item.isChecked()) {
@@ -1063,4 +1074,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
 //        Utility.showPopupWindow(activity, view.findViewById(R.id.main_owe_tradeOff_label), tradeOff_customRecycler);
     }
 
+    private void removeFocusFromSearch() {
+        owe_search.clearFocus();
+    }
 }

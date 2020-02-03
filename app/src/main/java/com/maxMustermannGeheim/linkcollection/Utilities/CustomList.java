@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CustomList<E> extends ArrayList<E> {
 
@@ -200,9 +201,35 @@ public class CustomList<E> extends ArrayList<E> {
         return stream().map(mapper).collect(Collectors.toCollection(CustomList::new));
     }
 
-    public CustomList<E> filter(Predicate<? super E> mapper) {
-        return stream().filter(mapper).collect(Collectors.toCollection(CustomList::new));
+    //       -------------------- Filter -------------------->
+    public <T> CustomList<E> filterAnd(T[] filter, LogicFilter<? super E, T> mapper, boolean replace) {
+        Stream<E> filteredStream = stream();
+        for (T t : filter)
+            filteredStream = filteredStream.filter(e -> mapper.runLogicFilter(e, t));
+        CustomList<E> list = filteredStream.collect(Collectors.toCollection(CustomList::new));
+        if (replace)
+            replaceWith(list);
+        return list;
     }
+
+    public <T> CustomList<E> filterOr(T[] filter, LogicFilter<? super E, T> mapper, boolean replace) {
+        CustomList<E> tempList = replace ? this : new CustomList<>(this);
+        tempList.removeIf(e -> Arrays.stream(filter).noneMatch(t -> mapper.runLogicFilter(e, t)));
+        return tempList;
+    }
+
+    public interface LogicFilter<E,Type> {
+        boolean runLogicFilter(E e, Type type);
+    }
+
+    public CustomList<E> filter(Predicate<? super E> mapper, boolean replace) {
+        CustomList<E> list = stream().filter(mapper).collect(Collectors.toCollection(CustomList::new));
+        if (replace)
+            replaceWith(list);
+        return list;
+    }
+    //       <-------------------- Filter --------------------
+
 
     public CustomList<E> sorted(@Nullable Comparator<? super E> c) {
         super.sort(c);
@@ -239,4 +266,13 @@ public class CustomList<E> extends ArrayList<E> {
         return remove(0);
     }
     //  <------------------------- remove -------------------------
+
+
+    //  ------------------------- replaceWith ------------------------->
+    public CustomList<E> replaceWith(Collection<? extends E> newList) {
+        clear();
+        addAll(newList);
+        return this;
+    }
+    //  <------------------------- replaceWith -------------------------
 }

@@ -73,7 +73,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
@@ -91,7 +90,24 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     public enum FILTER_TYPE {
-        NAME, ACTOR, GENRE, STUDIO
+        NAME("Titel"), ACTOR("Darsteller"), GENRE("Genre"), STUDIO("Studio");
+
+        String name;
+
+        FILTER_TYPE() {
+        }
+
+        FILTER_TYPE(String name) {
+            this.name = name;
+        }
+
+        public boolean hasName() {
+            return  name != null;
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 
     private Database database;
@@ -112,7 +128,7 @@ public class VideoActivity extends AppCompatActivity {
     private boolean isShared;
 
     List<Video> allVideoList = new ArrayList<>();
-    List<Video> filterdVideoList = new ArrayList<>();
+    CustomList<Video> filterdVideoList = new CustomList<>();
 
     private CustomDialog[] addOrEditDialog = new CustomDialog[]{null};
     private CustomDialog detailDialog;
@@ -145,37 +161,6 @@ public class VideoActivity extends AppCompatActivity {
 
         loadDatabase();
 
-        CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
-        if (extraSearchCategory != null) {
-            if (!extraSearchCategory.equals(CategoriesActivity.CATEGORIES.VIDEO)) {
-                filterTypeSet.clear();
-
-                switch (extraSearchCategory) {
-                    case DARSTELLER:
-                        filterTypeSet.add(FILTER_TYPE.ACTOR);
-                        break;
-                    case GENRE:
-                        filterTypeSet.add(FILTER_TYPE.GENRE);
-                        break;
-                    case STUDIOS:
-                        filterTypeSet.add(FILTER_TYPE.STUDIO);
-                        break;
-                }
-            }
-
-            String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
-            if (extraSearch != null) {
-                if (extraSearch.equals(SEEN_SEARCH))
-                    mode = MODE.SEEN;
-                else if (extraSearch.equals(WATCH_LATER_SEARCH))
-                    mode = MODE.LATER;
-                else if (extraSearch.equals(UPCOMING_SEARCH))
-                    mode = MODE.UPCOMING;
-                else
-                    videos_search.setQuery(extraSearch, false);
-                textListener.onQueryTextSubmit(videos_search.getQuery().toString());
-            }
-        }
     }
 
     public static void showModeMenu(AppCompatActivity activity, View view) {
@@ -216,7 +201,7 @@ public class VideoActivity extends AppCompatActivity {
             setContentView(R.layout.activity_video);
             allVideoList = new ArrayList<>(database.videoMap.values());
             sortList(allVideoList);
-            filterdVideoList = new ArrayList<>(allVideoList);
+            filterdVideoList = new CustomList<>(allVideoList);
 
             videos_confirmDelete = findViewById(R.id.videos_confirmDelete);
             videos_confirmDelete.setOnClickListener(view -> {
@@ -248,33 +233,21 @@ public class VideoActivity extends AppCompatActivity {
 
                 @Override
                 public boolean onQueryTextChange(String query) {
-                    filterdVideoList = new ArrayList<>(allVideoList);
+                    filterdVideoList = new CustomList<>(allVideoList);
                     if (mode.equals(MODE.SEEN)) {
-                        filterdVideoList = allVideoList.stream().filter(video -> !video.getDateList().isEmpty()).collect(Collectors.toList());
+                        filterdVideoList = allVideoList.stream().filter(video -> !video.getDateList().isEmpty()).collect(Collectors.toCollection(CustomList::new));
                     }
                     else if (mode.equals(MODE.LATER)) {
                         filterdVideoList = Utility.getWatchLaterList();
                     }
                     else if (mode.equals(MODE.UPCOMING)) {
-                        filterdVideoList = allVideoList.stream().filter(Video::isUpcoming).collect(Collectors.toList());
+                        filterdVideoList = allVideoList.stream().filter(Video::isUpcoming).collect(Collectors.toCollection(CustomList::new));
                     }
                     if (!query.trim().equals("")) {
                         if (query.contains("|")) {
-                            Stream<Video> resultStream = null;
-                            for (String subQuery : query.split("\\|")) {
-                                if (resultStream == null)
-                                    resultStream = filterdVideoList.stream().filter(video -> Utility.containedInVideo(subQuery.trim(), video, filterTypeSet));
-                                else
-                                    resultStream = Stream.concat(resultStream, filterdVideoList.stream().filter(video -> Utility.containedInVideo(subQuery.trim(), video, filterTypeSet)));
-                            }
-                            if (resultStream != null) {
-                                filterdVideoList = resultStream.collect(Collectors.toList());
-                            }
+                            filterdVideoList = filterdVideoList.filterOr(query.split("\\|"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), false);
                         } else {
-                            Stream<Video> filteredStream = filterdVideoList.stream();
-                            for (String subQuery : query.split("&"))
-                                filteredStream = filteredStream.filter(video -> Utility.containedInVideo(subQuery.trim(), video, filterTypeSet));
-                            filterdVideoList = filteredStream.collect(Collectors.toList());
+                            filterdVideoList = filterdVideoList.filterAnd(query.split("&"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), false);
                         }
                     }
                     reLoadVideoRecycler();
@@ -309,13 +282,52 @@ public class VideoActivity extends AppCompatActivity {
                                 video.setName(String.join(" ", list));
                             }
                         }
+                        else if (url.contains("moviesjoy")) {
+                            String last = new CustomList<>(url.split("/")).getLast();
+                            if (last != null) {
+                                CustomList<String> list = new CustomList<>(last.split("-"));
+                                list.removeLast();
+                                video.setName(String.join(" ", list));
+                            }
+                        }
                         addOrEditDialog[0] = showEditOrNewDialog(video);
                     } else
                         addOrEditDialog[0] = showEditOrNewDialog(new Video(text.toString()));
                 }
             }
 
-//            Database.saveAll();
+            CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
+            if (extraSearchCategory != null) {
+                if (!extraSearchCategory.equals(CategoriesActivity.CATEGORIES.VIDEO)) {
+                    filterTypeSet.clear();
+
+                    switch (extraSearchCategory) {
+                        case DARSTELLER:
+                            filterTypeSet.add(FILTER_TYPE.ACTOR);
+                            break;
+                        case GENRE:
+                            filterTypeSet.add(FILTER_TYPE.GENRE);
+                            break;
+                        case STUDIOS:
+                            filterTypeSet.add(FILTER_TYPE.STUDIO);
+                            break;
+                    }
+                }
+
+                String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
+                if (extraSearch != null) {
+                    if (extraSearch.equals(SEEN_SEARCH))
+                        mode = MODE.SEEN;
+                    else if (extraSearch.equals(WATCH_LATER_SEARCH))
+                        mode = MODE.LATER;
+                    else if (extraSearch.equals(UPCOMING_SEARCH))
+                        mode = MODE.UPCOMING;
+                    else
+                        videos_search.setQuery(extraSearch, false);
+                    textListener.onQueryTextSubmit(videos_search.getQuery().toString());
+                }
+            }
+            setSearchHint();
 
         };
 
@@ -605,6 +617,7 @@ public class VideoActivity extends AppCompatActivity {
         if (!Utility.isOnline(this))
             return null;
         setResult(RESULT_OK);
+        removeFocusFromSearch();
 
         final Video[] editVideo = {video};
         if (editVideo[0] != null) {
@@ -902,7 +915,7 @@ public class VideoActivity extends AppCompatActivity {
                 }
                 Map<Integer, String> idUuidMap = database.genreMap.values().stream().collect(Collectors.toMap(Genre::getTmdbGenreId, ParentClass::getUuid));
 
-                CustomList uuidList = integerList.map((Function<Integer, Object>) idUuidMap::get).filter(Objects::nonNull);
+                CustomList uuidList = integerList.map((Function<Integer, Object>) idUuidMap::get).filter(Objects::nonNull, false);
                 video.setGenreList(uuidList);
                 customDialog.reloadView();
             } catch (JSONException | ParseException ignored) {
@@ -987,7 +1000,7 @@ public class VideoActivity extends AppCompatActivity {
 
         allVideoList = new ArrayList<>(database.videoMap.values());
         sortList(allVideoList);
-        filterdVideoList = new ArrayList<>(allVideoList);
+        filterdVideoList = new CustomList<>(allVideoList);
         commitSearch();
 
         Database.saveAll();
@@ -1098,6 +1111,7 @@ public class VideoActivity extends AppCompatActivity {
                     item.setChecked(true);
                 }
                 commitSearch();
+                setSearchHint();
                 break;
             case R.id.taskBar_video_filterByDarsteller:
                 if (item.isChecked()) {
@@ -1108,6 +1122,7 @@ public class VideoActivity extends AppCompatActivity {
                     item.setChecked(true);
                 }
                 commitSearch();
+                setSearchHint();
                 break;
             case R.id.taskBar_video_filterByGenre:
                 if (item.isChecked()) {
@@ -1118,6 +1133,7 @@ public class VideoActivity extends AppCompatActivity {
                     item.setChecked(true);
                 }
                 commitSearch();
+                setSearchHint();
                 break;
             case R.id.taskBar_video_filterByStudio:
                 if (item.isChecked()) {
@@ -1128,6 +1144,7 @@ public class VideoActivity extends AppCompatActivity {
                     item.setChecked(true);
                 }
                 commitSearch();
+                setSearchHint();
                 break;
 
             case R.id.taskBar_video_modeAll:
@@ -1169,7 +1186,9 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     private void showRandomDialog() {
-        CustomList<Video> randomList = new CustomList<>(filterdVideoList).filter(video -> !video.isUpcoming());
+        removeFocusFromSearch();
+
+        CustomList<Video> randomList = new CustomList<>(filterdVideoList).filter(video -> !video.isUpcoming(), false);
         if (randomList.isEmpty()) {
             Toast.makeText(this, "Keine " + plural, Toast.LENGTH_SHORT).show();
             return;
@@ -1248,6 +1267,16 @@ public class VideoActivity extends AppCompatActivity {
             return;
         }
         Utility.openUrl(this, url, select);
+    }
+
+    private void removeFocusFromSearch() {
+        videos_search.clearFocus();
+    }
+
+    private void setSearchHint() {
+        String join = filterTypeSet.stream().filter(FILTER_TYPE::hasName).sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).map(FILTER_TYPE::getName).collect(Collectors.joining(", "));
+        videos_search.setQueryHint(join.isEmpty() ? "Kein Filter ausgewählt!" : join + " ('&' als 'und'; '|' als 'oder')");
+        Utility.applyToAllViews(videos_search, View.class, view -> view.setEnabled(!join.isEmpty()));
     }
 
     @SuppressLint("RestrictedApi")

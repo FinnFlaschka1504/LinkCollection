@@ -228,12 +228,12 @@ public class Utility implements java.io.Serializable {
         return getWatchLaterList().stream().map(ParentClass::getUuid).collect(Collectors.toList());
     }
 
-    public static List<Video> getWatchLaterList() {
+    public static CustomList<Video> getWatchLaterList() {
         if (!Database.isReady())
-            return new ArrayList<>();
+            return new CustomList<>();
         Database database = Database.getInstance();
 
-        return database.videoMap.values().stream().filter(Video::isWatchLater).collect(Collectors.toList());
+        return database.videoMap.values().stream().filter(Video::isWatchLater).collect(Collectors.toCollection(CustomList::new));
     }
     //  <------------------------- watchLater -------------------------
 
@@ -363,12 +363,11 @@ public class Utility implements java.io.Serializable {
 
     //  ----- ... in Knowledge ----->
     public static boolean containedInKnowledge(String query, Knowledge knowledge, HashSet<KnowledgeActivity.FILTER_TYPE> filterTypeSet) {
-        if (filterTypeSet.contains(KnowledgeActivity.FILTER_TYPE.NAME) && knowledge.getName().toLowerCase().contains(query))
+        if (filterTypeSet.contains(KnowledgeActivity.FILTER_TYPE.NAME) && knowledge.getName().toLowerCase().contains(query.toLowerCase()))
             return true;
         if (filterTypeSet.contains(KnowledgeActivity.FILTER_TYPE.CATEGORY)) {
-//            for (ParentClass category : getMapFromDatabase(CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES).values()) {
             for (String categoryId : knowledge.getCategoryIdList()) {
-                if (getObjectFromDatabase(CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES, categoryId).getName().toLowerCase().contains(query))
+                if (getObjectFromDatabase(CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES, categoryId).getName().toLowerCase().contains(query.toLowerCase()))
                     return true;
             }
         }
@@ -395,13 +394,13 @@ public class Utility implements java.io.Serializable {
         if (!filterTypeSet.contains(OweActivity.FILTER_TYPE.CLOSED) && owe.getItemList().stream().noneMatch(Owe.Item::isOpen))
             return false;
 
-        if (filterTypeSet.contains(OweActivity.FILTER_TYPE.NAME) && owe.getName().toLowerCase().contains(query))
+        if (filterTypeSet.contains(OweActivity.FILTER_TYPE.NAME) && owe.getName().toLowerCase().contains(query.toLowerCase()))
             return true;
 
-        if (filterTypeSet.contains(OweActivity.FILTER_TYPE.DESCRIPTION) && owe.getDescription().toLowerCase().contains(query))
+        if (filterTypeSet.contains(OweActivity.FILTER_TYPE.DESCRIPTION) && owe.getDescription().toLowerCase().contains(query.toLowerCase()))
             return true;
 
-        return filterTypeSet.contains(OweActivity.FILTER_TYPE.PERSON) && owe.getItemList().stream().anyMatch(item -> Database.getInstance().personMap.get(item.getPersonId()).getName().toLowerCase().contains(query));
+        return filterTypeSet.contains(OweActivity.FILTER_TYPE.PERSON) && owe.getItemList().stream().anyMatch(item -> Database.getInstance().personMap.get(item.getPersonId()).getName().toLowerCase().contains(query.toLowerCase()));
 
 //        if (filterTypeSet.containedInVideo(KnowledgeActivity.FILTER_TYPE.CATEGORY)) {
 ////            for (ParentClass category : getMapFromDatabase(CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES).values()) {
@@ -415,13 +414,13 @@ public class Utility implements java.io.Serializable {
 
     //  ----- ... in Joke ----->
     public static boolean containedInJoke(String query, Joke joke, HashSet<JokeActivity.FILTER_TYPE> filterTypeSet) {
-        if (filterTypeSet.contains(JokeActivity.FILTER_TYPE.NAME) && joke.getName().toLowerCase().contains(query))
+        if (filterTypeSet.contains(JokeActivity.FILTER_TYPE.NAME) && joke.getName().toLowerCase().contains(query.toLowerCase()))
             return true;
-        if (filterTypeSet.contains(JokeActivity.FILTER_TYPE.PUNCHLINE) && joke.getPunchLine().toLowerCase().contains(query))
+        if (filterTypeSet.contains(JokeActivity.FILTER_TYPE.PUNCHLINE) && joke.getPunchLine().toLowerCase().contains(query.toLowerCase()))
             return true;
         if (filterTypeSet.contains(JokeActivity.FILTER_TYPE.CATEGORY)) {
             for (String categoryId : joke.getCategoryIdList()) {
-                if (getObjectFromDatabase(CategoriesActivity.CATEGORIES.JOKE_CATEGORIES, categoryId).getName().toLowerCase().contains(query))
+                if (getObjectFromDatabase(CategoriesActivity.CATEGORIES.JOKE_CATEGORIES, categoryId).getName().toLowerCase().contains(query.toLowerCase()))
                     return true;
             }
         }
@@ -433,12 +432,10 @@ public class Utility implements java.io.Serializable {
     //  ----- ... in Show ----->
     public static boolean containedInShow(String query, Show show, HashSet<ShowActivity.FILTER_TYPE> filterTypeSet) {
         if (show.getUuid().equals(query)) return true;
-        if (filterTypeSet.contains(ShowActivity.FILTER_TYPE.NAME) && show.getName().toLowerCase().contains(query))
+        if (filterTypeSet.contains(ShowActivity.FILTER_TYPE.NAME) && show.getName().toLowerCase().contains(query.toLowerCase()))
             return true;
         Database database = Database.getInstance();
-        if (filterTypeSet.contains(ShowActivity.FILTER_TYPE.GENRE) && show.getGenreIdList().stream().anyMatch(uuid -> {
-            return database.showGenreMap.get(uuid).getName().toLowerCase().contains(query.toLowerCase());
-        }))
+        if (filterTypeSet.contains(ShowActivity.FILTER_TYPE.GENRE) && show.getGenreIdList().stream().anyMatch(uuid -> database.showGenreMap.get(uuid).getName().toLowerCase().contains(query.toLowerCase())))
             return true;
         return false;
     }
@@ -1420,8 +1417,8 @@ public class Utility implements java.io.Serializable {
     //  ------------------------- Switch Expression ------------------------->
     public static class SwitchExpression<Input, Output> {
         private Input input;
-        private List<Pair<Input, ExecuteOnCase>> caseList = new ArrayList<>();
-        private ExecuteOnCase defaultCase;
+        private List<Pair<Input, Object>> caseList = new ArrayList<>();
+        private Object defaultCase;
 
         public SwitchExpression(Input input) {
             this.input = input;
@@ -1444,7 +1441,17 @@ public class Utility implements java.io.Serializable {
             return (SwitchExpression<Input, Type>) this;
         }
 
+        public <Type> SwitchExpression<Input, Type>  addCase(Input inputCase, Type returnOnCase) {
+            caseList.add(new Pair<>(inputCase, returnOnCase));
+            return (SwitchExpression<Input, Type>) this;
+        }
+
         public <Type> SwitchExpression<Input, Type> setDefault(ExecuteOnCase<Input, Type> defaultCase) {
+            this.defaultCase = defaultCase;
+            return (SwitchExpression<Input, Type>) this;
+        }
+
+        public <Type> SwitchExpression<Input, Type> setDefault(Type defaultCase) {
             this.defaultCase = defaultCase;
             return (SwitchExpression<Input, Type>) this;
         }
@@ -1456,12 +1463,19 @@ public class Utility implements java.io.Serializable {
 
 
         public Output evaluate() {
-            Optional<Pair<Input, ExecuteOnCase>> optional = caseList.stream().filter(inputExecuteOnCasePair -> Objects.equals(input, inputExecuteOnCasePair.first)).findFirst();
+            Optional<Pair<Input, Object>> optional = caseList.stream().filter(inputExecuteOnCasePair -> Objects.equals(input, inputExecuteOnCasePair.first)).findFirst();
 
-            if (optional.isPresent())
-                return (Output) optional.get().second.runExecuteOnCase(input);
-            else if (defaultCase != null) {
-                return (Output) defaultCase.runExecuteOnCase(input);
+            if (optional.isPresent()) {
+                Object o = optional.get().second;
+                if (o instanceof ExecuteOnCase)
+                    return (Output) ((ExecuteOnCase) o).runExecuteOnCase(input);
+                else
+                    return (Output) o;
+            } else if (defaultCase != null) {
+                if (defaultCase instanceof ExecuteOnCase)
+                    return (Output) ((ExecuteOnCase) defaultCase).runExecuteOnCase(input);
+                else
+                    return (Output) defaultCase;
             } else {
                 return null;
             }

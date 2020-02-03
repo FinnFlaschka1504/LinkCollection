@@ -11,11 +11,11 @@
         android:id="@+id/search"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:inputType="textCapSentences"
         android:focusable="auto"
         android:iconifiedByDefault="false"
+        android:inputType="textCapSentences"
         android:queryBackground="@android:color/transparent"
-        android:queryHint="Titel, Beschreibung, Person"
+        android:queryHint="Titel, Beschreibung, Person ('&amp;' als 'und'; '|' als 'oder')"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">

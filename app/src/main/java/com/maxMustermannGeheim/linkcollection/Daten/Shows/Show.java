@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.UUID;
 
 public class Show extends ParentClass{
+    public static final String EMPTY_SEASON = "EMPTY_SEASON";
+
     private List<String> genreIdList = new ArrayList<>();
     private int seasonsCount = -1;
     private int allEpisodesCount = -1;
@@ -76,6 +78,8 @@ public class Show extends ParentClass{
     }
 
     public List<Season> getSeasonList() {
+        if (!hasSpecials())
+            seasonList.add(0, new Season(EMPTY_SEASON).setSeasonNumber(0));
         return seasonList;
     }
 
@@ -161,6 +165,10 @@ public class Show extends ParentClass{
     public Show setImagePath(String imagePath) {
         this.imagePath = imagePath;
         return this;
+    }
+
+    public boolean hasSpecials() {
+        return !seasonList.isEmpty() && seasonList.get(0).getSeasonNumber() == 0;
     }
 
     @Override

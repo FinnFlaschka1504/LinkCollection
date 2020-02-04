@@ -1,5 +1,6 @@
 package com.maxMustermannGeheim.linkcollection.Activities;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -8,16 +9,19 @@ import android.util.Pair;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.finn.androidUtilities.Helpers;
+import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -36,11 +40,12 @@ import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
+import com.finn.androidUtilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
+import com.finn.androidUtilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -55,6 +60,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import bsh.EvalError;
+import bsh.Interpreter;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Settings.Space.allSpaces;
 
@@ -96,7 +104,7 @@ public class Settings extends AppCompatActivity {
     private boolean spaceOrderChanged;
 
     //  ----- Static ----->
-    public static boolean startSettings_ifNeeded(Context context) {
+    public static boolean startSettings_ifNeeded(AppCompatActivity context) {
         if (mySPR_settings != null)
             return false;
 
@@ -148,7 +156,7 @@ public class Settings extends AppCompatActivity {
         editor.apply();
     }
 
-    public static void applySpacesList(Context context) {
+    public static void applySpacesList(AppCompatActivity context) {
         if (!allSpaces.isEmpty())
             return;
 
@@ -170,6 +178,29 @@ public class Settings extends AppCompatActivity {
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showRelease)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_RELEASE));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_autoSearch)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_AUTO_SEARCH));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_tmdbShortcut)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_TMDB_SHORTCUT));
+
+                    ((TextView) view.findViewById(R.id.dialogSettingsVideo_edit_parseUrl_added)).setText(database.urlParserMap.values().stream().map(UrlParser::getName).collect(Collectors.joining(", ")));
+                    view.findViewById(R.id.dialogSettingsVideo_edit_parseUrl_select).setOnClickListener(v -> {
+                        List<CustomRecycler.Expandable<UrlParser>> expandableList = new CustomRecycler.Expandable.ToExpandableList<UrlParser, UrlParser>()
+                                .runToExpandableList(new ArrayList<>(database.urlParserMap.values()), urlParser -> urlParser);
+                        CustomRecycler<CustomRecycler.Expandable<UrlParser>> customRecycler = new CustomRecycler<CustomRecycler.Expandable<UrlParser>>(context)
+                                .setExpandableHelper(customRecycler1 -> customRecycler1.new ExpandableHelper<UrlParser>(R.layout.list_item_url_parser, (customRecycler2, itemView, urlParser, expanded) -> {
+                                    ((TextView) itemView.findViewById(R.id.listItem_urlParser_name)).setText(urlParser.getName());
+                                    TextView listItem_urlParser_code = itemView.findViewById(R.id.listItem_urlParser_code);
+                                    listItem_urlParser_code.setText(urlParser.getCode());
+                                    listItem_urlParser_code.setSingleLine(!expanded);
+                                }))
+                                .setObjectList(expandableList);
+                        CustomDialog.Builder(customDialog.getDialog().getContext())
+                                .setTitle("URLs Zerlegen")
+                                .setDimensions(true, true)
+                                .disableScroll()
+                                .addButton("Hinzufügen", customDialog1 -> {}, false)
+                                .alignPreviousButtonsLeft()
+                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
+                                .setView(customRecycler.generateRecyclerView())
+                                .show();
+                    });
                 }, new Space.OnClick() {
                     @Override
                     public void runOnClick(CustomDialog customDialog, Space space) {
@@ -249,6 +280,86 @@ public class Settings extends AppCompatActivity {
         }
     }
 
+    private static void showAddOrEditUrlParserDialog(@Nullable UrlParser oldUrlParser, Context context) {
+        UrlParser editUrlParser = oldUrlParser != null ? oldUrlParser.clone() : new UrlParser("");
+
+        com.finn.androidUtilities.CustomDialog.Builder(context)
+                .setTitle("URL-Parser " + (oldUrlParser == null ? "Hinzufügen" : "Bearbeiten"))
+                .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                .setView(R.layout.dialog_edit_or_add_url_parser)
+                .setSetViewContent((customDialog, view, reload) -> {
+                    TextInputLayout dialog_editOrAdd_urlParser_name_layout = view.findViewById(R.id.dialog_editOrAdd_urlParser_name_layout);
+                    TextInputLayout dialog_editOrAdd_urlParser_url_layout =  view.findViewById(R.id.dialog_editOrAdd_urlParser_url_layout);
+                    TextInputLayout dialog_editOrAdd_urlParser_code_layout = view.findViewById(R.id.dialog_editOrAdd_urlParser_code_layout);
+
+                    if (Utility.stringExists(editUrlParser.getName())) {
+                        dialog_editOrAdd_urlParser_name_layout.getEditText().setText(editUrlParser.getName());
+                        dialog_editOrAdd_urlParser_url_layout.getEditText().setText(editUrlParser.getExampleUrl());
+                        dialog_editOrAdd_urlParser_code_layout.getEditText().setText(editUrlParser.getCode());
+                    }
+
+                    com.maxMustermannGeheim.linkcollection.Utilities.Helpers.TextInputHelper helper = new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.TextInputHelper((Button) customDialog.getActionButton().getButton(), dialog_editOrAdd_urlParser_name_layout, dialog_editOrAdd_urlParser_url_layout, dialog_editOrAdd_urlParser_code_layout);
+                    helper.setValidation(dialog_editOrAdd_urlParser_url_layout, (validator, text) -> {
+                        if (text.isEmpty())
+                            validator.setWarning("Keine Beispiel-Url eingegeben");
+                        else if (Utility.isUrl(text))
+                            validator.setValid();
+                        else
+                            validator.setInvalid("Eine URL eingeben!");
+                    });
+
+                    helper.setInputType(dialog_editOrAdd_urlParser_code_layout, com.maxMustermannGeheim.linkcollection.Utilities.Helpers.TextInputHelper.INPUT_TYPE.MULTI_LINE);
+                })
+                .addButton("Testen", customDialog -> {
+                    Interpreter interpreter2 = new Interpreter();
+                    try {
+                        String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_url)).getText().toString();
+                        String java2 = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_code)).getText().toString();
+
+                        interpreter2.set("url", url);
+                        interpreter2.set("customList1", new com.finn.androidUtilities.CustomList<String>());
+                        interpreter2.set("customList2", new com.finn.androidUtilities.CustomList<String>());
+                        interpreter2.set("customList3", new com.finn.androidUtilities.CustomList<String>());
+                        Object resultO = interpreter2.eval(java2);
+                        if (resultO == null) {
+                            Toast.makeText(context, "Kein Ergebnis", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        String result = resultO.toString();
+
+                        CustomDialog.Builder(context)
+                                .setTitle("Ergebnis")
+                                .setText(result)
+                                .show();
+
+                    } catch (EvalError evalError) {
+                        Toast.makeText(context, evalError.getErrorText(), Toast.LENGTH_SHORT).show();
+                    }
+
+                }, false)
+                .alignPreviousButtonsLeft()
+                .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
+                    String name = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_name)).getText().toString();
+                    String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_url)).getText().toString();
+                    @SuppressLint("CutPasteId") String code = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_code)).getText().toString();
+
+                    Optional<UrlParser> parserOptional = database.urlParserMap.values().stream().filter(urlParser1 -> urlParser1.getName().toLowerCase().equals(name.toLowerCase())).findAny();
+
+                    if (parserOptional.isPresent()) {
+                        UrlParser urlParser1 = parserOptional.get();
+                        urlParser1.setExampleUrl(url).setCode(code).setName(name);
+                    } else {
+                        UrlParser urlParser1 = new UrlParser(name).setExampleUrl(url).setCode(code);
+                        database.urlParserMap.put(urlParser1.getUuid(), urlParser1);
+                    }
+
+                    Database.saveAll();
+                })
+                .show();
+
+    }
+
+
     private static void updateSpaces() {
         for (Space space : allSpaces) {
             String key = SETTING_SPACE_SHOWN_ + space.getItemId();
@@ -323,7 +434,7 @@ public class Settings extends AppCompatActivity {
     private void setSettings() {
         spaceRecycler_customRecycler = new CustomRecycler<Space>(this, spaceRecycler)
                 .setItemLayout(R.layout.list_item_space_setting)
-                .setGetActiveObjectList(() -> allSpaces.stream().filter(Space::isShown).collect(Collectors.toList()))
+                .setGetActiveObjectList(customRecycler -> allSpaces.stream().filter(Space::isShown).collect(Collectors.toList()))
                 .setSetItemContent((customRecycler, itemView, space) -> {
                     ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getPlural());
                     ImageView list_spaceSetting_lock = itemView.findViewById(R.id.list_spaceSetting_lock);
@@ -333,7 +444,6 @@ public class Settings extends AppCompatActivity {
                 .removeLastDivider()
                 .setOnClickListener((customRecycler, itemView, space, index) -> space.showSettingsDialog(this))
                 .setDividerMargin_inDp(16)
-                .deaktivateCustomRipple()
                 .hideOverscroll()
                 .enableSwiping((objectList, direction, space) -> {
                     Toast.makeText(this, space.getPlural(), Toast.LENGTH_SHORT).show();
@@ -400,11 +510,10 @@ public class Settings extends AppCompatActivity {
                                 );
                                 setResult(RESULT_OK);
                             })
-                            .enableDragAndDrop(spaceList -> {
+                            .enableDragAndDrop((customRecycler, objectList) -> {
                                 spaceOrderChanged = true;
                                 setResult(RESULT_OK);
                             })
-                            .deaktivateCustomRipple()
                             .setDividerMargin_inDp(16)
                             .generateRecyclerView())
                     .setOnDialogDismiss(dialog -> updateSpaceStatusSettings())
@@ -435,7 +544,6 @@ public class Settings extends AppCompatActivity {
                                         allSpaces.stream().filter(Space::isEncrypted).map(ParentClass::getName).collect(Collectors.joining(", "))
                                 );
                             })
-                            .deaktivateCustomRipple()
                             .setDividerMargin_inDp(16)
                             .generateRecyclerView())
                     .setOnDialogDismiss(dialog -> {

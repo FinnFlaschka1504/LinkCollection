@@ -48,7 +48,24 @@ public class JokeActivity extends AppCompatActivity {
     }
 
     public enum FILTER_TYPE{
-        NAME, CATEGORY, PUNCHLINE
+        NAME("Aufbau"), CATEGORY("Kategorie"), PUNCHLINE("Punch-Line");
+
+        String name;
+
+        FILTER_TYPE() {
+        }
+
+        FILTER_TYPE(String name) {
+            this.name = name;
+        }
+
+        public boolean hasName() {
+            return  name != null;
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 
 
@@ -74,23 +91,6 @@ public class JokeActivity extends AppCompatActivity {
         mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
         loadDatabase();
-
-        CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
-        if (extraSearchCategory != null) {
-            filterTypeSet.clear();
-
-            switch (extraSearchCategory) {
-                case JOKE_CATEGORIES:
-                    filterTypeSet.add(FILTER_TYPE.CATEGORY);
-                    break;
-            }
-
-            String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
-            if (extraSearch != null) {
-                joke_search.setQuery(extraSearch, true);
-            }
-        }
-
     }
 
     private void loadDatabase() {
@@ -140,6 +140,22 @@ public class JokeActivity extends AppCompatActivity {
 //                        })
 //                        .show();
 //            });
+            CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
+            if (extraSearchCategory != null) {
+                filterTypeSet.clear();
+
+                switch (extraSearchCategory) {
+                    case JOKE_CATEGORIES:
+                        filterTypeSet.add(FILTER_TYPE.CATEGORY);
+                        break;
+                }
+
+                String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
+                if (extraSearch != null) {
+                    joke_search.setQuery(extraSearch, true);
+                }
+            }
+            setSearchHint();
         };
 
         if (database == null || !Database.isReady()) {
@@ -488,6 +504,7 @@ public class JokeActivity extends AppCompatActivity {
                     item.setChecked(true);
                 }
                 reLoadRecycler();
+                setSearchHint();
                 break;
             case R.id.taskBar_joke_filterByCategory:
                 if (item.isChecked()) {
@@ -498,6 +515,7 @@ public class JokeActivity extends AppCompatActivity {
                     item.setChecked(true);
                 }
                 reLoadRecycler();
+                setSearchHint();
                 break;
             case R.id.taskBar_joke_filterByContent:
                 if (item.isChecked()) {
@@ -508,6 +526,7 @@ public class JokeActivity extends AppCompatActivity {
                     item.setChecked(true);
                 }
                 reLoadRecycler();
+                setSearchHint();
                 break;
 
             case android.R.id.home:
@@ -520,5 +539,11 @@ public class JokeActivity extends AppCompatActivity {
 
     private void removeFocusFromSearch() {
         joke_search.clearFocus();
+    }
+
+    private void setSearchHint() {
+        String join = filterTypeSet.stream().filter(FILTER_TYPE::hasName).sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).map(FILTER_TYPE::getName).collect(Collectors.joining(", "));
+        joke_search.setQueryHint(join.isEmpty() ? "Kein Filter ausgewählt!" : join + " ('&' als 'und'; '|' als 'oder')");
+        Utility.applyToAllViews(joke_search, View.class, view -> view.setEnabled(!join.isEmpty()));
     }
 }

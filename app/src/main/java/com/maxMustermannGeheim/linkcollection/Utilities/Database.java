@@ -29,6 +29,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 
 import java.lang.reflect.Field;
@@ -74,11 +75,13 @@ public class Database {
     public static final String STUDIO_MAP = "STUDIO_MAP";
     public static final String DARSTELLER_MAP = "DARSTELLER_MAP";
     public static final String GENRE_MAP = "GENRE_MAP";
+    public static final String URL_PARSER_MAP = "URL_PARSER_MAP";
     public static final String WATCH_LATER_LIST = "WATCH_LATER_LIST";
     public Map<String, Video> videoMap = new HashMap<>();
     public Map<String, Darsteller> darstellerMap = new HashMap<>();
     public Map<String, Studio> studioMap = new HashMap<>();
     public Map<String, Genre> genreMap = new HashMap<>();
+    public Map<String, UrlParser> urlParserMap = new HashMap<>();
 //    public List<String> watchLaterList = new ArrayList<>();
 
     public static final String KNOWLEDGE = "KNOWLEDGE";
@@ -118,6 +121,7 @@ public class Database {
                 new Content<Map, Studio>(Studio.class, studioMap, databaseCode_content, VIDEOS, STUDIO_MAP),
                 new Content<Map, Darsteller>(Darsteller.class, darstellerMap, databaseCode_content, VIDEOS, DARSTELLER_MAP),
                 new Content<Map, Genre>(Genre.class, genreMap, databaseCode_content, VIDEOS, GENRE_MAP),
+                new Content<Map, UrlParser>(UrlParser.class, urlParserMap, databaseCode_content, VIDEOS, URL_PARSER_MAP),
 //                new Content<List,String>(String.class, watchLaterList, databaseCode_content, VIDEOS, WATCH_LATER_LIST),
 
                 new Content<Map, Knowledge>(Knowledge.class, knowledgeMap, databaseCode_content, KNOWLEDGE, KNOWLEDGE_MAP),

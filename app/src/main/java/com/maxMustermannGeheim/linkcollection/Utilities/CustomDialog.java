@@ -33,7 +33,7 @@ public class CustomDialog {
     public enum BUTTON_TYPE {
         YES_BUTTON("Ja"), NO_BUTTON("Nein"), SAVE_BUTTON("Speichern")
         , CANCEL_BUTTON("Abbrechen"), BACK_BUTTON("Zurück"), OK_BUTTON("Ok"), DELETE_BUTTON("Löschen")
-        , GO_TO_BUTTON("Gehe zu"), EDIT_BUTTON("Bearbeiten");
+        , GO_TO_BUTTON("Gehe zu"), EDIT_BUTTON("Bearbeiten"), ADD_BUTTON("Hinzufügen");
 
         String label;
 

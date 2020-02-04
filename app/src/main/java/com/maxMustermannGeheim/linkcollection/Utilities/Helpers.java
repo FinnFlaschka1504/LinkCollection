@@ -45,7 +45,7 @@ public class Helpers {
         // https://github.com/HITGIF/TextFieldBoxes
         public enum INPUT_TYPE {
             TEXT(0x00000001), NUMBER(0x00000002), NUMBER_DECIMAL(0x00002002), CAP_SENTENCES(0x00004001),
-            CAPS_LOCK(0x00001001), CAPS_WORD(0x00002001), MULTI_LINE(0x00040001), E_MAIL(0x00000021), PASSWORD(0x00000081), NUMBER_PASSWORD(0x00000012), DATE_TIME(0x00000004), DATE(0x00000014), TIME(0x00000024);
+            CAPS_LOCK(0x00001001), CAPS_WORD(0x00002001), MULTI_LINE(0x00020001), E_MAIL(0x00000021), PASSWORD(0x00000081), NUMBER_PASSWORD(0x00000012), DATE_TIME(0x00000004), DATE(0x00000014), TIME(0x00000024);
 
             int code;
 
@@ -81,7 +81,10 @@ public class Helpers {
             this.layoutList = new CustomList<>(inputLayouts);
             inputValidationMap = this.layoutList.stream().collect(Collectors.toMap(o -> o, Validator::new));
             applyValidationListeners();
-            layoutList.forEach(textInputLayout -> textInputLayout.getEditText().setInputType(defaultInputType.code));
+            layoutList.forEach(textInputLayout -> {
+                if (textInputLayout.getEditText().getInputType() == (InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE))
+                    textInputLayout.getEditText().setInputType(defaultInputType.code);
+            });
         }
 
         public TextInputHelper(OnValidationResult onValidationResult, TextInputLayout... inputLayouts) {
@@ -89,7 +92,10 @@ public class Helpers {
             this.layoutList = new CustomList<>(inputLayouts);
             inputValidationMap = this.layoutList.stream().collect(Collectors.toMap(o -> o, Validator::new));
             applyValidationListeners();
-            layoutList.forEach(textInputLayout -> textInputLayout.getEditText().setInputType(defaultInputType.code));
+            layoutList.forEach(textInputLayout -> {
+                if (textInputLayout.getEditText().getInputType() == (InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE))
+                    textInputLayout.getEditText().setInputType(defaultInputType.code);
+            });
         }
 
         public TextInputHelper() {
@@ -194,12 +200,12 @@ public class Helpers {
                 NONE(false, false, 3), VALID(true, true, 0), INVALID(false, false, 2), WARNING(true, false, 1);
 
                 private boolean valid;
-                private boolean allwaysValid;
+                private boolean alwaysValid;
                 private int level;
 
-                STATUS(boolean valid, boolean allwaysValid, int level) {
+                STATUS(boolean valid, boolean alwaysValid, int level) {
                     this.valid = valid;
-                    this.allwaysValid = allwaysValid;
+                    this.alwaysValid = alwaysValid;
                     this.level = level;
                 }
 
@@ -208,7 +214,7 @@ public class Helpers {
                 }
 
                 public boolean isAlwaysValid() {
-                    return allwaysValid;
+                    return alwaysValid;
                 }
 
                 public int getLevel() {

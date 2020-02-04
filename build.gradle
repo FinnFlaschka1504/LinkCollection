@@ -21,6 +21,19 @@ allprojects {
         jcenter()
         maven { url 'https://jitpack.io' }
         maven {url 'https://maven.fabric.io/public'}
+        maven { url 'http://dl.bintray.com/beanshell/Beanshell'}
+//        HashMap<String, Object> test = new HashMap<String, Object>()
+//        test.put("id", "bintray-beanshell-Beanshell")
+//        test.put("name", "bintray")
+//        test.put("url", "http://dl.bintray.com/beanshell/Beanshell")
+//
+//        mavenCentral(test)
+//        maven {
+//            groupId 'org.apache-extras.beanshell'
+//            artifactId 'bsh'
+//            version '2.0b6'
+//        }
+//        mavenCentral(new HashMap<String, Object>().)
     }
 }
 

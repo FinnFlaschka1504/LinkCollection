@@ -94,7 +94,24 @@ public class ShowActivity extends AppCompatActivity {
     }
 
     public enum FILTER_TYPE {
-        NAME, GENRE
+        NAME("Titel"), GENRE("Genre");
+
+        String name;
+
+        FILTER_TYPE() {
+        }
+
+        FILTER_TYPE(String name) {
+            this.name = name;
+        }
+
+        public boolean hasName() {
+            return  name != null;
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 
     private Database database;
@@ -140,39 +157,6 @@ public class ShowActivity extends AppCompatActivity {
         mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
         loadDatabase();
-
-        CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
-        if (extraSearchCategory != null) {
-            filterTypeSet.clear();
-
-            switch (extraSearchCategory) {
-                case SHOW_GENRES:
-                    filterTypeSet.add(FILTER_TYPE.GENRE);
-                    break;
-                case EPISODE:
-                    String episode_string = getIntent().getStringExtra(EXTRA_EPISODE);
-                    if (episode_string != null) {
-                        Show.Episode episode = new Gson().fromJson(episode_string, Show.Episode.class);
-                        findEpisode(episode, () -> {
-                            Show.Episode oldEpisode = database.showMap.get(episode.getShowId()).getSeasonList().get(episode.getSeasonNumber())
-                                    .getEpisodeMap().get(episode.getUuid());
-
-                            if (oldEpisode != null)
-                                showEpisodeDetailDialog(null, oldEpisode, true);
-                            else
-                                apiSeasonRequest(database.showMap.get(episode.getShowId()), episode.getSeasonNumber(), () ->
-                                        showEpisodeDetailDialog(null, database.tempShowSeasonEpisodeMap.get(database.showMap.get(episode.getShowId())).get(episode.getSeasonNumber())
-                                                .get(episode.getUuid()), true));
-                        });
-                    }
-            }
-
-            String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
-            if (extraSearch != null) {
-                shows_search.setQuery(extraSearch, true);
-            }
-        }
-
     }
 
     private void loadDatabase() {
@@ -317,6 +301,39 @@ public class ShowActivity extends AppCompatActivity {
 
                 }
             }
+
+            CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
+            if (extraSearchCategory != null) {
+                filterTypeSet.clear();
+
+                switch (extraSearchCategory) {
+                    case SHOW_GENRES:
+                        filterTypeSet.add(FILTER_TYPE.GENRE);
+                        break;
+                    case EPISODE:
+                        String episode_string = getIntent().getStringExtra(EXTRA_EPISODE);
+                        if (episode_string != null) {
+                            Show.Episode episode = new Gson().fromJson(episode_string, Show.Episode.class);
+                            findEpisode(episode, () -> {
+                                Show.Episode oldEpisode = database.showMap.get(episode.getShowId()).getSeasonList().get(episode.getSeasonNumber())
+                                        .getEpisodeMap().get(episode.getUuid());
+
+                                if (oldEpisode != null)
+                                    showEpisodeDetailDialog(null, oldEpisode, true);
+                                else
+                                    apiSeasonRequest(database.showMap.get(episode.getShowId()), episode.getSeasonNumber(), () ->
+                                            showEpisodeDetailDialog(null, database.tempShowSeasonEpisodeMap.get(database.showMap.get(episode.getShowId())).get(episode.getSeasonNumber())
+                                                    .get(episode.getUuid()), true));
+                            });
+                        }
+                }
+
+                String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
+                if (extraSearch != null) {
+                    shows_search.setQuery(extraSearch, true);
+                }
+            }
+            setSearchHint();
         };
 
         if (database == null || !Database.isReady()) {
@@ -708,7 +725,7 @@ public class ShowActivity extends AppCompatActivity {
                 .setView(expandableCustomRecycler.generateRecyclerView())
                 .disableScroll()
                 .setDimensions(true, true)
-                .addButton("Alle Aktuallisieren", customDialog1 -> {
+                .addButton(R.drawable.ic_sync, customDialog1 -> {
 
                     List<Show> showList = database.showMap.values().stream().filter(Show::isNotifyNew).collect(Collectors.toList());
                     final int[] pending = {showList.size()};
@@ -1696,6 +1713,7 @@ public class ShowActivity extends AppCompatActivity {
                     item.setChecked(true);
                 }
                 textListener.onQueryTextChange(shows_search.getQuery().toString());
+                setSearchHint();
                 break;
             case R.id.taskBar_show_filterByGenre:
                 if (item.isChecked()) {
@@ -1706,6 +1724,7 @@ public class ShowActivity extends AppCompatActivity {
                     item.setChecked(true);
                 }
                 textListener.onQueryTextChange(shows_search.getQuery().toString());
+                setSearchHint();
                 break;
 
             case android.R.id.home:
@@ -1716,53 +1735,12 @@ public class ShowActivity extends AppCompatActivity {
         return true;
     }
 
-//    private void showRandomDialog() {
-//        if (filterdShowList.isEmpty()) {
-//            Toast.makeText(this, "Keine " + plural, Toast.LENGTH_SHORT).show();
-//            return;
-//        }
-//        randomShow = filterdShowList.get((int) (Math.random() * filterdShowList.size()));
-//        List<String> darstellerNames = new ArrayList<>();
-//        randomShow.getDarstellerList().forEach(uuid -> darstellerNames.add(database.darstellerMap.get(uuid).getName()));
-//        List<String> studioNames = new ArrayList<>();
-//        randomShow.getStudioList().forEach(uuid -> studioNames.add(database.studioMap.get(uuid).getName()));
-//        List<String> genreNames = new ArrayList<>();
-//        randomShow.getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
-//
-//        CustomDialog.Builder(this)
-//                .setTitle("Zufällig")
-//                .setView(R.layout.dialog_detail_show)
-//                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
-//                .addButton("Nochmal", customDialog -> {
-//                    Toast.makeText(this, "Neu", Toast.LENGTH_SHORT).show();
-//                    randomShow = filterdShowList.get((int) (Math.random() * filterdShowList.size()));
-//                    ((TextView) customDialog.findViewById(R.id.dialog_show_Titel)).setName(randomShow.getName());
-//
-//                    List<String> darstellerNames_neu = new ArrayList<>();
-//                    randomShow.getDarstellerList().forEach(uuid -> darstellerNames_neu.add(database.darstellerMap.get(uuid).getName()));
-//                    ((TextView) customDialog.findViewById(R.id.dialog_show_Darsteller)).setName(String.join(", ", darstellerNames_neu));
-//
-//                    List<String> studioNames_neu = new ArrayList<>();
-//                    randomShow.getStudioList().forEach(uuid -> studioNames_neu.add(database.studioMap.get(uuid).getName()));
-//                    ((TextView) customDialog.findViewById(R.id.dialog_show_Studio)).setName(String.join(", ", studioNames_neu));
-//
-//                    List<String> genreNames_neu = new ArrayList<>();
-//                    randomShow.getGenreList().forEach(uuid -> genreNames_neu.add(database.genreMap.get(uuid).getName()));
-//                    ((TextView) customDialog.findViewById(R.id.dialog_show_Genre)).setName(String.join(", ", genreNames_neu));
-//
-//                }, false)
-//                .addButton("Öffnen", customDialog -> openUrl(randomShow.getUrl(), false), false)
-//                .setSetViewContent((customDialog, view) -> {
-//                    ((TextView) view.findViewById(R.id.dialog_show_Titel)).setName(randomShow.getName());
-//                    ((TextView) view.findViewById(R.id.dialog_show_Darsteller)).setName(String.join(", ", darstellerNames));
-//                    ((TextView) view.findViewById(R.id.dialog_show_Studio)).setName(String.join(", ", studioNames));
-//                    ((TextView) view.findViewById(R.id.dialog_show_Genre)).setName(String.join(", ", genreNames));
-//                    view.findViewById(R.id.dialog_show_Darsteller).setSelected(true);
-//
-//                })
-//                .show();
-//
-//    }
+    private void setSearchHint() {
+        String join = filterTypeSet.stream().filter(FILTER_TYPE::hasName).sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).map(FILTER_TYPE::getName).collect(Collectors.joining(", "));
+        shows_search.setQueryHint(join.isEmpty() ? "Kein Filter ausgewählt!" : join + " ('&' als 'und'; '|' als 'oder')");
+        Utility.applyToAllViews(shows_search, View.class, view -> view.setEnabled(!join.isEmpty()));
+    }
+
 
     private void openUrl(String url, boolean select) {
         if (url == null || url.equals("")) {

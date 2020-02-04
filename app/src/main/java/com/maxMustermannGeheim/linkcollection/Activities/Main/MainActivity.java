@@ -10,14 +10,18 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewStub;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.finn.androidUtilities.CustomList;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -25,6 +29,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomInternetHelper;
@@ -36,6 +41,10 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+
+import bsh.EvalError;
+import bsh.Interpreter;
 
 // --> \/\/(?!  (-|<))
 public class MainActivity extends AppCompatActivity implements CustomInternetHelper.InternetStateReceiverListener {
@@ -106,6 +115,36 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         });
 
         CustomInternetHelper.initialize(this);
+
+
+//        Interpreter interpreter = new Interpreter();
+        String java = "if (url.contains(\"moviesjoy\")) " +
+                "{" +
+                "String last = customList1.add(url.split(\"/\")).getLast(); " +
+                "if (last != null) " +
+                "{" +
+                "customList2.add(last.split(\"-\")); " +
+                "customList2.removeLast(); " +
+                "String result = String.join(\" \", customList2);" +
+                "return result;" +
+//                        "video.setName(String.join(\" \", customList2));" +
+                "}" +
+//                        "return video; " +
+                "}" +
+                "else {return \"--Leer--\";}";
+
+
+//        try {
+//            interpreter.set("video", new Video());
+//            interpreter.set("url", "https://www1.moviesjoy.net/watch-movie/ad-astra-41379.989936");
+//            interpreter.set("customList1", new CustomList<String>());
+//            interpreter.set("customList2", new CustomList<String>());
+//            interpreter.set("customList3", new CustomList<String>());
+//            Object result = interpreter.eval(java);
+//            String BREAKPOINT = null;
+//        } catch (EvalError evalError) {
+//            evalError.printStackTrace();
+//        }
 
 
         // ------
@@ -213,10 +252,10 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         for (Settings.Space space : Settings.Space.allSpaces) {
             if (count > 5) break;
             shortcutInfoList.add(new ShortcutInfo.Builder(this, space.getName() + ".Shortcut")
-                            .setShortLabel(space.getName() + " Hinzufügen")
-                            .setIcon(Icon.createWithResource(this, space.getIconId()))
-                            .setIntent(new Intent(this, space.getActivity()).setAction(ACTION_ADD))
-                            .build()
+                    .setShortLabel(space.getName() + " Hinzufügen")
+                    .setIcon(Icon.createWithResource(this, space.getIconId()))
+                    .setIntent(new Intent(this, space.getActivity()).setAction(ACTION_ADD))
+                    .build()
             );
 
             count++;
@@ -291,7 +330,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
     }
 
-//  ----- VIDEO ----->
+    //  ----- VIDEO ----->
     public void openVideoActivity(View view) {
         if (!Database.isReady())
             return;
@@ -352,13 +391,13 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //  <----- VIDEO -----
 
 
-//  ----- Knowledge ----->
+    //  ----- Knowledge ----->
     public void openKnowledgeActivity(View view) {
-    if (!Database.isReady())
-        return;
-    Intent intent = new Intent(this, KnowledgeActivity.class);
-    startActivityForResult(intent, START_KNOWLEDGE);
-}
+        if (!Database.isReady())
+            return;
+        Intent intent = new Intent(this, KnowledgeActivity.class);
+        startActivityForResult(intent, START_KNOWLEDGE);
+    }
 
     public void openKnowledgeCategoryActivity(View view) {
         if (!Database.isReady())
@@ -370,13 +409,13 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //  <----- Knowledge -----
 
 
-//  ----- Owe ----->
+    //  ----- Owe ----->
     public void openOweActivity(View view) {
-    if (!Database.isReady())
-        return;
-    Intent intent = new Intent(this, OweActivity.class);
-    startActivityForResult(intent, START_OWE);
-}
+        if (!Database.isReady())
+            return;
+        Intent intent = new Intent(this, OweActivity.class);
+        startActivityForResult(intent, START_OWE);
+    }
 
     public void openPersonActivity(View view) {
         if (!Database.isReady())
@@ -396,7 +435,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //  <----- Owe -----
 
 
-//  ----- Joke ----->
+    //  ----- Joke ----->
     public void openJokeActivity(View view) {
         if (!Database.isReady())
             return;
@@ -489,7 +528,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 currentSpace.setLayout();
 //                if (activity != null)
 //                    Toast.makeText(activity, "Wäre gerade abgeschmiert  - Vers. 1", Toast.LENGTH_SHORT).show();
-            } else{
+            } else {
                 if (activity != null) {
                     activity.setContentView(R.layout.loading_screen);
 //                    Toast.makeText(activity, "Wäre gerade abgeschmiert  - Vers. 2", Toast.LENGTH_SHORT).show();
@@ -531,11 +570,9 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 calenderDialog.dismiss();
                 showFilmCalenderDialog(null);
                 setCounts(this);
-            }
-            else if (requestCode == START_SETTINGS) {
+            } else if (requestCode == START_SETTINGS) {
                 setLayout();
-            }
-            else
+            } else
                 setCounts(this);
         }
         super.onActivityResult(requestCode, resultCode, data);

@@ -73,7 +73,24 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
     }
 
     public enum FILTER_TYPE{
-        NAME, DESCRIPTION, PERSON, OWN, OTHER, OPEN, CLOSED
+        NAME("Titel"), DESCRIPTION("Beschreibung"), PERSON("Personen"), OWN, OTHER, OPEN, CLOSED;
+
+        String name;
+
+        FILTER_TYPE() {
+        }
+
+        FILTER_TYPE(String name) {
+            this.name = name;
+        }
+
+        public boolean hasName() {
+            return  name != null;
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 
 
@@ -164,6 +181,8 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                 owe_search.setQuery(searchQuery, true);
             if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_ADD))
                 addOrEditDialog[0] = showEditOrNewDialog(null);
+
+            setSearchHint();
         };
 
         if (database == null || !Database.isReady()) {
@@ -564,6 +583,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                 }
                 reLoadRecycler();
 //                textListener.onQueryTextChange(owe_search.getQuery().toString());
+                setSearchHint();
                 break;
             case R.id.taskBar_owe_filterByPerson:
                 if (item.isChecked()) {
@@ -575,6 +595,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                 }
                 reLoadRecycler();
 //                textListener.onQueryTextChange(owe_search.getQuery().toString());
+                setSearchHint();
                 break;
             case R.id.taskBar_owe_filterByDescription:
                 if (item.isChecked()) {
@@ -585,6 +606,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                     item.setChecked(true);
                 }
                 reLoadRecycler();
+                setSearchHint();
                 break;
             case R.id.taskBar_owe_filterByOwn:
                 if (item.isChecked()) {
@@ -1076,5 +1098,11 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
 
     private void removeFocusFromSearch() {
         owe_search.clearFocus();
+    }
+
+    private void setSearchHint() {
+        String join = filterTypeSet.stream().filter(FILTER_TYPE::hasName).sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).map(FILTER_TYPE::getName).collect(Collectors.joining(", "));
+        owe_search.setQueryHint(join.isEmpty() ? "Kein Filter ausgewählt!" : join + " ('&' als 'und'; '|' als 'oder')");
+        Utility.applyToAllViews(owe_search, View.class, view -> view.setEnabled(!join.isEmpty()));
     }
 }

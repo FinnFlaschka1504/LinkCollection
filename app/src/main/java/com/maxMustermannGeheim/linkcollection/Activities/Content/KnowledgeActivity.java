@@ -68,7 +68,24 @@ public class KnowledgeActivity extends AppCompatActivity {
     }
 
     public enum FILTER_TYPE {
-        NAME, CATEGORY, CONTENT
+        NAME("Titel"), CATEGORY("Kategorie"), CONTENT("Inhalt");
+
+        String name;
+
+        FILTER_TYPE() {
+        }
+
+        FILTER_TYPE(String name) {
+            this.name = name;
+        }
+
+        public boolean hasName() {
+            return  name != null;
+        }
+
+        public String getName() {
+            return name;
+        }
     }
 
 
@@ -199,8 +216,22 @@ public class KnowledgeActivity extends AppCompatActivity {
                 }
             }
 
-//            database.knowledgeMap.values().forEach(knowledge -> knowledge.setItemList(Arrays.asList(new Knowledge.Item())));
-//            Database.saveAll();
+            CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
+            if (extraSearchCategory != null) {
+                filterTypeSet.clear();
+
+                switch (extraSearchCategory) {
+                    case KNOWLEDGE_CATEGORIES:
+                        filterTypeSet.add(FILTER_TYPE.CATEGORY);
+                        break;
+                }
+
+                String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
+                if (extraSearch != null) {
+                    knowledge_search.setQuery(extraSearch, true);
+                }
+            }
+            setSearchHint();
         };
 
         if (database == null || !Database.isReady()) {
@@ -1144,6 +1175,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                 }
                 reLoadRecycler();
 //                textListener.onQueryTextChange(knowledge_search.getQuery().toString());
+                setSearchHint();
                 break;
             case R.id.taskBar_knowledge_filterByCategory:
                 if (item.isChecked()) {
@@ -1155,6 +1187,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                 }
                 reLoadRecycler();
 //                textListener.onQueryTextChange(knowledge_search.getQuery().toString());
+                setSearchHint();
                 break;
             case R.id.taskBar_knowledge_filterByContent:
                 if (item.isChecked()) {
@@ -1165,6 +1198,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     item.setChecked(true);
                 }
                 reLoadRecycler();
+                setSearchHint();
                 break;
 
             case android.R.id.home:
@@ -1384,4 +1418,11 @@ public class KnowledgeActivity extends AppCompatActivity {
     private void removeFocusFromSearch() {
         knowledge_search.clearFocus();
     }
+
+    private void setSearchHint() {
+        String join = filterTypeSet.stream().filter(FILTER_TYPE::hasName).sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).map(FILTER_TYPE::getName).collect(Collectors.joining(", "));
+        knowledge_search.setQueryHint(join.isEmpty() ? "Kein Filter ausgewählt!" : join + " ('&' als 'und'; '|' als 'oder')");
+        Utility.applyToAllViews(knowledge_search, View.class, view -> view.setEnabled(!join.isEmpty()));
+    }
+
 }

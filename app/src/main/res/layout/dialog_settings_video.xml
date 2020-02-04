@@ -17,7 +17,7 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
             android:text="Bearbeiten"
-            android:textColor="@color/colorPrimary"
+            android:textColor="@color/colorPrimaryDark"
             android:textStyle="bold" />
 
 
@@ -109,6 +109,65 @@
 
         </LinearLayout>
 
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginVertical="5dp"
+            android:background="?android:attr/listDivider" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="URLs Zerlegen"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="5dp"
+                            android:text="Hinzugefügt:"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/dialogSettingsVideo_edit_parseUrl_added"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            tools:text="..."
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/dialogSettingsVideo_edit_parseUrl_select"
+                style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Auswählen" />
+        </LinearLayout>
+
     </LinearLayout>
 
     <View
@@ -126,8 +185,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            android:name="Details"
-            android:textColor="@color/colorPrimary"
+            android:text="Details"
+            android:textColor="@color/colorPrimaryDark"
             android:textStyle="bold" />
 
 

@@ -31,7 +31,7 @@
                 android:textStyle="bold" />
 
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/dialog_editOrAddVideo_Titel_layout"
+                android:id="@+id/dialog_editOrAddVideo_Title_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"

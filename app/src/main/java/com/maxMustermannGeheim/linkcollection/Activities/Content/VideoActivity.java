@@ -280,6 +280,8 @@ public class VideoActivity extends AppCompatActivity {
                                     return;
                                 if (addOrEditDialog[0] != null)
                                     ((EditText) addOrEditDialog[0].findViewById(R.id.dialog_editOrAddVideo_Titel)).setText(result);
+                                else
+                                    video.setName(result);
                             });
                         });
 //                        if (url.contains("lookmovie")) {

@@ -314,7 +314,7 @@ public class Settings extends AppCompatActivity {
                         @Override
                         public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                             editUrlParser.setType(UrlParser.TYPE.getTypeByIndex(dialog_editOrAdd_urlParser_type.getSelectedItemPosition()));
-                            dialog_editOrAdd_urlParser_code_layout.setHint(editUrlParser.getType().getName() + "-Code");
+                            dialog_editOrAdd_urlParser_code_layout.setHint(editUrlParser.getType().getName() + "-Code:");
                         }
 
                         @Override
@@ -375,6 +375,7 @@ public class Settings extends AppCompatActivity {
 
                     customRecycler.reload();
                     Database.saveAll();
+                    Toast.makeText(context, "Url-Parser gespeichert", Toast.LENGTH_SHORT).show();
                 })
                 .show();
 

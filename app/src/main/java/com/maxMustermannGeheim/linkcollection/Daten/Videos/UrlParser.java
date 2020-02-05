@@ -226,6 +226,7 @@ public class UrlParser extends ParentClass {
                 evaluateJavaScript(onParseResult, tryCount + 1);
             } else {
                 onParseResult.runGenericInterface(t + (tryCount < 100 ? "" : " (" + tryCount + ")"));
+                webViewMap.get(name).destroy();
                 webViewMap.clear();
             }
         });

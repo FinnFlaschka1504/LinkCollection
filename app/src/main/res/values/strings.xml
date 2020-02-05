@@ -18,8 +18,16 @@
     <string name="bottomMenu_show">Serie</string>
     <string name="bottomMenu_shows">Serien</string>
 
+    <string name="parserType_java">Java</string>
+    <string name="parserType_javaScript">JavaScript</string>
+
     <string-array name="ownOrOther">
         <item>Fremde</item>
         <item>Eigene</item>
+    </string-array>
+
+    <string-array name="parserType">
+        <item>@string/parserType_java</item>
+        <item>@string/parserType_javaScript</item>
     </string-array>
 </resources>

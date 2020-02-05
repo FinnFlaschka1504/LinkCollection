@@ -25,30 +25,30 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 
-public class ParentClass implements Cloneable {
-    protected String uuid;
-    protected String name;
-
-    public ParentClass() {
-    }
-
-    public String getUuid() {
-        return uuid;
-    }
-
-    public ParentClass setUuid(String uuid) {
-        this.uuid = uuid;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public ParentClass setName(String name) {
-        this.name = name;
-        return this;
-    }
+public class ParentClass extends com.finn.androidUtilities.ParentClass implements Cloneable {
+//    protected String uuid;
+//    protected String name;
+//
+//    public ParentClass() {
+//    }
+//
+//    public String getUuid() {
+//        return uuid;
+//    }
+//
+//    public ParentClass setUuid(String uuid) {
+//        this.uuid = uuid;
+//        return this;
+//    }
+//
+//    public String getName() {
+//        return name;
+//    }
+//
+//    public ParentClass setName(String name) {
+//        this.name = name;
+//        return this;
+//    }
 
     public static ParentClass newCategory(CategoriesActivity.CATEGORIES object_type, String name) {
         switch (object_type) {
@@ -69,11 +69,11 @@ public class ParentClass implements Cloneable {
     }
 
     public ParentClass clone() {
-        try {
+//        try {
             return (ParentClass) super.clone();
-        } catch (CloneNotSupportedException e) {
-            return null;
-        }
+//        } catch (CloneNotSupportedException e) {
+//            return null;
+//        }
     }
 
 

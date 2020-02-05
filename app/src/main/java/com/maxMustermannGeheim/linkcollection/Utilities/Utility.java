@@ -1417,7 +1417,7 @@ public class Utility implements java.io.Serializable {
     //  ------------------------- Switch Expression ------------------------->
     public static class SwitchExpression<Input, Output> {
         private Input input;
-        private List<Pair<Input, Object>> caseList = new ArrayList<>();
+        private CustomList<Pair<Input, Object>> caseList = new CustomList<>();
         private Object defaultCase;
 
         public SwitchExpression(Input input) {
@@ -1446,6 +1446,13 @@ public class Utility implements java.io.Serializable {
             return (SwitchExpression<Input, Type>) this;
         }
 
+        public SwitchExpression<Input, Output> addCaseToLastCase(Input inputCase) {
+            caseList.add(new Pair<>(inputCase, caseList.getLast().second));
+            return this;
+        }
+
+        // ---------------
+
         public <Type> SwitchExpression<Input, Type> setDefault(ExecuteOnCase<Input, Type> defaultCase) {
             this.defaultCase = defaultCase;
             return (SwitchExpression<Input, Type>) this;
@@ -1455,6 +1462,13 @@ public class Utility implements java.io.Serializable {
             this.defaultCase = defaultCase;
             return (SwitchExpression<Input, Type>) this;
         }
+
+        public SwitchExpression<Input, Output> setLastCaseAsDefault() {
+            defaultCase = caseList.getLast().second;
+            return this;
+        }
+
+        // ---------------
 
         public interface ExecuteOnCase<Input, Output> {
             Output runExecuteOnCase(Input input);
@@ -1482,4 +1496,14 @@ public class Utility implements java.io.Serializable {
         }
     }
     //  <------------------------- Switch Expression -------------------------
+
+    //  ------------------------- Interfaces ------------------------->
+    public interface GenericInterface<T> {
+        void runGenericInterface(T t);
+    }
+
+    public interface GenericReturnInterface<T,R> {
+        R runGenericInterface(T t);
+    }
+    //  <------------------------- Interfaces -------------------------
 }

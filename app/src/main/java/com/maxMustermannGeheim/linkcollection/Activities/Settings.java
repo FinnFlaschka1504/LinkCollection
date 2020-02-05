@@ -7,10 +7,12 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Pair;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -142,6 +144,7 @@ public class Settings extends AppCompatActivity {
     public static String getSingleSetting(Context context, String key) {
         return context.getSharedPreferences(SHARED_PREFERENCES_SETTINGS, MODE_PRIVATE).getString(key, null);
     }
+
     public static Boolean getSingleSetting_boolean(Context context, String key) {
         return Boolean.parseBoolean(getSingleSetting(context, key));
     }
@@ -173,32 +176,54 @@ public class Settings extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.main_daysCount)).setText(String.valueOf(dateSet.size()));
                     ((TextView) view.findViewById(R.id.main_watchLaterCount)).setText(String.valueOf(Utility.getWatchLaterList().size()));
                 })
-                .setAssociatedClasses(Video.class, Darsteller.class, Studio.class, Genre.class)
+                .setAssociatedClasses(Video.class, Darsteller.class, Studio.class, Genre.class, UrlParser.class)
                 .setSettingsDialog(new Utility.Triple<>(R.layout.dialog_settings_video, (customDialog, view, space) -> {
+                    Context settingsContext = customDialog.getDialog().getContext();
+
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showRelease)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_RELEASE));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_autoSearch)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_AUTO_SEARCH));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_tmdbShortcut)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_TMDB_SHORTCUT));
 
                     ((TextView) view.findViewById(R.id.dialogSettingsVideo_edit_parseUrl_added)).setText(database.urlParserMap.values().stream().map(UrlParser::getName).collect(Collectors.joining(", ")));
                     view.findViewById(R.id.dialogSettingsVideo_edit_parseUrl_select).setOnClickListener(v -> {
-                        List<CustomRecycler.Expandable<UrlParser>> expandableList = new CustomRecycler.Expandable.ToExpandableList<UrlParser, UrlParser>()
-                                .runToExpandableList(new ArrayList<>(database.urlParserMap.values()), urlParser -> urlParser);
+
                         CustomRecycler<CustomRecycler.Expandable<UrlParser>> customRecycler = new CustomRecycler<CustomRecycler.Expandable<UrlParser>>(context)
                                 .setExpandableHelper(customRecycler1 -> customRecycler1.new ExpandableHelper<UrlParser>(R.layout.list_item_url_parser, (customRecycler2, itemView, urlParser, expanded) -> {
                                     ((TextView) itemView.findViewById(R.id.listItem_urlParser_name)).setText(urlParser.getName());
+                                    ((TextView) itemView.findViewById(R.id.listItem_urlParser_codeType)).setText(urlParser.getType().getName());
                                     TextView listItem_urlParser_code = itemView.findViewById(R.id.listItem_urlParser_code);
                                     listItem_urlParser_code.setText(urlParser.getCode());
                                     listItem_urlParser_code.setSingleLine(!expanded);
                                 }))
-                                .setObjectList(expandableList);
-                        CustomDialog.Builder(customDialog.getDialog().getContext())
-                                .setTitle("URLs Zerlegen")
+                                .addSubOnClickListener(R.id.listItem_urlParser_delete, (customRecycler1, itemView, urlParserExpandable, index) -> {
+                                    CustomDialog.Builder(settingsContext)
+                                            .setTitle("Auswerter Löschen")
+                                            .setText("Möchtest du wirklich '" + urlParserExpandable.getObject().getName() + "' löschen?")
+                                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                            .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
+                                                database.urlParserMap.remove(urlParserExpandable.getObject().getUuid());
+                                                customRecycler1.reload();
+                                                Database.saveAll();
+                                            })
+                                            .show();
+                                })
+                                .setOnLongClickListener((customRecycler1, view1, urlParserExpandable, index) -> showAddOrEditUrlParserDialog(urlParserExpandable.getObject(), settingsContext, customRecycler1))
+                                .setGetActiveObjectList(customRecycler1 -> new CustomRecycler.Expandable.ToExpandableList<UrlParser, UrlParser>()
+                                        .setSort((o1, o2) -> o1.getName().compareTo(o2.getName()))
+                                        .keepExpandedState(customRecycler1)
+                                        .runToExpandableList(new ArrayList<>(database.urlParserMap.values()), null));
+
+                        CustomDialog.Builder(settingsContext)
+                                .setTitle("URLs Auswerter")
                                 .setDimensions(true, true)
                                 .disableScroll()
-                                .addButton("Hinzufügen", customDialog1 -> {}, false)
+                                .addButton("Hinzufügen", customDialog1 -> {
+                                    showAddOrEditUrlParserDialog(null, settingsContext, customRecycler);
+                                }, false)
                                 .alignPreviousButtonsLeft()
                                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
                                 .setView(customRecycler.generateRecyclerView())
+                                .setOnDialogDismiss(customDialog1 -> UrlParser.webViewMap.clear())
                                 .show();
                     });
                 }, new Space.OnClick() {
@@ -250,13 +275,6 @@ public class Settings extends AppCompatActivity {
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_owe), context.getString(R.string.bottomMenu_owe)).setActivity(OweActivity.class).setItemId(Space.SPACE_OWE).setIconId(R.drawable.ic_euro).setFragmentLayoutId(R.layout.main_fragment_owe)
                 .setSetLayout((space, view) -> {
                     ((TextView) view.findViewById(R.id.main_owe_label)).setText(space.getPlural());
-
-//                    RoundCornerProgressBar main_owe_progressBarOwn = view.findViewById(R.id.main_owe_progressBarOwn);
-//                    main_owe_progressBarOwn.setProgress(70);
-//                    main_owe_progressBarOwn.setMax(100);
-//                    RoundCornerProgressBar main_owe_progressBarOthers = view.findViewById(R.id.main_owe_progressBarOthers);
-//                    main_owe_progressBarOthers.setProgress(30);
-//                    main_owe_progressBarOthers.setMax(100);
                     ((TextView) view.findViewById(R.id.main_owe_countAll)).setText(String.valueOf(database.oweMap.values().stream().filter(Owe::isOpen).count()));
                     ((TextView) view.findViewById(R.id.main_owe_countPerson)).setText(String.valueOf(database.personMap.size()));
                 })
@@ -280,23 +298,36 @@ public class Settings extends AppCompatActivity {
         }
     }
 
-    private static void showAddOrEditUrlParserDialog(@Nullable UrlParser oldUrlParser, Context context) {
+    private static void showAddOrEditUrlParserDialog(@Nullable UrlParser oldUrlParser, Context context, CustomRecycler<CustomRecycler.Expandable<UrlParser>> customRecycler) {
         UrlParser editUrlParser = oldUrlParser != null ? oldUrlParser.clone() : new UrlParser("");
 
-        com.finn.androidUtilities.CustomDialog.Builder(context)
+        CustomDialog.Builder(context)
                 .setTitle("URL-Parser " + (oldUrlParser == null ? "Hinzufügen" : "Bearbeiten"))
-                .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .setView(R.layout.dialog_edit_or_add_url_parser)
                 .setSetViewContent((customDialog, view, reload) -> {
                     TextInputLayout dialog_editOrAdd_urlParser_name_layout = view.findViewById(R.id.dialog_editOrAdd_urlParser_name_layout);
-                    TextInputLayout dialog_editOrAdd_urlParser_url_layout =  view.findViewById(R.id.dialog_editOrAdd_urlParser_url_layout);
+                    TextInputLayout dialog_editOrAdd_urlParser_url_layout = view.findViewById(R.id.dialog_editOrAdd_urlParser_url_layout);
                     TextInputLayout dialog_editOrAdd_urlParser_code_layout = view.findViewById(R.id.dialog_editOrAdd_urlParser_code_layout);
+                    Spinner dialog_editOrAdd_urlParser_type = view.findViewById(R.id.dialog_editOrAdd_urlParser_type);
+                    dialog_editOrAdd_urlParser_type.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                            editUrlParser.setType(UrlParser.TYPE.getTypeByIndex(dialog_editOrAdd_urlParser_type.getSelectedItemPosition()));
+                            dialog_editOrAdd_urlParser_code_layout.setHint(editUrlParser.getType().getName() + "-Code");
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> parent) {}
+                    });
 
                     if (Utility.stringExists(editUrlParser.getName())) {
                         dialog_editOrAdd_urlParser_name_layout.getEditText().setText(editUrlParser.getName());
                         dialog_editOrAdd_urlParser_url_layout.getEditText().setText(editUrlParser.getExampleUrl());
                         dialog_editOrAdd_urlParser_code_layout.getEditText().setText(editUrlParser.getCode());
+                        dialog_editOrAdd_urlParser_type.setSelection(editUrlParser.getType().getIndex());
                     }
+
 
                     com.maxMustermannGeheim.linkcollection.Utilities.Helpers.TextInputHelper helper = new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.TextInputHelper((Button) customDialog.getActionButton().getButton(), dialog_editOrAdd_urlParser_name_layout, dialog_editOrAdd_urlParser_url_layout, dialog_editOrAdd_urlParser_code_layout);
                     helper.setValidation(dialog_editOrAdd_urlParser_url_layout, (validator, text) -> {
@@ -311,48 +342,38 @@ public class Settings extends AppCompatActivity {
                     helper.setInputType(dialog_editOrAdd_urlParser_code_layout, com.maxMustermannGeheim.linkcollection.Utilities.Helpers.TextInputHelper.INPUT_TYPE.MULTI_LINE);
                 })
                 .addButton("Testen", customDialog -> {
-                    Interpreter interpreter2 = new Interpreter();
-                    try {
-                        String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_url)).getText().toString();
-                        String java2 = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_code)).getText().toString();
-
-                        interpreter2.set("url", url);
-                        interpreter2.set("customList1", new com.finn.androidUtilities.CustomList<String>());
-                        interpreter2.set("customList2", new com.finn.androidUtilities.CustomList<String>());
-                        interpreter2.set("customList3", new com.finn.androidUtilities.CustomList<String>());
-                        Object resultO = interpreter2.eval(java2);
-                        if (resultO == null) {
-                            Toast.makeText(context, "Kein Ergebnis", Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                        String result = resultO.toString();
-
-                        CustomDialog.Builder(context)
-                                .setTitle("Ergebnis")
-                                .setText(result)
-                                .show();
-
-                    } catch (EvalError evalError) {
-                        Toast.makeText(context, evalError.getErrorText(), Toast.LENGTH_SHORT).show();
-                    }
-
-                }, false)
-                .alignPreviousButtonsLeft()
-                .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     String name = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_name)).getText().toString();
                     String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_url)).getText().toString();
                     @SuppressLint("CutPasteId") String code = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_code)).getText().toString();
 
-                    Optional<UrlParser> parserOptional = database.urlParserMap.values().stream().filter(urlParser1 -> urlParser1.getName().toLowerCase().equals(name.toLowerCase())).findAny();
+                    editUrlParser.setExampleUrl(url).setCode(code).setName(name);
 
-                    if (parserOptional.isPresent()) {
-                        UrlParser urlParser1 = parserOptional.get();
-                        urlParser1.setExampleUrl(url).setCode(code).setName(name);
+                    editUrlParser.parseUrl(context, url, s ->
+                            CustomDialog.Builder(context)
+                                    .setTitle("Ergebnis")
+                                    .setText(Utility.stringExists(s) ? s : "--Kein Ergebnis--")
+//                                    .addButton("Falsch")
+//                                    .addButton("Richtig")
+//                                    .colorLastAddedButton()
+                                    .addButton(CustomDialog.BUTTON_TYPE.BACK_BUTTON)
+                                    .show());
+
+                }, false)
+                .alignPreviousButtonsLeft()
+                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
+                    String name = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_name)).getText().toString();
+                    String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_url)).getText().toString();
+                    @SuppressLint("CutPasteId") String code = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_code)).getText().toString();
+                    UrlParser.TYPE type = UrlParser.TYPE.getTypeByIndex(((Spinner) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_type)).getSelectedItemPosition());
+
+                    if (oldUrlParser != null) {
+                        oldUrlParser.setExampleUrl(url).setCode(code).setType(type).setName(name);
                     } else {
-                        UrlParser urlParser1 = new UrlParser(name).setExampleUrl(url).setCode(code);
+                        UrlParser urlParser1 = new UrlParser(name).setExampleUrl(url).setCode(code).setType(type);
                         database.urlParserMap.put(urlParser1.getUuid(), urlParser1);
                     }
 
+                    customRecycler.reload();
                     Database.saveAll();
                 })
                 .show();
@@ -398,7 +419,7 @@ public class Settings extends AppCompatActivity {
         }
     }
 
-    public static boolean isLoaded(){
+    public static boolean isLoaded() {
         return mySPR_settings != null;
     }
 //  <----- Static -----
@@ -441,6 +462,8 @@ public class Settings extends AppCompatActivity {
                     list_spaceSetting_lock.setImageResource(space.isEncrypted() ? R.drawable.ic_lock_closed : R.drawable.ic_lock_open);
                     list_spaceSetting_lock.setColorFilter(space.isEncrypted() ? getColor(R.color.colorGreen) : Color.RED);
                 })
+                .enableDivider()
+                .disableCustomRipple()
                 .removeLastDivider()
                 .setOnClickListener((customRecycler, itemView, space, index) -> space.showSettingsDialog(this))
                 .setDividerMargin_inDp(16)

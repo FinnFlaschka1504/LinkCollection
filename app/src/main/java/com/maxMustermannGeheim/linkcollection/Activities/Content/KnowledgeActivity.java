@@ -39,6 +39,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -1286,8 +1287,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                         public void afterTextChanged(Editable s) {
                             if (urlValidation.runTextValidation(dialog_sources_url, true)) {
                                 if (dialog_sources_name.getEditText().getText().toString().isEmpty()) {
-                                    String domainName = getDomainFromUrl(s.toString(), true);
-                                    dialog_sources_name.getEditText().setText(domainName);
+                                    getDomainFromUrl(s.toString(), dialog_sources_name.getEditText(), true);
                                 }
                             }
                             validation(nameValidation, urlValidation, dialog_sources_name, dialog_sources_url, false, true, dialog_sources_save);
@@ -1400,18 +1400,32 @@ public class KnowledgeActivity extends AppCompatActivity {
         boolean runTextValidation(TextInputLayout textInputLayout, boolean changeErrorMessage);
     }
 
-    private String getDomainFromUrl(String url, boolean shortened) {
+    private String getDomainFromUrl(String url, EditText editText, boolean shortened) {
+        final String[] result = {""};
+        Runnable onFound = () -> {
+            editText.setText(result[0]);
+        };
+
         Pattern pattern = Pattern.compile("(?<=://)[^/]*");
         Matcher matcher = pattern.matcher(url);
         if (matcher.find()) {
             String substring = matcher.group(0); //.substring(3);
             if (shortened) {
                 String[] split = substring.split("\\.");
-                return split[split.length - 2];
+                result[0] = split[split.length - 2];
             } else
-                return substring;
+                result[0] = substring;
         }
-        return null;
+
+        if (result[0].contains("youtu")) {
+            Utility.ifNotNull(UrlParser.getMatchingParser(url), urlParser -> urlParser.parseUrl(this, url, s -> {
+                result[0] = s;
+                Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
+                onFound.run();
+            }));
+        } else
+            onFound.run();
+        return result[0];
     }
 //  <----- Sources -----
 

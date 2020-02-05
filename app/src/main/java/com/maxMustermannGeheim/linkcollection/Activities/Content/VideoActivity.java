@@ -40,6 +40,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAutoCompleteAdapter;
@@ -272,25 +273,34 @@ public class VideoActivity extends AppCompatActivity {
 
                         String url = text.toString();
                         Video video = new Video("").setUrl(url);
-                        if (url.contains("lookmovie")) {
-                            String last = new CustomList<>(url.split("/")).getLast();
-                            if (last != null) {
-                                CustomList<String> list = new CustomList<>(last.split("-"));
-                                if (list.getLast().matches("\\d+"))
-                                    list.removeLast();
-                                if (list.size() != 1 && list.getFirst().matches("\\d+"))
-                                    list.removeFirst();
-                                video.setName(String.join(" ", list));
-                            }
-                        }
-                        else if (url.contains("moviesjoy")) {
-                            String last = new CustomList<>(url.split("/")).getLast();
-                            if (last != null) {
-                                CustomList<String> list = new CustomList<>(last.split("-"));
-                                list.removeLast();
-                                video.setName(String.join(" ", list));
-                            }
-                        }
+
+                        Utility.ifNotNull(UrlParser.getMatchingParser(url), urlParser -> {
+                            urlParser.parseUrl(this, url, result -> {
+                                if (!Utility.stringExists(result))
+                                    return;
+                                if (addOrEditDialog[0] != null)
+                                    ((EditText) addOrEditDialog[0].findViewById(R.id.dialog_editOrAddVideo_Titel)).setText(result);
+                            });
+                        });
+//                        if (url.contains("lookmovie")) {
+//                            String last = new CustomList<>(url.split("/")).getLast();
+//                            if (last != null) {
+//                                CustomList<String> list = new CustomList<>(last.split("-"));
+//                                if (list.getLast().matches("\\d+"))
+//                                    list.removeLast();
+//                                if (list.size() != 1 && list.getFirst().matches("\\d+"))
+//                                    list.removeFirst();
+//                                video.setName(String.join(" ", list));
+//                            }
+//                        }
+//                        else if (url.contains("moviesjoy")) {
+//                            String last = new CustomList<>(url.split("/")).getLast();
+//                            if (last != null) {
+//                                CustomList<String> list = new CustomList<>(last.split("-"));
+//                                list.removeLast();
+//                                video.setName(String.join(" ", list));
+//                            }
+//                        }
                         addOrEditDialog[0] = showEditOrNewDialog(video);
                     } else
                         addOrEditDialog[0] = showEditOrNewDialog(new Video(text.toString()));

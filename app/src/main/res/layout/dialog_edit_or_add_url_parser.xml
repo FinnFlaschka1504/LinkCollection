@@ -7,19 +7,33 @@
     android:orientation="vertical"
     android:padding="12dp">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/dialog_editOrAdd_urlParser_name_layout"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:errorEnabled="true">
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/dialog_editOrAdd_urlParser_name"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/dialog_editOrAdd_urlParser_name_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Name"
-            android:singleLine="true" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_weight="1"
+            app:errorEnabled="true">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/dialog_editOrAdd_urlParser_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Name"
+                android:singleLine="true" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <Spinner
+            android:id="@+id/dialog_editOrAdd_urlParser_type"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:entries="@array/parserType" />
+    </LinearLayout>
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/dialog_editOrAdd_urlParser_url_layout"
@@ -53,5 +67,13 @@
             tools:text="das\nist\nein\ntest"
             android:inputType="textMultiLine" />
     </com.google.android.material.textfield.TextInputLayout>
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Verfügbare Variablen: url, customList1, customList2, customList3"
+        android:textSize="10sp"
+        android:textStyle="italic" />
 
 </LinearLayout>

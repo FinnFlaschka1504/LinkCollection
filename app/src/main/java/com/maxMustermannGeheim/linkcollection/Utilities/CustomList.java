@@ -260,10 +260,28 @@ public class CustomList<E> extends ArrayList<E> {
         return remove( - 1);
     }
 
+    public List<E> removeLast(int amount) {
+        if (isEmpty())
+            return null;
+        List<E> returnList = new ArrayList<>();
+        for (int i = 0; i < amount; i++)
+            returnList.add(remove(-1));
+        return returnList;
+    }
+
     public E removeFirst() {
         if (isEmpty())
             return null;
         return remove(0);
+    }
+
+    public List<E> removeFirst(int amount) {
+        if (isEmpty())
+            return null;
+        List<E> returnList = new ArrayList<>();
+        for (int i = 0; i < amount; i++)
+            returnList.add(remove(0));
+        return returnList;
     }
     //  <------------------------- remove -------------------------
 

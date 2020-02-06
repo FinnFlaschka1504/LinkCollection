@@ -72,7 +72,7 @@
         android:id="@+id/textView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Verfügbare Variablen: url, customList1, customList2, customList3"
+        android:text="Verfügbare Variablen: url, result, split, last, lastSplit, customList"
         android:textSize="10sp"
         android:textStyle="italic" />
 

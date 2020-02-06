@@ -12,6 +12,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 
 import com.finn.androidUtilities.CustomDialog;
+import com.finn.androidUtilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -126,13 +127,28 @@ public class UrlParser extends ParentClass {
         }
 
         if (type == TYPE.JAVA) {
-            Interpreter interpreter2 = new Interpreter();
+            Interpreter interpreter = new Interpreter();
             try {
-                interpreter2.set("url", url);
-                interpreter2.set("customList1", new com.finn.androidUtilities.CustomList<String>());
-                interpreter2.set("customList2", new com.finn.androidUtilities.CustomList<String>());
-                interpreter2.set("customList3", new com.finn.androidUtilities.CustomList<String>());
-                Object resultO = interpreter2.eval(code);
+                interpreter.set("url", url);
+                CustomList<String> splitList = new CustomList<>(url.split("/"));
+                interpreter.set("split", splitList);
+                CustomList<String> lastSplitList = new CustomList<>();
+                String last = null;
+                if (!splitList.isEmpty()) {
+                    last = splitList.getLast();
+                    lastSplitList.add(last.split("-"));
+                }
+                if (last.contains("?")){
+                    lastSplitList.clear();
+                    lastSplitList.add(last.split("\\?")[0].split("-"));
+                }
+                interpreter.set("last", last);
+                interpreter.set("result", null);
+                interpreter.set("lastSplit", lastSplitList);
+                interpreter.set("customList", new CustomList<String>());
+                Object resultO = interpreter.eval(code);
+                if (resultO instanceof  CustomList)
+                    resultO = String.join(" ", (CustomList<String>) resultO);
                 if (resultO == null) {
                     if (context != null)
                         Toast.makeText(context, "Kein Ergebnis", Toast.LENGTH_SHORT).show();

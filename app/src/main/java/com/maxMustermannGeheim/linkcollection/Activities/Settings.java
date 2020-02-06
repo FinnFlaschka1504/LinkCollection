@@ -190,7 +190,7 @@ public class Settings extends AppCompatActivity {
                         CustomRecycler<CustomRecycler.Expandable<UrlParser>> customRecycler = new CustomRecycler<CustomRecycler.Expandable<UrlParser>>(context)
                                 .setExpandableHelper(customRecycler1 -> customRecycler1.new ExpandableHelper<UrlParser>(R.layout.list_item_url_parser, (customRecycler2, itemView, urlParser, expanded) -> {
                                     ((TextView) itemView.findViewById(R.id.listItem_urlParser_name)).setText(urlParser.getName());
-                                    ((TextView) itemView.findViewById(R.id.listItem_urlParser_codeType)).setText(urlParser.getType().getName());
+                                    ((TextView) itemView.findViewById(R.id.listItem_urlParser_codeType)).setText(urlParser.getType().getName() + ":");
                                     TextView listItem_urlParser_code = itemView.findViewById(R.id.listItem_urlParser_code);
                                     listItem_urlParser_code.setText(urlParser.getCode());
                                     listItem_urlParser_code.setSingleLine(!expanded);
@@ -314,7 +314,7 @@ public class Settings extends AppCompatActivity {
                         @Override
                         public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                             editUrlParser.setType(UrlParser.TYPE.getTypeByIndex(dialog_editOrAdd_urlParser_type.getSelectedItemPosition()));
-                            dialog_editOrAdd_urlParser_code_layout.setHint(editUrlParser.getType().getName() + "-Code:");
+                            dialog_editOrAdd_urlParser_code_layout.setHint(editUrlParser.getType().getName() + "-Code");
                         }
 
                         @Override
@@ -374,11 +374,10 @@ public class Settings extends AppCompatActivity {
                     }
 
                     customRecycler.reload();
-                    Database.saveAll();
-                    Toast.makeText(context, "Url-Parser gespeichert", Toast.LENGTH_SHORT).show();
+
+                    Toast.makeText(context, (Database.saveAll() ? "URL-Parser Gespeichert" : "Nichts zum speichern"), Toast.LENGTH_SHORT).show();
                 })
                 .show();
-
     }
 
 

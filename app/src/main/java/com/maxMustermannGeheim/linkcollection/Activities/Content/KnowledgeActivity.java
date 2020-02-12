@@ -156,7 +156,7 @@ public class KnowledgeActivity extends AppCompatActivity {
             };
             knowledge_search.setOnQueryTextListener(textListener);
 
-            if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_ADD))
+            if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_SHORTCUT))
                 showEditOrNewDialog(null);
 
             if (getIntent().getAction() != null && getIntent().getAction().equals("android.intent.action.SEND")) {

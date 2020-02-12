@@ -72,6 +72,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -257,53 +258,55 @@ public class VideoActivity extends AppCompatActivity {
             };
             videos_search.setOnQueryTextListener(textListener);
 
-            if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_ADD))
+            if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_SHORTCUT))
                 addOrEditDialog[0] = showEditOrNewDialog(null);
 
             if (getIntent().getAction() != null && getIntent().getAction().equals("android.intent.action.SEND")) {
                 CharSequence text;
-                text = getIntent().getClipData().getItemAt(0).getText();
-                if (text == null) {
-                    text = getIntent().getStringExtra(Intent.EXTRA_TEXT);
-                }
+                text = getIntent().getStringExtra(Intent.EXTRA_TEXT);
+//                if (text == null) {
+//                    text = getIntent().getClipData().getItemAt(0).getText();
+//                }
 
                 if (text != null) {
                     isShared = true;
                     if (Utility.isUrl(text.toString())) {
+                        String url = text.toString().trim();
+                        Runnable openEdit = () -> {
+                            Video video = new Video("").setUrl(url);
 
-                        String url = text.toString();
-                        Video video = new Video("").setUrl(url);
-
-                        Utility.ifNotNull(UrlParser.getMatchingParser(url), urlParser -> {
-                            urlParser.parseUrl(this, url, result -> {
-                                if (!Utility.stringExists(result))
-                                    return;
-                                if (addOrEditDialog[0] != null)
-                                    ((EditText) addOrEditDialog[0].findViewById(R.id.dialog_editOrAddVideo_Titel)).setText(result);
-                                else
-                                    video.setName(result);
+                            Utility.ifNotNull(UrlParser.getMatchingParser(url), urlParser -> {
+                                urlParser.parseUrl(this, url, result -> {
+                                    if (!Utility.stringExists(result))
+                                        return;
+                                    if (addOrEditDialog[0] != null)
+                                        ((EditText) addOrEditDialog[0].findViewById(R.id.dialog_editOrAddVideo_Titel)).setText(result);
+                                    else
+                                        video.setName(result);
+                                });
                             });
-                        });
-//                        if (url.contains("lookmovie")) {
-//                            String last = new CustomList<>(url.split("/")).getLast();
-//                            if (last != null) {
-//                                CustomList<String> list = new CustomList<>(last.split("-"));
-//                                if (list.getLast().matches("\\d+"))
-//                                    list.removeLast();
-//                                if (list.size() != 1 && list.getFirst().matches("\\d+"))
-//                                    list.removeFirst();
-//                                video.setName(String.join(" ", list));
-//                            }
-//                        }
-//                        else if (url.contains("moviesjoy")) {
-//                            String last = new CustomList<>(url.split("/")).getLast();
-//                            if (last != null) {
-//                                CustomList<String> list = new CustomList<>(last.split("-"));
-//                                list.removeLast();
-//                                video.setName(String.join(" ", list));
-//                            }
-//                        }
-                        addOrEditDialog[0] = showEditOrNewDialog(video);
+                            addOrEditDialog[0] = showEditOrNewDialog(video);
+                        };
+
+                        Optional<Video> optional = database.videoMap.values().stream().filter(video -> Objects.equals(video.getUrl(), url)).findFirst();
+                        if (!optional.isPresent()) {
+                            openEdit.run();
+                        } else {
+                            Video video = optional.get();
+                            CustomDialog.Builder(this)
+                                    .setTitle("URL Bereits Vorhanden")
+                                    .setText("Die geteilte URL ist bereits bei dem Video '" + video.getName() + "' hinterlegt. Was möschtest du tun?")
+                                    .addButton("Die Video Details öffnen", customDialog -> detailDialog = showDetailDialog(video))
+                                    .addButton("Das Video bearbeiten", customDialog -> {
+                                        isShared = false;
+                                        addOrEditDialog[0] = showEditOrNewDialog(video);
+                                    })
+                                    .addButton("Ein neues Video hinzufügen", customDialog -> openEdit.run())
+                                    .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
+                                    .enableStackButtons()
+                                    .show();
+                        }
+
                     } else
                         addOrEditDialog[0] = showEditOrNewDialog(new Video(text.toString()));
                 }
@@ -783,8 +786,8 @@ public class VideoActivity extends AppCompatActivity {
                         });
                     }
                     dialog_editOrAddVideo_title_label.setOnClickListener(v -> {
-                        String text = dialog_editOrAddVideo_Title_layout.getEditText().getText().toString().toLowerCase();
-                        database.videoMap.values().stream().filter(video1 -> video1.getName().toLowerCase().equals(text)).findAny().ifPresent(video1 -> {
+                        String text = dialog_editOrAddVideo_Title_layout.getEditText().getText().toString();
+                        database.videoMap.values().stream().filter(video1 -> video1.getName().toLowerCase().equals(text.toLowerCase())).findAny().ifPresent(video1 -> {
                             Runnable openEdit = () -> {
                                 customDialog.dismiss();
                                 isShared = false;

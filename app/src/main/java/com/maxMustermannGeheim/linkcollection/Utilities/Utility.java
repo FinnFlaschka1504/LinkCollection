@@ -1497,6 +1497,7 @@ public class Utility implements java.io.Serializable {
     }
     //  <------------------------- Switch Expression -------------------------
 
+
     //  ------------------------- Interfaces ------------------------->
     public interface GenericInterface<T> {
         void runGenericInterface(T t);

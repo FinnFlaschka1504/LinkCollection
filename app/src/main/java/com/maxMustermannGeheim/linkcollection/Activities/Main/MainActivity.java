@@ -10,18 +10,14 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewStub;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.finn.androidUtilities.CustomList;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -29,22 +25,16 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
-import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomInternetHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
-import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-
-import bsh.EvalError;
-import bsh.Interpreter;
 
 // --> \/\/(?!  (-|<))
 public class MainActivity extends AppCompatActivity implements CustomInternetHelper.InternetStateReceiverListener {
@@ -52,7 +42,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     public static final String SHARED_PREFERENCES_SETTINGS = "SHARED_PREFERENCES_SETTINGS";
     public static final String EXTRA_CATEGORY = "EXTRA_CATEGORY";
     public static final String SETTING_LAST_OPEN_SPACE = "SETTING_LAST_OPEN_SPACE";
-    public static final String ACTION_ADD = "ACTION_ADD";
+    public static final String ACTION_SHORTCUT = "ACTION_SHORTCUT";
 
 
     private static int count; // 19
@@ -134,6 +124,12 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 "else {return \"--Leer--\";}";
 
 
+//        Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "DialogTest")
+//                .setShortLabel("Dialog Test")
+//                .setIcon(Icon.createWithResource(this, R.drawable.ic_random))
+//                .setIntent(new Intent(this, DialogActivity.class).setAction(DialogActivity.ACTION_RANDOM))
+//                .build(), null));
+        String BREAKPOINT = null;
 //        try {
 //            interpreter.set("video", new Video());
 //            interpreter.set("url", "https://www1.moviesjoy.net/watch-movie/ad-astra-41379.989936");
@@ -218,6 +214,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //                .show();
     }
 
+
     void loadDatabase(boolean createNew) {
 
         Database.OnInstanceFinishedLoading onInstanceFinishedLoading = database_neu -> {
@@ -254,7 +251,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
             shortcutInfoList.add(new ShortcutInfo.Builder(this, space.getName() + ".Shortcut")
                     .setShortLabel(space.getName() + " Hinzufügen")
                     .setIcon(Icon.createWithResource(this, space.getIconId()))
-                    .setIntent(new Intent(this, space.getActivity()).setAction(ACTION_ADD))
+                    .setIntent(new Intent(this, space.getActivity()).setAction(ACTION_SHORTCUT))
                     .build()
             );
 

@@ -20,7 +20,6 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
-import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.finn.androidUtilities.CustomDialog;
@@ -115,7 +114,7 @@ public class JokeActivity extends AppCompatActivity {
             };
             joke_search.setOnQueryTextListener(textListener);
 
-            if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_ADD))
+            if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_SHORTCUT))
                 addOrEditDialog[0] = showEditOrNewDialog(null);
 
 //            findViewById(R.id.importJokes).setOnClickListener(v -> {

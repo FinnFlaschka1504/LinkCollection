@@ -38,7 +38,6 @@ import com.maltaisn.calcdialog.CalcDialog;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
-import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Person;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
@@ -179,7 +178,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
             owe_search.setOnQueryTextListener(textListener);
             if (fireSearch)
                 owe_search.setQuery(searchQuery, true);
-            if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_ADD))
+            if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_SHORTCUT))
                 addOrEditDialog[0] = showEditOrNewDialog(null);
 
             setSearchHint();

@@ -3,9 +3,12 @@ package com.maxMustermannGeheim.linkcollection.Activities.Content;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ShortcutInfo;
+import android.content.pm.ShortcutManager;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.Typeface;
+import android.graphics.drawable.Icon;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -85,9 +88,8 @@ public class ShowActivity extends AppCompatActivity {
     public static final String WATCH_LATER_SEARCH = "WATCH_LATER_SEARCH";
     public static final String UPCOMING_SEARCH = "UPCOMING_SEARCH";
     public static final String EXTRA_EPISODE = "EXTRA_EPISODE";
-    public static final String EXTRA_NEXT_EPISODE = "EXTRA_NEXT_EPISODE";
+    public static final String ACTION_NEXT_EPISODE = "ACTION_NEXT_EPISODE";
     public static final String EXTRA_NEXT_EPISODE_SELECT = "EXTRA_NEXT_EPISODE_SELECT";
-
 
     enum SORT_TYPE {
         NAME, VIEWS, RATING, LATEST
@@ -106,7 +108,7 @@ public class ShowActivity extends AppCompatActivity {
         }
 
         public boolean hasName() {
-            return  name != null;
+            return name != null;
         }
 
         public String getName() {
@@ -116,7 +118,6 @@ public class ShowActivity extends AppCompatActivity {
 
     private Database database;
     private SharedPreferences mySPR_daten;
-    private Show randomShow;
     private boolean scrolling = true;
     private SORT_TYPE sort_type = SORT_TYPE.LATEST;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.GENRE));
@@ -127,9 +128,6 @@ public class ShowActivity extends AppCompatActivity {
     private String searchQuery = "";
 
     CustomList<Show> allShowList = new CustomList<>();
-
-//    private CustomDialog[] addOrEditDialog = new CustomDialog[]{null};
-//    private CustomDialog detailDialog;
 
     private CustomRecycler customRecycler_ShowList;
     private SearchView shows_search;
@@ -231,10 +229,10 @@ public class ShowActivity extends AppCompatActivity {
             };
             shows_search.setOnQueryTextListener(textListener);
 
-            if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_ADD))
+            if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_SHORTCUT))
                 showEditOrNewDialog(null);
 
-            if (Objects.equals(getIntent().getAction(), EXTRA_NEXT_EPISODE)) {
+            if (Objects.equals(getIntent().getAction(), ACTION_NEXT_EPISODE)) {
                 Show[] show = {null};
 
                 Runnable onDecided = () -> {
@@ -262,7 +260,7 @@ public class ShowActivity extends AppCompatActivity {
                         }
 
                         CustomRecycler<Show.Season> seasonRecycler = showSeasonDialog(show[0]);
-                        int seasonNumber = nextEpisode.getSeasonNumber() ;
+                        int seasonNumber = nextEpisode.getSeasonNumber();
                         showEpisodeDialog(show[0].getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show[0]).get(seasonNumber), seasonRecycler).goTo((search, episode2) -> episode2.getUuid().equals(nextEpisode.getUuid()), "");
                     });
                 };
@@ -294,6 +292,13 @@ public class ShowActivity extends AppCompatActivity {
 
                     selectDialog
                             .setTitle("Serie Auswählen")
+                            .addButton("Shortcut Hinzufügen", customDialog ->
+                                    Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "NextEpisodeShortcut")
+                                            .setShortLabel("Nächste Folge")
+                                            .setIcon(Icon.createWithResource(this, R.drawable.ic_play_next))
+                                            .setIntent(new Intent(this, ShowActivity.class).setAction(ShowActivity.ACTION_NEXT_EPISODE))
+                                            .build(), null)))
+                            .alignPreviousButtonsLeft()
                             .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.BACK)
                             .setView(customRecycler.generateRecyclerView())
                             .disableScroll()
@@ -499,8 +504,7 @@ public class ShowActivity extends AppCompatActivity {
                     if (rating > 0) {
                         itemView.findViewById(R.id.listItem_show_rating_layout).setVisibility(View.VISIBLE);
                         ((TextView) itemView.findViewById(R.id.listItem_show_rating)).setText(new DecimalFormat("#.##").format(rating));
-                    }
-                    else
+                    } else
                         itemView.findViewById(R.id.listItem_show_rating_layout).setVisibility(View.GONE);
 
                     ((TextView) itemView.findViewById(R.id.listItem_show_Genre)).setText(
@@ -590,7 +594,8 @@ public class ShowActivity extends AppCompatActivity {
                                                     })
                                                     .setOnClickListener((customRecycler2, itemView, episode1, index1) -> {
                                                         Toast.makeText(this, episode1.getName(), Toast.LENGTH_SHORT).show();
-                                                        findEpisode(episode1, () -> {});
+                                                        findEpisode(episode1, () -> {
+                                                        });
                                                     })
                                                     .setItemLayout(R.layout.list_item_episode);
                                         })
@@ -624,6 +629,7 @@ public class ShowActivity extends AppCompatActivity {
     }
     //  <------------------------- ShowInfo -------------------------
 
+
     //  --------------- Static from Main --------------->
     public static void showLaterMenu(AppCompatActivity activity, View view) {
         if (!Database.isReady())
@@ -653,6 +659,7 @@ public class ShowActivity extends AppCompatActivity {
                     List<Show.Episode> alreadyAiredList = Utility.concatenateCollections(database.showMap.values(), Show::getAlreadyAiredList);
                     return new Expandable.ToGroupExpandableList<Show.Episode, Show.Episode, String>()
                             .keepExpandedState(customRecycler)
+                            .enableUseExpandMatching(customRecycler)
                             .runToGroupExpandableList(alreadyAiredList, Show.Episode::getShowId, (s, m) -> String.format(Locale.getDefault(), "%s (%d)",
                                     database.showMap.get(s).getName(), m.size()), episode -> episode);
                 })
@@ -751,10 +758,11 @@ public class ShowActivity extends AppCompatActivity {
                 .show();
     }
 
-    public static void showNextEpisode(AppCompatActivity activity, View view, boolean longClick){
-        activity.startActivityForResult(new Intent(activity, ShowActivity.class).setAction(EXTRA_NEXT_EPISODE).putExtra(EXTRA_NEXT_EPISODE_SELECT, longClick), MainActivity.START_SHOW_NEXT_EPISODE);
+    public static void showNextEpisode(AppCompatActivity activity, View view, boolean longClick) {
+        activity.startActivityForResult(new Intent(activity, ShowActivity.class).setAction(ACTION_NEXT_EPISODE).putExtra(EXTRA_NEXT_EPISODE_SELECT, longClick), MainActivity.START_SHOW_NEXT_EPISODE);
     }
     //  <--------------- Static from Main ---------------
+
 
     //  --------------- NextEpisode --------------->
     private void getNextEpisode(Show.Episode previousEpisode, OnNextEpisode onNextEpisode) {
@@ -782,6 +790,7 @@ public class ShowActivity extends AppCompatActivity {
         void runOnNextEpisode(Show.Episode episode);
     }
     //  <--------------- NextEpisode ---------------
+
 
     private void reLoadRecycler() {
         customRecycler_ShowList.reload();
@@ -1025,6 +1034,7 @@ public class ShowActivity extends AppCompatActivity {
         return result[0];
     }
 
+
     //  --------------- Season & Episode --------------->
     private CustomRecycler<Show.Season> showSeasonDialog(Show show) {
         CustomDialog customDialog = CustomDialog.Builder(this);
@@ -1174,7 +1184,7 @@ public class ShowActivity extends AppCompatActivity {
                     if (episode.isWatched())
                         return;
                     selectedEpisode[0] = episode;
-                    if (!episode.hasRating()){
+                    if (!episode.hasRating()) {
                         addView.run();
                         customRecycler.reload();
                     } else
@@ -1334,7 +1344,7 @@ public class ShowActivity extends AppCompatActivity {
     }
 
     public void showCalenderDialog(Show show) {
-         com.finn.androidUtilities.CustomDialog.Builder(this)
+        com.finn.androidUtilities.CustomDialog.Builder(this)
                 .setTitle(show.getName() + " - Kalender")
                 .setView(R.layout.dialog_edit_views)
                 .setSetViewContent((customDialog, view, reload) -> {
@@ -1355,6 +1365,7 @@ public class ShowActivity extends AppCompatActivity {
                 .show();
 
     }
+
     public void showEpisodeCalenderDialog(Show.Episode episode, CustomDialog detailDialog) {
         int viewCount = episode.getDateList().size();
         com.finn.androidUtilities.CustomDialog.Builder(this)
@@ -1411,6 +1422,7 @@ public class ShowActivity extends AppCompatActivity {
 
     }
     //  <--------------- Season & Episode ---------------
+
 
     //  --------------- TMDb Api --------------->
     private void apiSearchRequest(String queue, CustomDialog customDialog, Show show) {
@@ -1640,6 +1652,7 @@ public class ShowActivity extends AppCompatActivity {
     }
     //  <--------------- TMDb Api ---------------
 
+
     private void removeFocusFromSearch() {
         shows_search.clearFocus();
     }
@@ -1740,7 +1753,6 @@ public class ShowActivity extends AppCompatActivity {
         shows_search.setQueryHint(join.isEmpty() ? "Kein Filter ausgewählt!" : join + " ('&' als 'und'; '|' als 'oder')");
         Utility.applyToAllViews(shows_search, View.class, view -> view.setEnabled(!join.isEmpty()));
     }
-
 
     private void openUrl(String url, boolean select) {
         if (url == null || url.equals("")) {

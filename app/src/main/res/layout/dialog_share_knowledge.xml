@@ -56,8 +56,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:inputType="textCapSentences"
-                tools:text="Inhalt.." />
+                android:inputType="textMultiLine|textCapSentences"
+                tools:text="Inhalt..\nmehr Inhalt" />
 
             <CheckBox
                 android:id="@+id/dialog_shareKnowledge_content_check"

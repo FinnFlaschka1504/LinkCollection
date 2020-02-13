@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Zufällig-Shortcuts"
+            android:textColor="@color/colorPrimaryDark"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="100dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/dialog_settingsShowShortcuts_randomVideo"
+                style="@style/ImageButtonStyle"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="8dp"
+                android:layout_weight="1"
+                app:srcCompat="@drawable/ic_videos" />
+
+            <ImageView
+                android:id="@+id/dialog_settingsShowShortcuts_randomKnowledge"
+                style="@style/ImageButtonStyle"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="8dp"
+                android:layout_weight="1"
+                app:srcCompat="@drawable/ic_knowledge" />
+
+            <ImageView
+                android:id="@+id/dialog_settingsShowShortcuts_randomJoke"
+                style="@style/ImageButtonStyle"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="8dp"
+                android:layout_weight="1"
+                app:srcCompat="@drawable/ic_jokes" />
+
+            <ImageView
+                android:id="@+id/dialog_settingsShowShortcuts_random"
+                style="@style/ImageButtonStyle"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="8dp"
+                android:layout_weight="1"
+                android:tint="@color/colorDrawable"
+                app:srcCompat="@drawable/ic_random" />
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:background="?android:attr/listDivider" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Serien"
+            android:textColor="@color/colorPrimaryDark"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="100dp"
+            android:orientation="horizontal">
+
+            <com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:equalMode="matchHeight">
+
+                <ImageView
+                    android:id="@+id/dialog_settingsShowShortcuts_nextEpisode"
+                    style="@style/ImageButtonStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_margin="8dp"
+                    app:srcCompat="@drawable/ic_play_next" />
+            </com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout>
+
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:background="?android:attr/listDivider"
+        android:visibility="gone" />
+
+
+</LinearLayout>

@@ -1,7 +1,11 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Content;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ShortcutInfo;
+import android.content.pm.ShortcutManager;
+import android.graphics.drawable.Icon;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -41,7 +45,6 @@ import java.util.stream.Collectors;
 
 public class JokeActivity extends AppCompatActivity {
 
-
     enum SORT_TYPE{
         NAME, RATING, LATEST
     }
@@ -80,17 +83,27 @@ public class JokeActivity extends AppCompatActivity {
     private ArrayList<Joke> allJokeList;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.CATEGORY, FILTER_TYPE.PUNCHLINE));
     private CustomDialog detailDialog;
+    private boolean isDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        if (!(isDialog = Objects.equals(getIntent().getAction(), MainActivity.ACTION_SHOW_AS_DIALOG)))
+            setTheme(R.style.AppTheme);
+
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_joke);
+
+        database = Database.getInstance();
+        if (database == null)
+            setContentView(R.layout.loading_screen);
+        else
+            setContentView(R.layout.activity_joke);
 
         Settings.startSettings_ifNeeded(this);
         mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
         loadDatabase();
     }
+
 
     private void loadDatabase() {
         @SuppressLint("RestrictedApi") Runnable whenLoaded = () -> {
@@ -155,6 +168,14 @@ public class JokeActivity extends AppCompatActivity {
                 }
             }
             setSearchHint();
+
+            if (isDialog) {
+                findViewById(R.id.recycler).setVisibility(View.GONE);
+                joke_search.setVisibility(View.GONE);
+                findViewById(R.id.divider).setVisibility(View.GONE);
+                if (getIntent().getBooleanExtra(MainActivity.EXTRA_SHOW_RANDOM, false))
+                    showRandomDialog();
+            }
         };
 
         if (database == null || !Database.isReady()) {
@@ -440,6 +461,10 @@ public class JokeActivity extends AppCompatActivity {
 
                     ((Button) customDialog.getButton(ratingButtonId).getButton()).setText(randomJoke[0].getRating() != -1f && randomJoke[0].getRating() != -0f ? randomJoke[0].getRating() + " ☆" : "☆");
 
+                })
+                .addOnDialogDismiss(customDialog -> {
+                    if (isDialog)
+                        finish();
                 })
                 .show();
 

@@ -2,8 +2,12 @@ package com.maxMustermannGeheim.linkcollection.Activities;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ShortcutInfo;
+import android.content.pm.ShortcutManager;
 import android.graphics.Color;
+import android.graphics.drawable.Icon;
 import android.os.Bundle;
 import android.util.Pair;
 import android.view.View;
@@ -29,6 +33,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivi
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Main.DialogActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
@@ -100,6 +105,7 @@ public class Settings extends AppCompatActivity {
     Button settings_others_spaceSelector;
     TextView settings_others_encryptedSpaces;
     Button settings_others_encryptedSelector;
+    Button settings_others_showShortcuts;
 
     Database.DatabaseReloadListener databaseReloadListener;
     CustomRecycler spaceRecycler_customRecycler;
@@ -318,7 +324,8 @@ public class Settings extends AppCompatActivity {
                         }
 
                         @Override
-                        public void onNothingSelected(AdapterView<?> parent) {}
+                        public void onNothingSelected(AdapterView<?> parent) {
+                        }
                     });
 
                     if (Utility.stringExists(editUrlParser.getName())) {
@@ -450,6 +457,7 @@ public class Settings extends AppCompatActivity {
         settings_others_spaceSelector = findViewById(R.id.settings_others_spaceSelector);
         settings_others_encryptedSpaces = findViewById(R.id.settings_others_encryptedSpaces);
         settings_others_encryptedSelector = findViewById(R.id.settings_others_encryptedSelector);
+        settings_others_showShortcuts = findViewById(R.id.settings_others_showShortcuts);
     }
 
     private void setSettings() {
@@ -593,6 +601,52 @@ public class Settings extends AppCompatActivity {
                     .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.BACK_BUTTON)
                     .show();
         });
+
+        settings_others_showShortcuts.setOnClickListener(v ->
+                CustomDialog.Builder(this)
+                        .setTitle("Shortcuts-Hinzufügen")
+                        .enableTitleBackButton()
+                        .setView(R.layout.dialog_settings_show_shortcuts)
+                        .setSetViewContent((customDialog, view, reload) -> {
+                            view.findViewById(R.id.dialog_settingsShowShortcuts_randomVideo).setOnClickListener(v1 -> {
+                                Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "RandomVideoShortcut")
+                                        .setShortLabel("Zufälliges Video")
+                                        .setIcon(Icon.createWithResource(this, R.drawable.ic_videos))
+                                        .setIntent(new Intent(this, VideoActivity.class).setAction(MainActivity.ACTION_SHOW_AS_DIALOG).putExtra(MainActivity.EXTRA_SHOW_RANDOM, true))
+                                        .build(), null));
+                            });
+                            view.findViewById(R.id.dialog_settingsShowShortcuts_randomKnowledge).setOnClickListener(v1 -> {
+                                Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "RandomKnowledgeShortcut")
+                                        .setShortLabel("Zufälliges Wissen")
+                                        .setIcon(Icon.createWithResource(this, R.drawable.ic_knowledge))
+                                        .setIntent(new Intent(this, KnowledgeActivity.class).setAction(MainActivity.ACTION_SHOW_AS_DIALOG).putExtra(MainActivity.EXTRA_SHOW_RANDOM, true))
+                                        .build(), null));
+                            });
+                            view.findViewById(R.id.dialog_settingsShowShortcuts_randomJoke).setOnClickListener(v1 -> {
+                                Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "RandomJokeShortcut")
+                                        .setShortLabel("Zufälliger Witz")
+                                        .setIcon(Icon.createWithResource(this, R.drawable.ic_jokes))
+                                        .setIntent(new Intent(this, JokeActivity.class).setAction(MainActivity.ACTION_SHOW_AS_DIALOG).putExtra(MainActivity.EXTRA_SHOW_RANDOM, true))
+                                        .build(), null));
+                            });
+                            view.findViewById(R.id.dialog_settingsShowShortcuts_random).setOnClickListener(v1 -> {
+                                Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "RandomShortcut")
+                                        .setShortLabel("Zufällig Auswahl")
+                                        .setIcon(Icon.createWithResource(this, R.drawable.ic_random_grey))
+                                        .setIntent(new Intent(this, DialogActivity.class).setAction(DialogActivity.ACTION_RANDOM))
+                                        .build(), null));
+                            });
+
+                            view.findViewById(R.id.dialog_settingsShowShortcuts_nextEpisode).setOnClickListener(v1 -> {
+                                Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "NextEpisodeShortcut")
+                                        .setShortLabel("Nächste Folge")
+                                        .setIcon(Icon.createWithResource(this, R.drawable.ic_play_next))
+                                        .setIntent(new Intent(this, ShowActivity.class).setAction(ShowActivity.ACTION_NEXT_EPISODE))
+                                        .build(), null));
+                            });
+                        })
+                        .show()
+        );
     }
 
     public static class Space extends ParentClass {

@@ -292,12 +292,6 @@ public class ShowActivity extends AppCompatActivity {
 
                     selectDialog
                             .setTitle("Serie Auswählen")
-                            .addButton("Shortcut Hinzufügen", customDialog ->
-                                    Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "NextEpisodeShortcut")
-                                            .setShortLabel("Nächste Folge")
-                                            .setIcon(Icon.createWithResource(this, R.drawable.ic_play_next))
-                                            .setIntent(new Intent(this, ShowActivity.class).setAction(ShowActivity.ACTION_NEXT_EPISODE))
-                                            .build(), null)))
                             .alignPreviousButtonsLeft()
                             .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.BACK)
                             .setView(customRecycler.generateRecyclerView())

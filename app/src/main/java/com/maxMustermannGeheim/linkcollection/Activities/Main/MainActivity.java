@@ -43,6 +43,8 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     public static final String EXTRA_CATEGORY = "EXTRA_CATEGORY";
     public static final String SETTING_LAST_OPEN_SPACE = "SETTING_LAST_OPEN_SPACE";
     public static final String ACTION_SHORTCUT = "ACTION_SHORTCUT";
+    public static final String ACTION_SHOW_AS_DIALOG = "ACTION_SHOW_AS_DIALOG";
+    public static final String EXTRA_SHOW_RANDOM = "EXTRA_SHOW_RANDOM";
 
 
     private static int count; // 19

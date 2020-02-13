@@ -319,7 +319,6 @@ public class Helpers {
                 int[][] states = {{android.R.attr.state_enabled}};
                 int[] colors = {color};
                 textInputLayout.setErrorTextColor(new ColorStateList(states, colors));
-                textInputLayout.getErrorCurrentTextColors();
                 if (textInputLayout.hasFocus()) {
                     Pair<Integer, Integer> selection = Pair.create(textInputLayout.getEditText().getSelectionStart(), textInputLayout.getEditText().getSelectionEnd());
                     textInputLayout.setVisibility(View.GONE);

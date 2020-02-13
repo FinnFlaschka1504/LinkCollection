@@ -101,9 +101,14 @@ public class KnowledgeActivity extends AppCompatActivity {
     private ArrayList<Knowledge> allKnowledgeList;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.CATEGORY, FILTER_TYPE.CONTENT));
     private CustomDialog detailDialog;
+    private boolean isDialog;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        if (!(isDialog = Objects.equals(getIntent().getAction(), MainActivity.ACTION_SHOW_AS_DIALOG)))
+            setTheme(R.style.AppTheme);
+
         super.onCreate(savedInstanceState);
 
         database = Database.getInstance();
@@ -233,6 +238,15 @@ public class KnowledgeActivity extends AppCompatActivity {
                 }
             }
             setSearchHint();
+
+            if (isDialog) {
+                findViewById(R.id.recycler).setVisibility(View.GONE);
+                knowledge_search.setVisibility(View.GONE);
+                findViewById(R.id.divider).setVisibility(View.GONE);
+                if (getIntent().getBooleanExtra(MainActivity.EXTRA_SHOW_RANDOM, false))
+                    showRandomDialog();
+            }
+
         };
 
         if (database == null || !Database.isReady()) {
@@ -1109,6 +1123,10 @@ public class KnowledgeActivity extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_categories)).setText(
                             randomKnowledge[0].getCategoryIdList().stream().map(uuid -> database.knowledgeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", ")));
 
+                })
+                .addOnDialogDismiss(customDialog -> {
+                    if (isDialog)
+                        finish();
                 })
                 .show();
 

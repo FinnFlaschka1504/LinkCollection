@@ -34,7 +34,7 @@
     <style name="DialogActivityTheme" parent="Theme.AppCompat.DayNight.Dialog.MinWidth">
         <item name="windowNoTitle">true</item>
         <item name="colorAccent">@color/colorAccent</item>
-        <item name="android:background">@color/colorBackground</item>
+<!--        <item name="android:background">@color/colorBackground</item>-->
+        <item name="android:excludeFromRecents">true</item>
     </style>
-
 </resources>

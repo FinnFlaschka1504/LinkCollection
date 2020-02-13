@@ -43,7 +43,7 @@
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginHorizontal="16dp"
-            android:background="?android:attr/listDivider" />
+            android:background="@color/colorDivider" />
 
         <SearchView
             android:id="@+id/dialogAddPassenger_search"
@@ -59,7 +59,7 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="?android:attr/listDivider" />
+            android:background="@color/colorDivider" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/dialogAddPassenger_selectPassengers"

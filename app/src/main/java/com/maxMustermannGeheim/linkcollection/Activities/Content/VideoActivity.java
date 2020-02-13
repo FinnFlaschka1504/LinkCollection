@@ -104,7 +104,7 @@ public class VideoActivity extends AppCompatActivity {
         }
 
         public boolean hasName() {
-            return  name != null;
+            return name != null;
         }
 
         public String getName() {
@@ -128,6 +128,7 @@ public class VideoActivity extends AppCompatActivity {
     private boolean isBrowserActive;
     private WebView webView;
     private boolean isShared;
+    private boolean isDialog;
 
     List<Video> allVideoList = new ArrayList<>();
     CustomList<Video> filterdVideoList = new CustomList<>();
@@ -142,6 +143,9 @@ public class VideoActivity extends AppCompatActivity {
     @SuppressLint("RestrictedApi")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        if (!(isDialog = Objects.equals(getIntent().getAction(), MainActivity.ACTION_SHOW_AS_DIALOG)))
+            setTheme(R.style.AppTheme);
+
         super.onCreate(savedInstanceState);
 
         Settings.startSettings_ifNeeded(this);
@@ -238,11 +242,9 @@ public class VideoActivity extends AppCompatActivity {
                     filterdVideoList = new CustomList<>(allVideoList);
                     if (mode.equals(MODE.SEEN)) {
                         filterdVideoList = allVideoList.stream().filter(video -> !video.getDateList().isEmpty()).collect(Collectors.toCollection(CustomList::new));
-                    }
-                    else if (mode.equals(MODE.LATER)) {
+                    } else if (mode.equals(MODE.LATER)) {
                         filterdVideoList = Utility.getWatchLaterList();
-                    }
-                    else if (mode.equals(MODE.UPCOMING)) {
+                    } else if (mode.equals(MODE.UPCOMING)) {
                         filterdVideoList = allVideoList.stream().filter(Video::isUpcoming).collect(Collectors.toCollection(CustomList::new));
                     }
                     if (!query.trim().equals("")) {
@@ -344,6 +346,14 @@ public class VideoActivity extends AppCompatActivity {
                 }
             }
             setSearchHint();
+
+            if (isDialog) {
+                findViewById(R.id.recycler).setVisibility(View.GONE);
+                videos_search.setVisibility(View.GONE);
+                findViewById(R.id.divider).setVisibility(View.GONE);
+                if (getIntent().getBooleanExtra(MainActivity.EXTRA_SHOW_RANDOM, false))
+                    showRandomDialog();
+            }
 
         };
 
@@ -482,12 +492,13 @@ public class VideoActivity extends AppCompatActivity {
     private CustomDialog showDetailDialog(@NonNull Video video) {
         setResult(RESULT_OK);
         final int[] views = {video.getDateList().size()};
+        int openWithButtonId = View.generateViewId();
         CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle("Detail Ansicht")
                 .setView(R.layout.dialog_detail_video)
                 .addButton("Bearbeiten", customDialog ->
                         addOrEditDialog[0] = showEditOrNewDialog(video), false)
-                .addButton("Öffnen mit...", customDialog -> openUrl(video.getUrl(), true), false)
+                .addButton("Öffnen mit...", customDialog -> openUrl(video.getUrl(), true), openWithButtonId, false)
                 .setSetViewContent((customDialog, view, reload) -> {
                     if (reload && views[0] != video.getDateList().size()) {
                         if (views[0] < video.getDateList().size() && Utility.getWatchLaterList().contains(video)) {
@@ -519,7 +530,7 @@ public class VideoActivity extends AppCompatActivity {
                                 String.format(Locale.getDefault(), "   (%s – %dd)",
                                         new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(lastWatched),
                                         Days.daysBetween(new LocalDate(lastWatched), new LocalDate(new Date())).getDays())
-                        , Helpers.SpannableStringHelper.SPAN_TYPE.ITALIC).get();
+                                , Helpers.SpannableStringHelper.SPAN_TYPE.ITALIC).get();
                     }
                     ((TextView) view.findViewById(R.id.dialog_video_views)).setText(viewsText);
                     ((TextView) view.findViewById(R.id.dialog_video_release)).setText(video.getRelease() != null ? new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(video.getRelease()) : "");
@@ -597,6 +608,7 @@ public class VideoActivity extends AppCompatActivity {
                     else
                         dialog_video_internet.setVisibility(View.GONE);
 
+                    customDialog.getButton(openWithButtonId).setEnabled(Utility.stringExists(video.getUrl()));
                 })
                 .setOnDialogDismiss(customDialog -> {
                     detailDialog = null;
@@ -628,7 +640,6 @@ public class VideoActivity extends AppCompatActivity {
                 .show();
     }
 
-
     private CustomDialog showEditOrNewDialog(Video video) {
         if (!Utility.isOnline(this))
             return null;
@@ -647,22 +658,8 @@ public class VideoActivity extends AppCompatActivity {
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     String titel = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_Titel)).getText().toString().trim();
-//                    if (titel.isEmpty()) {
-//                        Toast.makeText(this, "Einen Titel eingeben", Toast.LENGTH_SHORT).show();
-//                        return;
-//                    }
                     String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_url)).getText().toString().trim();
-//                    if (url.equals("") && !checked){
-//                        CustomDialog.Builder(this)
-//                        .setTitle("Ohne URL speichern?")
-//                        .setName("Möchtest du wirklich ohne URL speichern?")
-//                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
-//                        .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 ->
-//                                saveVideo(customDialog, video, titel, url, false, editVideo))
-//                        .show();
-//                    }
-//                    else
-                    if (editVideo[0].isWatchLater() && !editVideo[0].hasRating() && !Utility.boolOr(((RatingBar) customDialog.findViewById(R.id.customRating_ratingBar)).getRating(),-1f, 0f))
+                    if (editVideo[0].isWatchLater() && !editVideo[0].hasRating() && !Utility.boolOr(((RatingBar) customDialog.findViewById(R.id.customRating_ratingBar)).getRating(), -1f, 0f))
                         com.finn.androidUtilities.CustomDialog.Builder(this)
                                 .setTitle("Ansicht Hinzufügen?")
                                 .setText("Soll eine neue Ansicht zu dem Video hinzugefügt werden?")
@@ -780,8 +777,7 @@ public class VideoActivity extends AppCompatActivity {
                             if (database.videoMap.values().stream().anyMatch(video1 -> video1.getName().toLowerCase().equals(text.toLowerCase()))) {
                                 dialog_editOrAddVideo_title_label.setClickable(true);
                                 validator.setInvalid("Schon vorhanden! (Klicke auf das Label)");
-                            }
-                            else
+                            } else
                                 dialog_editOrAddVideo_title_label.setClickable(false);
                         });
                     }
@@ -1027,7 +1023,6 @@ public class VideoActivity extends AppCompatActivity {
 
     }
 
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.task_bar_video, menu);
@@ -1210,12 +1205,34 @@ public class VideoActivity extends AppCompatActivity {
         }
         randomVideo = randomList.removeRandom();
 
-        com.finn.androidUtilities.CustomDialog.Builder(this)
+        int openButtonId = View.generateViewId();
+        CustomDialog randomDialog = CustomDialog.Builder(this)
                 .setTitle("Zufällig")
                 .setView(R.layout.dialog_detail_video)
-                .addButton(R.drawable.ic_info, customDialog -> detailDialog = showDetailDialog(randomVideo).setPayload(customDialog), false)
+                .addButton(R.drawable.ic_info, customDialog -> detailDialog = showDetailDialog(randomVideo).setPayload(customDialog), false);
+
+        if (isDialog) {
+            int switchModeButtonId = View.generateViewId();
+            randomDialog
+                    .addButton(R.drawable.ic_time, customDialog -> {
+                        randomList.clear();
+                        randomList.addAll(new CustomList<>(filterdVideoList).filter(Video::isWatchLater, false));
+                        if (randomList.isEmpty()) {
+                            Toast.makeText(this, "Keine " + plural, Toast.LENGTH_SHORT).show();
+                            customDialog.dismiss();
+                            return;
+                        } else {
+                            Toast.makeText(this, "Zu Später-Ansehen gewechselt", Toast.LENGTH_SHORT).show();
+                            customDialog.getButton(switchModeButtonId).setVisibility(View.GONE);
+                        }
+                        randomVideo = randomList.removeRandom();
+                        customDialog.reloadView();
+                    }, switchModeButtonId, false);
+        }
+
+        randomDialog
                 .alignPreviousButtonsLeft()
-                .addButton("Öffnen", customDialog -> openUrl(randomVideo.getUrl(), false), false)
+                .addButton("Öffnen", customDialog -> openUrl(randomVideo.getUrl(), false), openButtonId, false)
                 .addButton("Nochmal", customDialog -> {
                     if (randomList.isEmpty()) {
                         Toast.makeText(this, "Kein neuer " + singular + " vorhanden", Toast.LENGTH_SHORT).show();
@@ -1247,7 +1264,7 @@ public class VideoActivity extends AppCompatActivity {
 
                         if (!reload) {
                             dialog_video_poster.setOnClickListener(v -> {
-                                com.finn.androidUtilities.CustomDialog posterDialog = com.finn.androidUtilities.CustomDialog.Builder(this)
+                                CustomDialog posterDialog = CustomDialog.Builder(this)
                                         .setView(R.layout.dialog_poster)
                                         .setSetViewContent((customDialog1, view1, reload1) -> {
                                             ImageView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
@@ -1271,6 +1288,12 @@ public class VideoActivity extends AppCompatActivity {
                     } else
                         customDialog.findViewById(R.id.dialog_video_poster).setVisibility(View.GONE);
 
+                    customDialog.getButton(openButtonId).setEnabled(Utility.stringExists(randomVideo.getUrl()));
+
+                })
+                .addOnDialogDismiss(customDialog -> {
+                    if (isDialog)
+                        finish();
                 })
                 .show();
 

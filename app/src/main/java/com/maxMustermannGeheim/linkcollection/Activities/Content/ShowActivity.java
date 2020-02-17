@@ -3,12 +3,9 @@ package com.maxMustermannGeheim.linkcollection.Activities.Content;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.ShortcutInfo;
-import android.content.pm.ShortcutManager;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.Typeface;
-import android.graphics.drawable.Icon;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -487,14 +484,23 @@ public class ShowActivity extends AppCompatActivity {
                 })
                 .setSetItemContent((customRecycler, itemView, show) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_show_Titel)).setText(show.getName());
-                    int views = getViews(getEpisodeList(show));
+                    List<Show.Episode> episodeList = getEpisodeList(show);
+                    int watchedEpisodes = (int) episodeList.stream().filter(episode -> episode.getSeasonNumber() != 0).count();
+                    int views = getViews(episodeList);
                     if (views > 0) {
                         itemView.findViewById(R.id.listItem_show_Views_layout).setVisibility(View.VISIBLE);
-                        ((TextView) itemView.findViewById(R.id.listItem_show_Views)).setText(String.valueOf(views));
+                        Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
+                        if (show.getAllEpisodesCount() <= watchedEpisodes)
+                            helper.appendColor(String.valueOf(views), getColor(R.color.colorGreen));
+                        else
+                            helper.append(String.valueOf(views));
+                        ((TextView) itemView.findViewById(R.id.listItem_show_views)).setText(
+//                                helper.append(String.valueOf(views)).appendColor(show.getAllEpisodesCount() <= watchedEpisodes ? "  ✓" : "", getColor(R.color.colorGreen))
+                                        helper.get());
                     } else
                         itemView.findViewById(R.id.listItem_show_Views_layout).setVisibility(View.GONE);
 
-                    double rating = getRating(getEpisodeList(show));
+                    double rating = getRating(episodeList);
                     if (rating > 0) {
                         itemView.findViewById(R.id.listItem_show_rating_layout).setVisibility(View.VISIBLE);
                         ((TextView) itemView.findViewById(R.id.listItem_show_rating)).setText(new DecimalFormat("#.##").format(rating));
@@ -1132,7 +1138,8 @@ public class ShowActivity extends AppCompatActivity {
 
         CustomRecycler<Show.Episode> episodeRecycler = new CustomRecycler<Show.Episode>(this)
                 .setGetActiveObjectList(customRecycler -> {
-                    episodeMap.putAll(season.getEpisodeMap());
+//                    episodeMap.putAll(season.getEpisodeMap());
+                    applyEpisodeMap(season.getEpisodeMap(), episodeMap);
                     ArrayList<Show.Episode> episodeList = new ArrayList<>(episodeMap.values());
                     episodeList.sort((o1, o2) -> Integer.compare(o1.getEpisodeNumber(), o2.getEpisodeNumber()));
                     return episodeList;
@@ -1215,6 +1222,18 @@ public class ShowActivity extends AppCompatActivity {
                 })
                 .show();
         return episodeRecycler;
+    }
+
+    private void applyEpisodeMap(Map<String, Show.Episode> oldMap, Map<String, Show.Episode> newMap) {
+        for (Show.Episode oldEpisode : oldMap.values()) {
+            Utility.ifNotNull(newMap.get(oldEpisode.getUuid()), newEpisode -> {
+                newEpisode.setDateList(oldEpisode.getDateList());
+                newEpisode.setWatched(oldEpisode.isWatched());
+                newEpisode.setRating(oldEpisode.getRating());
+                oldEpisode.setAirDate(newEpisode.getAirDate());
+                oldEpisode.setName(newEpisode.getName());
+            });
+        }
     }
 
 
@@ -1602,10 +1621,7 @@ public class ShowActivity extends AppCompatActivity {
         String requestUrl = "https://api.themoviedb.org/3/tv/" + show.getTmdbId() + "/season/" + seasonNumber + "?api_key=09e015a2106437cbc33bf79eb512b32d&language=de";
         RequestQueue requestQueue = Volley.newRequestQueue(this);
 
-//        PopupWindow loadingWindow = Utility.showLoadingWindow(this, view);
-
         JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {
-//            loadingWindow.dismiss();
             try {
                 JSONArray episodes_json = response.getJSONArray("episodes");
                 Map<String, Show.Episode> episodeMap = new HashMap<>();
@@ -1620,7 +1636,6 @@ public class ShowActivity extends AppCompatActivity {
             } catch (JSONException e) {
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
             }
-            String BREAKPOINT = null;
 
         }, error -> {
 //            loadingWindow.dismiss();

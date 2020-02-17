@@ -316,10 +316,16 @@ public class Settings extends AppCompatActivity {
                     TextInputLayout dialog_editOrAdd_urlParser_url_layout = view.findViewById(R.id.dialog_editOrAdd_urlParser_url_layout);
                     TextInputLayout dialog_editOrAdd_urlParser_code_layout = view.findViewById(R.id.dialog_editOrAdd_urlParser_code_layout);
                     Spinner dialog_editOrAdd_urlParser_type = view.findViewById(R.id.dialog_editOrAdd_urlParser_type);
+                    TextView dialog_editOrAdd_urlParser_variables = view.findViewById(R.id.dialog_editOrAdd_urlParser_variables);
                     dialog_editOrAdd_urlParser_type.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                         @Override
                         public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                            editUrlParser.setType(UrlParser.TYPE.getTypeByIndex(dialog_editOrAdd_urlParser_type.getSelectedItemPosition()));
+                            UrlParser.TYPE type = UrlParser.TYPE.getTypeByIndex(dialog_editOrAdd_urlParser_type.getSelectedItemPosition());
+                            editUrlParser.setType(type);
+                            if (type == UrlParser.TYPE.JAVA)
+                                dialog_editOrAdd_urlParser_variables.setVisibility(View.VISIBLE);
+                            else
+                                dialog_editOrAdd_urlParser_variables.setVisibility(View.GONE);
                             dialog_editOrAdd_urlParser_code_layout.setHint(editUrlParser.getType().getName() + "-Code");
                         }
 

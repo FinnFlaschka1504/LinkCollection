@@ -446,11 +446,7 @@ public class Database {
         if (!Database.isReady() || !database.isOnline() || (!forceAll && !Database.hasChanges()))
             return false;
 
-        // ToDo: extremer overhead da alle verschlüsselt werden, aber wenn passwort geändert müssen alle geändert werden
-        //  auch alles speichern wenn neues item als verschlüsselt markiert wirde, oder anders herum
-        //  speicherung darf bereits vorhandene Objekte nicht verändern
-        //  möglich dass forceAll als paremeter hinzugefügt
-        //  zewi scenarien: einzelne elemente sollen gespeichert werden -> objekte in updateList verschlüsseln | wenn alle dann contentMap zwischenspeichern, deepCopy anfertigen diese dann verschlüsseln und hochlande; anschließend zurücksetzen
+        // ToDo: speicherung darf bereits vorhandene Objekte nicht verändern
 
 
         database.saveDatabase_offline(mySPR_daten);

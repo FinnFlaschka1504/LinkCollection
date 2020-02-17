@@ -70,7 +70,7 @@
                         android:background="?android:attr/listDivider" />
 
                     <TextView
-                        android:id="@+id/listItem_show_Views"
+                        android:id="@+id/listItem_show_views"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         tools:text="1" />

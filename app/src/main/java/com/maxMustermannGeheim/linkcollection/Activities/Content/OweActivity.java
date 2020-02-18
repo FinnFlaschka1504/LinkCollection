@@ -411,6 +411,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
 
     private CustomDialog showDetailDialog(Owe owe) {
         setResult(RESULT_OK);
+        removeFocusFromSearch();
         CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle("Detail Ansicht")
                 .setView(R.layout.dialog_detail_owe)

@@ -74,6 +74,8 @@
         android:layout_height="wrap_content"
         android:text="Verfügbare Variablen: url, result, split, last, lastSplit, customList"
         android:textSize="10sp"
-        android:textStyle="italic" />
+        android:textStyle="italic"
+        android:visibility="gone"
+        tools:visibility="visible" />
 
 </LinearLayout>

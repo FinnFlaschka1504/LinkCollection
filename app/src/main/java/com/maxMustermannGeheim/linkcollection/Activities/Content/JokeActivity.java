@@ -362,6 +362,7 @@ public class JokeActivity extends AppCompatActivity {
 
     private CustomDialog showDetailDialog(Joke joke) {
         setResult(RESULT_OK);
+        removeFocusFromSearch();
         CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle("Detail Ansicht")
                 .setView(R.layout.dialog_detail_joke)

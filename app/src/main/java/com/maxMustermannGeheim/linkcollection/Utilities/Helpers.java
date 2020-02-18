@@ -39,6 +39,12 @@ import java.util.stream.Collectors;
 
 import me.zhanghai.android.materialratingbar.MaterialRatingBar;
 
+import static com.maxMustermannGeheim.linkcollection.Utilities.Helpers.SpannableStringHelper.SPAN_TYPE.BOLD;
+import static com.maxMustermannGeheim.linkcollection.Utilities.Helpers.SpannableStringHelper.SPAN_TYPE.BOLD_ITALIC;
+import static com.maxMustermannGeheim.linkcollection.Utilities.Helpers.SpannableStringHelper.SPAN_TYPE.ITALIC;
+import static com.maxMustermannGeheim.linkcollection.Utilities.Helpers.SpannableStringHelper.SPAN_TYPE.STRIKE_THROUGH;
+import static com.maxMustermannGeheim.linkcollection.Utilities.Helpers.SpannableStringHelper.SPAN_TYPE.UNDERLINED;
+
 public class Helpers {
     //  ----- TextInput ----->
     public static class TextInputHelper {
@@ -572,6 +578,32 @@ public class Helpers {
             return this;
         }
 
+        public SpannableStringHelper appendBold(String text) {
+            builder.append(text, BOLD.getWhat(), Spannable.SPAN_COMPOSING);
+            return this;
+        }
+
+        public SpannableStringHelper appendItalic(String text) {
+            builder.append(text, ITALIC.getWhat(), Spannable.SPAN_COMPOSING);
+            return this;
+        }
+
+        public SpannableStringHelper appendBoldItalic(String text) {
+            builder.append(text, BOLD_ITALIC.getWhat(), Spannable.SPAN_COMPOSING);
+            return this;
+        }
+
+        public SpannableStringHelper appendStrikeThrough(String text) {
+            builder.append(text, STRIKE_THROUGH.getWhat(), Spannable.SPAN_COMPOSING);
+            return this;
+        }
+
+        public SpannableStringHelper appendUnderlined(String text) {
+            builder.append(text, UNDERLINED.getWhat(), Spannable.SPAN_COMPOSING);
+            return this;
+        }
+
+
         public SpannableStringHelper appendColor(String text, int color) {
             builder.append(text, new ForegroundColorSpan(color), Spannable.SPAN_COMPOSING);
             return this;
@@ -604,7 +636,7 @@ public class Helpers {
 
         public SpannableStringBuilder quickBold(String text) {
             SpannableStringBuilder spannableString = new SpannableStringBuilder(text);
-            spannableString.setSpan(SPAN_TYPE.BOLD.getWhat(), 0, text.length(), 0);
+            spannableString.setSpan(BOLD.getWhat(), 0, text.length(), 0);
             return spannableString;
         }
 

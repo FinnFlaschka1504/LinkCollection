@@ -28,5 +28,8 @@
         android:id="@+id/main_bottom_navigation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"/>
+        android:layout_alignParentBottom="true"
+        android:background="@color/colorBackground"
+        android:clipChildren="false"
+        app:elevation="0dp" />
 </RelativeLayout>

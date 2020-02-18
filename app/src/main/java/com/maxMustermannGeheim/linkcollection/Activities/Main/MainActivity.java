@@ -259,7 +259,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
             count++;
         }
-        Collections.reverse(shortcutInfoList);
+//        Collections.reverse(shortcutInfoList);
         shortcutManager.setDynamicShortcuts(shortcutInfoList);
 
         bottomNavigationView.getMenu().clear();

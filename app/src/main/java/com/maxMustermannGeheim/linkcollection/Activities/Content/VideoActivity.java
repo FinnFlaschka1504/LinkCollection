@@ -83,6 +83,8 @@ public class VideoActivity extends AppCompatActivity {
     public static final String WATCH_LATER_SEARCH = "WATCH_LATER_SEARCH";
     public static final String UPCOMING_SEARCH = "UPCOMING_SEARCH";
 
+    public static final String EXTRA_INTENT_TEST = "EXTRA_INTENT_TEST";
+
     enum SORT_TYPE {
         NAME, VIEWS, RATING, LATEST
     }
@@ -166,6 +168,11 @@ public class VideoActivity extends AppCompatActivity {
         mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
         loadDatabase();
+
+//        if (getIntent().getBooleanExtra(EXTRA_INTENT_TEST, true)) {
+//            Toast.makeText(this, "test", Toast.LENGTH_SHORT).show();
+//            getIntent().putExtra(EXTRA_INTENT_TEST, false);
+//        }
 
     }
 
@@ -321,14 +328,17 @@ public class VideoActivity extends AppCompatActivity {
                             Video video = optional.get();
                             CustomDialog.Builder(this)
                                     .setTitle("URL Bereits Vorhanden")
-                                    .setText("Die geteilte URL ist bereits bei dem Video '" + video.getName() + "' hinterlegt. Was möschtest du tun?")
-                                    .addButton("Die Video Details öffnen", customDialog -> detailDialog = showDetailDialog(video))
+                                    .setText(new Helpers.SpannableStringHelper().append("Die geteilte URL ist bereits bei dem "+ singular +" '").appendBold(video.getName()).append("' hinterlegt. Was möschtest du tun?").get())
+                                    .addButton("Die Video Details öffnen", customDialog -> {
+                                        isShared = false;
+                                        detailDialog = showDetailDialog(video);
+                                    })
                                     .addButton("Das Video bearbeiten", customDialog -> {
                                         isShared = false;
                                         addOrEditDialog = showEditOrNewDialog(video).first;
                                     })
                                     .addButton("Ein neues Video hinzufügen", customDialog -> openEdit.run())
-                                    .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
+                                    .enableTitleBackButton()
                                     .enableStackButtons()
                                     .show();
                         }
@@ -515,6 +525,7 @@ public class VideoActivity extends AppCompatActivity {
 
     private CustomDialog showDetailDialog(@NonNull Video video) {
         setResult(RESULT_OK);
+        removeFocusFromSearch();
         final int[] views = {video.getDateList().size()};
         int openWithButtonId = View.generateViewId();
         CustomDialog returnDialog = CustomDialog.Builder(this)
@@ -1321,7 +1332,7 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     private void openUrl(String url, boolean select) {
-        if (url == null || url.equals("")) {
+        if (!Utility.stringExists(url)) {
             Toast.makeText(this, "Keine URL hinterlegt", Toast.LENGTH_SHORT).show();
             return;
         }

@@ -798,6 +798,7 @@ public class ShowActivity extends AppCompatActivity {
 
     private CustomDialog showDetailDialog(Show show) {
         setResult(RESULT_OK);
+        removeFocusFromSearch();
         return CustomDialog.Builder(this)
                 .setTitle("Detail Ansicht")
                 .setView(R.layout.dialog_detail_show)

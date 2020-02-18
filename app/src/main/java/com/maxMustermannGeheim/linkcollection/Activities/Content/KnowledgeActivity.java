@@ -719,6 +719,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 
     private CustomDialog showDetailDialog(Knowledge knowledge) {
         setResult(RESULT_OK);
+        removeFocusFromSearch();
         List<String> categoriesNames = new ArrayList<>();
         knowledge.getCategoryIdList().forEach(uuid -> categoriesNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
         CustomDialog returnDialog = CustomDialog.Builder(this)

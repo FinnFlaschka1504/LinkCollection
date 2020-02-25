@@ -78,6 +78,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
@@ -486,16 +487,18 @@ public class ShowActivity extends AppCompatActivity {
                     ((TextView) itemView.findViewById(R.id.listItem_show_Titel)).setText(show.getName());
                     List<Show.Episode> episodeList = getEpisodeList(show);
                     int watchedEpisodes = (int) episodeList.stream().filter(episode -> episode.getSeasonNumber() != 0).count();
+                    boolean releasedEpisodes = show.isNotifyNew() && !show.getAlreadyAiredList().stream().anyMatch(episode -> !episode.isWatched());
                     int views = getViews(episodeList);
                     if (views > 0) {
                         itemView.findViewById(R.id.listItem_show_Views_layout).setVisibility(View.VISIBLE);
                         Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
-                        if (show.getAllEpisodesCount() <= watchedEpisodes)
+                        helper.appendColor(show.getAllEpisodesCount() <= watchedEpisodes ? "✓  " : "", getColor(R.color.colorGreen));
+                        if (releasedEpisodes || show.getAllEpisodesCount() <= watchedEpisodes)
                             helper.appendColor(String.valueOf(views), getColor(R.color.colorGreen));
                         else
                             helper.append(String.valueOf(views));
                         ((TextView) itemView.findViewById(R.id.listItem_show_views)).setText(
-//                                helper.append(String.valueOf(views)).appendColor(show.getAllEpisodesCount() <= watchedEpisodes ? "  ✓" : "", getColor(R.color.colorGreen))
+//
                                         helper.get());
                     } else
                         itemView.findViewById(R.id.listItem_show_Views_layout).setVisibility(View.GONE);
@@ -1154,6 +1157,8 @@ public class ShowActivity extends AppCompatActivity {
                     ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode.getRating() != -1 ? episode.getRating() + " ☆" : "");
                     ((TextView) itemView.findViewById(R.id.listItem_episode_viewCount)).setText(
                             episode.getDateList().size() >= 2 || (!episode.getDateList().isEmpty() && !episode.isWatched()) ? "| " + episode.getDateList().size() : "");
+
+                    Utility.applyToAllViews(itemView.findViewById(R.id.listItem_episode_detailLayout), View.class, view -> view.setAlpha(episode.isUpcomming() ? 0.6f : 1f));
 
                     ImageView listItem_episode_seen = itemView.findViewById(R.id.listItem_episode_seen);
                     if (episode.isWatched()) {

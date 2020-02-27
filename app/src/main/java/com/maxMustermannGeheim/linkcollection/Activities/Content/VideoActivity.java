@@ -6,8 +6,10 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.util.Pair;
+import android.view.GestureDetector;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewStub;
 import android.webkit.WebSettings;
@@ -673,6 +675,7 @@ public class VideoActivity extends AppCompatActivity {
                 })
                 .enableTitleBackButton()
                 .show();
+
     }
 
     private Pair<CustomDialog, Video> showEditOrNewDialog(Video video) {

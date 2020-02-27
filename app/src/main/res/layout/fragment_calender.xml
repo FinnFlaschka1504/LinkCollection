@@ -56,24 +56,24 @@
         app:compactCalendarTextSize="12sp" />
 
     <View
-        android:id="@+id/divider2"
         android:layout_width="match_parent"
         android:layout_height="3dp"
         android:background="@color/colorDivider" />
 
-    <TextView
-        android:id="@+id/fragmentCalender_noTrips"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginVertical="16dp"
-        android:text="Keine Ansicht an diesem Tag"
-        android:textAlignment="center"
-        android:textSize="12sp" />
-
     <FrameLayout
+        android:id="@+id/fragmentCalender_viewLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_weight="1">
+
+        <TextView
+            android:id="@+id/fragmentCalender_noViews"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="16dp"
+            android:text="Keine Ansicht an diesem Tag"
+            android:textAlignment="center"
+            android:textSize="12sp" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/fragmentCalender_videoList"

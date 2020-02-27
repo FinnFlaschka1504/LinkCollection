@@ -10,7 +10,9 @@ import android.net.Uri;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.util.Pair;
+import android.view.GestureDetector;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -93,9 +95,7 @@ public class Utility implements java.io.Serializable {
             Process ipProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
             int exitValue = ipProcess.waitFor();
             return (exitValue == 0);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
         return false;
@@ -444,7 +444,6 @@ public class Utility implements java.io.Serializable {
 
 
     private static Date currentDate;
-
     //  --------------- FilmCalender --------------->
     public static void setupFilmCalender(Context context, CompactCalendarView calendarView, FrameLayout layout, List<Video> videoList, boolean openVideo) {
         calendarView.removeAllEvents();
@@ -483,6 +482,13 @@ public class Utility implements java.io.Serializable {
                     video.getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
                     ((TextView) itemView.findViewById(R.id.listItem_video_Genre)).setText(String.join(", ", genreNames));
                     itemView.findViewById(R.id.listItem_video_Genre).setSelected(true);
+
+                    if (video.getRating() > 0) {
+                        itemView.findViewById(R.id.listItem_video_rating_layout).setVisibility(View.VISIBLE);
+                        ((TextView) itemView.findViewById(R.id.listItem_video_rating)).setText(String.valueOf(video.getRating()));
+                    } else
+                        itemView.findViewById(R.id.listItem_video_rating_layout).setVisibility(View.GONE);
+
                 })
                 .hideDivider();
 
@@ -644,14 +650,11 @@ public class Utility implements java.io.Serializable {
     private static void loadVideoList(List<Event> eventList, FrameLayout layout, CustomRecycler<Event> customRecycler) {
         eventList = new ArrayList<>(eventList);
         eventList.sort((o1, o2) -> Long.compare(o1.getTimeInMillis(), o2.getTimeInMillis()));
-        TextView calender_noTrips = layout.findViewById(R.id.fragmentCalender_noTrips);
-        RecyclerView calender_videoList = layout.findViewById(R.id.fragmentCalender_videoList);
+        TextView calender_noTrips = layout.findViewById(R.id.fragmentCalender_noViews);
 
         if (eventList.isEmpty()) {
-            calender_videoList.setVisibility(View.GONE);
             calender_noTrips.setVisibility(View.VISIBLE);
         } else {
-            calender_videoList.setVisibility(View.VISIBLE);
             calender_noTrips.setVisibility(View.GONE);
         }
 
@@ -684,37 +687,114 @@ public class Utility implements java.io.Serializable {
         dateList.distinct();
 //        dateList = dateSet.stream().sorted(Date::compareTo).collect(Collectors.toCollection(CustomList::new));
 
-        layout.findViewById(R.id.dialog_editViews_previous).setOnClickListener(v -> {
+        View dialog_editViews_previous = layout.findViewById(R.id.dialog_editViews_previous);
+        dialog_editViews_previous.setOnClickListener(v -> {
             Date previous = dateList.stream().filter(date -> date.before(currentDate)).collect(Collectors.toCollection(CustomList::new)).getLast();
             if (previous != null) {
                 calendarView.setCurrentDate(previous);
-                loadVideoList(calendarView.getEvents(previous), layout, customRecycler);
                 ((TextView) layout.findViewById(R.id.fragmentCalender_month)).setText(new SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(previous));
                 currentDate = previous;
-//                v.setVisibility(dateList.isFirst(previous) ? View.GONE : View.VISIBLE);
-                if (list.size() == 1) {
-                    layout.findViewById(R.id.dialog_editViews_add).setVisibility(View.GONE);
-                    layout.findViewById(R.id.dialog_editViews_remove).setVisibility(View.VISIBLE);
-                }
+                setButtons(layout, size, calendarView, list, customRecycler);
+                loadVideoList(calendarView.getEvents(previous), layout, customRecycler);
 
             }
         });
 
-        layout.findViewById(R.id.dialog_editViews_next).setOnClickListener(v -> {
+        View dialog_editViews_next = layout.findViewById(R.id.dialog_editViews_next);
+        dialog_editViews_next.setOnClickListener(v -> {
             Date next = dateList.stream().filter(date -> date.after(currentDate)).findFirst().orElse(null);
             if (next != null) {
                 calendarView.setCurrentDate(next);
-                loadVideoList(calendarView.getEvents(next), layout, customRecycler);
                 ((TextView) layout.findViewById(R.id.fragmentCalender_month)).setText(new SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(next));
                 currentDate = next;
-//                v.setVisibility(dateList.isLast(next) ? View.GONE : View.VISIBLE);
-                if (list.size() == 1) {
-                    layout.findViewById(R.id.dialog_editViews_add).setVisibility(View.GONE);
-                    layout.findViewById(R.id.dialog_editViews_remove).setVisibility(View.VISIBLE);
-                }
+                setButtons(layout, size, calendarView, list, customRecycler);
+                loadVideoList(calendarView.getEvents(next), layout, customRecycler);
             }
         });
 
+        dialog_editViews_previous.setAlpha(dateList.stream().anyMatch(date -> date.before(currentDate)) ? 1f : 0.5f);
+        dialog_editViews_next.setAlpha(dateList.stream().anyMatch(date -> date.after(currentDate)) ? 1f : 0.5f);
+
+        OnHorizontalSwipeTouchListener touchListener = new OnHorizontalSwipeTouchListener(layout.getContext()) {
+            @Override
+            public void onSwipeRight() {
+                dialog_editViews_previous.callOnClick();
+            }
+
+            @Override
+            public void onSwipeLeft() {
+                dialog_editViews_next.callOnClick();
+            }
+        };
+        layout.findViewById(R.id.fragmentCalender_viewLayout).setOnTouchListener(touchListener);
+        customRecycler.getRecycler().setOnTouchListener(touchListener);
+        layout.findViewById(R.id.fragmentCalender_noViews).setOnTouchListener(touchListener);
+    }
+
+    public static class OnHorizontalSwipeTouchListener implements View.OnTouchListener {
+
+        private final GestureDetector gestureDetector;
+
+        public OnHorizontalSwipeTouchListener(Context ctx){
+            gestureDetector = new GestureDetector(ctx, new GestureListener());
+        }
+
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            return gestureDetector.onTouchEvent(event);
+        }
+
+        private final class GestureListener extends GestureDetector.SimpleOnGestureListener {
+
+            private static final int SWIPE_THRESHOLD = 100;
+            private static final int SWIPE_VELOCITY_THRESHOLD = 100;
+//            @Override
+//            public boolean onDown(MotionEvent e) {
+//                return true;
+//            }
+
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                boolean result = false;
+                try {
+                    float diffY = e2.getY() - e1.getY();
+                    float diffX = e2.getX() - e1.getX();
+                    if (Math.abs(diffX) > Math.abs(diffY)) {
+                        if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                            if (diffX > 0) {
+                                onSwipeRight();
+                            } else {
+                                onSwipeLeft();
+                            }
+                            result = true;
+                        }
+                    }
+//                    else if (Math.abs(diffY) > SWIPE_THRESHOLD && Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD) {
+//                        if (diffY > 0) {
+//                            onSwipeBottom();
+//                        } else {
+//                            onSwipeTop();
+//                        }
+//                        result = true;
+//                    }
+                } catch (Exception exception) {
+                    exception.printStackTrace();
+                }
+                return result;
+            }
+        }
+
+        public void onSwipeRight() {
+        }
+
+        public void onSwipeLeft() {
+        }
+
+//        public void onSwipeTop() {
+//        }
+//
+//        public void onSwipeBottom() {
+//        }
     }
 
 

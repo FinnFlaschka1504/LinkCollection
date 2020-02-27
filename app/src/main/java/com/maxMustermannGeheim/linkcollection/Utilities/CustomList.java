@@ -130,9 +130,6 @@ public class CustomList<E> extends ArrayList<E> {
     }
     
     public E previous(E e) {
-//        if (get(0).equals(e))
-//            return getLast();
-//        else
         return get(indexOf(e) - 1);
     }
     //  <--------------- Recycle ---------------

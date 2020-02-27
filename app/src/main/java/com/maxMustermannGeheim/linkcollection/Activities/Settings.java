@@ -656,7 +656,7 @@ public class Settings extends AppCompatActivity {
     }
 
     public static class Space extends ParentClass {
-        public static List<Space> allSpaces = new ArrayList<>();
+        public static CustomList<Space> allSpaces = new CustomList<>();
         public static final int SPACE_VIDEO = 1;
         public static final int SPACE_KNOWLEDGE = 2;
         public static final int SPACE_OWE = 3;

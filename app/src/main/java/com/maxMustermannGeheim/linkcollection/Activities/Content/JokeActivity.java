@@ -373,8 +373,9 @@ public class JokeActivity extends AppCompatActivity {
                     view.findViewById(R.id.dialog_detailJoke_punchLine_layout).setVisibility(joke.getPunchLine() == null || joke.getPunchLine().isEmpty() ? View.GONE : View.VISIBLE);
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_title)).setText(joke.getName());
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_punchLine)).setText(joke.getPunchLine());
-                    ((TextView) view.findViewById(R.id.dialog_detailJoke_categories)).setText(
-                            joke.getCategoryIdList().stream().map(uuid -> database.jokeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                    Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.JOKE_CATEGORIES, view.findViewById(R.id.dialog_detailJoke_categories), joke.getCategoryIdList(), database.jokeCategoryMap);
+//                    ((TextView) view.findViewById(R.id.dialog_detailJoke_categories)).setText(
+//                            joke.getCategoryIdList().stream().map(uuid -> database.jokeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_addedDate)).setText(String.format("%s Uhr", new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.GERMANY).format(joke.getAddedDate())));
                     view.findViewById(R.id.dialog_detailJoke_details).setVisibility(View.VISIBLE);
                     ((RatingBar) view.findViewById(R.id.dialog_detailJoke_rating)).setRating(joke.getRating());

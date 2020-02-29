@@ -4,10 +4,17 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.TextPaint;
 import android.text.TextWatcher;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.util.Pair;
 import android.view.GestureDetector;
@@ -29,6 +36,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.finn.androidUtilities.CustomUtility;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
 import com.google.gson.Gson;
@@ -75,6 +83,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import top.defaults.drawabletoolbox.DrawableBuilder;
+
+import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.EXTRA_CATEGORY;
 
 
 public class Utility implements java.io.Serializable {
@@ -221,6 +231,41 @@ public class Utility implements java.io.Serializable {
             return String.format(Locale.GERMANY, "%.0f €", amount);
         else
             return String.format(Locale.GERMANY, "%.2f €", amount);
+    }
+
+    public static void applyCategoriesLink(AppCompatActivity activity, CategoriesActivity.CATEGORIES category, TextView textView, List<String> idList, Map<String, ? extends ParentClass> map) {
+        CustomList<String> list = idList.stream().map(uuid -> map.get(uuid).getName()).collect(Collectors.toCollection(CustomList::new));
+
+
+        SpannableStringBuilder builder = new SpannableStringBuilder();
+
+        for (String s : list) {
+            if (builder.length() != 0)
+                builder.append(", ");
+
+            ClickableSpan clickableSpan = new ClickableSpan() {
+                @Override
+                public void onClick(View textView) {
+                    Toast.makeText(activity, s, Toast.LENGTH_SHORT).show();
+                    activity.startActivity(new Intent(activity, activity.getClass())
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, category)
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH, s));
+                }
+                @Override
+                public void updateDrawState(TextPaint ds) {
+                    super.updateDrawState(ds);
+                    ds.setUnderlineText(false);
+                }
+            };
+
+            builder.append(s, clickableSpan, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+
+        textView.setText(builder);
+        textView.setMovementMethod(LinkMovementMethod.getInstance());
+        textView.setHighlightColor(Color.TRANSPARENT);
+        textView.setLinkTextColor(textView.getTextColors());
+//                activity.getResources().getColorStateList(R.color.clickable_text_color, null));
     }
 
     //  ------------------------- watchLater ------------------------->

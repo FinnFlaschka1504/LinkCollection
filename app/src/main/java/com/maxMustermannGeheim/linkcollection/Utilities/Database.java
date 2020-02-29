@@ -6,6 +6,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -437,10 +438,10 @@ public class Database {
 
 
 
-    public static boolean saveAll() {
+    public static Boolean saveAll() {
         return saveAll(false);
     }
-    public static boolean saveAll(boolean forceAll) {
+    public static Boolean saveAll(boolean forceAll) {
         Log.d(TAG, "saveAll: ");
 
         if (!Database.isReady() || !database.isOnline() || (!forceAll && !Database.hasChanges()))
@@ -448,19 +449,31 @@ public class Database {
 
         // ToDo: speicherung darf bereits vorhandene Objekte nicht verändern
 
-
         database.saveDatabase_offline(mySPR_daten);
         if (Utility.isOnline()) {
             if (updateList.isEmpty() || forceAll)
                 database.writeAllToFirebase(forceAll);
             else
                 database.writeAllToFirebase(updateList);
+        } else {
+            updateList.clear();
+            return null;
         }
 
         updateList.clear();
         lastUploaded_contentMap = database.deepCopySimpleContentMap(true, true);
 
         return true;
+    }
+    public static Boolean saveAll(@Nullable Runnable onSaved, @Nullable Runnable onNothing, @Nullable Runnable onFailed) {
+        Boolean result = saveAll();
+        if (result != null && result && onSaved != null)
+            onSaved.run();
+        else if (result != null && !result && onNothing != null)
+            onNothing.run();
+        else if (result == null && onFailed != null)
+            onFailed.run();
+        return result;
     }
 
     private static boolean hasChanges() {

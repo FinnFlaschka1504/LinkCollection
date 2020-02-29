@@ -143,6 +143,10 @@ public class CategoriesActivity extends AppCompatActivity {
         };
         catigorys_search.setOnQueryTextListener(textListener);
         catigorys_search.setQueryHint(catigory.getPlural() + " filtern");
+
+        if (getIntent().hasExtra(EXTRA_SEARCH)) {
+            catigorys_search.setQuery(getIntent().getStringExtra(EXTRA_SEARCH), false);
+        }
     }
 
     private List<Pair<ParentClass, Integer>> filterList(List<Pair<ParentClass, Integer>> datenObjektPairList) {

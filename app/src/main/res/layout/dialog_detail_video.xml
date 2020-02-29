@@ -102,6 +102,7 @@
                     android:id="@+id/dialog_video_Genre"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:clickable="true"
                     android:layout_weight="1" />
             </LinearLayout>
         </LinearLayout>

@@ -17,6 +17,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.finn.androidUtilities.CustomUtility;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
@@ -110,6 +111,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
         CustomInternetHelper.initialize(this);
 
+//        CustomUtility.PingTask.simulate(false, 3000);
 
 //        Interpreter interpreter = new Interpreter();
         String java = "if (url.contains(\"moviesjoy\")) " +

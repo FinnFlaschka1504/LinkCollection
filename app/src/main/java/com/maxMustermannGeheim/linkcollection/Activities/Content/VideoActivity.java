@@ -547,14 +547,17 @@ public class VideoActivity extends AppCompatActivity {
                     }
 
                     ((TextView) view.findViewById(R.id.dialog_video_Titel)).setText(video.getName());
-                    ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(
-                            video.getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                    Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.DARSTELLER, view.findViewById(R.id.dialog_video_Darsteller), video.getDarstellerList(), database.darstellerMap);
+//                    ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(
+//                            video.getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                     view.findViewById(R.id.dialog_video_Darsteller).setSelected(true);
-                    ((TextView) view.findViewById(R.id.dialog_video_Studio)).setText(
-                            video.getStudioList().stream().map(uuid -> database.studioMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                    Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.STUDIOS, view.findViewById(R.id.dialog_video_Studio), video.getStudioList(), database.studioMap);
+//                    ((TextView) view.findViewById(R.id.dialog_video_Studio)).setText(
+//                            video.getStudioList().stream().map(uuid -> database.studioMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                     view.findViewById(R.id.dialog_video_Studio).setSelected(true);
-                    ((TextView) view.findViewById(R.id.dialog_video_Genre)).setText(
-                            video.getGenreList().stream().map(uuid -> database.genreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                    Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.GENRE, view.findViewById(R.id.dialog_video_Genre), video.getGenreList(), database.genreMap);
+//                    ((TextView) view.findViewById(R.id.dialog_video_Genre)).setText(
+//                            video.getGenreList().stream().map(uuid -> database.genreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                     view.findViewById(R.id.dialog_video_Genre).setSelected(true);
                     view.findViewById(R.id.dialog_video_details).setVisibility(View.VISIBLE);
                     ((TextView) view.findViewById(R.id.dialog_video_Url)).setText(video.getUrl());
@@ -1019,42 +1022,45 @@ public class VideoActivity extends AppCompatActivity {
         if (video == null)
             video = editVideo;
 
-        if (video != editVideo)
-            video.getChangesFrom(editVideo);
 
-        video.setName(titel);
-//        videoNeu.setDarstellerList(editVideo.getDarstellerList());
-//        videoNeu.setStudioList(editVideo.getStudioList());
-//        videoNeu.setGenreList(editVideo.getGenreList());
-        video.setUrl(url);
-        video.setRating(((RatingBar) dialog.findViewById(R.id.customRating_ratingBar)).getRating());
-//        videoNeu.setImagePath(editVideo.getImagePath());
-        video.setRelease(((LazyDatePicker) dialog.findViewById(R.id.dialog_editOrAddVideo_datePicker)).getDate());
+        Video finalVideo = video;
+        CustomUtility.isOnline(this, () -> {
+            if (finalVideo != editVideo)
+                finalVideo.getChangesFrom(editVideo);
 
-        boolean addedYesterday = false;
-        boolean upcomming = false;
-        if (checked)
-            video.setWatchLater(true);
-        else if (neuesVideo) {
-            if (!(upcomming = video.isUpcoming()))
-                addedYesterday = video.addDate(new Date(), true);
-        }
+            finalVideo.setName(titel);
+            finalVideo.setUrl(url);
+            finalVideo.setRating(((RatingBar) dialog.findViewById(R.id.customRating_ratingBar)).getRating());
+            finalVideo.setRelease(((LazyDatePicker) dialog.findViewById(R.id.dialog_editOrAddVideo_datePicker)).getDate());
 
-        database.videoMap.put(video.getUuid(), video);
-        reLoadVideoRecycler();
-        dialog.dismiss();
+            boolean addedYesterday = false;
+            boolean upcoming = false;
+            if (checked)
+                finalVideo.setWatchLater(true);
+            else if (neuesVideo) {
+                if (!(upcoming = finalVideo.isUpcoming()))
+                    addedYesterday = finalVideo.addDate(new Date(), true);
+            }
 
-        allVideoList = new ArrayList<>(database.videoMap.values());
-        sortList(allVideoList);
-        filterdVideoList = new CustomList<>(allVideoList);
-        commitSearch();
+            database.videoMap.put(finalVideo.getUuid(), finalVideo);
+            reLoadVideoRecycler();
+            dialog.dismiss();
 
-        Database.saveAll();
+            allVideoList = new ArrayList<>(database.videoMap.values());
+            sortList(allVideoList);
+            filterdVideoList = new CustomList<>(allVideoList);
+            commitSearch();
 
-        Utility.showCenteredToast(this, singular + " gespeichert" + (addedYesterday ? "\nAutomatisch für gestern eingetragen" : upcomming ? "\n(Bevorstehend)" : ""));
+            boolean finalAddedYesterday = addedYesterday;
+            boolean finalUpcoming = upcoming;
+            Database.saveAll(() -> Utility.showCenteredToast(this, singular + " gespeichert" + (finalAddedYesterday ? "\nAutomatisch für gestern eingetragen" : finalUpcoming ? "\n(Bevorstehend)" : "")), null,
+                    () -> Toast.makeText(this, "Speichern fehlgeschlagen", Toast.LENGTH_SHORT).show());
 
-        if (detailDialog != null)
-            detailDialog.reloadView();
+            if (detailDialog != null)
+                detailDialog.reloadView();
+        });
+
+
 
     }
 

@@ -689,7 +689,7 @@ public class VideoActivity extends AppCompatActivity {
 
         final Video[] editVideo = {video == null ? null : video.clone()};
         com.finn.androidUtilities.Helpers.TextInputHelper helper = new com.finn.androidUtilities.Helpers.TextInputHelper();
-        final boolean[] checked = {video != null && Utility.getWatchLaterList().contains(video)};
+        final boolean[] checked = {video != null && video.isWatchLater()}; // Utility.getWatchLaterList().contains(video)};
         CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle(video == null ? "Neu: " + singular : singular + " Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
@@ -716,6 +716,7 @@ public class VideoActivity extends AppCompatActivity {
                         saveVideo(customDialog, video, titel, url, checked[0], editVideo[0]);
 
                 }, false)
+//                .addOnLongClickToLastAddedButton(customDialog -> customDialog.getActionButton().)
                 .disableLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {
                     final com.finn.androidUtilities.CustomDialog[] internetDialog = {null};
@@ -810,7 +811,7 @@ public class VideoActivity extends AppCompatActivity {
                         helper.validate(dialog_editOrAddVideo_Url_layout);
                     });
                     View dialog_editOrAddVideo_title_label = customDialog.findViewById(R.id.dialog_editOrAddVideo_title_label);
-                    if (video == null || isShared) {
+                    if (video == null || isShared)
                         helper.setValidation(dialog_editOrAddVideo_Title_layout, (validator, text) -> {
                             if (database.videoMap.values().stream().anyMatch(video1 -> video1.getName().toLowerCase().equals(text.toLowerCase()))) {
                                 dialog_editOrAddVideo_title_label.setClickable(true);
@@ -818,7 +819,6 @@ public class VideoActivity extends AppCompatActivity {
                             } else
                                 dialog_editOrAddVideo_title_label.setClickable(false);
                         });
-                    }
                     dialog_editOrAddVideo_title_label.setOnClickListener(v -> {
                         String text = dialog_editOrAddVideo_Title_layout.getEditText().getText().toString();
                         database.videoMap.values().stream().filter(video1 -> video1.getName().toLowerCase().equals(text.toLowerCase())).findAny().ifPresent(video1 -> {
@@ -888,7 +888,8 @@ public class VideoActivity extends AppCompatActivity {
                             ((LazyDatePicker) view.findViewById(R.id.dialog_editOrAddVideo_datePicker)).setDate(editVideo[0].getRelease());
                         }
 
-                        dialog_editOrAddVideo_watchLater.setVisibility(Utility.isUpcoming(editVideo[0].getRelease()) || (video != null && !video.getName().isEmpty()) ? View.GONE : View.VISIBLE);
+                        dialog_editOrAddVideo_watchLater.setVisibility(Utility.isUpcoming(editVideo[0].getRelease()) ||
+                                (video != null && !video.getName().isEmpty() && !isShared) ? View.GONE : View.VISIBLE);
                         int visibility = Utility.isUpcoming(editVideo[0].getRelease())/* && (video == null || !video.getName().isEmpty())*/ ? View.GONE : View.VISIBLE;
                         view.findViewById(R.id.dialog_editOrAddVideo_rating_layout).setVisibility(visibility);
                         view.findViewById(R.id.dialog_editOrAddVideo_url_allLayout).setVisibility(visibility);

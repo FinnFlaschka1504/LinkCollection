@@ -17,9 +17,13 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
+import com.finn.androidUtilities.Helpers;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.textfield.TextInputLayout;
+import com.google.common.hash.Hashing;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -28,12 +32,15 @@ import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomInternetHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
+import com.maxMustermannGeheim.linkcollection.Utilities.VersionControl;
+import com.scottyab.aescrypt.AESCrypt;
 
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -114,20 +121,20 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //        CustomUtility.PingTask.simulate(false, 3000);
 
 //        Interpreter interpreter = new Interpreter();
-        String java = "if (url.contains(\"moviesjoy\")) " +
-                "{" +
-                "String last = customList1.add(url.split(\"/\")).getLast(); " +
-                "if (last != null) " +
-                "{" +
-                "customList2.add(last.split(\"-\")); " +
-                "customList2.removeLast(); " +
-                "String result = String.join(\" \", customList2);" +
-                "return result;" +
-//                        "video.setName(String.join(\" \", customList2));" +
-                "}" +
-//                        "return video; " +
-                "}" +
-                "else {return \"--Leer--\";}";
+//        String java = "if (url.contains(\"moviesjoy\")) " +
+//                "{" +
+//                "String last = customList1.add(url.split(\"/\")).getLast(); " +
+//                "if (last != null) " +
+//                "{" +
+//                "customList2.add(last.split(\"-\")); " +
+//                "customList2.removeLast(); " +
+//                "String result = String.join(\" \", customList2);" +
+//                "return result;" +
+////                        "video.setName(String.join(\" \", customList2));" +
+//                "}" +
+////                        "return video; " +
+//                "}" +
+//                "else {return \"--Leer--\";}";
 
 
 //        Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "DialogTest")
@@ -135,7 +142,6 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //                .setIcon(Icon.createWithResource(this, R.drawable.ic_random))
 //                .setIntent(new Intent(this, DialogActivity.class).setAction(DialogActivity.ACTION_RANDOM))
 //                .build(), null));
-        String BREAKPOINT = null;
 //        try {
 //            interpreter.set("video", new Video());
 //            interpreter.set("url", "https://www1.moviesjoy.net/watch-movie/ad-astra-41379.989936");
@@ -224,6 +230,8 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     void loadDatabase(boolean createNew) {
 
         Database.OnInstanceFinishedLoading onInstanceFinishedLoading = database_neu -> {
+            VersionControl.showChangeLog(this, false);
+            VersionControl.checkForUpdate(this, false);
 
             if (firstTime) {
                 setContentView(R.layout.activity_main);
@@ -342,9 +350,54 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     public void getDatabaseCode(OnDatabaseCodeFinish onFinish) {
         CustomDialog.Builder(MainActivity.this)
                 .setTitle("DatenBank-Code Eingeben")
+                .setView(R.layout.dialog_database_login)
+                .setSetViewContent((customDialog, view, reload) -> {
+                    TextInputLayout dialog_databaseLogin_name_layout = customDialog.findViewById(R.id.dialog_databaseLogin_name_layout);
+                    TextInputLayout dialog_databaseLogin_oldPassword_layout = customDialog.findViewById(R.id.dialog_databaseLogin_oldPassword_layout);
+                    TextInputLayout dialog_databaseLogin_passwordFirst_layout = customDialog.findViewById(R.id.dialog_databaseLogin_passwordFirst_layout);
+                    TextInputLayout dialog_databaseLogin_passwordSecond_layout = customDialog.findViewById(R.id.dialog_databaseLogin_passwordSecond_layout);
+
+                    Helpers.TextInputHelper helper = new Helpers.TextInputHelper();
+                    helper.addValidator(dialog_databaseLogin_name_layout, dialog_databaseLogin_passwordFirst_layout, dialog_databaseLogin_passwordSecond_layout)
+                            .defaultDialogValidation(customDialog)
+                            .setInputType(dialog_databaseLogin_passwordFirst_layout, Helpers.TextInputHelper.INPUT_TYPE.PASSWORD)
+                            .setInputType(dialog_databaseLogin_passwordSecond_layout, Helpers.TextInputHelper.INPUT_TYPE.PASSWORD)
+                            .setValidation(dialog_databaseLogin_passwordSecond_layout, (validator, text) -> {
+                                if (Utility.stringExists(text) && !text.equals(dialog_databaseLogin_passwordFirst_layout.getEditText().getText().toString().trim()))
+                                    validator.setInvalid("Die Passwörter müssen gleich sein");
+                            });
+
+                })
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
-                .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> onFinish.runOndatabaseCodeFinish(customDialog.getEditText()))
-                .standardEdit()
+                .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
+//                    onFinish.runOndatabaseCodeFinish(customDialog.getEditText());
+
+                    TextInputLayout dialog_databaseLogin_name_layout = customDialog.findViewById(R.id.dialog_databaseLogin_name_layout);
+                    TextInputLayout dialog_databaseLogin_passwordFirst_layout = customDialog.findViewById(R.id.dialog_databaseLogin_passwordFirst_layout);
+
+                    String databaseCode = dialog_databaseLogin_name_layout.getEditText().getText().toString().trim();
+                    String password = dialog_databaseLogin_passwordFirst_layout.getEditText().getText().toString().trim();
+
+                    if (!Utility.stringExists(databaseCode))
+                        return;
+
+                    Database.databaseCall_read(dataSnapshot -> {
+                        if (dataSnapshot.getValue() == null) {
+                            // ToDo: neue Datenbank erstellen
+                            Toast.makeText(this, "Datenbank nicht vorhanden", Toast.LENGTH_SHORT).show();
+                        } else if (Hashing.sha256().hashString(password, StandardCharsets.UTF_8).toString().equals(dataSnapshot.getValue())) {
+                            onFinish.runOndatabaseCodeFinish(databaseCode);
+                            customDialog.dismiss();
+                        } else
+                            Toast.makeText(this, "Das Passwort ist falsch", Toast.LENGTH_SHORT).show();
+                    }, databaseError -> {
+                        String BREAKPOINT = null;
+                        Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
+                    }, databaseCode, Database.PASSWORD);
+
+
+                }, false)
+                .disableLastAddedButton()
                 .show();
 
     }

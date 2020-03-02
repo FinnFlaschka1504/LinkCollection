@@ -4,11 +4,13 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 import android.graphics.Color;
 import android.graphics.drawable.Icon;
 import android.os.Bundle;
+import android.util.Log;
 import android.util.Pair;
 import android.view.View;
 import android.widget.AdapterView;
@@ -21,6 +23,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
@@ -56,6 +59,7 @@ import com.finn.androidUtilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
+import com.maxMustermannGeheim.linkcollection.Utilities.VersionControl;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,12 +72,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import bsh.EvalError;
-import bsh.Interpreter;
-
 import static com.maxMustermannGeheim.linkcollection.Activities.Settings.Space.allSpaces;
 
 public class Settings extends AppCompatActivity {
+    private static final String TAG = "Settings";
 
     public static final String SHARED_PREFERENCES_SETTINGS = "SHARED_PREFERENCES_SETTINGS";
 
@@ -93,6 +95,9 @@ public class Settings extends AppCompatActivity {
     public static final String SETTING_SPACE_ENCRYPTED_ = "SETTING_SPACE_ENCRYPTED_";
     public static final String SETTING_SPACE_ENCRYPTION_PASSWORD = "SETTING_SPACE_ENCRYPTION_PASSWORD";
 
+    public static final String LAST_VERSION = "LAST_VERSION";
+    public static final String LOGIN_CONFIRMED = "LOGIN_CONFIRMED";
+
     public static Map<String, String> settingsMap = new HashMap<>();
 
     static public Database database = Database.getInstance();
@@ -106,6 +111,9 @@ public class Settings extends AppCompatActivity {
     TextView settings_others_encryptedSpaces;
     Button settings_others_encryptedSelector;
     Button settings_others_showShortcuts;
+    Button settings_others_checkForUpdate;
+    TextView settings_others_version;
+    TextView settings_others_changeLog;
 
     Database.DatabaseReloadListener databaseReloadListener;
     CustomRecycler spaceRecycler_customRecycler;
@@ -133,10 +141,8 @@ public class Settings extends AppCompatActivity {
         settingsMap.put(SETTING_VIDEO_AUTO_SEARCH, "true");
         settingsMap.put(SETTING_VIDEO_TMDB_SHORTCUT, "true");
         settingsMap.put(SETTING_SPACE_ENCRYPTION_PASSWORD, "Passwort");
-//        settingsMap.put(SETTING_FINANCES_SWAP_LABLES, "false");
-////        settingsMap.put(SETTING_OTHERS_USER, Database.getInstance().loggedInUserId);
-////        settingsMap.put(SETTING_OTHERS_DARK_MODE, context.getResources().getString(R.string.automatically));
-//        settingsMap.put(LAST_VERSION, "1.0");
+        settingsMap.put(LAST_VERSION, "1.0");
+        settingsMap.put(LOGIN_CONFIRMED, "false");
     }
 
     public static boolean changeSetting(String key, String newValue) {
@@ -464,6 +470,10 @@ public class Settings extends AppCompatActivity {
         settings_others_encryptedSpaces = findViewById(R.id.settings_others_encryptedSpaces);
         settings_others_encryptedSelector = findViewById(R.id.settings_others_encryptedSelector);
         settings_others_showShortcuts = findViewById(R.id.settings_others_showShortcuts);
+        settings_others_version = findViewById(R.id.settings_others_version);
+        settings_others_checkForUpdate = findViewById(R.id.settings_others_checkForUpdate);
+        settings_others_changeLog = findViewById(R.id.settings_others_changeLog);
+
     }
 
     private void setSettings() {
@@ -492,13 +502,15 @@ public class Settings extends AppCompatActivity {
 
 
         settings_others_activeSpaces.setText(
-                allSpaces.stream().filter(Space::isShown).map(ParentClass::getName).collect(Collectors.joining(", "))
-        );
+                allSpaces.stream().filter(Space::isShown).map(ParentClass::getName).collect(Collectors.joining(", ")));
 
 
         settings_others_encryptedSpaces.setText(
-                allSpaces.stream().filter(Space::isEncrypted).map(ParentClass::getName).collect(Collectors.joining(", "))
-        );
+                allSpaces.stream().filter(Space::isEncrypted).map(ParentClass::getName).collect(Collectors.joining(", ")));
+
+
+        settings_others_version.setText(VersionControl.getVersion(this));
+
     }
 
     private void setListeners() {
@@ -653,6 +665,14 @@ public class Settings extends AppCompatActivity {
                         })
                         .show()
         );
+
+        settings_others_checkForUpdate.setOnClickListener(v -> {
+            if (VersionControl.hasPermissions(this, true))
+                updateApp();
+        });
+
+
+        settings_others_changeLog.setOnClickListener(v -> VersionControl.showChangeLog(this, true));
     }
 
     public static class Space extends ParentClass {
@@ -907,4 +927,23 @@ public class Settings extends AppCompatActivity {
         saveSettings();
         super.onDestroy();
     }
+
+
+    //  ------------------------- Update ------------------------->
+    void updateApp() {
+        VersionControl.checkForUpdate(this, true);
+//        VersionControl.updateApp(this);
+    }
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            Log.v(TAG, "Permission: " + permissions[0] + "was " + grantResults[0]);
+            if (VersionControl.hasPermissions(this, true))
+                updateApp();
+        }
+    }
+    //  <------------------------- Update -------------------------
 }

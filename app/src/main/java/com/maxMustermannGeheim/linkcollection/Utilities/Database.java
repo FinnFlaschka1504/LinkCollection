@@ -67,6 +67,7 @@ public class Database {
 
 
     //  ----- Content deklaration ----->
+    public static final String PASSWORD = "PASSWORD";
     public static final String DATABASE_CODE = "DATABASE_CODE";
     public static String databaseCode;
 
@@ -729,11 +730,11 @@ public class Database {
 
 
     //  ----- Firebase Call ----->
-    interface OnDatabaseCallFinished {
+    public interface OnDatabaseCallFinished {
         void onFinished(DataSnapshot dataSnapshot);
     }
 
-    interface OnDatabaseCallFailed {
+    public interface OnDatabaseCallFailed {
         void onFailed(DatabaseError databaseError);
     }
 

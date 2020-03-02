@@ -9,8 +9,8 @@ android {
         applicationId "com.maxMustermannGeheim.linkcollection"
         minSdkVersion 27
         targetSdkVersion 29
-        versionCode 1
-        versionName "1.0"
+        versionCode 3
+        versionName "2.1"
         testInstrumentationRunner "androidx.dialog_poster.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -67,4 +67,5 @@ dependencies {
     implementation 'me.zhanghai.android.materialratingbar:library:1.4.0'
 
     implementation group: 'org.apache-extras.beanshell', name: 'bsh', version: '2.0b6'
+    implementation group: 'com.google.guava', name: 'guava', version: '28.2-android'
 }

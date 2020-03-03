@@ -353,25 +353,27 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 .setView(R.layout.dialog_database_login)
                 .setSetViewContent((customDialog, view, reload) -> {
                     TextInputLayout dialog_databaseLogin_name_layout = customDialog.findViewById(R.id.dialog_databaseLogin_name_layout);
-                    TextInputLayout dialog_databaseLogin_oldPassword_layout = customDialog.findViewById(R.id.dialog_databaseLogin_oldPassword_layout);
                     TextInputLayout dialog_databaseLogin_passwordFirst_layout = customDialog.findViewById(R.id.dialog_databaseLogin_passwordFirst_layout);
                     TextInputLayout dialog_databaseLogin_passwordSecond_layout = customDialog.findViewById(R.id.dialog_databaseLogin_passwordSecond_layout);
 
                     Helpers.TextInputHelper helper = new Helpers.TextInputHelper();
                     helper.addValidator(dialog_databaseLogin_name_layout, dialog_databaseLogin_passwordFirst_layout, dialog_databaseLogin_passwordSecond_layout)
                             .defaultDialogValidation(customDialog)
-                            .setInputType(dialog_databaseLogin_passwordFirst_layout, Helpers.TextInputHelper.INPUT_TYPE.PASSWORD)
-                            .setInputType(dialog_databaseLogin_passwordSecond_layout, Helpers.TextInputHelper.INPUT_TYPE.PASSWORD)
                             .setValidation(dialog_databaseLogin_passwordSecond_layout, (validator, text) -> {
                                 if (Utility.stringExists(text) && !text.equals(dialog_databaseLogin_passwordFirst_layout.getEditText().getText().toString().trim()))
                                     validator.setInvalid("Die Passwörter müssen gleich sein");
-                            });
+                            })
+                            .addActionListener(dialog_databaseLogin_passwordSecond_layout, (textInputHelper, textInputLayout, actionId, text) -> {
+                                View button = customDialog.getActionButton().getButton();
+                                if (button.isEnabled())
+                                    button.callOnClick();
+                            }, Helpers.TextInputHelper.IME_ACTION.DONE);
 
+                    dialog_databaseLogin_name_layout.requestFocus();
+                    Utility.changeWindowKeyboard(customDialog.getDialog().getWindow(), true);
+                    customDialog.getDialog().setCanceledOnTouchOutside(false);
                 })
-                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                 .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
-//                    onFinish.runOndatabaseCodeFinish(customDialog.getEditText());
-
                     TextInputLayout dialog_databaseLogin_name_layout = customDialog.findViewById(R.id.dialog_databaseLogin_name_layout);
                     TextInputLayout dialog_databaseLogin_passwordFirst_layout = customDialog.findViewById(R.id.dialog_databaseLogin_passwordFirst_layout);
 
@@ -383,23 +385,29 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
                     Database.databaseCall_read(dataSnapshot -> {
                         if (dataSnapshot.getValue() == null) {
-                            // ToDo: neue Datenbank erstellen
-                            Toast.makeText(this, "Datenbank nicht vorhanden", Toast.LENGTH_SHORT).show();
+                            CustomDialog.Builder(this)
+                                    .setTitle("Batenbank Noch Nicht Vorhanden")
+                                    .setText(new Helpers.SpannableStringHelper().append("Die Datenbank '").appendBold(databaseCode).append("' existiert noch nicht.\nMochtest du sie hinzufügen?").get())
+                                    .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                    .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
+                                        customDialog.dismiss();
+                                        onFinish.runOndatabaseCodeFinish(databaseCode);
+                                        Database.databaseCall_write(Hashing.sha256().hashString(password, StandardCharsets.UTF_8).toString(), Database.databaseCode, Database.PASSWORD);
+                                    })
+                                    .show();
                         } else if (Hashing.sha256().hashString(password, StandardCharsets.UTF_8).toString().equals(dataSnapshot.getValue())) {
                             onFinish.runOndatabaseCodeFinish(databaseCode);
                             customDialog.dismiss();
                         } else
                             Toast.makeText(this, "Das Passwort ist falsch", Toast.LENGTH_SHORT).show();
                     }, databaseError -> {
-                        String BREAKPOINT = null;
                         Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
                     }, databaseCode, Database.PASSWORD);
 
-
                 }, false)
                 .disableLastAddedButton()
+                .enablePermanentDialog()
                 .show();
-
     }
 
     //  ----- VIDEO ----->

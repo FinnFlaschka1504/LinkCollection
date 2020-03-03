@@ -31,6 +31,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.finn.androidUtilities.Helpers;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.common.hash.Hashing;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -61,6 +62,7 @@ import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.maxMustermannGeheim.linkcollection.Utilities.VersionControl;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -464,7 +466,7 @@ public class Settings extends AppCompatActivity {
     private void getViews() {
         spaceRecycler = findViewById(R.id.settings_spaces_recycler);
         settings_others_databaseCode = findViewById(R.id.settings_others_databaseCode);
-        settings_others_changeDatabaseCode = findViewById(R.id.settings_others_changeDatabaseCode);
+        settings_others_changeDatabaseCode = findViewById(R.id.settings_others_datebaseSettings);
         settings_others_activeSpaces = findViewById(R.id.settings_others_activeSpaces);
         settings_others_spaceSelector = findViewById(R.id.settings_others_spaceSelector);
         settings_others_encryptedSpaces = findViewById(R.id.settings_others_encryptedSpaces);
@@ -514,19 +516,204 @@ public class Settings extends AppCompatActivity {
     }
 
     private void setListeners() {
-        settings_others_changeDatabaseCode.setOnClickListener(v -> {
+        SharedPreferences mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
+
+        Runnable changeCode = () -> {
             CustomDialog.Builder(this)
                     .setTitle("Datenbank-Code Ändern")
-                    .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
-                    .setEdit(new CustomDialog.EditBuilder().setText(Database.databaseCode).setHint("Datenbank-Code"))
-                    .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
-                        String code = customDialog.getEditText().trim();
-                        SharedPreferences mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
-                        mySPR_daten.edit().putString(Database.DATABASE_CODE, code).commit();
-                        Database.getInstance(mySPR_daten, database1 -> {
-                        }, false);
+                    .setView(R.layout.dialog_database_login)
+                    .setSetViewContent((customDialog, view, reload) -> {
+                        TextInputLayout dialog_databaseLogin_name_layout = customDialog.findViewById(R.id.dialog_databaseLogin_name_layout);
+                        TextInputLayout dialog_databaseLogin_passwordFirst_layout = customDialog.findViewById(R.id.dialog_databaseLogin_passwordFirst_layout);
+                        TextInputLayout dialog_databaseLogin_passwordSecond_layout = customDialog.findViewById(R.id.dialog_databaseLogin_passwordSecond_layout);
+
+                        Helpers.TextInputHelper helper = new Helpers.TextInputHelper();
+                        helper.addValidator(dialog_databaseLogin_name_layout, dialog_databaseLogin_passwordFirst_layout, dialog_databaseLogin_passwordSecond_layout)
+                                .defaultDialogValidation(customDialog)
+                                .setValidation(dialog_databaseLogin_passwordSecond_layout, (validator, text) -> {
+                                    if (Utility.stringExists(text) && !text.equals(dialog_databaseLogin_passwordFirst_layout.getEditText().getText().toString().trim()))
+                                        validator.setInvalid("Die Passwörter müssen gleich sein");
+                                })
+                                .addActionListener(dialog_databaseLogin_passwordSecond_layout, (textInputHelper, textInputLayout, actionId, text) -> {
+                                    View button = customDialog.getActionButton().getButton();
+                                    if (button.isEnabled())
+                                        button.callOnClick();
+                                }, Helpers.TextInputHelper.IME_ACTION.DONE);
+
+                        dialog_databaseLogin_name_layout.requestFocus();
+                        Utility.changeWindowKeyboard(customDialog.getDialog().getWindow(), true);
                     })
-                    .setOnDialogDismiss(customDialog -> settings_others_databaseCode.setText(customDialog.getEditText()))
+                    .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                    .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
+                        TextInputLayout dialog_databaseLogin_name_layout = customDialog.findViewById(R.id.dialog_databaseLogin_name_layout);
+                        TextInputLayout dialog_databaseLogin_passwordFirst_layout = customDialog.findViewById(R.id.dialog_databaseLogin_passwordFirst_layout);
+
+                        String databaseCode = dialog_databaseLogin_name_layout.getEditText().getText().toString().trim();
+                        String password = dialog_databaseLogin_passwordFirst_layout.getEditText().getText().toString().trim();
+
+                        if (!Utility.stringExists(databaseCode))
+                            return;
+
+                        Database.databaseCall_read(dataSnapshot -> {
+                            if (dataSnapshot.getValue() == null) {
+                                CustomDialog.Builder(this)
+                                        .setTitle("Batenbank Noch Nicht Vorhanden")
+                                        .setText(new Helpers.SpannableStringHelper().append("Die Datenbank '").appendBold(databaseCode).append("' existiert noch nicht.\nMochtest du sie hinzufügen?").get())
+                                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                        .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
+                                            customDialog.dismiss();
+
+                                            mySPR_daten.edit().putString(Database.DATABASE_CODE, databaseCode).commit();
+                                            Database.getInstance(mySPR_daten, database1 -> {
+                                            }, true);
+
+                                            Database.databaseCall_write(Hashing.sha256().hashString(password, StandardCharsets.UTF_8).toString(), Database.databaseCode, Database.PASSWORD);
+                                        })
+                                        .show();
+                            } else if (Hashing.sha256().hashString(password, StandardCharsets.UTF_8).toString().equals(dataSnapshot.getValue())) {
+                                mySPR_daten.edit().putString(Database.DATABASE_CODE, databaseCode).commit();
+                                Database.getInstance(mySPR_daten, database1 -> {
+                                }, false);
+                                customDialog.dismiss();
+                            } else
+                                Toast.makeText(this, "Das Passwort ist falsch", Toast.LENGTH_SHORT).show();
+                        }, databaseError -> {
+                            Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
+                        }, databaseCode, Database.PASSWORD);
+
+                    }, false)
+                    .disableLastAddedButton()
+                    .setOnDialogDismiss(customDialog -> settings_others_databaseCode.setText(Database.databaseCode))
+                    .show();
+        };
+        Runnable renameCode = () -> {
+            CustomDialog.Builder(this)
+                    .setTitle("Datenbank Umbenennen")
+                    .standardEdit()
+                    .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                    .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
+                        String oldCode = Database.databaseCode;
+                        String newCode = customDialog.getEditText();
+                        Database.databaseCall_read(dataSnapshot -> {
+                            if (dataSnapshot.getValue() != null) {
+                                Toast.makeText(this, "Fehler: Eine Datenbank mit dem Code ist bereits vorhanden", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+
+                            Database.databaseCall_read(dataSnapshot1 -> {
+                                Database.accessChilds(Database.databaseReference, newCode).setValue(dataSnapshot1.getValue(), (databaseError, databaseReference) -> {
+                                    if (databaseError != null) {
+                                        Toast.makeText(Settings.this, "Fehler: " + databaseError.getMessage(), Toast.LENGTH_SHORT).show();
+                                        return;
+                                    }
+                                    Toast.makeText(Settings.this, "Verschoben", Toast.LENGTH_SHORT).show();
+
+                                    mySPR_daten.edit().putString(Database.DATABASE_CODE, newCode).commit();
+                                    Database.getInstance(mySPR_daten, database1 -> {
+                                    }, false);
+
+                                    customDialog.dismiss();
+
+                                    Database.databaseCall_delete(oldCode);
+                                    // ToDo: alte datenbank löschen
+                                });
+                            }, oldCode);
+                        }, newCode);
+                    }, false)
+                    .disableLastAddedButton()
+                    .show();
+        };
+        Runnable changePassword = () -> {
+            CustomDialog.Builder(this)
+                    .setTitle("Passwort Ändern")
+                    .setView(R.layout.dialog_database_login)
+                    .setSetViewContent((customDialog, view, reload) -> {
+                        customDialog.findViewById(R.id.dialog_databaseLogin_name_layout).setVisibility(View.GONE);
+                        TextInputLayout dialog_databaseLogin_oldPassword_layout = customDialog.findViewById(R.id.dialog_databaseLogin_oldPassword_layout);
+                        dialog_databaseLogin_oldPassword_layout.setVisibility(View.VISIBLE);
+                        TextInputLayout dialog_databaseLogin_passwordFirst_layout = customDialog.findViewById(R.id.dialog_databaseLogin_passwordFirst_layout);
+                        TextInputLayout dialog_databaseLogin_passwordSecond_layout = customDialog.findViewById(R.id.dialog_databaseLogin_passwordSecond_layout);
+
+                        Helpers.TextInputHelper helper = new Helpers.TextInputHelper();
+                        helper.addValidator(dialog_databaseLogin_oldPassword_layout, dialog_databaseLogin_passwordFirst_layout, dialog_databaseLogin_passwordSecond_layout)
+                                .defaultDialogValidation(customDialog)
+                                .setValidation(dialog_databaseLogin_passwordSecond_layout, (validator, text) -> {
+                                    if (Utility.stringExists(text) && !text.equals(dialog_databaseLogin_passwordFirst_layout.getEditText().getText().toString().trim()))
+                                        validator.setInvalid("Die Passwörter müssen gleich sein");
+                                })
+                                .addActionListener(dialog_databaseLogin_passwordSecond_layout, (textInputHelper, textInputLayout, actionId, text) -> {
+                                    View button = customDialog.getActionButton().getButton();
+                                    if (button.isEnabled())
+                                        button.callOnClick();
+                                }, Helpers.TextInputHelper.IME_ACTION.DONE);
+
+                        dialog_databaseLogin_oldPassword_layout.requestFocus();
+                        Utility.changeWindowKeyboard(customDialog.getDialog().getWindow(), true);
+                    })
+                    .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                    .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
+                        TextInputLayout dialog_databaseLogin_oldPassword_layout = customDialog.findViewById(R.id.dialog_databaseLogin_oldPassword_layout);
+                        TextInputLayout dialog_databaseLogin_passwordFirst_layout = customDialog.findViewById(R.id.dialog_databaseLogin_passwordFirst_layout);
+
+                        String oldPassword = dialog_databaseLogin_oldPassword_layout.getEditText().getText().toString().trim();
+                        String password = dialog_databaseLogin_passwordFirst_layout.getEditText().getText().toString().trim();
+                        String databaseCode = Database.databaseCode;
+
+                        if (!Utility.stringExists(databaseCode))
+                            return;
+
+                        Database.databaseCall_read(dataSnapshot -> {
+                            if (dataSnapshot.getValue() == null) {
+                                Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
+                            } else if (Hashing.sha256().hashString(oldPassword, StandardCharsets.UTF_8).toString().equals(dataSnapshot.getValue())) {
+                                Database.databaseCall_write(Utility.hash(password), databaseCode, Database.PASSWORD);
+                                Toast.makeText(this, "Passwort geändert", Toast.LENGTH_SHORT).show();
+                                customDialog.dismiss();
+                            } else
+                                Toast.makeText(this, "Das Passwort ist falsch", Toast.LENGTH_SHORT).show();
+                        }, databaseError -> {
+                            Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
+                        }, databaseCode, Database.PASSWORD);
+
+                    }, false)
+                    .disableLastAddedButton()
+                    .setOnDialogDismiss(customDialog -> settings_others_databaseCode.setText(Database.databaseCode))
+                    .show();
+
+        };
+        Runnable deleteDatabase = () -> {
+            final long[] time = {System.currentTimeMillis()};
+            CustomDialog.Builder(this)
+                    .setTitle("Datenbank Löschen")
+                    .setText("Willst du wirklich die Datenbank löschen?\nEine wiederherstellung der Daten ist aufwändig und nur für ca. 30 Tage möglich!\nMit einem Doppelclick bestätigen und die App startet danach neu.")
+                    .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
+                    .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
+                        if (System.currentTimeMillis() - time[0] > 300) {
+                            Toast.makeText(this, "Doppelclick zum bestätigen", Toast.LENGTH_SHORT).show();
+                            time[0] = System.currentTimeMillis();
+                            return;
+                        }
+
+                        Database.databaseCall_delete(Database.databaseCode);
+                        mySPR_daten.edit().clear().commit();
+                        Utility.restartApp(this);
+
+                        Toast.makeText(this, "Datenbank gelöscht", Toast.LENGTH_SHORT).show();
+                        customDialog.dismiss();
+                    }, false)
+                    .show();
+        };
+
+
+        settings_others_changeDatabaseCode.setOnClickListener(v -> {
+            CustomDialog.Builder(this)
+                    .setTitle("Datenbank Einstellungen")
+                    .addButton("Datenbank-Code ändern", customDialog -> changeCode.run())
+                    .addButton("Datenbank-Code umbenennen", customDialog -> renameCode.run())
+                    .addButton("Passwort ändern", customDialog -> changePassword.run())
+                    .addButton("Datenbank löschen", customDialog -> deleteDatabase.run())
+                    .enableTitleBackButton()
+                    .enableStackButtons()
                     .show();
         });
 

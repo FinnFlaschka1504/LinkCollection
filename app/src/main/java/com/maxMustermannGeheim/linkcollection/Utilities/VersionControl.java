@@ -89,7 +89,12 @@ public class VersionControl {
                             .setTitle("Update Verfügbar")
                             .setText("Die Version " + newVersion + " steht zum Download bereit \n(Aktuelle Version: " + version + ")")
                             .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
-                            .addButton("Herunterladen", dialog -> updateApp(activity, newVersion))
+                            .addButton("Herunterladen", dialog -> {
+                                if (hasPermissions(activity, true)) {
+                                    updateApp(activity, newVersion);
+                                    dialog.dismiss();
+                                }
+                            },false)
                             .colorLastAddedButton()
                             .show();
 
@@ -226,6 +231,9 @@ public class VersionControl {
                 "VersionControl hinzugefügt")));
         changeList.add(new Pair<>("2.1", Arrays.asList(
                 "Bei der Datenbank anmelden begonnen")));
+        changeList.add(new Pair<>("2.2", Arrays.asList(
+                "Bei der Datenbank anmelden abgeschlossen",
+                "Datenbanken können gelöscht und umbenannt werden")));
     };
 
     public static void showChangeLog(AppCompatActivity activity, boolean force) {

@@ -17,9 +17,7 @@
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/dialog_databaseLogin_name"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="text"
-            android:singleLine="true" />
+            android:layout_height="wrap_content" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -29,6 +27,7 @@
         android:hint="Altes Passwort"
         android:visibility="gone"
         app:errorEnabled="true"
+        app:passwordToggleEnabled="true"
         tools:visibility="visible">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -50,6 +49,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Passwort"
+        app:passwordToggleEnabled="true"
         app:errorEnabled="true">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -66,6 +66,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:hint="Passwort bestätigen"
+        app:passwordToggleEnabled="true"
         app:errorEnabled="true">
 
         <com.google.android.material.textfield.TextInputEditText

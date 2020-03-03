@@ -54,7 +54,7 @@ public class Database {
     private static Map<String, Object> lastUploaded_contentMap;
     //    public static Set<Pair<Boolean,Object>> changePairSet = new HashSet<>();
     public static List<Utility.Triple<Boolean, String[], Object>> updateList = new ArrayList<>();
-    private static DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
+    public static DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
     private static List<OnInstanceFinishedLoading> onInstanceFinishedLoadingList = new ArrayList<>();
     private static SharedPreferences mySPR_daten;
     private boolean online = false;

@@ -39,6 +39,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.finn.androidUtilities.CustomUtility;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
+import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
@@ -67,6 +68,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -193,6 +195,10 @@ public class Utility implements java.io.Serializable {
         System.exit(0);
     }
 
+    public static String hash(String s){
+        return Hashing.sha256().hashString(s, StandardCharsets.UTF_8).toString();
+    }
+
     public static void changeWindowKeyboard(Window window, boolean show) {
         if (show)
             window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
@@ -267,6 +273,8 @@ public class Utility implements java.io.Serializable {
         textView.setLinkTextColor(textView.getTextColors());
 //                activity.getResources().getColorStateList(R.color.clickable_text_color, null));
     }
+
+    // ToDo: Button Doppelclick Klasse
 
     //  ------------------------- watchLater ------------------------->
     public static List<String> getWatchLaterList_uuid() {
@@ -918,7 +926,7 @@ public class Utility implements java.io.Serializable {
     }
     //  <--------------- Toast ---------------
 
-    public static CustomDialog showEditItemDialog(Context context, com.finn.androidUtilities.CustomDialog addOrEditDialog, List<String> preSelectedUuidList, Object o, CategoriesActivity.CATEGORIES category) {
+    public static com.finn.androidUtilities.CustomDialog showEditItemDialog(Context context, com.finn.androidUtilities.CustomDialog addOrEditDialog, List<String> preSelectedUuidList, Object o, CategoriesActivity.CATEGORIES category) {
         Database database = Database.getInstance();
 
         if (preSelectedUuidList == null)
@@ -952,9 +960,9 @@ public class Utility implements java.io.Serializable {
 
         int saveButtonId = View.generateViewId();
 
-        CustomDialog dialog_AddActorOrGenre = CustomDialog.Builder(context)
+        com.finn.androidUtilities.CustomDialog dialog_AddActorOrGenre = com.finn.androidUtilities.CustomDialog.Builder(context)
                 .setTitle(editType_string + " Bearbeiten")
-                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .setView(R.layout.dialog_edit_item)
                 .setDimensions(true, true)
                 .disableScroll()
@@ -997,7 +1005,7 @@ public class Utility implements java.io.Serializable {
 
                 }, false)
                 .alignPreviousButtonsLeft()
-                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
+                .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     List<String> nameList = new ArrayList<>();
                     switch (category) {
                         case DARSTELLER:

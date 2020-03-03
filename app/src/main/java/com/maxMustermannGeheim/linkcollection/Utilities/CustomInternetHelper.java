@@ -77,8 +77,9 @@ public class CustomInternetHelper extends BroadcastReceiver {
     public static void destroyInstance(AppCompatActivity appCompatActivity) {
         if (appCompatActivity instanceof InternetStateReceiverListener)
             removeListener((InternetStateReceiverListener) appCompatActivity);
-
-        appCompatActivity.unregisterReceiver(customInternetHelper);
+        try {
+            appCompatActivity.unregisterReceiver(customInternetHelper);
+        } catch (IllegalArgumentException ignored) {}
         customInternetHelper = null;
     }
     //  <--------------- Initialize & Instance ---------------

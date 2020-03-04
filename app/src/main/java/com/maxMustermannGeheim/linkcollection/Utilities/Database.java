@@ -8,6 +8,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.finn.androidUtilities.CustomUtility;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -67,6 +68,9 @@ public class Database {
 
 
     //  ----- Content deklaration ----->
+    public static final String ENCRYPTION = "ENCRYPTION";
+    public static final String ENCRYPTION_PASSWORD = "ENCRYPTION_PASSWORD";
+    public static final String ENCRYPTED_SPACES = "ENCRYPTED_SPACES";
     public static final String PASSWORD = "PASSWORD";
     public static final String DATABASE_CODE = "DATABASE_CODE";
     public static String databaseCode;
@@ -181,6 +185,11 @@ public class Database {
         if (Database.exists())
             reload = true;
 
+//        CustomUtility.isOnline(() -> {
+//
+//        }, () -> {
+//
+//        });
         if (Utility.isOnline()) {
             Log.d(TAG, "getInstance: online");
             if (reload) {
@@ -563,7 +572,7 @@ public class Database {
             path.add(new String[]{((ParentClass) o).getUuid()});
             if (Settings.Space.needsToBeEncrypted(o.getClass())) {
                 o = gson.fromJson(gson.toJson(o), o.getClass());
-                ((ParentClass) o).encrypt(Settings.mySPR_settings.getString(Settings.SETTING_SPACE_ENCRYPTION_PASSWORD, "Passwort"));
+                ((ParentClass) o).encrypt(Settings.mySPR_settings.getString(Settings.SETTING_SPACE_ENCRYPTION_PASSWORD, Settings.SETTING_SPACE_ENCRYPTION_DEFAULT_PASSWORD));
             }
         }
 
@@ -601,7 +610,7 @@ public class Database {
         if (copy) {
             contentMap = deepCopyContentMap(true, false);
 
-            String key = Settings.mySPR_settings.getString(Settings.SETTING_SPACE_ENCRYPTION_PASSWORD, "Passwort");
+            String key = Settings.mySPR_settings.getString(Settings.SETTING_SPACE_ENCRYPTION_PASSWORD, Settings.SETTING_SPACE_ENCRYPTION_DEFAULT_PASSWORD);
             Settings.Space.allSpaces.stream().filter(Settings.Space::isEncrypted).forEach(space -> {
                 space.getAssociatedClasses().forEach(aClass -> {
                     contentMap.values().stream().filter(content -> content.tClass.isAssignableFrom(aClass)).findFirst().ifPresent(contentObject -> {
@@ -697,7 +706,7 @@ public class Database {
 
         // decrypt
         if (database.online && Settings.isLoaded()) {
-            String key = Settings.mySPR_settings.getString(Settings.SETTING_SPACE_ENCRYPTION_PASSWORD, "Passwort");
+            String key = Settings.mySPR_settings.getString(Settings.SETTING_SPACE_ENCRYPTION_PASSWORD, Settings.SETTING_SPACE_ENCRYPTION_DEFAULT_PASSWORD);
             Settings.Space.allSpaces.stream().filter(Settings.Space::isEncrypted).forEach(space -> {
                 space.getAssociatedClasses().forEach(aClass -> {
                     contentMap.values().stream().filter(content -> content.tClass.isAssignableFrom(aClass)).findFirst().ifPresent(contentObject -> {
@@ -705,6 +714,7 @@ public class Database {
                         if (content instanceof Map) {
                             ((Map) content).values().forEach(o -> ((ParentClass) o).decrypt(key));
                         } else if (content instanceof List) {
+                            // ToDo: Auch für Listen implementieren
                         }
                     });
                 });

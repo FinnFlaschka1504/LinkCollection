@@ -234,6 +234,9 @@ public class VersionControl {
         changeList.add(new Pair<>("2.2", Arrays.asList(
                 "Bei der Datenbank anmelden abgeschlossen",
                 "Datenbanken können gelöscht und umbenannt werden")));
+        changeList.add(new Pair<>("2.3", Arrays.asList(
+                "Bezeichnungen in den Datenbankeinstellungen überarbeitet",
+                "Film- und Serien-Genres können aus der TMDb importiert werden")));
     };
 
     public static void showChangeLog(AppCompatActivity activity, boolean force) {

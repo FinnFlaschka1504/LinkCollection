@@ -227,6 +227,24 @@ public class ShowActivity extends AppCompatActivity {
             };
             shows_search.setOnQueryTextListener(textListener);
 
+            if (database.showGenreMap.isEmpty() && Settings.getSingleSetting_boolean(this, Settings.SETTING_SHOW_ASK_FOR_GENRE_IMPORT)) {
+                CustomDialog.Builder(this)
+                        .setTitle("Genres Importieren")
+                        .setText("Es wurde bisher noch kein Genre hinzugefügt. Sollen die Genres aus der TMDb importiert werden?\nDies kann auch jederzeit in den Einstellungen getan werden.")
+                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                        .addButton("Nicht erneut Fragen", customDialog -> {
+                            Settings.changeSetting(Settings.SETTING_SHOW_ASK_FOR_GENRE_IMPORT, "false");
+                            Toast.makeText(this, "Du wirst nicht erneut gefragt", Toast.LENGTH_SHORT).show();
+                        })
+                        .alignPreviousButtonsLeft()
+                        .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog -> {
+                            Utility.importTmdbGenre(this, false);
+                            setResult(RESULT_OK);
+                        })
+                        .show();
+                return;
+            }
+
             if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_SHORTCUT))
                 showEditOrNewDialog(null);
 
@@ -273,8 +291,12 @@ public class ShowActivity extends AppCompatActivity {
                         .sort();
 
                 if (!getIntent().getBooleanExtra(EXTRA_NEXT_EPISODE_SELECT, false)) {
-                    show[0] = showList.get(0);
-                    onDecided.run();
+                    if (showList.isEmpty()) {
+                        Toast.makeText(this, "Es wurde noch keine Serie hinterlegt", Toast.LENGTH_SHORT).show();
+                    } else {
+                        show[0] = showList.get(0);
+                        onDecided.run();
+                    }
                 } else {
                     com.finn.androidUtilities.CustomDialog selectDialog = com.finn.androidUtilities.CustomDialog.Builder(this);
                     com.finn.androidUtilities.CustomRecycler<String> customRecycler = new com.finn.androidUtilities.CustomRecycler<String>(this)
@@ -836,8 +858,6 @@ public class ShowActivity extends AppCompatActivity {
                 .setSetViewContent((customDialog, view, reload) -> {
                     ((TextView) view.findViewById(R.id.dialog_detailShow_title)).setText(show.getName());
                     Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.SHOW_GENRES, view.findViewById(R.id.dialog_detailShow_genre), show.getGenreIdList(), database.showGenreMap);
-//                    ((TextView) view.findViewById(R.id.dialog_detailShow_genre)).setText(
-//                            show.getGenreIdList().stream().map(uuid -> database.showGenreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                     view.findViewById(R.id.dialog_detailShow_genre).setSelected(true);
                     ((TextView) view.findViewById(R.id.dialog_detailShow_release))
                             .setText(show.getFirstAirDate() != null ? new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(show.getFirstAirDate()) : "");

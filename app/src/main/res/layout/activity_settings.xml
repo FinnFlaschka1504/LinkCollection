@@ -141,7 +141,7 @@
                         android:id="@+id/textView"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Datenbank-Code ändern, Datenbank-Code umbenennen, Passwort ändern, oder Datenbank löschen"
+                        android:text="Datenbank wechseln, Datenbank-Namen umbenennen, Passwort ändern, oder Datenbank löschen"
                         android:textSize="12sp" />
 
                     <LinearLayout
@@ -152,7 +152,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Aktueller Code: "
+                            android:text="Aktuelle Datenbank: "
                             android:textSize="12sp" />
 
                         <TextView
@@ -217,7 +217,7 @@
                             android:layout_height="wrap_content"
                             android:textSize="12sp"
                             android:textStyle="italic"
-                            tools:text="Datenbank" />
+                            tools:text="Video, Serie, .." />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -271,7 +271,7 @@
                             android:layout_height="wrap_content"
                             android:textSize="12sp"
                             android:textStyle="italic"
-                            tools:text="Datenbank" />
+                            tools:text="Schulden" />
                     </LinearLayout>
                 </LinearLayout>
 

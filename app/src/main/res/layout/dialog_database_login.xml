@@ -11,7 +11,7 @@
         android:id="@+id/dialog_databaseLogin_name_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Datenbank-Code"
+        android:hint="Datenbank-Name"
         app:errorEnabled="true">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -39,6 +39,7 @@
     </com.google.android.material.textfield.TextInputLayout>
 
     <View
+        android:id="@+id/dialog_databaseLogin_divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginVertical="8dp"

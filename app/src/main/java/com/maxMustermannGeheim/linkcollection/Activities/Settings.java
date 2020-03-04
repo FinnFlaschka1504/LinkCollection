@@ -29,6 +29,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.finn.androidUtilities.CustomUtility;
 import com.finn.androidUtilities.Helpers;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.common.hash.Hashing;
@@ -87,6 +88,9 @@ public class Settings extends AppCompatActivity {
 //    public static final String LAST_VERSION = "LAST_VERSION";
 //    public static final String SETTING_OTHERS_USER = "SETTING_OTHERS_USER";
 //    public static final String SETTING_OTHERS_DARK_MODE = "SETTING_OTHERS_DARK_MODE";
+    public static final String SETTING_VIDEO_ASK_FOR_GENRE_IMPORT = "SETTING_VIDEO_ASK_FOR_GENRE_IMPORT";
+    public static final String SETTING_SHOW_ASK_FOR_GENRE_IMPORT = "SETTING_SHOW_ASK_FOR_GENRE_IMPORT";
+
     public static final String SETTING_VIDEO_SHOW_RELEASE = "SETTING_VIDEO_SHOW_RELEASE";
     public static final String SETTING_VIDEO_AUTO_SEARCH = "SETTING_VIDEO_AUTO_SEARCH";
     public static final String SETTING_VIDEO_TMDB_SHORTCUT = "SETTING_VIDEO_TMDB_SHORTCUT";
@@ -96,6 +100,7 @@ public class Settings extends AppCompatActivity {
     public static final String SETTING_SPACE_ORDER = "SETTING_SPACE_ORDER";
     public static final String SETTING_SPACE_ENCRYPTED_ = "SETTING_SPACE_ENCRYPTED_";
     public static final String SETTING_SPACE_ENCRYPTION_PASSWORD = "SETTING_SPACE_ENCRYPTION_PASSWORD";
+    public static final String SETTING_SPACE_ENCRYPTION_DEFAULT_PASSWORD = "passwort";
 
     public static final String LAST_VERSION = "LAST_VERSION";
     public static final String LOGIN_CONFIRMED = "LOGIN_CONFIRMED";
@@ -142,9 +147,11 @@ public class Settings extends AppCompatActivity {
         settingsMap.put(SETTING_VIDEO_SHOW_RELEASE, "true");
         settingsMap.put(SETTING_VIDEO_AUTO_SEARCH, "true");
         settingsMap.put(SETTING_VIDEO_TMDB_SHORTCUT, "true");
-        settingsMap.put(SETTING_SPACE_ENCRYPTION_PASSWORD, "Passwort");
+        settingsMap.put(SETTING_SPACE_ENCRYPTION_PASSWORD, SETTING_SPACE_ENCRYPTION_DEFAULT_PASSWORD);
         settingsMap.put(LAST_VERSION, "1.0");
         settingsMap.put(LOGIN_CONFIRMED, "false");
+        settingsMap.put(SETTING_VIDEO_ASK_FOR_GENRE_IMPORT, "true");
+        settingsMap.put(SETTING_SHOW_ASK_FOR_GENRE_IMPORT, "true");
     }
 
     public static boolean changeSetting(String key, String newValue) {
@@ -156,7 +163,12 @@ public class Settings extends AppCompatActivity {
     }
 
     public static String getSingleSetting(Context context, String key) {
-        return context.getSharedPreferences(SHARED_PREFERENCES_SETTINGS, MODE_PRIVATE).getString(key, null);
+        String setting = context.getSharedPreferences(SHARED_PREFERENCES_SETTINGS, MODE_PRIVATE).getString(key, null);
+        if (setting == null) {
+            if (settingsMap.containsKey(key))
+                return settingsMap.get(key);
+        }
+        return setting;
     }
 
     public static Boolean getSingleSetting_boolean(Context context, String key) {
@@ -178,6 +190,7 @@ public class Settings extends AppCompatActivity {
             return;
 
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_video), context.getString(R.string.bottomMenu_videos)).setActivity(VideoActivity.class).setItemId(Space.SPACE_VIDEO).setIconId(R.drawable.ic_videos).setFragmentLayoutId(R.layout.main_fragment_videos)
+                .setKey(Database.VIDEOS)
                 .setSetLayout((space, view) -> {
                     ((TextView) view.findViewById(R.id.main_label)).setText(space.getPlural());
 
@@ -197,6 +210,11 @@ public class Settings extends AppCompatActivity {
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showRelease)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_RELEASE));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_autoSearch)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_AUTO_SEARCH));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_tmdbShortcut)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_TMDB_SHORTCUT));
+
+                    view.findViewById(R.id.dialogSettingsVideo_edit_importGenres).setOnClickListener(v -> {
+                        Utility.importTmdbGenre(context, true);
+                        context.setResult(RESULT_OK);
+                    });
 
                     ((TextView) view.findViewById(R.id.dialogSettingsVideo_edit_parseUrl_added)).setText(database.urlParserMap.values().stream().map(UrlParser::getName).collect(Collectors.joining(", ")));
                     view.findViewById(R.id.dialogSettingsVideo_edit_parseUrl_select).setOnClickListener(v -> {
@@ -249,6 +267,7 @@ public class Settings extends AppCompatActivity {
                     }
                 })));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_show), context.getString(R.string.bottomMenu_shows)).setActivity(ShowActivity.class).setItemId(Space.SPACE_SHOW).setIconId(R.drawable.ic_shows).setFragmentLayoutId(R.layout.main_fragment_shows)
+                .setKey(Database.SHOWS)
                 .setSetLayout((space, view) -> {
                     ((TextView) view.findViewById(R.id.main_shows_label)).setText(space.getPlural());
 
@@ -277,8 +296,19 @@ public class Settings extends AppCompatActivity {
                     view.findViewById(R.id.main_show_nextEpisode).setOnLongClickListener(MainActivity::showNextEpisode_longClick);
                 })
                 .setAssociatedClasses(Show.class, ShowGenre.class)
-                .setSettingsDialog(null));
+                .setSettingsDialog(new Utility.Triple<>(R.layout.dialog_settings_show, (customDialog, view, space) -> {
+                    view.findViewById(R.id.dialogSettingsShow_edit_importGenres).setOnClickListener(v -> {
+                        Utility.importTmdbGenre(context, false);
+                        context.setResult(RESULT_OK);
+                    });
+                }, new Space.OnClick() {
+                    @Override
+                    public void runOnClick(CustomDialog customDialog, Space space) {
+
+                    }
+                })));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_knowledge), context.getString(R.string.bottomMenu_knowledge)).setActivity(KnowledgeActivity.class).setItemId(Space.SPACE_KNOWLEDGE).setIconId(R.drawable.ic_knowledge).setFragmentLayoutId(R.layout.main_fragment_knowledge)
+                .setKey(Database.KNOWLEDGE)
                 .setSetLayout((space, view) -> {
                     ((TextView) view.findViewById(R.id.main_knowledge_label)).setText(space.getPlural());
                     ((TextView) view.findViewById(R.id.main_knowledge_Count)).setText(String.valueOf(database.knowledgeMap.size()));
@@ -287,6 +317,7 @@ public class Settings extends AppCompatActivity {
                 .setAssociatedClasses(Knowledge.class, KnowledgeCategory.class)
                 .setSettingsDialog(null));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_owe), context.getString(R.string.bottomMenu_owe)).setActivity(OweActivity.class).setItemId(Space.SPACE_OWE).setIconId(R.drawable.ic_euro).setFragmentLayoutId(R.layout.main_fragment_owe)
+                .setKey(Database.OWE)
                 .setSetLayout((space, view) -> {
                     ((TextView) view.findViewById(R.id.main_owe_label)).setText(space.getPlural());
                     ((TextView) view.findViewById(R.id.main_owe_countAll)).setText(String.valueOf(database.oweMap.values().stream().filter(Owe::isOpen).count()));
@@ -295,6 +326,7 @@ public class Settings extends AppCompatActivity {
                 .setAssociatedClasses(Owe.class, Person.class)
                 .setSettingsDialog(null));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_joke), context.getString(R.string.bottomMenu_jokes)).setActivity(JokeActivity.class).setItemId(Space.SPACE_JOKE).setIconId(R.drawable.ic_jokes).setFragmentLayoutId(R.layout.main_fragment_joke)
+                .setKey(Database.JOKE)
                 .setSetLayout((space, view) -> {
                     ((TextView) view.findViewById(R.id.main_joke_label)).setText(space.getPlural());
 
@@ -520,7 +552,7 @@ public class Settings extends AppCompatActivity {
 
         Runnable changeCode = () -> {
             CustomDialog.Builder(this)
-                    .setTitle("Datenbank-Code Ändern")
+                    .setTitle("Datenbank Wechseln")
                     .setView(R.layout.dialog_database_login)
                     .setSetViewContent((customDialog, view, reload) -> {
                         TextInputLayout dialog_databaseLogin_name_layout = customDialog.findViewById(R.id.dialog_databaseLogin_name_layout);
@@ -708,11 +740,12 @@ public class Settings extends AppCompatActivity {
         settings_others_changeDatabaseCode.setOnClickListener(v -> {
             CustomDialog.Builder(this)
                     .setTitle("Datenbank Einstellungen")
-                    .addButton("Datenbank-Code ändern", customDialog -> changeCode.run())
-                    .addButton("Datenbank-Code umbenennen", customDialog -> renameCode.run())
+                    .addButton("Datenbank wechseln", customDialog -> changeCode.run())
+                    .addButton("Datenbank-Namen umbenennen", customDialog -> renameCode.run())
                     .addButton("Passwort ändern", customDialog -> changePassword.run())
                     .addButton("Datenbank löschen", customDialog -> deleteDatabase.run())
                     .enableTitleBackButton()
+                    .disableButtonAllCaps()
                     .enableStackButtons()
                     .show();
         });
@@ -753,13 +786,15 @@ public class Settings extends AppCompatActivity {
                             .setDividerMargin_inDp(16)
                             .generateRecyclerView())
                     .setOnDialogDismiss(dialog -> updateSpaceStatusSettings())
-                    .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
+                    .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK)
                     .show();
         });
 
+
         settings_others_encryptedSelector.setOnClickListener(v -> {
-            Set<String> spaceSet = allSpaces.stream().filter(Space::isEncrypted).map(ParentClass::getName).collect(Collectors.toSet());
-            com.finn.androidUtilities.CustomDialog.Builder(this)
+            Set<String> spaceSet = allSpaces.stream().filter(Space::isEncrypted).map(Space::getKey).collect(Collectors.toSet());
+            HashSet<String> prevSet = new HashSet<>(spaceSet);
+            CustomDialog.Builder(this)
                     .setTitle("Bereiche Auswählen")
                     .setView(new CustomRecycler<Space>(this)
                             .setItemLayout(R.layout.list_item_space_shown)
@@ -775,35 +810,96 @@ public class Settings extends AppCompatActivity {
                                 boolean checked = list_spaceSetting_shown.isChecked();
 
                                 list_spaceSetting_shown.setChecked(!checked);
-                                space.setEncrypted(!checked);
-                                settings_others_activeSpaces.setText(
-                                        allSpaces.stream().filter(Space::isEncrypted).map(ParentClass::getName).collect(Collectors.joining(", "))
-                                );
+
+                                if (!checked) {
+                                    spaceSet.add(space.getKey());
+                                } else {
+                                    spaceSet.remove(space.getKey());
+                                }
+
                             })
                             .setDividerMargin_inDp(16)
                             .generateRecyclerView())
-                    .setOnDialogDismiss(dialog -> {
-                        updateSpaceStatusSettings();
-                        if (!spaceSet.equals(allSpaces.stream().filter(Space::isEncrypted).map(ParentClass::getName).collect(Collectors.toSet()))) {
-                            Database.saveAll(true);
-                        }
-                    })
                     .addButton("Passwort Ändern", customDialog -> {
-                        com.finn.androidUtilities.CustomDialog.Builder(this)
-                                .setTitle("Passwort Festlegen")
-                                .setEdit(new com.finn.androidUtilities.CustomDialog.EditBuilder().setHint("Neues Passwort eingeben").setInputType(Helpers.TextInputHelper.INPUT_TYPE.PASSWORD))
-                                .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
-                                .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
-                                    String newPassword = customDialog1.getEditText();
-                                    changeSetting(SETTING_SPACE_ENCRYPTION_PASSWORD, newPassword);
-                                    Toast.makeText(this, "Passwort wurde zu '" + newPassword + "' geändert", Toast.LENGTH_SHORT).show();
-                                    Database.saveAll(true);
+                        CustomDialog.Builder(this)
+                                .setTitle("Passwort Ändern")
+                                .setView(R.layout.dialog_database_login)
+                                .setSetViewContent((customDialog1, view, reload) -> {
+                                    customDialog1.findViewById(R.id.dialog_databaseLogin_name_layout).setVisibility(View.GONE);
+                                    TextInputLayout dialog_databaseLogin_oldPassword_layout = customDialog1.findViewById(R.id.dialog_databaseLogin_oldPassword_layout);
+                                    dialog_databaseLogin_oldPassword_layout.setVisibility(View.VISIBLE);
+                                    TextInputLayout dialog_databaseLogin_passwordFirst_layout = customDialog1.findViewById(R.id.dialog_databaseLogin_passwordFirst_layout);
+                                    TextInputLayout dialog_databaseLogin_passwordSecond_layout = customDialog1.findViewById(R.id.dialog_databaseLogin_passwordSecond_layout);
+
+                                    Helpers.TextInputHelper helper = new Helpers.TextInputHelper();
+                                    helper.addValidator(dialog_databaseLogin_oldPassword_layout, dialog_databaseLogin_passwordFirst_layout, dialog_databaseLogin_passwordSecond_layout)
+                                            .defaultDialogValidation(customDialog1)
+                                            .setValidation(dialog_databaseLogin_passwordSecond_layout, (validator, text) -> {
+                                                if (Utility.stringExists(text) && !text.equals(dialog_databaseLogin_passwordFirst_layout.getEditText().getText().toString().trim()))
+                                                    validator.setInvalid("Die Passwörter müssen gleich sein");
+                                            })
+                                            .addActionListener(dialog_databaseLogin_passwordSecond_layout, (textInputHelper, textInputLayout, actionId, text) -> {
+                                                View button = customDialog1.getActionButton().getButton();
+                                                if (button.isEnabled())
+                                                    button.callOnClick();
+                                            }, Helpers.TextInputHelper.IME_ACTION.DONE);
+
+                                    dialog_databaseLogin_oldPassword_layout.requestFocus();
+                                    Utility.changeWindowKeyboard(customDialog1.getDialog().getWindow(), true);
                                 })
+                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                                .setText("Das Standardpasswort lautet: \"" + Settings.SETTING_SPACE_ENCRYPTION_DEFAULT_PASSWORD + "\"")
+                                .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                                    TextInputLayout dialog_databaseLogin_oldPassword_layout = customDialog1.findViewById(R.id.dialog_databaseLogin_oldPassword_layout);
+                                    TextInputLayout dialog_databaseLogin_passwordFirst_layout = customDialog1.findViewById(R.id.dialog_databaseLogin_passwordFirst_layout);
+
+                                    String oldPassword = dialog_databaseLogin_oldPassword_layout.getEditText().getText().toString().trim();
+                                    String password = dialog_databaseLogin_passwordFirst_layout.getEditText().getText().toString().trim();
+                                    String databaseCode = Database.databaseCode;
+
+                                    if (!Utility.stringExists(databaseCode))
+                                        return;
+
+                                    if (!getSingleSetting(this, SETTING_SPACE_ENCRYPTION_PASSWORD).equals(oldPassword)) {
+                                        Toast.makeText(this, "Das alte Passwort ist falsch", Toast.LENGTH_SHORT).show();
+                                        return;
+                                    }
+
+                                    Database.databaseCall_write(Utility.hash(password), Database.databaseCode, Database.ENCRYPTION, Database.ENCRYPTION_PASSWORD);
+
+                                    changeSetting(SETTING_SPACE_ENCRYPTION_PASSWORD, password);
+                                    Toast.makeText(this, "Passwort wurde zu '" + password + "' geändert", Toast.LENGTH_SHORT).show();
+                                    Database.saveAll(true);
+                                    customDialog1.dismiss();
+                                }, false)
+                                .disableLastAddedButton()
+                                .setOnDialogDismiss(customDialog2 -> settings_others_databaseCode.setText(Database.databaseCode))
                                 .show();
+
                     }, false)
                     .alignPreviousButtonsLeft()
                     .colorLastAddedButton()
-                    .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.BACK_BUTTON)
+                    .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
+                        CustomUtility.isOnline(this, () -> {
+                            allSpaces.forEach(space -> space.setEncrypted(spaceSet.contains(space.getKey())));
+
+                            updateSpaceStatusSettings();
+                            if (!prevSet.equals(spaceSet)) {
+                                Database.saveAll(true);
+
+                                if (spaceSet.isEmpty()) {
+                                    Database.databaseCall_delete(Database.databaseCode, Database.ENCRYPTION);
+                                } else {
+                                    HashMap<String, Object> map = new HashMap<>();
+                                    map.put(Database.ENCRYPTION_PASSWORD, Utility.hash(getSingleSetting(this, SETTING_SPACE_ENCRYPTION_PASSWORD)));
+                                    map.put(Database.ENCRYPTED_SPACES, new ArrayList<>(spaceSet));
+                                    Database.databaseCall_write(map, Database.databaseCode, Database.ENCRYPTION);
+                                }
+                            }
+
+                            customDialog.dismiss();
+                        });
+                    }, false)
                     .show();
         });
 
@@ -881,6 +977,7 @@ public class Settings extends AppCompatActivity {
         private boolean encrypted;
         BuildSettingsDialog buildSettingsDialog;
         private CustomList<Class> associatedClasses = new CustomList<>();
+        private String key;
 
         public Space(String name, String plural) {
             this.name = name;
@@ -893,6 +990,15 @@ public class Settings extends AppCompatActivity {
 
         public Space setPlural(String plural) {
             this.plural = plural;
+            return this;
+        }
+
+        public String getKey() {
+            return key;
+        }
+
+        public Space setKey(String key) {
+            this.key = key;
             return this;
         }
 
@@ -1076,6 +1182,21 @@ public class Settings extends AppCompatActivity {
         }
 
     }
+
+    //  ------------------------- Encryption ------------------------->
+    public static void resetEncryption() {
+        for (Space space : allSpaces) {
+            changeSetting(SETTING_SPACE_ENCRYPTED_ + space.getItemId(), String.valueOf(false));
+        }
+        changeSetting(SETTING_SPACE_ENCRYPTION_PASSWORD, SETTING_SPACE_ENCRYPTION_DEFAULT_PASSWORD);
+    }
+
+    public static void saveEncryption(){
+        for (Space space : allSpaces) {
+            changeSetting(SETTING_SPACE_ENCRYPTED_ + space.getItemId(), String.valueOf(space.isEncrypted()));
+        }
+    }
+    //  <------------------------- Encryption -------------------------
 
     void updateSpaceStatusSettings() {
         for (Space space : allSpaces) {

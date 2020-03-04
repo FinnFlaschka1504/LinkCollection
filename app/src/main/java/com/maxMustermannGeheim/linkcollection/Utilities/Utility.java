@@ -25,6 +25,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AutoCompleteTextView;
 import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -36,6 +37,10 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.finn.androidUtilities.CustomUtility;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
@@ -62,7 +67,10 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAutoCompleteAdapter;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.ImageAdapterItem;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -82,6 +90,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import top.defaults.drawabletoolbox.DrawableBuilder;
@@ -275,6 +284,86 @@ public class Utility implements java.io.Serializable {
     }
 
     // ToDo: Button Doppelclick Klasse
+
+    //  ------------------------- TMDb Api ------------------------->
+    public static void importTmdbGenre(Context context, boolean isVideo) {
+        String requestUrl = "https://api.themoviedb.org/3/genre/" +
+                (isVideo ? "movie" : "tv") +
+                "/list?api_key=09e015a2106437cbc33bf79eb512b32d&language=de";
+        RequestQueue requestQueue = Volley.newRequestQueue(context);
+
+        Toast.makeText(context, "Einen Moment bitte..", Toast.LENGTH_SHORT).show();
+
+
+        JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {
+            JSONArray results;
+            try {
+                results = response.getJSONArray("genres");
+
+                if (results.length() == 0) {
+                    Toast.makeText(context, "Keine Ergebnisse gefunden", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                if (isVideo) {
+                    Map<String, Genre> genreMap = Database.getInstance().genreMap;
+                    CustomList<Genre> list = new CustomList<>(genreMap.values());
+
+                    for (int i = 0; i < results.length(); i++) {
+                        JSONObject object = results.getJSONObject(i);
+
+                        int id = object.getInt("id");
+                        String name = object.getString("name");
+
+                        Optional<Genre> optional = list.stream().filter(genre -> genre.getName().toLowerCase().equals(name.toLowerCase())).findFirst();
+                        if (optional.isPresent()) {
+                            optional.get().setTmdbGenreId(id);
+                        } else {
+                            optional = list.stream().filter(genre -> genre.getTmdbGenreId() == id).findFirst();
+                            if (optional.isPresent()) {
+                                optional.get().setName(name);
+                            } else {
+                                Genre genre = new Genre(name).setTmdbGenreId(id);
+                                genreMap.put(genre.getUuid(), genre);
+                            }
+                        }
+                    }
+                } else {
+                    Map<String, ShowGenre> genreMap = Database.getInstance().showGenreMap;
+                    CustomList<ShowGenre> list = new CustomList<>(genreMap.values());
+
+                    for (int i = 0; i < results.length(); i++) {
+                        JSONObject object = results.getJSONObject(i);
+
+                        int id = object.getInt("id");
+                        String name = object.getString("name");
+
+                        Optional<ShowGenre> optional = list.stream().filter(genre -> genre.getName().toLowerCase().equals(name.toLowerCase())).findFirst();
+                        if (optional.isPresent()) {
+                            optional.get().setTmdbGenreId(id);
+                        } else {
+                            optional = list.stream().filter(genre -> genre.getTmdbGenreId() == id).findFirst();
+                            if (optional.isPresent()) {
+                                optional.get().setName(name);
+                            } else {
+                                ShowGenre genre = new ShowGenre(name).setTmdbGenreId(id);
+                                genreMap.put(genre.getUuid(), genre);
+                            }
+                        }
+                    }
+                }
+
+                Toast.makeText(context, "Genre Importiert", Toast.LENGTH_SHORT).show();
+                Database.saveAll();
+            } catch (JSONException ignored) {
+            }
+
+        }, error -> Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show());
+
+        requestQueue.add(jsonArrayRequest);
+
+    }
+    //  <------------------------- TMDb Api -------------------------
 
     //  ------------------------- watchLater ------------------------->
     public static List<String> getWatchLaterList_uuid() {

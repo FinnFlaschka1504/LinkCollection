@@ -43,7 +43,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 // --> \/\/(?!  (-|<))
@@ -349,7 +351,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
     public void getDatabaseCode(OnDatabaseCodeFinish onFinish) {
         CustomDialog.Builder(MainActivity.this)
-                .setTitle("DatenBank-Code Eingeben")
+                .setTitle("Anmelden")
                 .setView(R.layout.dialog_database_login)
                 .setSetViewContent((customDialog, view, reload) -> {
                     TextInputLayout dialog_databaseLogin_name_layout = customDialog.findViewById(R.id.dialog_databaseLogin_name_layout);
@@ -390,14 +392,55 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                                     .setText(new Helpers.SpannableStringHelper().append("Die Datenbank '").appendBold(databaseCode).append("' existiert noch nicht.\nMochtest du sie hinzufügen?").get())
                                     .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
                                     .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
+                                        Settings.resetEncryption();
                                         customDialog.dismiss();
                                         onFinish.runOndatabaseCodeFinish(databaseCode);
                                         Database.databaseCall_write(Hashing.sha256().hashString(password, StandardCharsets.UTF_8).toString(), Database.databaseCode, Database.PASSWORD);
                                     })
                                     .show();
                         } else if (Hashing.sha256().hashString(password, StandardCharsets.UTF_8).toString().equals(dataSnapshot.getValue())) {
-                            onFinish.runOndatabaseCodeFinish(databaseCode);
-                            customDialog.dismiss();
+                            List<String> encryptedSpaces = new ArrayList<>();
+                            Runnable setEncryptedSpaces = () -> {
+                                Settings.Space.allSpaces.forEach(space -> space.setEncrypted(encryptedSpaces.contains(space.getKey())));
+                                Settings.saveEncryption();
+                            };
+
+
+                            Database.databaseCall_read(dataSnapshot1 -> { // ToDo: auch bei datenbank wechseln benutzen
+                                Object value = dataSnapshot1.getValue();
+                                if (value == null) {
+                                    Settings.resetEncryption();
+                                    onFinish.runOndatabaseCodeFinish(databaseCode);
+                                    customDialog.dismiss();
+                                } else if (Utility.hash(Settings.getSingleSetting(this, Settings.SETTING_SPACE_ENCRYPTION_PASSWORD)).equals(((HashMap) dataSnapshot1.getValue()).get(Database.ENCRYPTION_PASSWORD))) {
+                                    encryptedSpaces.addAll((Collection<? extends String>) ((HashMap) dataSnapshot1.getValue()).get(Database.ENCRYPTED_SPACES));
+                                    setEncryptedSpaces.run();
+
+                                    onFinish.runOndatabaseCodeFinish(databaseCode);
+                                    customDialog.dismiss();
+                                } else {
+                                    CustomDialog.Builder(this)
+                                            .setTitle("Passwort Eingeben")
+                                            .setText("Die Datenbank enthält verschlüsselte Bereiche und das hinterlegte Passwort sitmmt nicht.\nBitte das richtige Passwort eingeben.")
+                                            .setEdit(new CustomDialog.EditBuilder().setInputType(Helpers.TextInputHelper.INPUT_TYPE.PASSWORD))
+                                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                                            .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                                                String inputPassword = customDialog1.getEditText();
+                                                if (Utility.hash(inputPassword).equals(((HashMap) dataSnapshot1.getValue()).get(Database.ENCRYPTION_PASSWORD))) {
+                                                    Settings.changeSetting(Settings.SETTING_SPACE_ENCRYPTION_PASSWORD, inputPassword);
+
+                                                    encryptedSpaces.addAll((Collection<? extends String>) ((HashMap) dataSnapshot1.getValue()).get(Database.ENCRYPTED_SPACES));
+                                                    setEncryptedSpaces.run();
+
+                                                    onFinish.runOndatabaseCodeFinish(databaseCode);
+                                                    customDialog.dismiss();
+                                                    customDialog1.dismiss();
+                                                } else
+                                                    Toast.makeText(this, "Das Passwort ist Falsch", Toast.LENGTH_SHORT).show();
+                                            }, false)
+                                            .show();
+                                }
+                            }, databaseCode, Database.ENCRYPTION);
                         } else
                             Toast.makeText(this, "Das Passwort ist falsch", Toast.LENGTH_SHORT).show();
                     }, databaseError -> {

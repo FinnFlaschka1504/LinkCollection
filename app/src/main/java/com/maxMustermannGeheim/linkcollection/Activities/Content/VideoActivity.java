@@ -269,6 +269,25 @@ public class VideoActivity extends AppCompatActivity {
             };
             videos_search.setOnQueryTextListener(textListener);
 
+            if (database.genreMap.isEmpty() && Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_ASK_FOR_GENRE_IMPORT)) {
+                CustomDialog.Builder(this)
+                        .setTitle("Genres Importieren")
+                        .setText("Es wurde bisher noch kein Genre hinzugefügt. Sollen die Genres aus der TMDb importiert werden?\nDies kann auch jederzeit in den Einstellungen getan werden.")
+                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                        .addButton("Nicht erneut Fragen", customDialog -> {
+                            Settings.changeSetting(Settings.SETTING_VIDEO_ASK_FOR_GENRE_IMPORT, "false");
+                            Toast.makeText(this, "Du wirst nicht erneut gefragt", Toast.LENGTH_SHORT).show();
+                        })
+                        .alignPreviousButtonsLeft()
+                        .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog -> {
+                            Utility.importTmdbGenre(this, true);
+                            setResult(RESULT_OK);
+                        })
+                        .show();
+                return;
+            }
+
+
             if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_SHORTCUT))
                 addOrEditDialog = showEditOrNewDialog(null).first;
 
@@ -929,6 +948,7 @@ public class VideoActivity extends AppCompatActivity {
         return Pair.create(returnDialog, editVideo[0]);
     }
 
+    //  ------------------------- Api ------------------------->
     private void apiRequest(String queue, CustomDialog customDialog, Video video) {
         if (!Utility.isOnline(this))
             return;
@@ -1017,6 +1037,7 @@ public class VideoActivity extends AppCompatActivity {
         requestQueue.add(jsonArrayRequest);
 
     }
+    //  <------------------------- Api -------------------------
 
     private void saveVideo(CustomDialog dialog, Video video, String titel, String url, boolean checked, Video editVideo) {
         boolean neuesVideo = video == null || isShared;
@@ -1277,7 +1298,7 @@ public class VideoActivity extends AppCompatActivity {
                 .addButton("Öffnen", customDialog -> openUrl(randomVideo.getUrl(), false), openButtonId, false)
                 .addButton("Nochmal", customDialog -> {
                     if (randomList.isEmpty()) {
-                        Toast.makeText(this, "Kein neuer " + singular + " vorhanden", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Kein weiterer vorhanden", Toast.LENGTH_SHORT).show();
                         return;
                     }
                     Toast.makeText(this, "Neu", Toast.LENGTH_SHORT).show();

@@ -1278,9 +1278,17 @@ public class ShowActivity extends AppCompatActivity {
                     episode.setRating(((RatingBar) customDialog.findViewById(R.id.customRating_ratingBar)).getRating());
 
                     if (!episode.isWatched() && episode.getDateList().isEmpty()) {
+                        Show show = database.showMap.get(episode.getShowId());
+                        Show.Season season = show.getSeasonList().get(episode.getSeasonNumber());
                         episode.setWatched(true);
-                        episode.getDateList().add(new Date());
+                        season.getEpisodeMap().put("E:" + episode.getEpisodeNumber(), episode);
+                        boolean before = episode.addDate(new Date(), true);
+                        Utility.showCenteredToast(this, "Ansicht hinzugefügt" + (before ? "\nAutomatisch für gestern hinzugefügt" : ""));
+                        show.setAlreadyAiredList(show.getAlreadyAiredList().stream().filter(episode1 -> episode.getTmdbId() != episode1.getTmdbId()).collect(Collectors.toList()));
+
                     }
+                    if (Database.saveAll())
+                        setResult(RESULT_OK);
                 })
                 .disableLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {

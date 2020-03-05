@@ -9,8 +9,8 @@ android {
         applicationId "com.maxMustermannGeheim.linkcollection"
         minSdkVersion 27
         targetSdkVersion 29
-        versionCode 5
-        versionName "2.3"
+        versionCode 6
+        versionName "2.4"
         testInstrumentationRunner "androidx.dialog_poster.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -50,11 +50,11 @@ dependencies {
 
     // Crash
     implementation 'com.google.firebase:firebase-crash:16.2.1'
-    implementation 'com.google.firebase:firebase-analytics:17.2.2'
+    implementation 'com.google.firebase:firebase-analytics:17.2.3'
     implementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
 
     // Eigene
-    implementation 'com.github.FinnFlaschka1504:AndroidUtilities:3.3.1'
+    implementation 'com.github.FinnFlaschka1504:AndroidUtilities:3.3.2'
 
     implementation 'com.github.duanhong169:drawabletoolbox:1.0.7'
 

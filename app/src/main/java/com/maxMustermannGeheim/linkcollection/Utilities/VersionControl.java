@@ -65,6 +65,14 @@ public class VersionControl {
         if (!Utility.isOnline(activity))
             return;
 
+        String fileName = Settings.getSingleSetting(activity, Settings.UPDATE_FILE_NAME);
+        if (Utility.stringExists(fileName)) {
+            File file = new File(fileName);
+            if (file.exists())
+                file.delete();
+            Settings.changeSetting(Settings.UPDATE_FILE_NAME, "");
+        }
+
         requestQueue = Volley.newRequestQueue(activity);
 
         if (visible)
@@ -146,6 +154,8 @@ public class VersionControl {
                             uriString = uriString.replaceAll("%20", " ");
                             File file = new File(uriString);
 
+                            Settings.changeSetting(Settings.UPDATE_FILE_NAME, uriString);
+
                             Uri uriFile = FileProvider.getUriForFile(context, BuildConfig.APPLICATION_ID + ".provider", file);
                             String mimetype = downloadManager.getMimeTypeForDownloadedFile(downloadId);
                             Intent myIntent = new Intent(Intent.ACTION_VIEW);
@@ -198,7 +208,7 @@ public class VersionControl {
     public static boolean hasPermissions(Activity activity, boolean act) {
         return isStoragePermissionGranted(activity, act) && isInstallPermissionGranted(activity, act);
     }
-//  <----- Berechtigungen -----
+    //  <----- Berechtigungen -----
 
 
     //  ----- Version ----->
@@ -219,7 +229,7 @@ public class VersionControl {
     public static int compareVersions(String thisVers, String thatVers) {
         return thisVers.compareTo(thatVers);
     }
-//  <----- Version -----
+    //  <----- Version -----
 
 
     //  ----- Change-Log ----->
@@ -237,6 +247,11 @@ public class VersionControl {
         changeList.add(new Pair<>("2.3", Arrays.asList(
                 "Bezeichnungen in den Datenbankeinstellungen überarbeitet",
                 "Film- und Serien-Genres können aus der TMDb importiert werden")));
+        changeList.add(new Pair<>("2.4", Arrays.asList(
+                "Das Verschlüsseln der Bereiche ist jetzt 'idiotensicher' - beim Anmelden, oder Wechseln von Datenbanken können keine Probleme mehr auftreten",
+                "Die Schloss-Icons in den Einstellungen öffnen nun auch die Verschlüsselungs-Einstellungen",
+                "Die Update-Datei wird beim nächsten Öffnen der App automatisch gelöscht",
+                "BugFix: Episoden-Ansichten können nun auch über die Detailansicht hinzugefügt werden")));
     };
 
     public static void showChangeLog(AppCompatActivity activity, boolean force) {
@@ -301,5 +316,5 @@ public class VersionControl {
                 .show_dialog().setOnDismissListener(dialog -> Settings.changeSetting(Settings.LAST_VERSION, version));
 
     }
-//  <----- Change-Log -----
+    //  <----- Change-Log -----
 }

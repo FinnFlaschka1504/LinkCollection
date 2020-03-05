@@ -373,7 +373,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
                     dialog_databaseLogin_name_layout.requestFocus();
                     Utility.changeWindowKeyboard(customDialog.getDialog().getWindow(), true);
-                    customDialog.getDialog().setCanceledOnTouchOutside(false);
+//                    customDialog.getDialog().setCanceledOnTouchOutside(false);
                 })
                 .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
                     TextInputLayout dialog_databaseLogin_name_layout = customDialog.findViewById(R.id.dialog_databaseLogin_name_layout);
@@ -403,12 +403,14 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                             Runnable setEncryptedSpaces = () -> {
                                 Settings.Space.allSpaces.forEach(space -> space.setEncrypted(encryptedSpaces.contains(space.getKey())));
                                 Settings.saveEncryption();
+
                             };
 
 
-                            Database.databaseCall_read(dataSnapshot1 -> { // ToDo: auch bei datenbank wechseln benutzen
+                            Database.databaseCall_read(dataSnapshot1 -> {
                                 Object value = dataSnapshot1.getValue();
                                 if (value == null) {
+                                    setEncryptedSpaces.run();
                                     Settings.resetEncryption();
                                     onFinish.runOndatabaseCodeFinish(databaseCode);
                                     customDialog.dismiss();

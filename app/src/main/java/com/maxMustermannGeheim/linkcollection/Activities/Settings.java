@@ -66,6 +66,7 @@ import com.maxMustermannGeheim.linkcollection.Utilities.VersionControl;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -103,7 +104,7 @@ public class Settings extends AppCompatActivity {
     public static final String SETTING_SPACE_ENCRYPTION_DEFAULT_PASSWORD = "passwort";
 
     public static final String LAST_VERSION = "LAST_VERSION";
-    public static final String LOGIN_CONFIRMED = "LOGIN_CONFIRMED";
+    public static final String UPDATE_FILE_NAME = "UPDATE_FILE_NAME";
 
     public static Map<String, String> settingsMap = new HashMap<>();
 
@@ -149,7 +150,7 @@ public class Settings extends AppCompatActivity {
         settingsMap.put(SETTING_VIDEO_TMDB_SHORTCUT, "true");
         settingsMap.put(SETTING_SPACE_ENCRYPTION_PASSWORD, SETTING_SPACE_ENCRYPTION_DEFAULT_PASSWORD);
         settingsMap.put(LAST_VERSION, "1.0");
-        settingsMap.put(LOGIN_CONFIRMED, "false");
+        settingsMap.put(UPDATE_FILE_NAME, "");
         settingsMap.put(SETTING_VIDEO_ASK_FOR_GENRE_IMPORT, "true");
         settingsMap.put(SETTING_SHOW_ASK_FOR_GENRE_IMPORT, "true");
     }
@@ -520,6 +521,7 @@ public class Settings extends AppCompatActivity {
                     list_spaceSetting_lock.setImageResource(space.isEncrypted() ? R.drawable.ic_lock_closed : R.drawable.ic_lock_open);
                     list_spaceSetting_lock.setColorFilter(space.isEncrypted() ? getColor(R.color.colorGreen) : Color.RED);
                 })
+                .addSubOnClickListener(R.id.list_spaceSetting_lock, (customRecycler, itemView, space, index) -> settings_others_encryptedSelector.callOnClick())
                 .enableDivider()
                 .disableCustomRipple()
                 .removeLastDivider()
@@ -603,6 +605,64 @@ public class Settings extends AppCompatActivity {
                                         })
                                         .show();
                             } else if (Hashing.sha256().hashString(password, StandardCharsets.UTF_8).toString().equals(dataSnapshot.getValue())) {
+                                List<String> encryptedSpaces = new ArrayList<>();
+                                Runnable setEncryptedSpaces = () -> {
+                                    allSpaces.forEach(space -> space.setEncrypted(encryptedSpaces.contains(space.getKey())));
+                                    Settings.saveEncryption();
+                                    updateSpaceStatusSettings();
+                                };
+
+
+                                Database.databaseCall_read(dataSnapshot1 -> {
+                                    Object value = dataSnapshot1.getValue();
+                                    if (value == null) {
+                                        setEncryptedSpaces.run();
+                                        Settings.resetEncryption();
+                                        mySPR_daten.edit().putString(Database.DATABASE_CODE, databaseCode).commit();
+                                        Database.getInstance(mySPR_daten, database1 -> {
+                                        }, false);
+                                        customDialog.dismiss();
+                                    } else if (Utility.hash(Settings.getSingleSetting(this, Settings.SETTING_SPACE_ENCRYPTION_PASSWORD)).equals(((HashMap) dataSnapshot1.getValue()).get(Database.ENCRYPTION_PASSWORD))) {
+                                        if (((HashMap) dataSnapshot1.getValue()).containsKey(Database.ENCRYPTED_SPACES))
+                                            encryptedSpaces.addAll((Collection<? extends String>) ((HashMap) dataSnapshot1.getValue()).get(Database.ENCRYPTED_SPACES));
+                                        setEncryptedSpaces.run();
+
+                                        mySPR_daten.edit().putString(Database.DATABASE_CODE, databaseCode).commit();
+                                        Database.getInstance(mySPR_daten, database1 -> {
+                                        }, false);
+                                        customDialog.dismiss();
+                                    } else {
+                                        CustomDialog.Builder(this)
+                                                .setTitle("Passwort Eingeben")
+                                                .setText("Die Datenbank enthält verschlüsselte Bereiche und das hinterlegte Passwort sitmmt nicht.\nBitte das richtige Passwort eingeben.")
+                                                .setEdit(new CustomDialog.EditBuilder().setInputType(Helpers.TextInputHelper.INPUT_TYPE.PASSWORD))
+                                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                                                .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                                                    String inputPassword = customDialog1.getEditText();
+                                                    if (Utility.hash(inputPassword).equals(((HashMap) dataSnapshot1.getValue()).get(Database.ENCRYPTION_PASSWORD))) {
+                                                        Settings.changeSetting(Settings.SETTING_SPACE_ENCRYPTION_PASSWORD, inputPassword);
+
+                                                        if (((HashMap) dataSnapshot1.getValue()).containsKey(Database.ENCRYPTED_SPACES))
+                                                            encryptedSpaces.addAll((Collection<? extends String>) ((HashMap) dataSnapshot1.getValue()).get(Database.ENCRYPTED_SPACES));
+                                                        setEncryptedSpaces.run();
+
+                                                        mySPR_daten.edit().putString(Database.DATABASE_CODE, databaseCode).commit();
+                                                        Database.getInstance(mySPR_daten, database1 -> {
+                                                        }, false);
+                                                        customDialog.dismiss();
+                                                        customDialog1.dismiss();
+                                                    } else
+                                                        Toast.makeText(this, "Das Passwort ist Falsch", Toast.LENGTH_SHORT).show();
+                                                }, false)
+                                                .show();
+                                    }
+                                }, databaseCode, Database.ENCRYPTION);
+
+
+
+                                if (true)
+                                    return;
+
                                 mySPR_daten.edit().putString(Database.DATABASE_CODE, databaseCode).commit();
                                 Database.getInstance(mySPR_daten, database1 -> {
                                 }, false);
@@ -647,7 +707,6 @@ public class Settings extends AppCompatActivity {
                                     customDialog.dismiss();
 
                                     Database.databaseCall_delete(oldCode);
-                                    // ToDo: alte datenbank löschen
                                 });
                             }, oldCode);
                         }, newCode);
@@ -752,7 +811,7 @@ public class Settings extends AppCompatActivity {
 
         settings_others_spaceSelector.setOnClickListener(v -> {
             CustomDialog.Builder(this)
-                    .setTitle("Bereiche Auswählen")
+                    .setTitle("Anzuzeigende Bereiche Auswählen")
                     .setView(new CustomRecycler<Space>(this)
                             .setItemLayout(R.layout.list_item_space_shown)
                             .setObjectList(allSpaces)
@@ -795,7 +854,7 @@ public class Settings extends AppCompatActivity {
             Set<String> spaceSet = allSpaces.stream().filter(Space::isEncrypted).map(Space::getKey).collect(Collectors.toSet());
             HashSet<String> prevSet = new HashSet<>(spaceSet);
             CustomDialog.Builder(this)
-                    .setTitle("Bereiche Auswählen")
+                    .setTitle("Zu Verschlüsselnde Bereiche Auswählen")
                     .setView(new CustomRecycler<Space>(this)
                             .setItemLayout(R.layout.list_item_space_shown)
                             .setObjectList(allSpaces.stream().filter(Space::isShown).collect(Collectors.toList()))

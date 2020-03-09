@@ -4,7 +4,6 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -25,7 +24,6 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.AutoCompleteTextView;
 import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -35,13 +33,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
-import com.finn.androidUtilities.CustomUtility;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
 import com.google.common.hash.Hashing;
@@ -67,8 +63,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAutoCompleteAdapter;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.ImageAdapterItem;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -90,12 +84,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import top.defaults.drawabletoolbox.DrawableBuilder;
-
-import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.EXTRA_CATEGORY;
 
 
 public class Utility implements java.io.Serializable {
@@ -1089,7 +1080,7 @@ public class Utility implements java.io.Serializable {
                             })
                             .setEdit(new CustomDialog.EditBuilder()
                                     .setHint(editType_string + "-Name")
-                                    .setText(((SearchView) customDialog.findViewById(R.id.dialogAddPassenger_search)).getQuery().toString()))
+                                    .setText(((SearchView) customDialog.findViewById(R.id.dialogEditCategory_search)).getQuery().toString()))
                             .show();
 
                 }, false)
@@ -1100,12 +1091,12 @@ public class Utility implements java.io.Serializable {
                         case DARSTELLER:
                             ((Video) o).setDarstellerList(selectedUuidList);
                             selectedUuidList.forEach(uuid -> nameList.add(database.darstellerMap.get(uuid).getName()));
-                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_Darsteller)).setText(String.join(", ", nameList));
+                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_actor)).setText(String.join(", ", nameList));
                             break;
                         case STUDIOS:
                             ((Video) o).setStudioList(selectedUuidList);
                             selectedUuidList.forEach(uuid -> nameList.add(database.studioMap.get(uuid).getName()));
-                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_Studio)).setText(String.join(", ", nameList));
+                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_studio)).setText(String.join(", ", nameList));
                             break;
                         case GENRE:
                             ((Video) o).setGenreList(selectedUuidList);
@@ -1132,15 +1123,15 @@ public class Utility implements java.io.Serializable {
                 .show();
 
 
-        CustomRecycler<ParentClass> customRecycler_selectList = new CustomRecycler<>(context, dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_selectPassengers));
+        CustomRecycler<ParentClass> customRecycler_selectList = new CustomRecycler<>(context, dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_selectCategories));
 
-        CustomRecycler customRecycler_selectedList = new CustomRecycler<String>(context, dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_selectedPassengers))
+        CustomRecycler customRecycler_selectedList = new CustomRecycler<String>(context, dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_selectedCategories))
                 .setItemLayout(R.layout.list_item_bubble)
                 .setObjectList(selectedUuidList)
                 .hideDivider()
                 .setSetItemContent((customRecycler, itemView, uuid) -> {
                     ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(getObjectFromDatabase(category, uuid).getName());
-                    dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_nothingSelected).setVisibility(View.GONE);
+                    dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.GONE);
                 })
                 .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
                 .setOnClickListener((customRecycler, view, object, index) -> {
@@ -1152,9 +1143,9 @@ public class Utility implements java.io.Serializable {
                     selectedUuidList.remove(object);
 
                     if (selectedUuidList.size() <= 0) {
-                        dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_nothingSelected).setVisibility(View.VISIBLE);
+                        dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.VISIBLE);
                     } else {
-                        dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_nothingSelected).setVisibility(View.GONE);
+                        dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.GONE);
                     }
                     dialog_AddActorOrGenre.findViewById(saveButtonId).setEnabled(true);
 
@@ -1188,9 +1179,9 @@ public class Utility implements java.io.Serializable {
                         selectedUuidList.add(parentClass.getUuid());
 
                     if (selectedUuidList.size() <= 0) {
-                        dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_nothingSelected).setVisibility(View.VISIBLE);
+                        dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.VISIBLE);
                     } else {
-                        dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_nothingSelected).setVisibility(View.GONE);
+                        dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.GONE);
                     }
                     dialog_AddActorOrGenre.findViewById(saveButtonId).setEnabled(true);
 
@@ -1198,7 +1189,7 @@ public class Utility implements java.io.Serializable {
                 })
                 .generate();
 
-        SearchView searchView = dialog_AddActorOrGenre.findViewById(R.id.dialogAddPassenger_search);
+        SearchView searchView = dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_search);
         searchView.setQueryHint(category.getPlural() + " durchsuchen");
         searchView.requestFocus();
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {

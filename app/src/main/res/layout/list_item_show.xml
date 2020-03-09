@@ -32,12 +32,12 @@
                 android:layout_weight="1"
                 android:orientation="horizontal">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginRight="8dp"
-                    android:text="Titel:"
-                    android:textStyle="bold" />
+<!--                <TextView-->
+<!--                    android:layout_width="wrap_content"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_marginRight="8dp"-->
+<!--                    android:text="Titel:"-->
+<!--                    android:textStyle="bold" />-->
 
                 <TextView
                     android:id="@+id/listItem_show_Titel"
@@ -45,6 +45,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:maxLines="2"
+                    style="@style/CaptionStyle"
                     android:text="Name1" />
             </LinearLayout>
 

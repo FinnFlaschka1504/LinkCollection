@@ -17,7 +17,7 @@
             android:layout_height="wrap_content">
 
             <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/dialogAddPassenger_selectedPassengers"
+                android:id="@+id/dialogEditCategory_selectedCategories"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:minHeight="55dp"
@@ -30,7 +30,7 @@
             </androidx.recyclerview.widget.RecyclerView>
 
             <TextView
-                android:id="@+id/dialogAddPassenger_nothingSelected"
+                android:id="@+id/dialogEditCategory_nothingSelected"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
@@ -40,13 +40,14 @@
         </FrameLayout>
 
         <View
+            android:id="@+id/dialogEditCategory_selectedDivider"
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginHorizontal="16dp"
             android:background="@color/colorDivider" />
 
         <SearchView
-            android:id="@+id/dialogAddPassenger_search"
+            android:id="@+id/dialogEditCategory_search"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:focusable="auto"
@@ -62,7 +63,7 @@
             android:background="@color/colorDivider" />
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/dialogAddPassenger_selectPassengers"
+            android:id="@+id/dialogEditCategory_selectCategories"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
     </LinearLayout>

@@ -1,14 +1,11 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Videos;
 
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 
 import java.util.UUID;
 
-public class Darsteller extends ParentClass {
-//    private String uuid = "darsteller_" + UUID.randomUUID().toString();
-//
-//    private String name;
-
+public class Darsteller extends ParentClass_Tmdb {
     public Darsteller(String name) {
         uuid = "darsteller_" + UUID.randomUUID().toString();
         this.name = name;

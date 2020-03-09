@@ -50,7 +50,7 @@
         app:compactCalendarBackgroundColor="@color/colorBackgroundLight"
         app:compactCalendarCurrentDayBackgroundColor="#E7E6E6"
         app:compactCalendarCurrentDayTextColor="#D81B60"
-        app:compactCalendarCurrentSelectedDayBackgroundColor="@color/colorPrimaryLeight"
+        app:compactCalendarCurrentSelectedDayBackgroundColor="@color/colorPrimaryLight"
         app:compactCalendarMultiEventIndicatorColor="@color/colorDayNightContent"
         app:compactCalendarTextColor="@color/colorText"
         app:compactCalendarTextSize="12sp" />

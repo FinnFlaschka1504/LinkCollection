@@ -37,4 +37,9 @@
 <!--        <item name="android:background">@color/colorBackground</item>-->
         <item name="android:excludeFromRecents">true</item>
     </style>
+
+    <style name="CaptionStyle">
+        <item name="android:textColor">@color/colorPrimaryDark</item>
+        <item name="android:textSize">16dp</item>
+    </style>
 </resources>

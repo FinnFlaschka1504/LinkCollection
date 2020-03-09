@@ -330,11 +330,11 @@ public class CategoriesActivity extends AppCompatActivity {
                                     .setHint("Name"))
                             .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                             .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
-                                CustomDialog.Builder(this)
+                                com.finn.androidUtilities.CustomDialog.Builder(this)
                                         .setTitle("Löschen")
                                         .setText("Wirklich '" + item.first.getName() + "' löschen?")
-                                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
-                                        .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
+                                        .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                        .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
                                             customDialog.dismiss();
                                             removeCatigory(item);
                                         })

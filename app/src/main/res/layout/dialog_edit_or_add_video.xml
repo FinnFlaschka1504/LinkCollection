@@ -23,10 +23,10 @@
             <TextView
                 android:id="@+id/dialog_editOrAddVideo_title_label"
                 style="@style/TextButtonStyle"
+                android:enabled="false"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="8dp"
-                android:clickable="false"
                 android:text="Titel:"
                 android:textStyle="bold" />
 
@@ -64,14 +64,17 @@
             android:orientation="horizontal">
 
             <TextView
+                android:id="@+id/dialog_editOrAddVideo_actor_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="8dp"
                 android:text="Darsteller:"
+                style="@style/TextButtonStyle"
+                android:enabled="false"
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/dialog_editOrAddVideo_Darsteller"
+                android:id="@+id/dialog_editOrAddVideo_actor"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -101,14 +104,17 @@
             android:orientation="horizontal">
 
             <TextView
+                android:id="@+id/dialog_editOrAddVideo_studio_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="8dp"
                 android:text="Studio:"
+                style="@style/TextButtonStyle"
+                android:enabled="false"
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/dialog_editOrAddVideo_Studio"
+                android:id="@+id/dialog_editOrAddVideo_studio"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1" />

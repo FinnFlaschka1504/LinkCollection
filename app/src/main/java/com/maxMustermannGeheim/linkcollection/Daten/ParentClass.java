@@ -95,8 +95,7 @@ public class ParentClass extends com.finn.androidUtilities.ParentClass implement
 
             if (aClass.getSuperclass() != null)
                 getLayer(newVersion, aClass.getSuperclass());
-        } catch (IllegalAccessException e) {
-            String BREAKPOINT = null;
+        } catch (IllegalAccessException ignored) {
         }
     }
     //  <------------------------- GetChangesFrom -------------------------

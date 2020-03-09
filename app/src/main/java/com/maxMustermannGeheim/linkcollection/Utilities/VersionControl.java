@@ -252,6 +252,9 @@ public class VersionControl {
                 "Die Schloss-Icons in den Einstellungen öffnen nun auch die Verschlüsselungs-Einstellungen",
                 "Die Update-Datei wird beim nächsten Öffnen der App automatisch gelöscht",
                 "BugFix: Episoden-Ansichten können nun auch über die Detailansicht hinzugefügt werden")));
+        changeList.add(new Pair<>("2.5", Arrays.asList(
+                "Darsteller und Studios können aus der TMDb importiert werden",
+                "Design der Listenelemente in Videos, Serien, Wissen und Schulden verbessert")));
     };
 
     public static void showChangeLog(AppCompatActivity activity, boolean force) {

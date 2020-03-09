@@ -2,6 +2,7 @@ package com.maxMustermannGeheim.linkcollection.Daten.Videos;
 
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.scottyab.aescrypt.AESCrypt;
@@ -29,6 +30,8 @@ public class Video extends ParentClass_Ratable {
     private List<String> translationList = new ArrayList<>();
     private int tmdId;
     private boolean watchLater;
+    private CustomList<ParentClass_Tmdb> tempCastList = new CustomList<>();
+    private CustomList<ParentClass_Tmdb> tempStudioList = new CustomList<>();
 
     public Video(String name) {
         uuid = "video_" + UUID.randomUUID().toString();
@@ -236,4 +239,24 @@ public class Video extends ParentClass_Ratable {
     }
     //  <------------------------- Encryption -------------------------
 
+
+    //  ------------------------- Temp ------------------------->
+    public CustomList<ParentClass_Tmdb> _getTempCastList() {
+        return tempCastList;
+    }
+
+    public Video _setTempCastList(CustomList<ParentClass_Tmdb> tempCastList) {
+        this.tempCastList = tempCastList;
+        return this;
+    }
+
+    public CustomList<ParentClass_Tmdb> _getTempStudioList() {
+        return tempStudioList;
+    }
+
+    public Video _setTempStudioList(CustomList<ParentClass_Tmdb> tempStudioList) {
+        this.tempStudioList = tempStudioList;
+        return this;
+    }
+    //  <------------------------- Temp -------------------------
 }

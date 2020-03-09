@@ -6,6 +6,7 @@ public class ImageAdapterItem {
     private String text;
     private Bitmap image;
     private String imagePath;
+    private Object payload;
 
     public ImageAdapterItem(String text, String imagePath) {
         this.text = text;
@@ -45,6 +46,15 @@ public class ImageAdapterItem {
 
     public ImageAdapterItem setImagePath(String imagePath) {
         this.imagePath = imagePath;
+        return this;
+    }
+
+    public Object getPayload() {
+        return payload;
+    }
+
+    public ImageAdapterItem setPayload(Object payload) {
+        this.payload = payload;
         return this;
     }
 }

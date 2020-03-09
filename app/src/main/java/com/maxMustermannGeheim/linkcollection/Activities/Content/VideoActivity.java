@@ -554,7 +554,7 @@ public class VideoActivity extends AppCompatActivity {
         final int[] views = {video.getDateList().size()};
         int openWithButtonId = View.generateViewId();
         CustomDialog returnDialog = CustomDialog.Builder(this)
-                .setTitle("Detail Ansicht")
+                .setTitle(video.getName())//"Detail Ansicht")
                 .setView(R.layout.dialog_detail_video)
                 .addButton("Bearbeiten", customDialog ->
                         addOrEditDialog = showEditOrNewDialog(video).first, false)
@@ -569,7 +569,9 @@ public class VideoActivity extends AppCompatActivity {
                         views[0] = video.getDateList().size();
                     }
 
-                    ((TextView) view.findViewById(R.id.dialog_video_Titel)).setText(video.getName());
+                    if (reload)
+                        customDialog.setTitle(video.getName());
+//                    ((TextView) view.findViewById(R.id.dialog_video_Titel)).setText(video.getName());
                     Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.DARSTELLER, view.findViewById(R.id.dialog_video_Darsteller), video.getDarstellerList(), database.darstellerMap);
 //                    ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(
 //                            video.getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
@@ -855,7 +857,40 @@ public class VideoActivity extends AppCompatActivity {
                             Runnable openEdit = () -> {
                                 customDialog.dismiss();
                                 isShared = false;
-                                CustomDialog newDialog = showEditOrNewDialog(video1).first;
+                                Pair<CustomDialog, Video> pair = showEditOrNewDialog(video1);
+                                CustomDialog newDialog = pair.first;
+                                Video newEditVideo = pair.second;
+                                if (!editVideo[0].getDarstellerList().isEmpty()) {
+                                    if (newEditVideo.getDarstellerList().isEmpty()) {
+                                        newEditVideo.setDarstellerList(editVideo[0].getDarstellerList());
+                                    } else {
+                                        editVideo[0].getDarstellerList().forEach(s -> {
+                                            if (!newEditVideo.getDarstellerList().contains(s))
+                                                newEditVideo.getDarstellerList().add(s);
+                                        });
+                                    }
+                                }
+                                if (!editVideo[0].getStudioList().isEmpty()) {
+                                    if (newEditVideo.getStudioList().isEmpty()) {
+                                        newEditVideo.setStudioList(editVideo[0].getStudioList());
+                                    } else {
+                                        editVideo[0].getStudioList().forEach(s -> {
+                                            if (!newEditVideo.getStudioList().contains(s))
+                                                newEditVideo.getStudioList().add(s);
+                                        });
+                                    }
+                                }
+                                if (!editVideo[0].getGenreList().isEmpty()) {
+                                    if (newEditVideo.getGenreList().isEmpty()) {
+                                        newEditVideo.setGenreList(editVideo[0].getGenreList());
+                                    } else {
+                                        editVideo[0].getGenreList().forEach(s -> {
+                                            if (!newEditVideo.getGenreList().contains(s))
+                                                newEditVideo.getGenreList().add(s);
+                                        });
+                                    }
+                                }
+                                newDialog.reloadView();
                                 if (!Utility.stringExists(video1.getUrl())) {
                                     ((EditText) newDialog.findViewById(R.id.dialog_editOrAddVideo_url)).setText(dialog_editOrAddVideo_Url_layout.getEditText().getText().toString());
                                 }
@@ -1092,7 +1127,8 @@ public class VideoActivity extends AppCompatActivity {
                     Optional<Darsteller> optional = database.darstellerMap.values().stream().filter(darsteller -> darsteller.getName().equals(name)).findFirst();
 
                     if (optional.isPresent()) {
-                        video.getDarstellerList().add(optional.get().getUuid());
+                        if (!video.getDarstellerList().contains(optional.get().getUuid()))
+                            video.getDarstellerList().add(optional.get().getUuid());
                     } else {
                         ParentClass_Tmdb actor = new Darsteller(name).setTmdbId(object.getInt("id")).setImagePath(object.getString("profile_path"));
                         if (actor.getImagePath().equals("null"))
@@ -1138,7 +1174,8 @@ public class VideoActivity extends AppCompatActivity {
                     Optional<Studio> optional = database.studioMap.values().stream().filter(studio -> studio.getName().equals(name)).findFirst();
 
                     if (optional.isPresent()) {
-                        video.getStudioList().add(optional.get().getUuid());
+                        if (!video.getStudioList().contains(optional.get().getUuid()))
+                            video.getStudioList().add(optional.get().getUuid());
                     } else {
                         ParentClass_Tmdb studio = new Studio(name).setTmdbId(object.getInt("id")).setImagePath(object.getString("logo_path"));
                         if (studio.getImagePath().equals("null"))

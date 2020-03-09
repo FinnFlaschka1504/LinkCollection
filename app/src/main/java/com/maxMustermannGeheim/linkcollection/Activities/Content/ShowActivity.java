@@ -1157,7 +1157,7 @@ public class ShowActivity extends AppCompatActivity {
             Show show = database.showMap.get(episode.getShowId());
             show.setAlreadyAiredList(show.getAlreadyAiredList().stream().filter(episode1 -> episode.getTmdbId() != episode1.getTmdbId()).collect(Collectors.toList()));
 
-            if (Database.saveAll())
+            if (Database.saveAll_simple())
                 setResult(RESULT_OK);
         };
 
@@ -1240,7 +1240,7 @@ public class ShowActivity extends AppCompatActivity {
                 .setView(episodeRecycler.generateRecyclerView())
                 .disableScroll()
                 .setOnDialogDismiss(customDialog -> {
-                    if (Database.saveAll())
+                    if (Database.saveAll_simple())
                         setResult(RESULT_OK);
                     reLoadRecycler();
                     if (seasonCustomRecycler != null)
@@ -1287,7 +1287,7 @@ public class ShowActivity extends AppCompatActivity {
                         show.setAlreadyAiredList(show.getAlreadyAiredList().stream().filter(episode1 -> episode.getTmdbId() != episode1.getTmdbId()).collect(Collectors.toList()));
 
                     }
-                    if (Database.saveAll())
+                    if (Database.saveAll_simple())
                         setResult(RESULT_OK);
                 })
                 .disableLastAddedButton()

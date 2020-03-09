@@ -448,7 +448,13 @@ public class Database {
 
 
 
-    public static Boolean saveAll() {
+    public static Boolean saveAll_simple() { // ToDo: alle if abfragen für null rückgabe verbessern
+        Boolean aBoolean = saveAll(false);
+        if (aBoolean == null)
+            return false;
+        return aBoolean;
+    }
+    public static Boolean saveAll() { // ToDo: alle if abfragen für null rückgabe verbessern
         return saveAll(false);
     }
     public static Boolean saveAll(boolean forceAll) {

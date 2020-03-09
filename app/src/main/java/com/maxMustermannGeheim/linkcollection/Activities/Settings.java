@@ -433,7 +433,7 @@ public class Settings extends AppCompatActivity {
 
                     customRecycler.reload();
 
-                    Toast.makeText(context, (Database.saveAll() ? "URL-Parser Gespeichert" : "Nichts zum speichern"), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, (Database.saveAll_simple() ? "URL-Parser Gespeichert" : "Nichts zum speichern"), Toast.LENGTH_SHORT).show();
                 })
                 .show();
     }

@@ -322,17 +322,17 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
             setCounts(this);
             if (currentSpace != null)
                 mySPR_settings.edit().putInt(SETTING_LAST_OPEN_SPACE, currentSpace.getItemId()).apply();
-            if (Settings.Space.allSpaces.size() > 1) {
+            if (Settings.Space.allSpaces.filter(Settings.Space::isShown, false).size() > 1) {
                 ViewGroup view = (ViewGroup) currentSpace.getFragment().getView();
                 Utility.OnHorizontalSwipeTouchListener touchListener = new Utility.OnHorizontalSwipeTouchListener(MainActivity.this) {
                     @Override
                     public void onSwipeRight() {
-                        ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.allSpaces.previous(currentSpace).getItemId());
+                        ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.allSpaces.filter(Settings.Space::isShown, false).previous(currentSpace).getItemId());
                     }
 
                     @Override
                     public void onSwipeLeft() {
-                        ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.allSpaces.next(currentSpace).getItemId());
+                        ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.allSpaces.filter(Settings.Space::isShown, false).next(currentSpace).getItemId());
                     }
                 };
                 view.setOnTouchListener(touchListener);

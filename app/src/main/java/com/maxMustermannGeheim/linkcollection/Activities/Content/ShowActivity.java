@@ -262,7 +262,13 @@ public class ShowActivity extends AppCompatActivity {
                     }
 
                     if (list.isEmpty()) {
-                        Toast.makeText(this, "Noch keine Ansichten für diese Serie", Toast.LENGTH_SHORT).show();
+                        Show.Season season = show[0].getSeasonList().get(1);
+                        apiSeasonRequest(show[0], 1, () -> {
+                            CustomRecycler<Show.Season> seasonRecycler = showSeasonDialog(show[0]);
+                            Map<String, Show.Episode> episodeMap = database.tempShowSeasonEpisodeMap.get(show[0]).get(1);
+                            showEpisodeDialog(season, episodeMap, seasonRecycler).goTo((search, episode2) -> episode2.getUuid().equals(episodeMap.get("E:1").getUuid()), "");
+                            Toast.makeText(this, "Noch keine Ansichten für diese Serie", Toast.LENGTH_SHORT).show();
+                        });
                         return;
                     }
 

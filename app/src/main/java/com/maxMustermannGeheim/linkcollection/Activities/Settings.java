@@ -791,10 +791,11 @@ public class Settings extends AppCompatActivity {
 
                         Database.databaseCall_delete(Database.databaseCode);
                         mySPR_daten.edit().clear().commit();
-                        Utility.restartApp(this);
 
                         Toast.makeText(this, "Datenbank gelöscht", Toast.LENGTH_SHORT).show();
                         customDialog.dismiss();
+
+                        Utility.restartApp(this);
                     }, false)
                     .show();
         };

@@ -1582,23 +1582,56 @@ public class Utility implements java.io.Serializable {
 
 
     //  ------------------------- EasyLogic ------------------------->
-    public static <T> Boolean boolOr(T what, T... to) {
-        if (to.length == 0)
-            return null;
+    public static class NoArgumentException extends RuntimeException {
+        public static final String DEFAULT_MESSAGE = "Keine Argumente mitgegeben";
 
-        for (Object o : to) {
+        public NoArgumentException(String message) {
+            super(message);
+        }
+    }
+
+    public static <T> boolean boolOr(GenericReturnInterface<T, Boolean> what, T... to) {
+        if (to.length == 0)
+            throw new NoArgumentException(NoArgumentException.DEFAULT_MESSAGE);
+
+        for (T o : to) {
+            if (what.runGenericInterface(o))
+                return true;
+        }
+        return false;
+
+    }
+    public static <T> boolean boolOr(T what, T... to) {
+        if (to.length == 0)
+            throw new NoArgumentException(NoArgumentException.DEFAULT_MESSAGE);
+
+        for (T o : to) {
             if (Objects.equals(what, o))
                 return true;
         }
         return false;
     }
 
-    public static <T> Boolean boolXOr(T what, T... to) {
+    public static <T> boolean boolXOr(GenericReturnInterface<T, Boolean> what, T... to) {
         if (to.length == 0)
-            return null;
+            throw new NoArgumentException(NoArgumentException.DEFAULT_MESSAGE);
 
         boolean found = false;
-        for (Object o : to) {
+        for (T o : to) {
+            if (what.runGenericInterface(o)) {
+                if (found)
+                    return false;
+                found = true;
+            }
+        }
+        return found;
+    }
+    public static <T> boolean boolXOr(T what, T... to) {
+        if (to.length == 0)
+            throw new NoArgumentException(NoArgumentException.DEFAULT_MESSAGE);
+
+        boolean found = false;
+        for (T o : to) {
             if (Objects.equals(what, o)) {
                 if (found)
                     return false;
@@ -1608,12 +1641,22 @@ public class Utility implements java.io.Serializable {
         return found;
     }
 
-    public static <T> Boolean boolAnd(T what, T... to) {
+    public static <T> boolean boolAnd(T what, T... to) {
         if (to.length == 0)
-            return null;
+            throw new NoArgumentException(NoArgumentException.DEFAULT_MESSAGE);
 
-        for (Object o : to) {
+        for (T o : to) {
             if (!Objects.equals(what, o))
+                return false;
+        }
+        return true;
+    }
+    public static <T> boolean boolAnd(GenericReturnInterface<T, Boolean> what, T... to) {
+        if (to.length == 0)
+            throw new NoArgumentException(NoArgumentException.DEFAULT_MESSAGE);
+
+        for (T o : to) {
+            if (!what.runGenericInterface(o))
                 return false;
         }
         return true;
@@ -1718,6 +1761,10 @@ public class Utility implements java.io.Serializable {
 
     public interface GenericReturnInterface<T,R> {
         R runGenericInterface(T t);
+    }
+
+    public interface GenericReturnOnlyInterface<T> {
+        T runGenericInterface();
     }
     //  <------------------------- Interfaces -------------------------
 }

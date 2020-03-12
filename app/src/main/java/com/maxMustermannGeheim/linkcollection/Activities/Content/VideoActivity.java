@@ -1,9 +1,11 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Content;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.util.Pair;
@@ -11,6 +13,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewStub;
+import android.view.ViewTreeObserver;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -26,6 +29,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.LifecycleOwner;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -58,12 +62,17 @@ import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.mikhaellopez.lazydatepicker.LazyDatePicker;
 
+import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEvent;
+import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEventListener;
+
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -318,7 +327,7 @@ public class VideoActivity extends AppCompatActivity {
                                     List<String> genreIdList = database.genreMap.values().stream().filter(genre -> resultLow.contains(genre.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
                                     
                                     if (addOrEditDialog != null) {
-                                        ((EditText) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_Titel)).setText(result);
+                                        ((EditText) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_Title)).setText(result);
                                         if (editVideo[0] != null) {
                                             editVideo[0].setDarstellerList(actorIdList);
                                             editVideo[0].setStudioList(studioIdList);
@@ -712,6 +721,7 @@ public class VideoActivity extends AppCompatActivity {
         setResult(RESULT_OK);
         removeFocusFromSearch();
 
+
         final Video[] editVideo = {video == null ? null : video.clone()};
         if (editVideo[0] != null) {
             editVideo[0].setDarstellerList(new ArrayList<>(editVideo[0].getDarstellerList()));
@@ -721,12 +731,26 @@ public class VideoActivity extends AppCompatActivity {
 
         com.finn.androidUtilities.Helpers.TextInputHelper helper = new com.finn.androidUtilities.Helpers.TextInputHelper();
         final boolean[] checked = {video != null && video.isWatchLater()}; // Utility.getWatchLaterList().contains(video)};
-        CustomDialog returnDialog = CustomDialog.Builder(this)
+        CustomDialog returnDialog = CustomDialog.Builder(this);
+
+        final View activityRootView = videos_search.getRootView();
+        ViewTreeObserver.OnGlobalLayoutListener layoutListener = () -> {
+            Rect r = new Rect();
+
+            activityRootView.getWindowVisibleDisplayFrame(r);
+
+            int heightDiff = activityRootView.getRootView().getHeight() - (r.bottom - r.top);
+
+            com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog.setDialogLayoutParameters(returnDialog.getDialog(), true, heightDiff > 100);
+        };
+        activityRootView.getViewTreeObserver().addOnGlobalLayoutListener(layoutListener);
+
+        returnDialog
                 .setTitle(video == null ? "Neu: " + singular : singular + " Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
-                    String titel = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_Titel)).getText().toString().trim();
+                    String titel = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_Title)).getText().toString().trim();
                     String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_url)).getText().toString().trim();
                     if (editVideo[0].isWatchLater() && !editVideo[0].hasRating() && !Utility.boolOr(((RatingBar) customDialog.findViewById(R.id.customRating_ratingBar)).getRating(), -1f, 0f))
                         CustomDialog.Builder(this)
@@ -930,7 +954,7 @@ public class VideoActivity extends AppCompatActivity {
                     Helpers.RatingHelper ratingHelper = new Helpers.RatingHelper(view.findViewById(R.id.customRating_layout));
 
                     if (editVideo[0] != null) {
-                        AutoCompleteTextView dialog_editOrAddVideo_Titel = view.findViewById(R.id.dialog_editOrAddVideo_Titel);
+                        AutoCompleteTextView dialog_editOrAddVideo_Titel = view.findViewById(R.id.dialog_editOrAddVideo_Title);
                         dialog_editOrAddVideo_Titel.setText(editVideo[0].getName());
                         if (reload)
                             dialog_editOrAddVideo_Titel.dismissDropDown();
@@ -1005,8 +1029,38 @@ public class VideoActivity extends AppCompatActivity {
                         toast.show();
                     }, toast::cancel);
                 })
-                .setOnDialogDismiss(customDialog -> isShared = false)
+                .setOnDialogDismiss(customDialog -> {
+                    isShared = false;
+                    activityRootView.getViewTreeObserver().removeOnGlobalLayoutListener(layoutListener);
+                })
+                .enableDoubleClickOutsideToDismiss(customDialog -> {
+                    String title = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_Title)).getText().toString().trim();
+                    String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_url)).getText().toString().trim();
+                    float rating = ((RatingBar) customDialog.findViewById(R.id.customRating_ratingBar)).getRating();
+                    if (video == null)
+                        return !title.isEmpty() || !url.isEmpty() || !Utility.boolOr(rating, -1f, 0f) || !editVideo[0].getDarstellerList().isEmpty() || !editVideo[0].getStudioList().isEmpty() || !editVideo[0].getGenreList().isEmpty();
+                    else
+                        return !title.equals(video.getName()) || !url.equals(video.getUrl()) || rating != video.getRating() || !editVideo[0].equals(video);
+                })
                 .show();
+
+//        try {
+//            Method method = KeyboardVisibilityEvent.class.getDeclaredMethod("registerEventListener", Activity.class, KeyboardVisibilityEventListener.class);
+//            method.setAccessible(true);
+//            method.invoke(KeyboardVisibilityEvent.class.newInstance(), this, (KeyboardVisibilityEventListener) b -> {
+//                com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog.setDialogLayoutParameters(returnDialog.getDialog(), true, b);
+//                Toast.makeText(VideoActivity.this, String.valueOf(b), Toast.LENGTH_SHORT).show();
+//            });
+//        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
+//            String BREAKPOINT = null;
+//        }
+//        KeyboardVisibilityEvent.setEventListener(this, new KeyboardVisibilityEventListener() {
+//            @Override
+//            public void onVisibilityChanged(boolean b) {
+//                com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog.setDialogLayoutParameters(returnDialog.getDialog(), true, b);
+//                Toast.makeText(VideoActivity.this, String.valueOf(b), Toast.LENGTH_SHORT).show();
+//            }
+//        });
         return Pair.create(returnDialog, editVideo[0]);
     }
 
@@ -1023,7 +1077,7 @@ public class VideoActivity extends AppCompatActivity {
         Toast.makeText(this, "Einen Moment bitte..", Toast.LENGTH_SHORT).show();
 
         CustomList<Pair<String, JSONObject>> jsonObjectList = new CustomList<>();
-        AutoCompleteTextView dialog_editOrAddVideo_Titel = customDialog.findViewById(R.id.dialog_editOrAddVideo_Titel);
+        AutoCompleteTextView dialog_editOrAddVideo_Titel = customDialog.findViewById(R.id.dialog_editOrAddVideo_Title);
 
         dialog_editOrAddVideo_Titel.setOnItemClickListener((parent, view2, position, id) -> {
             JSONObject jsonObject = (JSONObject) ((ImageAdapterItem) parent.getItemAtPosition(position)).getPayload();
@@ -1482,7 +1536,7 @@ public class VideoActivity extends AppCompatActivity {
 
         int openButtonId = View.generateViewId();
         CustomDialog randomDialog = CustomDialog.Builder(this)
-                .setTitle("Zufällig")
+                .setTitle(randomVideo.getName())
                 .setView(R.layout.dialog_detail_video)
                 .addButton(R.drawable.ic_info, customDialog -> detailDialog = showDetailDialog(randomVideo).setPayload(customDialog), false);
 
@@ -1519,7 +1573,8 @@ public class VideoActivity extends AppCompatActivity {
                 }, false)
                 .colorLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {
-                    ((TextView) view.findViewById(R.id.dialog_video_Titel)).setText(randomVideo.getName());
+                    if (reload)
+                        customDialog.setTitle(randomVideo.getName());
                     ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(
                             randomVideo.getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                     ((TextView) view.findViewById(R.id.dialog_video_Studio)).setText(

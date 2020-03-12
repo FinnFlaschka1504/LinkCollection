@@ -79,7 +79,7 @@ public class Show extends ParentClass{
 
     public List<Season> getSeasonList() {
         if (!hasSpecials())
-            seasonList.add(0, new Season(EMPTY_SEASON).setSeasonNumber(0));
+            seasonList.add(0, (Season) new Season(EMPTY_SEASON).setSeasonNumber(0).setUuid(""));
         return seasonList;
     }
 

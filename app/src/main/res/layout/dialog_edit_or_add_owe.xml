@@ -39,7 +39,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textCapSentences"
-                    android:selectAllOnFocus="true"
                     android:singleLine="true" />
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
@@ -62,7 +61,6 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:inputType="textMultiLine|textCapSentences"
-                android:selectAllOnFocus="true"
                 android:singleLine="false" />
         </LinearLayout>
 

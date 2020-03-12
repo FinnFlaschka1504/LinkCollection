@@ -342,9 +342,9 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
         setResult(RESULT_OK);
         removeFocusFromSearch();
 
-        final Owe[] newOwe = {null};
+        final Owe[] editOwe = {null};
         if (owe != null) {
-            newOwe[0] = owe.clone();
+            editOwe[0] = owe.clone();
         }
         CustomDialog returnDialog =  CustomDialog.Builder(this)
                 .setTitle(owe == null ? "Neue Schulden" : "Schulden Bearbeiten")
@@ -378,32 +378,40 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                         Toast.makeText(this, "Einen Titel eingeben", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    newOwe[0].setName(title);
-                    newOwe[0].setDescription(((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_owe_description)).getText().toString().trim());
+                    editOwe[0].setName(title);
+                    editOwe[0].setDescription(((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_owe_description)).getText().toString().trim());
 
-                    newOwe[0].setOwnOrOther(((Spinner) customDialog.findViewById(R.id.dialog_editOrAdd_owe_ownOrOther)).getSelectedItemPosition() == 0 ? Owe.OWN_OR_OTHER.OTHER : Owe.OWN_OR_OTHER.OWN);
-                  saveOwe(customDialog, newOwe, owe);
+                    editOwe[0].setOwnOrOther(((Spinner) customDialog.findViewById(R.id.dialog_editOrAdd_owe_ownOrOther)).getSelectedItemPosition() == 0 ? Owe.OWN_OR_OTHER.OTHER : Owe.OWN_OR_OTHER.OWN);
+                  saveOwe(customDialog, editOwe, owe);
 
                 }, false)
                 .disableLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {
                     new Helpers.TextInputHelper().defaultDialogValidation(customDialog).addValidator(view.findViewById(R.id.dialog_editOrAdd_owe_Title_layout));
-                    if (newOwe[0] != null) {
-                        ((EditText) view.findViewById(R.id.dialog_editOrAdd_owe_Title)).setText(newOwe[0].getName());
+                    if (editOwe[0] != null) {
+                        ((EditText) view.findViewById(R.id.dialog_editOrAdd_owe_Title)).setText(editOwe[0].getName());
                         ((EditText) view.findViewById(R.id.dialog_editOrAdd_owe_description)).setText(owe.getDescription());
-                        ((TextView) view.findViewById(R.id.dialog_editOrAdd_owe_items)).setText(newOwe[0].getItemList().stream()
+                        ((TextView) view.findViewById(R.id.dialog_editOrAdd_owe_items)).setText(editOwe[0].getItemList().stream()
                                 .map(item -> String.format("%s (%s)", database.personMap.get(item.getPersonId()).getName(), Utility.formatToEuro(item.getAmount())))
                                 .collect(Collectors.joining(", ")));
                         view.findViewById(R.id.dialog_editOrAdd_owe_items).setSelected(true);
-                        ((Spinner) view.findViewById(R.id.dialog_editOrAdd_owe_ownOrOther)).setSelection(newOwe[0].getOwnOrOther() == Owe.OWN_OR_OTHER.OTHER ? 0 : 1);
+                        ((Spinner) view.findViewById(R.id.dialog_editOrAdd_owe_ownOrOther)).setSelection(editOwe[0].getOwnOrOther() == Owe.OWN_OR_OTHER.OTHER ? 0 : 1);
 
                     }
                     else
-                        newOwe[0] = new Owe("").setDate(new Date());
+                        editOwe[0] = new Owe("").setDate(new Date());
 
 
                     view.findViewById(R.id.dialog_editOrAdd_owe_editItems).setOnClickListener(view1 ->
-                            showItemsDialog(newOwe[0], view.findViewById(R.id.dialog_editOrAdd_owe_items), true));
+                            showItemsDialog(editOwe[0], view.findViewById(R.id.dialog_editOrAdd_owe_items), true));
+                })
+                .enableDoubleClickOutsideToDismiss(customDialog -> {
+                    String title = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_owe_Title)).getText().toString().trim();
+                    String description = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_owe_description)).getText().toString().trim();
+                    if (owe == null)
+                        return !title.isEmpty() || !description.isEmpty() || !editOwe[0].getItemList().isEmpty();
+                    else
+                        return !title.equals(owe.getName()) || !description.equals(owe.getDescription()) || !editOwe[0].equals(owe);
                 })
                 .show();
         return returnDialog.getDialog();
@@ -413,12 +421,13 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
         setResult(RESULT_OK);
         removeFocusFromSearch();
         CustomDialog returnDialog = CustomDialog.Builder(this)
-                .setTitle("Detail Ansicht")
+                .setTitle(owe.getName())
                 .setView(R.layout.dialog_detail_owe)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Bearbeiten", customDialog -> addOrEditDialog[0] = showEditOrNewDialog(owe), false)
                 .setSetViewContent((customDialog, view, reload) -> {
-                    ((TextView) view.findViewById(R.id.dialog_detail_owe_title)).setText(owe.getName());
+                    if (reload)
+                        customDialog.setTitle(owe.getName());
                     ((TextView) view.findViewById(R.id.dialog_detail_owe_description)).setText(owe.getDescription());
                     setItemText(view.findViewById(R.id.dialog_detail_owe_items), owe);
                     ((TextView) view.findViewById(R.id.dialog_detail_owe_ownOrOther)).setText(owe.getOwnOrOther().getName());

@@ -236,26 +236,29 @@ public class VersionControl {
     private static List<Pair<String, List<String>>> changeList = new ArrayList<>();
 
     private static Runnable addChanges = () -> {
-        changeList.add(new Pair<>("1.0", Arrays.asList("Fast alles")));
-        changeList.add(new Pair<>("2.0", Arrays.asList(
-                "VersionControl hinzugefügt")));
-        changeList.add(new Pair<>("2.1", Arrays.asList(
-                "Bei der Datenbank anmelden begonnen")));
-        changeList.add(new Pair<>("2.2", Arrays.asList(
-                "Bei der Datenbank anmelden abgeschlossen",
-                "Datenbanken können gelöscht und umbenannt werden")));
-        changeList.add(new Pair<>("2.3", Arrays.asList(
-                "Bezeichnungen in den Datenbankeinstellungen überarbeitet",
-                "Film- und Serien-Genres können aus der TMDb importiert werden")));
-        changeList.add(new Pair<>("2.4", Arrays.asList(
-                "Das Verschlüsseln der Bereiche ist jetzt 'idiotensicher' - beim Anmelden, oder Wechseln von Datenbanken können keine Probleme mehr auftreten",
+        addChange("1.0", "Fast alles");
+        addChange("2.0", "VersionControl hinzugefügt");
+        addChange("2.1", "Bei der Datenbank anmelden begonnen");
+        addChange("2.2", "Bei der Datenbank anmelden abgeschlossen",
+                "Datenbanken können gelöscht und umbenannt werden");
+        addChange("2.3", "Bezeichnungen in den Datenbankeinstellungen überarbeitet",
+                "Film- und Serien-Genres können aus der TMDb importiert werden");
+        addChange("2.4", "Das Verschlüsseln der Bereiche ist jetzt 'idiotensicher' - beim Anmelden, oder Wechseln von Datenbanken können keine Probleme mehr auftreten",
                 "Die Schloss-Icons in den Einstellungen öffnen nun auch die Verschlüsselungs-Einstellungen",
                 "Die Update-Datei wird beim nächsten Öffnen der App automatisch gelöscht",
-                "BugFix: Episoden-Ansichten können nun auch über die Detailansicht hinzugefügt werden")));
-        changeList.add(new Pair<>("2.5", Arrays.asList(
-                "Darsteller und Studios können aus der TMDb importiert werden",
-                "Design der Listenelemente in Videos, Serien, Wissen und Schulden verbessert")));
+                "BugFix: Episoden-Ansichten können nun auch über die Detailansicht hinzugefügt werden");
+        addChange("2.5", "Darsteller und Studios können aus der TMDb importiert werden",
+                "Design der Listenelemente in Videos, Serien, Wissen und Schulden verbessert");
+        addChange("2.6", "Edit-Dialoge können jetzt nicht mehr ausversehen abgebrochen werden",
+                "Detail-Dialoge überarbeitet",
+                "Beim Öffnen der Tastatur passt sich automatisch die Höhe des EditVideo-Dialog an");
     };
+
+    private static void addChange(String version, String... changes) {
+        if (changes.length == 0)
+            return;
+        changeList.add(new Pair<>(version, Arrays.asList(changes)));
+    }
 
     public static void showChangeLog(AppCompatActivity activity, boolean force) {
         Settings.startSettings_ifNeeded(activity);

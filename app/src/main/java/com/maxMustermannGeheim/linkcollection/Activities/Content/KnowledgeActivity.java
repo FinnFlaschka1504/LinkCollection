@@ -370,13 +370,13 @@ public class KnowledgeActivity extends AppCompatActivity {
         setResult(RESULT_OK);
         removeFocusFromSearch();
 
-        final Knowledge[] newKnowledge = {null};
+        final Knowledge[] editKnowledge = {null};
         List<String> categoriesNames = new ArrayList<>();
         List<String> sourcesNames = new ArrayList<>();
         if (knowledge != null) {
-            newKnowledge[0] = knowledge.clone();
-            newKnowledge[0].getCategoryIdList().forEach(uuid -> categoriesNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
-            newKnowledge[0].getSources().forEach(nameUrlPair -> sourcesNames.add(nameUrlPair.get(0)));
+            editKnowledge[0] = knowledge.clone();
+            editKnowledge[0].getCategoryIdList().forEach(uuid -> categoriesNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
+            editKnowledge[0].getSources().forEach(nameUrlPair -> sourcesNames.add(nameUrlPair.get(0)));
         }
         CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle(knowledge == null ? "Neues Wissen" : "Wissen Bearbeiten")
@@ -386,7 +386,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         if (knowledge != null)
             returnDialog
                     .addButton(R.drawable.ic_delete, customDialog -> {
-                        com.finn.androidUtilities.CustomDialog.Builder(this)
+                        CustomDialog.Builder(this)
                                 .setTitle("Löschen")
                                 .setText("Willst du wirklich '" + knowledge.getName() + "' löschen?")
                                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
@@ -413,16 +413,16 @@ public class KnowledgeActivity extends AppCompatActivity {
                     }
                     String content = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddKnowledge_content)).getText().toString().trim();
 //
-                    if (content.equals("") && !newKnowledge[0].hasItems()) {
+                    if (content.equals("") && !editKnowledge[0].hasItems()) {
                         CustomDialog.Builder(this)
                                 .setTitle("Ohne Inhalt speichern?")
                                 .setText("Möchtest du wirklich ohne einen Inhalt speichern")
                                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
                                 .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 ->
-                                        saveKnowledge(customDialog, titel, content, newKnowledge[0], knowledge))
+                                        saveKnowledge(customDialog, titel, content, editKnowledge[0], knowledge))
                                 .show();
                     } else
-                        saveKnowledge(customDialog, titel, content, newKnowledge[0], knowledge);
+                        saveKnowledge(customDialog, titel, content, editKnowledge[0], knowledge);
 
                 }, false)
                 .disableLastAddedButton()
@@ -482,26 +482,26 @@ public class KnowledgeActivity extends AppCompatActivity {
                             applyFormatting_edit(s);
                         }
                     });
-                    if (newKnowledge[0] != null) {
-                        ((EditText) view.findViewById(R.id.dialog_editOrAddKnowledge_Titel)).setText(newKnowledge[0].getName());
-                        if (Utility.stringExists(newKnowledge[0].getContent())) {
-                            dialog_editOrAddKnowledge_content.setText(newKnowledge[0].getContent());
+                    if (editKnowledge[0] != null) {
+                        ((EditText) view.findViewById(R.id.dialog_editOrAddKnowledge_Titel)).setText(editKnowledge[0].getName());
+                        if (Utility.stringExists(editKnowledge[0].getContent())) {
+                            dialog_editOrAddKnowledge_content.setText(editKnowledge[0].getContent());
                             applyFormatting_edit(dialog_editOrAddKnowledge_content.getText());
                         }
                         ((TextView) view.findViewById(R.id.dialog_editOrAddKnowledge_categories)).setText(String.join(", ", categoriesNames));
                         view.findViewById(R.id.dialog_editOrAddKnowledge_categories).setSelected(true);
                         ((TextView) view.findViewById(R.id.dialog_editOrAddKnowledge_sources)).setText(String.join(", ", sourcesNames));
                         view.findViewById(R.id.dialog_editOrAddKnowledge_sources).setSelected(true);
-                        ratingHelper.setRating(newKnowledge[0].getRating());
+                        ratingHelper.setRating(editKnowledge[0].getRating());
                     } else
-                        newKnowledge[0] = new Knowledge("");
+                        editKnowledge[0] = new Knowledge("");
 
-                    generateItemRecycler(newKnowledge[0].getItemList(), contentRecycler, null, contentRecycler, 0, new CustomList[]{null}, new CustomList<>());
+                    generateItemRecycler(editKnowledge[0].getItemList(), contentRecycler, null, contentRecycler, 0, new CustomList[]{null}, new CustomList<>());
 
 
                     View layoutContent = view.findViewById(R.id.dialog_editOrAddKnowledge_content_layout);
                     View layoutList = view.findViewById(R.id.dialog_editOrAddKnowledge_list_layout);
-                    if (!newKnowledge[0].hasItems()) {
+                    if (!editKnowledge[0].hasItems()) {
                         layoutContent.setVisibility(View.VISIBLE);
                         layoutList.setVisibility(View.GONE);
                     }
@@ -521,13 +521,13 @@ public class KnowledgeActivity extends AppCompatActivity {
                                     .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
                                     .addButton("Verwerfen", customDialog1 -> {
                                         dialog_editOrAddKnowledge_content.setText("");
-                                        newKnowledge[0].setContent(null);
+                                        editKnowledge[0].setContent(null);
                                         change.run();
                                     })
                                     .addButton("Übernehmen", customDialog1 -> {
                                         dialog_editOrAddKnowledge_content.setText("");
-                                        newKnowledge[0].setContent(null);
-                                        List<Knowledge.Item> itemList = newKnowledge[0].getItemList();
+                                        editKnowledge[0].setContent(null);
+                                        List<Knowledge.Item> itemList = editKnowledge[0].getItemList();
                                         itemList.clear();
                                         if (content[0].startsWith("• "))
                                             content[0] = content[0].substring(2);
@@ -550,21 +550,21 @@ public class KnowledgeActivity extends AppCompatActivity {
                             layoutContent.setVisibility(View.VISIBLE);
                         };
 
-                        if (newKnowledge[0].hasItems()) {
+                        if (editKnowledge[0].hasItems()) {
                             CustomDialog.Builder(this)
                                     .setTitle("Inhalt Vorhanden")
                                     .setText("Das Wissen hat bereits einen Inhalt.\nSoll versucht werden diesen zu übernehmen, oder soll er verworfen werden?")
                                     .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
                                     .addButton("Verwerfen", customDialog1 -> {
-                                        newKnowledge[0].clearItemList();
+                                        editKnowledge[0].clearItemList();
                                         contentRecycler.reload();
                                         change.run();
                                     })
                                     .addButton("Übernehmen", customDialog1 -> {
-                                        String content = newKnowledge[0].itemListToString();
+                                        String content = editKnowledge[0].itemListToString();
                                         dialog_editOrAddKnowledge_content.setText(content);
-                                        newKnowledge[0].setContent(content);
-                                        newKnowledge[0].clearItemList();
+                                        editKnowledge[0].setContent(content);
+                                        editKnowledge[0].clearItemList();
                                         contentRecycler.reload();
                                         change.run();
                                     })
@@ -575,12 +575,21 @@ public class KnowledgeActivity extends AppCompatActivity {
                     });
 
                     view.findViewById(R.id.dialog_editOrAddKnowledge_editCategories).setOnClickListener(view1 ->
-                            Utility.showEditItemDialog(this, customDialog, newKnowledge[0].getCategoryIdList(), newKnowledge[0], CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES));
+                            Utility.showEditItemDialog(this, customDialog, editKnowledge[0].getCategoryIdList(), editKnowledge[0], CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES));
                     view.findViewById(R.id.dialog_editOrAddKnowledge_editSources).setOnClickListener(view1 ->
-                            showSourcesDialog(newKnowledge[0], view.findViewById(R.id.dialog_editOrAddKnowledge_sources), true));
+                            showSourcesDialog(editKnowledge[0], view.findViewById(R.id.dialog_editOrAddKnowledge_sources), true));
+                })
+                .enableDoubleClickOutsideToDismiss(customDialog -> {
+                    String title = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddKnowledge_Titel)).getText().toString().trim();
+                    String content = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddKnowledge_content)).getText().toString().trim();
+                    float rating = ((RatingBar) customDialog.findViewById(R.id.customRating_ratingBar)).getRating();
+                    if (knowledge == null)
+                        return !title.isEmpty() || !Utility.boolOr(rating, -1f, 0f) || !content.isEmpty() || editKnowledge[0].hasItems() || !editKnowledge[0].getSources().isEmpty();
+                    else
+                        return !title.equals(knowledge.getName()) || !content.equals(knowledge.getContent()) || rating != knowledge.getRating() || !editKnowledge[0].equals(knowledge);
                 })
                 .show();
-        return Pair.create(returnDialog, newKnowledge[0]);
+        return Pair.create(returnDialog, editKnowledge[0]);
     }
 
     private void generateItemRecycler(List<Knowledge.Item> itemList, CustomRecycler<Knowledge.Item> itemRecycler, CustomRecycler<Knowledge.Item> parentRecycler,
@@ -723,7 +732,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 //        List<String> categoriesNames = new ArrayList<>();
 //        knowledge.getCategoryIdList().forEach(uuid -> categoriesNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
         CustomDialog returnDialog = CustomDialog.Builder(this)
-                .setTitle("Detail Ansicht")
+                .setTitle(knowledge.getName())
                 .setView(R.layout.dialog_detail_knowledge)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Teilen", customDialog -> {
@@ -846,7 +855,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .addButton("Bearbeiten", customDialog ->
                         showEditOrNewDialog(knowledge), false)
                 .setSetViewContent((customDialog, view, reload) -> {
-                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_title)).setText(knowledge.getName());
+                    if (reload) customDialog.setTitle(knowledge.getName());
 
                     TextView dialog_detailKnowledge_content = view.findViewById(R.id.dialog_detailKnowledge_content);
                     RecyclerView dialog_detailKnowledge_list = view.findViewById(R.id.dialog_detailKnowledge_list);
@@ -1085,8 +1094,8 @@ public class KnowledgeActivity extends AppCompatActivity {
         }
         final Knowledge[] randomKnowledge = {filteredKnowledgeList.removeRandom()};
 
-        com.finn.androidUtilities.CustomDialog.Builder(this)
-                .setTitle("Zufälliges Wissen")
+        CustomDialog.Builder(this)
+                .setTitle(randomKnowledge[0].getName())
                 .setView(R.layout.dialog_detail_knowledge)
                 .addButton(R.drawable.ic_info, customDialog -> detailDialog = showDetailDialog(randomKnowledge[0]).setPayload(customDialog), false)
                 .alignPreviousButtonsLeft()
@@ -1103,7 +1112,9 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .colorLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {
 
-                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_title)).setText(randomKnowledge[0].getName());
+                    if (reload)
+                        customDialog.setTitle(randomKnowledge[0].getName());
+
 
                     TextView listItem_knowledge_content = view.findViewById(R.id.dialog_detailKnowledge_content);
                     RecyclerView listItem_knowledge_list = view.findViewById(R.id.dialog_detailKnowledge_list);

@@ -709,7 +709,7 @@ public class CustomDialog {
             editBuilder.onActionActionPair.first.runOnAction(textInputHelper, textInputLayout, -1, textInputHelper.getText(textInputLayout));
     }
 
-    static void setDialogLayoutParameters(Dialog dialog, boolean width, boolean height) {
+    public static void setDialogLayoutParameters(Dialog dialog, boolean width, boolean height) {
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
         lp.copyFrom(dialog.getWindow().getAttributes());
         if (width)

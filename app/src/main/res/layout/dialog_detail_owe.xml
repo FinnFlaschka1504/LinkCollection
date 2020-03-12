@@ -21,26 +21,6 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginRight="8dp"
-                android:text="Titel:"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/dialog_detail_owe_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                tools:text="Name1" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
                 android:text="Beschreibung:"
                 android:textStyle="bold" />

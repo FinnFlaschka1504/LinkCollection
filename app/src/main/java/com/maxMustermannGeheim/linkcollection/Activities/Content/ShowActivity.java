@@ -20,6 +20,7 @@ import android.view.ViewStub;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RatingBar;
@@ -831,7 +832,7 @@ public class ShowActivity extends AppCompatActivity {
         setResult(RESULT_OK);
         removeFocusFromSearch();
         return CustomDialog.Builder(this)
-                .setTitle("Detail Ansicht")
+                .setTitle(show.getName())
                 .setView(R.layout.dialog_detail_show)
                 .addButton("Ansichten", customDialog -> {
                     CustomDialog.Builder(this)
@@ -862,7 +863,9 @@ public class ShowActivity extends AppCompatActivity {
                         customDialog_edit.setPayload(customDialog);
                 }, false)
                 .setSetViewContent((customDialog, view, reload) -> {
-                    ((TextView) view.findViewById(R.id.dialog_detailShow_title)).setText(show.getName());
+                    if (reload)
+                        customDialog.setTitle(show.getName());
+//                    ((TextView) view.findViewById(R.id.dialog_detailShow_title)).setText(show.getName());
                     Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.SHOW_GENRES, view.findViewById(R.id.dialog_detailShow_genre), show.getGenreIdList(), database.showGenreMap);
                     view.findViewById(R.id.dialog_detailShow_genre).setSelected(true);
                     ((TextView) view.findViewById(R.id.dialog_detailShow_release))
@@ -989,7 +992,7 @@ public class ShowActivity extends AppCompatActivity {
 
                         ((TextView) view.findViewById(R.id.dialog_editOrAdd_show_details)).setText(getDetailText(editShow));
 
-                        if (!reload)
+                        if (!reload && (editShow.getLastUpdated() == null || System.currentTimeMillis() - editShow.getLastUpdated().getTime() > 86400000))
                             apiDetailRequest(this, show.getTmdbId(), editShow, customDialog::reloadView, true);
                     } else {
 //                        view.findViewById(R.id.dialog_editOrAdd_show_watchLater).setVisibility(View.VISIBLE);
@@ -1001,6 +1004,13 @@ public class ShowActivity extends AppCompatActivity {
 
                     view.findViewById(R.id.dialog_editOrAdd_show_editGenre).setOnClickListener(view1 ->
                             Utility.showEditItemDialog(this, customDialog, editShow.getGenreIdList(), editShow, CategoriesActivity.CATEGORIES.SHOW_GENRES));
+                })
+                .enableDoubleClickOutsideToDismiss(customDialog -> {
+                    String title = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_show_title)).getText().toString().trim();
+                    if (show == null)
+                        return !title.isEmpty() || !editShow.getGenreIdList().isEmpty();
+                    else
+                        return !title.equals(show.getName()) || !editShow.equals(show);
                 })
                 .show();
     }

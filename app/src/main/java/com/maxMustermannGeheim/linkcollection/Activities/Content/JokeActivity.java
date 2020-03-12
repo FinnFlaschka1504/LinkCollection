@@ -298,11 +298,11 @@ public class JokeActivity extends AppCompatActivity {
         setResult(RESULT_OK);
         removeFocusFromSearch();
 
-        final Joke[] newJoke = {null};
+        final Joke[] editJoke = {null};
         List<String> categoriesNames = new ArrayList<>();
         if (joke != null) {
-            newJoke[0] = joke.clone();
-            newJoke[0].getCategoryIdList().forEach(uuid -> categoriesNames.add(database.jokeCategoryMap.get(uuid).getName()));
+            editJoke[0] = joke.clone();
+            editJoke[0].getCategoryIdList().forEach(uuid -> categoriesNames.add(database.jokeCategoryMap.get(uuid).getName()));
         }
         CustomDialog returnDialog =  CustomDialog.Builder(this)
                 .setTitle(joke == null ? "Neuer Witz" : "Witz Bearbeiten")
@@ -333,7 +333,7 @@ public class JokeActivity extends AppCompatActivity {
                         return;
                     }
                     String content = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddJoke_punchLine)).getText().toString().trim();
-                    saveJoke(customDialog, titel, content, newJoke, joke);
+                    saveJoke(customDialog, titel, content, editJoke, joke);
 
                 }, false)
                 .disableLastAddedButton()
@@ -342,19 +342,28 @@ public class JokeActivity extends AppCompatActivity {
 
                     Helpers.RatingHelper ratingHelper = new Helpers.RatingHelper(view.findViewById(R.id.customRating_layout));
 
-                    if (newJoke[0] != null) {
-                        ((EditText) view.findViewById(R.id.dialog_editOrAddJoke_Titel)).setText(newJoke[0].getName());
+                    if (editJoke[0] != null) {
+                        ((EditText) view.findViewById(R.id.dialog_editOrAddJoke_Titel)).setText(editJoke[0].getName());
                         ((EditText) view.findViewById(R.id.dialog_editOrAddJoke_punchLine)).setText(joke.getPunchLine());
                         ((TextView) view.findViewById(R.id.dialog_editOrAddJoke_categories)).setText(String.join(", ", categoriesNames));
                         view.findViewById(R.id.dialog_editOrAddJoke_categories).setSelected(true);
-                        ratingHelper.setRating(newJoke[0].getRating());
+                        ratingHelper.setRating(editJoke[0].getRating());
                     }
                     else
-                        newJoke[0] = new Joke("").setAddedDate(new Date());
+                        editJoke[0] = new Joke("").setAddedDate(new Date());
 
 
                     view.findViewById(R.id.dialog_editOrAddJoke_editCategories).setOnClickListener(view1 ->
-                            Utility.showEditItemDialog(this, addOrEditDialog[0], newJoke[0].getCategoryIdList(), newJoke[0], CategoriesActivity.CATEGORIES.JOKE_CATEGORIES));
+                            Utility.showEditItemDialog(this, addOrEditDialog[0], editJoke[0].getCategoryIdList(), editJoke[0], CategoriesActivity.CATEGORIES.JOKE_CATEGORIES));
+                })
+                .enableDoubleClickOutsideToDismiss(customDialog -> {
+                    String title = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddJoke_Titel)).getText().toString().trim();
+                    String punchline = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddJoke_punchLine)).getText().toString().trim();
+                    float rating = ((RatingBar) customDialog.findViewById(R.id.customRating_ratingBar)).getRating();
+                    if (joke == null)
+                        return !title.isEmpty() || !punchline.isEmpty() || !Utility.boolOr(rating, -1f, 0f) || !editJoke[0].getCategoryIdList().isEmpty();
+                    else
+                        return !title.equals(joke.getName()) || !punchline.equals(joke.getPunchLine()) || rating != joke.getRating() || !editJoke[0].equals(joke);
                 })
                 .show();
         return returnDialog;

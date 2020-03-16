@@ -42,7 +42,6 @@
                     android:id="@+id/dialog_editOrAddVideo_Title"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:dropDownHeight="300dp"
                     android:inputType="textCapSentences"
                     android:singleLine="true" />
             </com.google.android.material.textfield.TextInputLayout>

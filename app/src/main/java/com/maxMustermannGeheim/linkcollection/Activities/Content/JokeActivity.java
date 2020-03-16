@@ -317,9 +317,19 @@ public class JokeActivity extends AppCompatActivity {
                         .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
                         .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
                             database.jokeMap.remove(joke.getUuid());
+                            allJokeList.remove(joke);
                             Database.saveAll();
                             reLoadRecycler();
-                            returnDialog.getDialog().dismiss();
+
+                            customDialog.dismiss();
+                            if (detailDialog != null) {
+                                Object payload = detailDialog.getPayload();
+                                if (payload != null) {
+                                    ((CustomDialog) payload).dismiss();
+                                }
+                                detailDialog.dismiss();
+                            }
+
                         })
                         .show();
             }, false)
@@ -376,7 +386,7 @@ public class JokeActivity extends AppCompatActivity {
                 .setTitle("Detail Ansicht")
                 .setView(R.layout.dialog_detail_joke)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
-                .addButton("Bearbeiten", customDialog -> addOrEditDialog[0] = showEditOrNewDialog(joke), false)
+                .addButton("Bearbeiten", customDialog -> Utility.ifNotNull(showEditOrNewDialog(joke), customDialog1 -> addOrEditDialog[0] = customDialog1.setPayload(customDialog), () -> addOrEditDialog[0] = null), false)
                 .setSetViewContent((customDialog, view, reload) -> {
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_title_label)).setText(joke.getPunchLine() == null || joke.getPunchLine().isEmpty() ? "Witz:" : "Aufbau:");
                     view.findViewById(R.id.dialog_detailJoke_punchLine_layout).setVisibility(joke.getPunchLine() == null || joke.getPunchLine().isEmpty() ? View.GONE : View.VISIBLE);

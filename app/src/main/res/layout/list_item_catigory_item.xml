@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="3dp"
@@ -7,22 +10,38 @@
     android:clickable="true"
     android:elevation="3dp"
     android:foreground="@drawable/ripple"
-    android:orientation="vertical">
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingHorizontal="8dp"
+    android:paddingVertical="5dp">
+
+    <ImageView
+        android:id="@+id/listItem_categoryItem_image"
+        android:layout_width="wrap_content"
+        android:layout_height="60dp"
+        android:adjustViewBounds="true"
+        android:maxWidth="50dp"
+        android:visibility="gone"
+        app:srcCompat="@drawable/ic_download"
+        tools:srcCompat="@drawable/simpsons_movie_poster"
+        tools:visibility="visible" />
 
     <LinearLayout
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginVertical="15dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginVertical="10dp"
+        android:layout_weight="1"
         android:gravity="center_horizontal"
         android:orientation="vertical">
 
         <TextView
             android:id="@+id/listItem_catigoryItem_name"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="5dp"
-            android:text="Object" />
+            android:text="Object"
+            android:textAlignment="center" />
 
         <TextView
             android:id="@+id/userlistItem_catigoryItem_count"
@@ -34,13 +53,15 @@
     </LinearLayout>
 
     <CheckBox
+
         android:id="@+id/userlistItem_catigoryItem_ckeck"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
-        android:clickable="false" />
+        android:clickable="false"
+        android:gravity="top"
+        android:visibility="gone"
+        tools:visibility="visible" />
+</LinearLayout>
 
-</RelativeLayout>

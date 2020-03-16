@@ -97,7 +97,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
     private SORT_TYPE sort_type = SORT_TYPE.STATUS;
     Database database = Database.getInstance();
     private CustomRecycler customRecycler_List;
-    private Dialog[] addOrEditDialog = new Dialog[]{null};
+    private CustomDialog[] addOrEditDialog = new CustomDialog[]{null};
     private String searchQuery = "";
     private SharedPreferences mySPR_daten;
     private SearchView.OnQueryTextListener textListener;
@@ -336,7 +336,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
         customRecycler_List.reload();
     }
 
-    private Dialog showEditOrNewDialog(Owe owe) {
+    private CustomDialog showEditOrNewDialog(Owe owe) {
         if (!Utility.isOnline(this))
             return null;
         setResult(RESULT_OK);
@@ -351,7 +351,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                 .setView(R.layout.dialog_edit_or_add_owe)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL);
 
-        if (owe != null)
+        if (owe != null) {
             returnDialog.addButton(R.drawable.ic_delete, customDialog -> {
                 if (!Utility.isOnline(this))
                     return;
@@ -365,11 +365,16 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                             Database.saveAll();
                             reLoadRecycler();
                             customDialog.dismiss();
+                            Object payload = customDialog.getPayload();
+                            if (payload != null) {
+                                ((CustomDialog) payload).dismiss();
+                            }
                             setResult(RESULT_OK);
                         })
                         .show();
             }, false)
                     .alignPreviousButtonsLeft();
+        }
 
         returnDialog
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
@@ -414,7 +419,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                         return !title.equals(owe.getName()) || !description.equals(owe.getDescription()) || !editOwe[0].equals(owe);
                 })
                 .show();
-        return returnDialog.getDialog();
+        return returnDialog;
     }
 
     private CustomDialog showDetailDialog(Owe owe) {
@@ -424,7 +429,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                 .setTitle(owe.getName())
                 .setView(R.layout.dialog_detail_owe)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
-                .addButton("Bearbeiten", customDialog -> addOrEditDialog[0] = showEditOrNewDialog(owe), false)
+                .addButton("Bearbeiten", customDialog -> Utility.ifNotNull(showEditOrNewDialog(owe), customDialog1 -> addOrEditDialog[0] = customDialog1.setPayload(customDialog), () -> addOrEditDialog[0] = null), false)
                 .setSetViewContent((customDialog, view, reload) -> {
                     if (reload)
                         customDialog.setTitle(owe.getName());

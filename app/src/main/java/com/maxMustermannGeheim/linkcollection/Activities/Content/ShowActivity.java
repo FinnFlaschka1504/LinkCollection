@@ -956,6 +956,11 @@ public class ShowActivity extends AppCompatActivity {
                         .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
                             database.showMap.remove(show.getUuid());
                             reLoadRecycler();
+                            customDialog.dismiss();
+                            Object payload = customDialog.getPayload();
+                            if (payload != null) {
+                                ((CustomDialog) payload).dismiss();
+                            }
                         })
                         .show();
             }, false)
@@ -982,6 +987,9 @@ public class ShowActivity extends AppCompatActivity {
                     AutoCompleteTextView dialog_editOrAdd_show_title = view.findViewById(R.id.dialog_editOrAdd_show_title);
                     if (!editShow.getName().isEmpty()) {
                         dialog_editOrAdd_show_title.setText(editShow.getName());
+                        if (reload)
+                            dialog_editOrAdd_show_title.dismissDropDown();
+
 
                         ((TextView) view.findViewById(R.id.dialog_editOrAdd_show_Genre)).setText(
                                 editShow.getGenreIdList().stream().map(uuid -> database.showGenreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
@@ -1548,9 +1556,6 @@ public class ShowActivity extends AppCompatActivity {
                     }
                     jsonObjectList.add(new Pair<>(object.getString("name") + release, object));
                 }
-
-                ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, jsonObjectList
-                        .map(stringJSONObjectPair -> stringJSONObjectPair.first));
 
                 CustomList<ImageAdapterItem> itemList = jsonObjectList.map(stringJSONObjectPair -> {
                     ImageAdapterItem adapterItem = new ImageAdapterItem(stringJSONObjectPair.first);

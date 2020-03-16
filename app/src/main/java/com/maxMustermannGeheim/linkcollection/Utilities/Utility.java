@@ -245,17 +245,29 @@ public class Utility implements java.io.Serializable {
 
         SpannableStringBuilder builder = new SpannableStringBuilder();
 
+        final Boolean[] longPress = {null};
         for (String s : list) {
             if (builder.length() != 0)
                 builder.append(", ");
 
             ClickableSpan clickableSpan = new ClickableSpan() {
+
                 @Override
                 public void onClick(View textView) {
-                    Toast.makeText(activity, s, Toast.LENGTH_SHORT).show();
-                    activity.startActivity(new Intent(activity, activity.getClass())
-                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, category)
-                            .putExtra(CategoriesActivity.EXTRA_SEARCH, s));
+                    if (longPress[0] != null && longPress[0]) {
+                        Toast.makeText(activity, s, Toast.LENGTH_SHORT).show();
+                        longPress[0] = false;
+                        activity.startActivity(new Intent(activity, CategoriesActivity.class)
+                                .putExtra(MainActivity.EXTRA_CATEGORY, category)
+                                .putExtra(CategoriesActivity.EXTRA_SEARCH, s));
+                    } else if (longPress[0] != null && !longPress[0]) {
+                        longPress[0] = null;
+                    } else {
+                        Toast.makeText(activity, s, Toast.LENGTH_SHORT).show();
+                        activity.startActivity(new Intent(activity, activity.getClass())
+                                .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, category)
+                                .putExtra(CategoriesActivity.EXTRA_SEARCH, s));
+                    }
                 }
                 @Override
                 public void updateDrawState(TextPaint ds) {
@@ -266,6 +278,21 @@ public class Utility implements java.io.Serializable {
 
             builder.append(s, clickableSpan, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
+
+        GestureDetector detector = new GestureDetector(activity, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public void onLongPress(MotionEvent e) {
+                super.onLongPress(e);
+                longPress[0] = true;
+                textView.onTouchEvent(e);
+                e.setAction(MotionEvent.ACTION_UP);
+                textView.onTouchEvent(e);
+            }
+        });
+        textView.setOnTouchListener((v, event) -> {
+
+            return detector.onTouchEvent(event);
+        });
 
         textView.setText(builder);
         textView.setMovementMethod(LinkMovementMethod.getInstance());

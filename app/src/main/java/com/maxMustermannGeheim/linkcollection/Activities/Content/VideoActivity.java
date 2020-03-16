@@ -1,7 +1,6 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Content;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -29,13 +28,13 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.LifecycleOwner;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
+import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -53,7 +52,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAutoCompleteAdapter;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.ImageAdapterItem;
-import com.finn.androidUtilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
@@ -62,17 +60,12 @@ import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.mikhaellopez.lazydatepicker.LazyDatePicker;
 
-import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEvent;
-import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEventListener;
-
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -731,21 +724,7 @@ public class VideoActivity extends AppCompatActivity {
 
         com.finn.androidUtilities.Helpers.TextInputHelper helper = new com.finn.androidUtilities.Helpers.TextInputHelper();
         final boolean[] checked = {video != null && video.isWatchLater()}; // Utility.getWatchLaterList().contains(video)};
-        CustomDialog returnDialog = CustomDialog.Builder(this);
-
-        final View activityRootView = videos_search.getRootView();
-        ViewTreeObserver.OnGlobalLayoutListener layoutListener = () -> {
-            Rect r = new Rect();
-
-            activityRootView.getWindowVisibleDisplayFrame(r);
-
-            int heightDiff = activityRootView.getRootView().getHeight() - (r.bottom - r.top);
-
-            com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog.setDialogLayoutParameters(returnDialog.getDialog(), true, heightDiff > 100);
-        };
-        activityRootView.getViewTreeObserver().addOnGlobalLayoutListener(layoutListener);
-
-        returnDialog
+        CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle(video == null ? "Neu: " + singular : singular + " Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
@@ -1029,10 +1008,7 @@ public class VideoActivity extends AppCompatActivity {
                         toast.show();
                     }, toast::cancel);
                 })
-                .setOnDialogDismiss(customDialog -> {
-                    isShared = false;
-                    activityRootView.getViewTreeObserver().removeOnGlobalLayoutListener(layoutListener);
-                })
+                .setOnDialogDismiss(customDialog -> isShared = false)
                 .enableDoubleClickOutsideToDismiss(customDialog -> {
                     String title = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_Title)).getText().toString().trim();
                     String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_url)).getText().toString().trim();
@@ -1042,6 +1018,7 @@ public class VideoActivity extends AppCompatActivity {
                     else
                         return !title.equals(video.getName()) || !url.equals(video.getUrl()) || rating != video.getRating() || !editVideo[0].equals(video);
                 })
+                .enableDynamicWrapHeight(videos_search.getRootView())
                 .show();
 
 //        try {
@@ -1147,6 +1124,19 @@ public class VideoActivity extends AppCompatActivity {
                 CustomAutoCompleteAdapter autoCompleteAdapter = new CustomAutoCompleteAdapter(this, itemList);
 
                 dialog_editOrAddVideo_Titel.setAdapter(autoCompleteAdapter);
+
+
+                View rootView = videos_search.getRootView();
+
+                Rect r = new Rect();
+                rootView.getWindowVisibleDisplayFrame(r);
+
+                int[] pos = new int[2];
+                dialog_editOrAddVideo_Titel.getLocationOnScreen(pos);
+                int height = r.bottom - (pos[1] + dialog_editOrAddVideo_Titel.getHeight());
+
+                dialog_editOrAddVideo_Titel.setDropDownHeight(height);
+
                 dialog_editOrAddVideo_Titel.showDropDown();
 
             } catch (JSONException ignored) {

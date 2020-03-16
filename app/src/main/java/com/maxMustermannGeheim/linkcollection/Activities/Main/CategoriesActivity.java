@@ -14,6 +14,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.CheckBox;
+import android.widget.ImageView;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -22,6 +23,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import com.bumptech.glide.Glide;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -31,6 +33,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
@@ -299,6 +302,42 @@ public class CategoriesActivity extends AppCompatActivity {
                     } else
                         ((TextView) itemView.findViewById(R.id.userlistItem_catigoryItem_count)).setText(String.valueOf(parentClassIntegerPair.second));
 
+                    ImageView listItem_categoryItem_image = itemView.findViewById(R.id.listItem_categoryItem_image);
+                    if (parentClassIntegerPair.first instanceof ParentClass_Tmdb && Utility.stringExists(((ParentClass_Tmdb) parentClassIntegerPair.first).getImagePath())) {
+                        listItem_categoryItem_image.setVisibility(View.VISIBLE);
+                        Glide
+                                .with(this)
+                                .load("https://image.tmdb.org/t/p/w92/" + ((ParentClass_Tmdb) parentClassIntegerPair.first).getImagePath())
+                                .placeholder(R.drawable.ic_download)
+                                .into(listItem_categoryItem_image);
+                        listItem_categoryItem_image.setOnClickListener(v -> {
+                            removeFocusFromSearch();
+                            com.finn.androidUtilities.CustomDialog posterDialog = com.finn.androidUtilities.CustomDialog.Builder(this)
+                                    .setView(R.layout.dialog_poster)
+                                    .setSetViewContent((customDialog1, view1, reload1) -> {
+                                        ImageView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
+                                        Glide
+                                                .with(this)
+                                                .load("https://image.tmdb.org/t/p/original/" + ((ParentClass_Tmdb) parentClassIntegerPair.first).getImagePath())
+                                                .placeholder(R.drawable.ic_download)
+                                                .into(dialog_poster_poster);
+                                        dialog_poster_poster.setOnContextClickListener(v1 -> {
+                                            customDialog1.dismiss();
+                                            return true;
+                                        });
+
+                                    });
+                            if (catigory != CATEGORIES.STUDIOS)
+                                    posterDialog.removeBackground();
+                            posterDialog
+                                    .disableScroll()
+                                    .show();
+                        });
+
+
+                    } else
+                        listItem_categoryItem_image.setVisibility(View.GONE);
+
                     CheckBox userListItem_categoryItem_check = itemView.findViewById(R.id.userlistItem_catigoryItem_ckeck);
                     userListItem_categoryItem_check.setVisibility(multiSelectMode ? View.VISIBLE : View.GONE);
                     userListItem_categoryItem_check.setChecked(selectedList.contains(parentClassIntegerPair.first));
@@ -416,6 +455,7 @@ public class CategoriesActivity extends AppCompatActivity {
             Toast.makeText(this, "Die Auswahl ist leer", Toast.LENGTH_SHORT).show();
             return;
         }
+        removeFocusFromSearch();
         final Pair<ParentClass, Integer>[] randomPair = new Pair[]{filterdDatenObjektPairList.removeRandom()};
         CustomDialog
                 .Builder(this)
@@ -529,4 +569,7 @@ public class CategoriesActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
+    private void removeFocusFromSearch() {
+        catigorys_search.clearFocus();
+    }
 }

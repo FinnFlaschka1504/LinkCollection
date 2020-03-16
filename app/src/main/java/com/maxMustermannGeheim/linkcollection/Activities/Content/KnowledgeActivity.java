@@ -383,7 +383,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .setView(R.layout.dialog_edit_or_add_knowledge)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL);
 
-        if (knowledge != null)
+        if (knowledge != null) {
             returnDialog
                     .addButton(R.drawable.ic_delete, customDialog -> {
                         CustomDialog.Builder(this)
@@ -395,14 +395,20 @@ public class KnowledgeActivity extends AppCompatActivity {
                                     allKnowledgeList.remove(knowledge);
                                     Database.saveAll();
                                     reLoadRecycler();
-                                    if (detailDialog != null)
+                                    if (detailDialog != null) {
+                                        Object payload = detailDialog.getPayload();
+                                        if (payload != null) {
+                                            ((CustomDialog) payload).dismiss();
+                                        }
                                         detailDialog.dismiss();
+                                    }
                                     customDialog.dismiss();
                                     Toast.makeText(this, "Wissen gelöscht", Toast.LENGTH_SHORT).show();
                                 })
                                 .show();
                     },false)
                     .alignPreviousButtonsLeft();
+        }
 
         returnDialog
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {

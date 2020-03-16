@@ -252,6 +252,10 @@ public class VersionControl {
         addChange("2.6", "Edit-Dialoge können jetzt nicht mehr ausversehen abgebrochen werden",
                 "Detail-Dialoge überarbeitet",
                 "Beim Öffnen der Tastatur passt sich automatisch die Höhe des EditVideo-Dialog an");
+        addChange("2.7", "Dropdown in EditVideos past sich dynamisch der verfügbaren Höhe an",
+                "Nach dem Löschen eines Eintrags werden sofort alle dazugehörigen Dialoge gelöscht",
+                "Dropdown in EditShow bleibt geschlossen nach der Auswahl eines Items",
+                "Bilder zur Darsteller- und Studio-Übersicht hinzugefügt");
     };
 
     private static void addChange(String version, String... changes) {

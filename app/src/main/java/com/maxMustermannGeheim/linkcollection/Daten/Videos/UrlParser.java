@@ -234,7 +234,6 @@ public class UrlParser extends ParentClass {
             return;
 
         webViewMap.get(name).evaluateJavascript(code, t -> {
-            String test = code;
             if (t.startsWith("\"") && t.endsWith("\""))
                 t = Utility.subString(t, 1, -1);
 

@@ -71,6 +71,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -318,7 +319,7 @@ public class VideoActivity extends AppCompatActivity {
                                     List<String> actorIdList = database.darstellerMap.values().stream().filter(darsteller -> resultLow.contains(darsteller.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
                                     List<String> studioIdList = database.studioMap.values().stream().filter(studio -> resultLow.contains(studio.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
                                     List<String> genreIdList = database.genreMap.values().stream().filter(genre -> resultLow.contains(genre.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
-                                    
+
                                     if (addOrEditDialog != null) {
                                         ((EditText) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_Title)).setText(result);
                                         if (editVideo[0] != null) {
@@ -353,7 +354,7 @@ public class VideoActivity extends AppCompatActivity {
                             Video video = optional.get();
                             CustomDialog.Builder(this)
                                     .setTitle("URL Bereits Vorhanden")
-                                    .setText(new Helpers.SpannableStringHelper().append("Die geteilte URL ist bereits bei dem "+ singular +" '").appendBold(video.getName()).append("' hinterlegt. Was möschtest du tun?").get())
+                                    .setText(new Helpers.SpannableStringHelper().append("Die geteilte URL ist bereits bei dem " + singular + " '").appendBold(video.getName()).append("' hinterlegt. Was möschtest du tun?").get())
                                     .addButton("Die Video Details öffnen", customDialog -> {
                                         isShared = false;
                                         detailDialog = showDetailDialog(video);
@@ -1189,7 +1190,8 @@ public class VideoActivity extends AppCompatActivity {
             } catch (JSONException ignored) {
             }
 
-        }, error -> {});
+        }, error -> {
+        });
 
         requestQueue.add(jsonArrayRequest);
 
@@ -1236,10 +1238,100 @@ public class VideoActivity extends AppCompatActivity {
             } catch (JSONException ignored) {
             }
 
-        }, error -> {});
+        }, error -> {
+        });
 
         requestQueue.add(jsonArrayRequest);
 
+    }
+
+    public static void addActorToAll(Context context, ParentClass_Tmdb tmdbObject, CategoriesActivity.CATEGORIES category) {
+        Database database = Database.getInstance();
+//        if (category == CategoriesActivity.CATEGORIES.DARSTELLER) {
+        String requestUrl = "https://api.themoviedb.org/3/person/" +
+                tmdbObject.getTmdbId() +
+                "/movie_credits?api_key=09e015a2106437cbc33bf79eb512b32d&language=de";
+
+        RequestQueue requestQueue = Volley.newRequestQueue(context);
+        Collection<Video> videos = database.videoMap.values();
+
+        JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {
+            JSONArray results;
+            try {
+                results = response.getJSONArray("cast");
+
+                if (results.length() == 0) {
+                    return;
+                }
+                final int[] count = {0};
+                for (int i = 0; i < results.length(); i++) {
+                    JSONObject object = results.getJSONObject(i);
+                    int id = object.getInt("id");
+                    videos.stream().filter(video -> video.getTmdId() == id).findFirst().ifPresent(video -> {
+                        if (!video.getDarstellerList().contains(tmdbObject.getUuid())) {
+                            video.getDarstellerList().add(tmdbObject.getUuid());
+                            count[0]++;
+                        }
+                    });
+                }
+
+                Toast.makeText(context, count[0] > 0 ? count[0] + " Aktualisiert" : "Nix zum Aktualisieren", Toast.LENGTH_SHORT).show();
+
+                if (count[0] > 0 && context instanceof VideoActivity)
+                    ((VideoActivity) context).reLoadVideoRecycler();
+
+                if (count[0] > 0)
+                    Database.saveAll();
+
+            } catch (JSONException ignored) {
+            }
+
+        }, error -> {
+        });
+
+        requestQueue.add(jsonArrayRequest);
+//        } else if (category == CategoriesActivity.CATEGORIES.STUDIOS) {
+//            String requestUrl = "https://api.themoviedb.org/3/person/" +
+//                    tmdbObject.getTmdbId() +
+//                    "/movie_credits?api_key=09e015a2106437cbc33bf79eb512b32d&language=de";
+//
+//            RequestQueue requestQueue = Volley.newRequestQueue(context);
+//            Collection<Video> videos = database.videoMap.values();
+//
+//            JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {
+//                JSONArray results;
+//                try {
+//                    results = response.getJSONArray("cast");
+//
+//                    if (results.length() == 0) {
+//                        return;
+//                    }
+//                    final int[] count = {0};
+//                    for (int i = 0; i < results.length(); i++) {
+//                        JSONObject object = results.getJSONObject(i);
+//                        int id = object.getInt("id");
+//                        videos.stream().filter(video -> video.getTmdId() == id).findFirst().ifPresent(video -> {
+//                            if (!video.getDarstellerList().contains(tmdbObject.getUuid())) {
+//                                video.getDarstellerList().add(tmdbObject.getUuid());
+//                                count[0]++;
+//                            }
+//                        });
+//                    }
+//
+//                    Toast.makeText(context, count[0] > 0 ? count[0] + " Aktualisiert" : "Nix zum Aktualisieren", Toast.LENGTH_SHORT).show();
+//
+//                    if (count[0] > 0 && context instanceof VideoActivity)
+//                        ((VideoActivity) context).reLoadVideoRecycler();
+//
+//                    if (count[0] > 0)
+//                        Database.saveAll();
+//
+//                } catch (JSONException ignored) {}
+//
+//            }, error -> {});
+//
+//            requestQueue.add(jsonArrayRequest);
+//        }
     }
     //  <------------------------- Api -------------------------
 
@@ -1278,7 +1370,8 @@ public class VideoActivity extends AppCompatActivity {
                     editVideo._getTempCastList().remove(payload);
                     database.darstellerMap.put(payload.getUuid(), (Darsteller) payload);
                     editVideo.getDarstellerList().add(payload.getUuid());
-                break;
+                    addActorToAll(this, payload, CategoriesActivity.CATEGORIES.DARSTELLER);
+                    break;
                 case STUDIOS:
                     editVideo._getTempStudioList().remove(payload);
                     database.studioMap.put(payload.getUuid(), (Studio) payload);
@@ -1337,7 +1430,6 @@ public class VideoActivity extends AppCompatActivity {
             if (detailDialog != null)
                 detailDialog.reloadView();
         });
-
 
 
     }

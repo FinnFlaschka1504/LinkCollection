@@ -56,6 +56,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
@@ -195,7 +196,7 @@ public class Utility implements java.io.Serializable {
         System.exit(0);
     }
 
-    public static String hash(String s){
+    public static String hash(String s) {
         return Hashing.sha256().hashString(s, StandardCharsets.UTF_8).toString();
     }
 
@@ -240,13 +241,14 @@ public class Utility implements java.io.Serializable {
     }
 
     public static void applyCategoriesLink(AppCompatActivity activity, CategoriesActivity.CATEGORIES category, TextView textView, List<String> idList, Map<String, ? extends ParentClass> map) {
-        CustomList<String> list = idList.stream().map(uuid -> map.get(uuid).getName()).collect(Collectors.toCollection(CustomList::new));
+        CustomList<ParentClass> list = idList.stream().map(map::get).collect(Collectors.toCollection(CustomList::new));
 
 
         SpannableStringBuilder builder = new SpannableStringBuilder();
 
         final Boolean[] longPress = {null};
-        for (String s : list) {
+        for (ParentClass parentClass : list) {
+            String s = parentClass.getName();
             if (builder.length() != 0)
                 builder.append(", ");
 
@@ -255,11 +257,30 @@ public class Utility implements java.io.Serializable {
                 @Override
                 public void onClick(View textView) {
                     if (longPress[0] != null && longPress[0]) {
-                        Toast.makeText(activity, s, Toast.LENGTH_SHORT).show();
                         longPress[0] = false;
-                        activity.startActivity(new Intent(activity, CategoriesActivity.class)
-                                .putExtra(MainActivity.EXTRA_CATEGORY, category)
-                                .putExtra(CategoriesActivity.EXTRA_SEARCH, s));
+                        Runnable openCategoriesActivity = () -> {
+                            Toast.makeText(activity, s, Toast.LENGTH_SHORT).show();
+                            activity.startActivity(new Intent(activity, CategoriesActivity.class)
+                                    .putExtra(MainActivity.EXTRA_CATEGORY, category)
+                                    .putExtra(CategoriesActivity.EXTRA_SEARCH, s));
+                        };
+
+                        if (!(parentClass instanceof Darsteller))
+                            openCategoriesActivity.run();
+                        else {
+                            CustomDialog.Builder(activity)
+                                    .setTitle(s)
+                                    .enableStackButtons()
+                                    .disableButtonAllCaps()
+                                    .addButton("Filme Suchen", customDialog -> activity.startActivity(new Intent(activity, activity.getClass())
+                                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, category)
+                                            .putExtra(CategoriesActivity.EXTRA_SEARCH, s)))
+                                    .addButton("Kategorie Öffnen", customDialog -> openCategoriesActivity.run())
+                                    .addButton("Filme Aktuallisieren", customDialog ->
+                                            VideoActivity.addActorToAll(activity, ((ParentClass_Tmdb) parentClass), category))
+                                    .show();
+                        }
+
                     } else if (longPress[0] != null && !longPress[0]) {
                         longPress[0] = null;
                     } else {
@@ -269,6 +290,7 @@ public class Utility implements java.io.Serializable {
                                 .putExtra(CategoriesActivity.EXTRA_SEARCH, s));
                     }
                 }
+
                 @Override
                 public void updateDrawState(TextPaint ds) {
                     super.updateDrawState(ds);
@@ -604,6 +626,7 @@ public class Utility implements java.io.Serializable {
 
 
     private static Date currentDate;
+
     //  --------------- FilmCalender --------------->
     public static void setupFilmCalender(Context context, CompactCalendarView calendarView, FrameLayout layout, List<Video> videoList, boolean openVideo) {
         calendarView.removeAllEvents();
@@ -895,7 +918,7 @@ public class Utility implements java.io.Serializable {
 
         private final GestureDetector gestureDetector;
 
-        public OnHorizontalSwipeTouchListener(Context ctx){
+        public OnHorizontalSwipeTouchListener(Context ctx) {
             gestureDetector = new GestureDetector(ctx, new GestureListener());
         }
 
@@ -981,7 +1004,7 @@ public class Utility implements java.io.Serializable {
         return s.substring(start, end);
     }
 
-    public static String stringReplace(String source, int start, int end, String replacement){
+    public static String stringReplace(String source, int start, int end, String replacement) {
         return source.substring(0, start) + replacement + source.substring(end);
     }
     //  <------------------------- String -------------------------
@@ -1628,6 +1651,7 @@ public class Utility implements java.io.Serializable {
         return false;
 
     }
+
     public static <T> boolean boolOr(T what, T... to) {
         if (to.length == 0)
             throw new NoArgumentException(NoArgumentException.DEFAULT_MESSAGE);
@@ -1653,6 +1677,7 @@ public class Utility implements java.io.Serializable {
         }
         return found;
     }
+
     public static <T> boolean boolXOr(T what, T... to) {
         if (to.length == 0)
             throw new NoArgumentException(NoArgumentException.DEFAULT_MESSAGE);
@@ -1678,6 +1703,7 @@ public class Utility implements java.io.Serializable {
         }
         return true;
     }
+
     public static <T> boolean boolAnd(GenericReturnInterface<T, Boolean> what, T... to) {
         if (to.length == 0)
             throw new NoArgumentException(NoArgumentException.DEFAULT_MESSAGE);
@@ -1707,7 +1733,7 @@ public class Utility implements java.io.Serializable {
             this.input = input;
         }
 
-        public static <Input> SwitchExpression<Input, Object> setInput(Input input){
+        public static <Input> SwitchExpression<Input, Object> setInput(Input input) {
             return new SwitchExpression<>(input);
         }
 
@@ -1719,12 +1745,12 @@ public class Utility implements java.io.Serializable {
 
 
         //  ------------------------- Cases ------------------------->
-        public <Type> SwitchExpression<Input, Type>  addCase(Input inputCase, ExecuteOnCase<Input, Type> executeOnCase) {
+        public <Type> SwitchExpression<Input, Type> addCase(Input inputCase, ExecuteOnCase<Input, Type> executeOnCase) {
             caseList.add(new Pair<>(inputCase, executeOnCase));
             return (SwitchExpression<Input, Type>) this;
         }
 
-        public <Type> SwitchExpression<Input, Type>  addCase(Input inputCase, Type returnOnCase) {
+        public <Type> SwitchExpression<Input, Type> addCase(Input inputCase, Type returnOnCase) {
             caseList.add(new Pair<>(inputCase, returnOnCase));
             return (SwitchExpression<Input, Type>) this;
         }
@@ -1755,7 +1781,7 @@ public class Utility implements java.io.Serializable {
 
         public interface ExecuteOnCase<Input, Output> {
             Output runExecuteOnCase(Input input);
-        }        
+        }
         //  <------------------------- Cases -------------------------
 
 
@@ -1786,7 +1812,7 @@ public class Utility implements java.io.Serializable {
         void runGenericInterface(T t);
     }
 
-    public interface GenericReturnInterface<T,R> {
+    public interface GenericReturnInterface<T, R> {
         R runGenericInterface(T t);
     }
 

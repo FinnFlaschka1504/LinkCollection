@@ -414,7 +414,7 @@ public class CategoriesActivity extends AppCompatActivity {
                                             .setView(textInputLayout)
                                             .setSetViewContent((customDialog1, view1, reload) -> {
                                                 CustomUtility.setMargins(textInputLayout, 12, 16);
-                                                textInputLayout.setHint("Bild-Url (.jpg/.png)");
+                                                textInputLayout.setHint("Bild-Url (.jpg / .png)");
                                                 editText.setText(((ParentClass_Tmdb) parentClass).getImagePath());
 
                                                 TextInputLayout defaultEditLayout = customDialog.findViewById(R.id.dialog_custom_edit_editLayout);

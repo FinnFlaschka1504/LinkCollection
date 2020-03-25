@@ -17,7 +17,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
-import android.widget.ArrayAdapter;
+import android.widget.AdapterView;
 import android.widget.AutoCompleteTextView;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -25,6 +25,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.SearchView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -79,7 +80,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
@@ -1009,6 +1009,19 @@ public class ShowActivity extends AppCompatActivity {
 //                        editShow = new Show();
                     }
 
+                    Spinner dialog_editOrAdd_show_language = view.findViewById(R.id.dialog_editOrAdd_show_language);
+                    dialog_editOrAdd_show_language.setSelection(Settings.getIndexByLanguage(this, editShow.getLanguage()));
+                    dialog_editOrAdd_show_language.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                            editShow.setLanguage(Settings.getLanguageByIndex(ShowActivity.this, position));
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> parent) {
+
+                        }
+                    });
 
                     view.findViewById(R.id.dialog_editOrAdd_show_editGenre).setOnClickListener(view1 ->
                             Utility.showEditItemDialog(this, customDialog, editShow.getGenreIdList(), editShow, CategoriesActivity.CATEGORIES.SHOW_GENRES));
@@ -1501,7 +1514,9 @@ public class ShowActivity extends AppCompatActivity {
         if (!Utility.isOnline(this))
             return;
 
-        String requestUrl = "https://api.themoviedb.org/3/search/tv?api_key=09e015a2106437cbc33bf79eb512b32d&language=de&query=" +
+        String requestUrl = "https://api.themoviedb.org/3/search/tv?api_key=09e015a2106437cbc33bf79eb512b32d&language=" +
+                Utility.SwitchExpression.setInput(show.getLanguage()).addCase(null, Settings.getDefaultLanguage()).setDefault(show.getLanguage()).evaluate() +
+                "&query=" +
                 queue +
                 "&page=1";
         RequestQueue requestQueue = Volley.newRequestQueue(this);
@@ -1591,7 +1606,8 @@ public class ShowActivity extends AppCompatActivity {
 
         String requestUrl = "https://api.themoviedb.org/3/tv/" +
                 id +
-                "?api_key=09e015a2106437cbc33bf79eb512b32d&language=de";
+                "?api_key=09e015a2106437cbc33bf79eb512b32d&language=" +
+                Utility.SwitchExpression.setInput(show.getLanguage()).addCase(null, Settings.getDefaultLanguage()).setDefault(show.getLanguage()).evaluate();
         RequestQueue requestQueue = Volley.newRequestQueue(activity);
 
         Toast toast = Toast.makeText(activity, "Details werden geladen..", Toast.LENGTH_LONG);
@@ -1674,7 +1690,8 @@ public class ShowActivity extends AppCompatActivity {
         if (!Utility.isOnline(this))
             return;
 
-        String requestUrl = "https://api.themoviedb.org/3/tv/" + show.getTmdbId() + "/season/" + seasonNumber + "?api_key=09e015a2106437cbc33bf79eb512b32d&language=de";
+        String requestUrl = "https://api.themoviedb.org/3/tv/" + show.getTmdbId() + "/season/" + seasonNumber + "?api_key=09e015a2106437cbc33bf79eb512b32d&language=" +
+                Utility.SwitchExpression.setInput(show.getLanguage()).addCase(null, Settings.getDefaultLanguage()).setDefault(show.getLanguage()).evaluate();
         RequestQueue requestQueue = Volley.newRequestQueue(this);
 
         JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {

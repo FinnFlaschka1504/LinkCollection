@@ -95,6 +95,14 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1" />
 
+            <Spinner
+                android:id="@+id/dialog_editOrAdd_show_language"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@null"
+                android:layout_marginEnd="3dp"
+                android:entries="@array/languages" />
+
         </LinearLayout>
 
         <LinearLayout

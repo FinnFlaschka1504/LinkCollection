@@ -70,6 +70,53 @@
 
         <LinearLayout
             android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Dauer Anzeigen"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Feld für die Spielzeit anzeigen"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/dialogSettingsVideo_edit_showLength"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="8dp"
+                android:checked="true" />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginVertical="5dp"
+            android:background="?android:attr/listDivider" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center_vertical"
             android:orientation="horizontal">
@@ -130,7 +177,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Darsteller und Studios laden"
+                    android:text="Zusätzliche Details laden"
                     android:textStyle="bold" />
 
                 <LinearLayout
@@ -141,7 +188,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Automatisch die Darsteller und Studios aus der TMDb laden"
+                        android:text="Automatisch die Darsteller, Studios und Spielzeiten aus der TMDb laden"
                         android:textSize="12sp" />
 
                 </LinearLayout>

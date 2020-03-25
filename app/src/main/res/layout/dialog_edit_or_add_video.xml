@@ -197,27 +197,58 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/dialog_editOrAddVideo_datePicker_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="8dp"
-                android:text="Release:"
-                android:textStyle="bold" />
+            <LinearLayout
+                android:id="@+id/dialog_editOrAddVideo_datePicker_layout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="8dp"
+                    android:text="Release:"
+                    android:textStyle="bold" />
 
                 <com.mikhaellopez.lazydatepicker.LazyDatePicker
                     android:id="@+id/dialog_editOrAddVideo_datePicker"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:ldp_text_color="@color/colorText"
-                    app:ldp_hint_color="@color/colorTileBackground"
+                    android:paddingVertical="8dp"
                     app:ldp_date_format="dd-mm-yyyy"
-                    android:paddingVertical="8dp"/>
+                    app:ldp_hint_color="@color/colorTileBackground"
+                    app:ldp_text_color="@color/colorText" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/dialog_editOrAddVideo_length_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="3"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Länge:"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/dialog_editOrAddVideo_length"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ems="10"
+                    android:hint="Min."
+                    android:inputType="number" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout

@@ -32,6 +32,7 @@ public class Video extends ParentClass_Ratable {
     private boolean watchLater;
     private CustomList<ParentClass_Tmdb> tempCastList = new CustomList<>();
     private CustomList<ParentClass_Tmdb> tempStudioList = new CustomList<>();
+    private int length;
 
     public Video(String name) {
         uuid = "video_" + UUID.randomUUID().toString();
@@ -187,6 +188,15 @@ public class Video extends ParentClass_Ratable {
 
     public Video setWatchLater(boolean watchLater) {
         this.watchLater = watchLater;
+        return this;
+    }
+
+    public int getLength() {
+        return length;
+    }
+
+    public Video setLength(int length) {
+        this.length = length;
         return this;
     }
 

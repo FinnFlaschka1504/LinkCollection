@@ -29,6 +29,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.finn.androidUtilities.CustomDialog;
+import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
 import com.finn.androidUtilities.Helpers;
 import com.google.android.material.textfield.TextInputLayout;
@@ -55,9 +57,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.finn.androidUtilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
-import com.finn.androidUtilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -76,6 +76,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import bsh.StringUtil;
+
 import static com.maxMustermannGeheim.linkcollection.Activities.Settings.Space.allSpaces;
 
 public class Settings extends AppCompatActivity {
@@ -93,6 +95,7 @@ public class Settings extends AppCompatActivity {
     public static final String SETTING_SHOW_ASK_FOR_GENRE_IMPORT = "SETTING_SHOW_ASK_FOR_GENRE_IMPORT";
 
     public static final String SETTING_VIDEO_SHOW_RELEASE = "SETTING_VIDEO_SHOW_RELEASE";
+    public static final String SETTING_VIDEO_SHOW_LENGTH = "SETTING_VIDEO_SHOW_LENGTH";
     public static final String SETTING_VIDEO_AUTO_SEARCH = "SETTING_VIDEO_AUTO_SEARCH";
     public static final String SETTING_VIDEO_LOAD_CAST_AND_STUDIOS = "SETTING_VIDEO_LOAD_CAST_AND_STUDIOS";
     public static final String SETTING_VIDEO_TMDB_SHORTCUT = "SETTING_VIDEO_TMDB_SHORTCUT";
@@ -147,6 +150,7 @@ public class Settings extends AppCompatActivity {
 //            return;
 
         settingsMap.put(SETTING_VIDEO_SHOW_RELEASE, "true");
+        settingsMap.put(SETTING_VIDEO_SHOW_LENGTH, "true");
         settingsMap.put(SETTING_VIDEO_AUTO_SEARCH, "true");
         settingsMap.put(SETTING_VIDEO_TMDB_SHORTCUT, "true");
         settingsMap.put(SETTING_SPACE_ENCRYPTION_PASSWORD, SETTING_SPACE_ENCRYPTION_DEFAULT_PASSWORD);
@@ -211,6 +215,7 @@ public class Settings extends AppCompatActivity {
                     Context settingsContext = customDialog.getDialog().getContext();
 
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showRelease)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_RELEASE));
+                    ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showLength)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_LENGTH));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_autoSearch)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_AUTO_SEARCH));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_tmdbShortcut)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_TMDB_SHORTCUT));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_loadCastAndStudios)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_LOAD_CAST_AND_STUDIOS));
@@ -266,6 +271,7 @@ public class Settings extends AppCompatActivity {
                     @Override
                     public void runOnClick(CustomDialog customDialog, Space space) {
                         changeSetting(SETTING_VIDEO_SHOW_RELEASE, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_showRelease)).isChecked()));
+                        changeSetting(SETTING_VIDEO_SHOW_LENGTH, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_showLength)).isChecked()));
                         changeSetting(SETTING_VIDEO_AUTO_SEARCH, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_autoSearch)).isChecked()));
                         changeSetting(SETTING_VIDEO_TMDB_SHORTCUT, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_tmdbShortcut)).isChecked()));
                         changeSetting(SETTING_VIDEO_LOAD_CAST_AND_STUDIOS, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_loadCastAndStudios)).isChecked()));
@@ -387,7 +393,7 @@ public class Settings extends AppCompatActivity {
                     }
 
 
-                    com.maxMustermannGeheim.linkcollection.Utilities.Helpers.TextInputHelper helper = new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.TextInputHelper((Button) customDialog.getActionButton().getButton(), dialog_editOrAdd_urlParser_name_layout, dialog_editOrAdd_urlParser_url_layout, dialog_editOrAdd_urlParser_code_layout);
+                    Helpers.TextInputHelper helper = new Helpers.TextInputHelper((Button) customDialog.getActionButton().getButton(), dialog_editOrAdd_urlParser_name_layout, dialog_editOrAdd_urlParser_url_layout, dialog_editOrAdd_urlParser_code_layout);
                     helper.setValidation(dialog_editOrAdd_urlParser_url_layout, (validator, text) -> {
                         if (text.isEmpty())
                             validator.setWarning("Keine Beispiel-Url eingegeben");
@@ -397,7 +403,7 @@ public class Settings extends AppCompatActivity {
                             validator.setInvalid("Eine URL eingeben!");
                     });
 
-                    helper.setInputType(dialog_editOrAdd_urlParser_code_layout, com.maxMustermannGeheim.linkcollection.Utilities.Helpers.TextInputHelper.INPUT_TYPE.MULTI_LINE);
+                    helper.setInputType(dialog_editOrAdd_urlParser_code_layout, Helpers.TextInputHelper.INPUT_TYPE.MULTI_LINE);
                 })
                 .addButton("Testen", customDialog -> {
                     String name = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_name)).getText().toString();
@@ -1246,6 +1252,26 @@ public class Settings extends AppCompatActivity {
         }
 
     }
+
+    //  ------------------------- language ------------------------->
+    public static int getIndexByLanguage(Context context, String language){
+        String[] array = context.getResources().getStringArray(R.array.languages);
+        for (int i = 0; i < array.length; i++) {
+            if (array[i].equals(language))
+                return i;
+        }
+        return 0;
+    }
+
+    public static String getLanguageByIndex(Context context, int index){
+        if (index == 0) return null;
+        return context.getResources().getStringArray(R.array.languages)[index];
+    }
+
+    public static String getDefaultLanguage(){
+        return "de";
+    }
+    //  <------------------------- language -------------------------
 
     //  ------------------------- Encryption ------------------------->
     public static void resetEncryption() {

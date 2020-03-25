@@ -26,6 +26,12 @@
         <item>Eigene</item>
     </string-array>
 
+    <string-array name="languages">
+        <item>--</item>
+        <item>de</item>
+        <item>en</item>
+    </string-array>
+
     <string-array name="parserType">
         <item>@string/parserType_java</item>
         <item>@string/parserType_javaScript</item>

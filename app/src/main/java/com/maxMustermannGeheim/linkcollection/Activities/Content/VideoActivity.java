@@ -23,6 +23,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RatingBar;
 import android.widget.SearchView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -131,6 +132,7 @@ public class VideoActivity extends AppCompatActivity {
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.ACTOR, FILTER_TYPE.GENRE, FILTER_TYPE.STUDIO));
     private MODE mode = MODE.ALL;
     private SearchView.OnQueryTextListener textListener;
+    private String searchQuery = "";
     private boolean reverse = false;
     private String singular;
     private String plural;
@@ -253,21 +255,7 @@ public class VideoActivity extends AppCompatActivity {
 
                 @Override
                 public boolean onQueryTextChange(String query) {
-                    filterdVideoList = new CustomList<>(allVideoList);
-                    if (mode.equals(MODE.SEEN)) {
-                        filterdVideoList = allVideoList.stream().filter(video -> !video.getDateList().isEmpty()).collect(Collectors.toCollection(CustomList::new));
-                    } else if (mode.equals(MODE.LATER)) {
-                        filterdVideoList = Utility.getWatchLaterList();
-                    } else if (mode.equals(MODE.UPCOMING)) {
-                        filterdVideoList = allVideoList.stream().filter(Video::isUpcoming).collect(Collectors.toCollection(CustomList::new));
-                    }
-                    if (!query.trim().equals("")) {
-                        if (query.contains("|")) {
-                            filterdVideoList = filterdVideoList.filterOr(query.split("\\|"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), false);
-                        } else {
-                            filterdVideoList = filterdVideoList.filterAnd(query.split("&"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), false);
-                        }
-                    }
+                    searchQuery = query;
                     reLoadVideoRecycler();
                     return true;
                 }
@@ -426,6 +414,25 @@ public class VideoActivity extends AppCompatActivity {
             whenLoaded.run();
     }
 
+    private List<Video> filterList() {
+        filterdVideoList = new CustomList<>(allVideoList);
+        if (mode.equals(MODE.SEEN)) {
+            filterdVideoList = allVideoList.stream().filter(video -> !video.getDateList().isEmpty()).collect(Collectors.toCollection(CustomList::new));
+        } else if (mode.equals(MODE.LATER)) {
+            filterdVideoList = Utility.getWatchLaterList();
+        } else if (mode.equals(MODE.UPCOMING)) {
+            filterdVideoList = allVideoList.stream().filter(Video::isUpcoming).collect(Collectors.toCollection(CustomList::new));
+        }
+        if (!searchQuery.trim().equals("")) {
+            if (searchQuery.contains("|")) {
+                filterdVideoList = filterdVideoList.filterOr(searchQuery.split("\\|"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), false);
+            } else {
+                filterdVideoList = filterdVideoList.filterAnd(searchQuery.split("&"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), false);
+            }
+        }
+        return filterdVideoList;
+    }
+
     private List<Video> sortList(List<Video> videoList) {
         switch (sort_type) {
             case NAME:
@@ -482,7 +489,7 @@ public class VideoActivity extends AppCompatActivity {
         customRecycler_VideoList = new CustomRecycler<Video>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_video)
                 .setGetActiveObjectList(() -> {
-                    List<Video> filteredList = sortList(filterdVideoList);
+                    List<Video> filteredList = sortList(filterList());
                     TextView noItem = findViewById(R.id.no_item);
                     noItem.setText(videos_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche");
                     noItem.setVisibility(filteredList.isEmpty() ? View.VISIBLE : View.GONE);
@@ -602,6 +609,9 @@ public class VideoActivity extends AppCompatActivity {
                     }
                     ((TextView) view.findViewById(R.id.dialog_video_views)).setText(viewsText);
                     ((TextView) view.findViewById(R.id.dialog_video_release)).setText(video.getRelease() != null ? new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(video.getRelease()) : "");
+                    int length = video.getLength();
+                    int intHours = (int) (length / 60d);
+                    ((TextView) view.findViewById(R.id.dialog_video_length)).setText(length > 0 ? intHours + "h " + (length - intHours * 60) + "m" : "");
                     ((RatingBar) view.findViewById(R.id.dialog_video_rating)).setRating(video.getRating());
 
                     if (video.getImagePath() != null && !video.getImagePath().isEmpty()) {
@@ -857,11 +867,11 @@ public class VideoActivity extends AppCompatActivity {
                         });
                     dialog_editOrAddVideo_title_label.setOnClickListener(v -> {
                         String text = dialog_editOrAddVideo_Title_layout.getEditText().getText().toString();
-                        database.videoMap.values().stream().filter(video1 -> video1.getName().toLowerCase().equals(text.toLowerCase())).findAny().ifPresent(video1 -> {
+                        database.videoMap.values().stream().filter(video1 -> video1.getName().toLowerCase().equals(text.toLowerCase())).findAny().ifPresent(oldVideo -> {
                             Runnable openEdit = () -> {
                                 customDialog.dismiss();
                                 isShared = false;
-                                Pair<CustomDialog, Video> pair = showEditOrNewDialog(video1);
+                                Pair<CustomDialog, Video> pair = showEditOrNewDialog(oldVideo);
                                 CustomDialog newDialog = pair.first;
                                 Video newEditVideo = pair.second;
                                 if (!editVideo[0].getDarstellerList().isEmpty()) {
@@ -895,12 +905,15 @@ public class VideoActivity extends AppCompatActivity {
                                     }
                                 }
                                 newDialog.reloadView();
-                                if (!Utility.stringExists(video1.getUrl())) {
+                                if (!Utility.stringExists(oldVideo.getUrl()))
                                     ((EditText) newDialog.findViewById(R.id.dialog_editOrAddVideo_url)).setText(dialog_editOrAddVideo_Url_layout.getEditText().getText().toString());
-                                }
+                                if (oldVideo.getLength() == 0)
+                                    ((EditText) newDialog.findViewById(R.id.dialog_editOrAddVideo_length)).setText(((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_length)).getText());
+                                if (Utility.boolOr(oldVideo.getRating(), 0f , -1f))
+                                    ((SeekBar) newDialog.findViewById(R.id.customRating_seekBar)).setProgress(((SeekBar) customDialog.findViewById(R.id.customRating_seekBar)).getProgress());
                             };
 
-                            if (video1.getDateList().isEmpty())
+                            if (oldVideo.getDateList().isEmpty())
                                 openEdit.run();
                             else {
                                 CustomDialog.Builder(this)
@@ -908,7 +921,7 @@ public class VideoActivity extends AppCompatActivity {
                                         .setText("Möchtest du 'Details', oder 'Bearbeiten' öffen?")
                                         .addButton("Details", customDialog1 -> {
                                             customDialog.dismiss();
-                                            detailDialog = showDetailDialog(video1);
+                                            detailDialog = showDetailDialog(oldVideo);
                                         })
                                         .addButton("Bearbeiten", customDialog1 -> openEdit.run())
                                         .enableExpandButtons()
@@ -972,6 +985,10 @@ public class VideoActivity extends AppCompatActivity {
                         if (editVideo[0].getRelease() != null) {
                             ((LazyDatePicker) view.findViewById(R.id.dialog_editOrAddVideo_datePicker)).setDate(editVideo[0].getRelease());
                         }
+                        EditText dialog_editOrAddVideo_length = view.findViewById(R.id.dialog_editOrAddVideo_length);
+                        String length = dialog_editOrAddVideo_length.getText().toString().trim();
+                        if (editVideo[0].getLength() > 0 && length.isEmpty())
+                            dialog_editOrAddVideo_length.setText(String.valueOf(editVideo[0].getLength()));
 
                         dialog_editOrAddVideo_watchLater.setVisibility(Utility.isUpcoming(editVideo[0].getRelease()) ||
                                 (video != null && !video.getName().isEmpty() && !isShared) ? View.GONE : View.VISIBLE);
@@ -993,6 +1010,8 @@ public class VideoActivity extends AppCompatActivity {
 
                     if (!Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_SHOW_RELEASE))
                         view.findViewById(R.id.dialog_editOrAddVideo_datePicker_layout).setVisibility(View.GONE);
+                    if (!Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_SHOW_LENGTH))
+                        view.findViewById(R.id.dialog_editOrAddVideo_length_layout).setVisibility(View.GONE);
 
 
                     view.findViewById(R.id.dialog_editOrAddVideo_editActor).setOnClickListener(view1 ->
@@ -1013,11 +1032,12 @@ public class VideoActivity extends AppCompatActivity {
                 .enableDoubleClickOutsideToDismiss(customDialog -> {
                     String title = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_Title)).getText().toString().trim();
                     String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_url)).getText().toString().trim();
+                    String length = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_length)).getText().toString().trim();
                     float rating = ((RatingBar) customDialog.findViewById(R.id.customRating_ratingBar)).getRating();
                     if (video == null)
-                        return !title.isEmpty() || !url.isEmpty() || !Utility.boolOr(rating, -1f, 0f) || !editVideo[0].getDarstellerList().isEmpty() || !editVideo[0].getStudioList().isEmpty() || !editVideo[0].getGenreList().isEmpty();
+                        return !title.isEmpty() || !url.isEmpty() || !Utility.boolOr(rating, -1f, 0f) || !length.isEmpty() || !editVideo[0].getDarstellerList().isEmpty() || !editVideo[0].getStudioList().isEmpty() || !editVideo[0].getGenreList().isEmpty();
                     else
-                        return !title.equals(video.getName()) || !url.equals(video.getUrl()) || rating != video.getRating() || !editVideo[0].equals(video);
+                        return !title.equals(video.getName()) || !url.equals(video.getUrl()) || rating != video.getRating() || (length.isEmpty() ? 0 : Integer.parseInt(length)) != video.getLength() || !editVideo[0].equals(video);
                 })
                 .enableDynamicWrapHeight(videos_search.getRootView())
                 .show();
@@ -1042,6 +1062,54 @@ public class VideoActivity extends AppCompatActivity {
         return Pair.create(returnDialog, editVideo[0]);
     }
 
+    private void saveVideo(CustomDialog dialog, Video video, String titel, String url, boolean checked, Video editVideo) {
+        boolean neuesVideo = video == null || isShared;
+        if (video == null)
+            video = editVideo;
+
+
+        Video finalVideo = video;
+        CustomUtility.isOnline(this, () -> {
+            if (finalVideo != editVideo)
+                finalVideo.getChangesFrom(editVideo);
+
+            finalVideo.setName(titel);
+            finalVideo.setUrl(url);
+            finalVideo.setRating(((RatingBar) dialog.findViewById(R.id.customRating_ratingBar)).getRating());
+            finalVideo.setRelease(((LazyDatePicker) dialog.findViewById(R.id.dialog_editOrAddVideo_datePicker)).getDate());
+            String length = ((EditText) dialog.findViewById(R.id.dialog_editOrAddVideo_length)).getText().toString().trim();
+            finalVideo.setLength(length.isEmpty() ? 0 : Integer.valueOf(length));
+
+            boolean addedYesterday = false;
+            boolean upcoming = false;
+            if (checked)
+                finalVideo.setWatchLater(true);
+            else if (neuesVideo) {
+                if (!(upcoming = finalVideo.isUpcoming()))
+                    addedYesterday = finalVideo.addDate(new Date(), true);
+            }
+
+            database.videoMap.put(finalVideo.getUuid(), finalVideo);
+            reLoadVideoRecycler();
+            dialog.dismiss();
+
+            allVideoList = new ArrayList<>(database.videoMap.values());
+            sortList(allVideoList);
+            filterdVideoList = new CustomList<>(allVideoList);
+            commitSearch();
+
+            boolean finalAddedYesterday = addedYesterday;
+            boolean finalUpcoming = upcoming;
+            Database.saveAll(() -> Utility.showCenteredToast(this, singular + " gespeichert" + (finalAddedYesterday ? "\nAutomatisch für gestern eingetragen" : finalUpcoming ? "\n(Bevorstehend)" : "")), null,
+                    () -> Toast.makeText(this, "Speichern fehlgeschlagen", Toast.LENGTH_SHORT).show());
+
+            if (detailDialog != null)
+                detailDialog.reloadView();
+        });
+
+
+    }
+    
     //  ------------------------- Api ------------------------->
     private void apiSearchRequest(String queue, CustomDialog customDialog, Video video) {
         if (!Utility.isOnline(this))
@@ -1060,7 +1128,8 @@ public class VideoActivity extends AppCompatActivity {
         dialog_editOrAddVideo_Titel.setOnItemClickListener((parent, view2, position, id) -> {
             JSONObject jsonObject = (JSONObject) ((ImageAdapterItem) parent.getItemAtPosition(position)).getPayload();
             try {
-                video.setRelease(new SimpleDateFormat("yyyy-MM-dd", Locale.GERMANY).parse(jsonObject.getString("release_date"))).setTmdId(jsonObject.getInt("id")).setName(jsonObject.getString("original_title"));
+                video.setRelease(new SimpleDateFormat("yyyy-MM-dd", Locale.GERMANY).parse(jsonObject.getString("release_date"))).setTmdId(jsonObject.getInt("id"))
+                        .setName(jsonObject.getString("original_title"));
                 if (jsonObject.has("poster_path")) {
                     try {
                         video.setImagePath(jsonObject.getString("poster_path"));
@@ -1233,6 +1302,9 @@ public class VideoActivity extends AppCompatActivity {
 
                 video._setTempStudioList(tempStudioList);
 
+                if (response.has("runtime"))
+                    video.setLength(response.getInt("runtime"));
+
                 customDialog.reloadView();
 
             } catch (JSONException ignored) {
@@ -1388,51 +1460,6 @@ public class VideoActivity extends AppCompatActivity {
         return dialog;
     }
 
-    private void saveVideo(CustomDialog dialog, Video video, String titel, String url, boolean checked, Video editVideo) {
-        boolean neuesVideo = video == null || isShared;
-        if (video == null)
-            video = editVideo;
-
-
-        Video finalVideo = video;
-        CustomUtility.isOnline(this, () -> {
-            if (finalVideo != editVideo)
-                finalVideo.getChangesFrom(editVideo);
-
-            finalVideo.setName(titel);
-            finalVideo.setUrl(url);
-            finalVideo.setRating(((RatingBar) dialog.findViewById(R.id.customRating_ratingBar)).getRating());
-            finalVideo.setRelease(((LazyDatePicker) dialog.findViewById(R.id.dialog_editOrAddVideo_datePicker)).getDate());
-
-            boolean addedYesterday = false;
-            boolean upcoming = false;
-            if (checked)
-                finalVideo.setWatchLater(true);
-            else if (neuesVideo) {
-                if (!(upcoming = finalVideo.isUpcoming()))
-                    addedYesterday = finalVideo.addDate(new Date(), true);
-            }
-
-            database.videoMap.put(finalVideo.getUuid(), finalVideo);
-            reLoadVideoRecycler();
-            dialog.dismiss();
-
-            allVideoList = new ArrayList<>(database.videoMap.values());
-            sortList(allVideoList);
-            filterdVideoList = new CustomList<>(allVideoList);
-            commitSearch();
-
-            boolean finalAddedYesterday = addedYesterday;
-            boolean finalUpcoming = upcoming;
-            Database.saveAll(() -> Utility.showCenteredToast(this, singular + " gespeichert" + (finalAddedYesterday ? "\nAutomatisch für gestern eingetragen" : finalUpcoming ? "\n(Bevorstehend)" : "")), null,
-                    () -> Toast.makeText(this, "Speichern fehlgeschlagen", Toast.LENGTH_SHORT).show());
-
-            if (detailDialog != null)
-                detailDialog.reloadView();
-        });
-
-
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

@@ -14,7 +14,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -24,6 +26,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.Glide;
+import com.finn.androidUtilities.CustomDialog;
+import com.finn.androidUtilities.CustomUtility;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.database.core.utilities.Utilities;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -37,7 +44,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -305,20 +311,21 @@ public class CategoriesActivity extends AppCompatActivity {
                     ImageView listItem_categoryItem_image = itemView.findViewById(R.id.listItem_categoryItem_image);
                     if (parentClassIntegerPair.first instanceof ParentClass_Tmdb && Utility.stringExists(((ParentClass_Tmdb) parentClassIntegerPair.first).getImagePath())) {
                         listItem_categoryItem_image.setVisibility(View.VISIBLE);
+                        String imagePath = ((ParentClass_Tmdb) parentClassIntegerPair.first).getImagePath();
                         Glide
                                 .with(this)
-                                .load("https://image.tmdb.org/t/p/w92/" + ((ParentClass_Tmdb) parentClassIntegerPair.first).getImagePath())
+                                .load((imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/w92/") + imagePath)
                                 .placeholder(R.drawable.ic_download)
                                 .into(listItem_categoryItem_image);
                         listItem_categoryItem_image.setOnClickListener(v -> {
                             removeFocusFromSearch();
-                            com.finn.androidUtilities.CustomDialog posterDialog = com.finn.androidUtilities.CustomDialog.Builder(this)
+                            CustomDialog posterDialog = CustomDialog.Builder(this)
                                     .setView(R.layout.dialog_poster)
                                     .setSetViewContent((customDialog1, view1, reload1) -> {
                                         ImageView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
                                         Glide
                                                 .with(this)
-                                                .load("https://image.tmdb.org/t/p/original/" + ((ParentClass_Tmdb) parentClassIntegerPair.first).getImagePath())
+                                                .load((imagePath.contains("https") ?  "" : "https://image.tmdb.org/t/p/original/") + imagePath)
                                                 .placeholder(R.drawable.ic_download)
                                                 .into(dialog_poster_poster);
                                         dialog_poster_poster.setOnContextClickListener(v1 -> {
@@ -362,30 +369,66 @@ public class CategoriesActivity extends AppCompatActivity {
                     if (!Utility.isOnline(this))
                         return;
                     ParentClass parentClass = item.first;
-                    com.finn.androidUtilities.CustomDialog.Builder(this)
+                    int urlEditId = View.generateViewId();
+
+                    CustomDialog.Builder(this)
                             .setTitle(catigory.getSingular() + " Umbenennen, oder Löschen")
-                            .setEdit(new com.finn.androidUtilities.CustomDialog.EditBuilder()
+                            .setEdit(new CustomDialog.EditBuilder()
                                     .setText(parentClass.getName())
                                     .setHint("Name"))
-                            .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
-                            .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
-                                com.finn.androidUtilities.CustomDialog.Builder(this)
+                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                            .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
+                                CustomDialog.Builder(this)
                                         .setTitle("Löschen")
                                         .setText("Wirklich '" + item.first.getName() + "' löschen?")
-                                        .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.YES_NO)
-                                        .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
+                                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                        .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
                                             customDialog.dismiss();
                                             removeCatigory(item);
                                         })
                                         .show();
                             }, false)
+                            .transformPreviousButtonToImageButton()
                             .alignPreviousButtonsLeft()
-                            .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
+                            .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
                                 if (!Utility.isOnline(this))
                                     return;
                                 item.first.setName(customDialog.getEditText());
-                                reLoadRecycler();
+                                if (parentClass instanceof ParentClass_Tmdb) {
+                                    String url = ((TextInputLayout) customDialog.findViewById(urlEditId)).getEditText().getText().toString().trim();
+                                    ((ParentClass_Tmdb) parentClass).setImagePath(url);
+                                }
+                                    reLoadRecycler();
                                 Database.saveAll();
+                            })
+                            .addOptionalModifications(customDialog -> {
+                                if (parentClass instanceof ParentClass_Tmdb) {
+                                    EditText editText = new EditText(this);
+                                    editText.setSelectAllOnFocus(true);
+                                    TextInputLayout textInputLayout = new TextInputLayout(this);
+                                    textInputLayout.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+                                    textInputLayout.addView(editText, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
+                                    textInputLayout.setId(urlEditId);
+
+                                    customDialog
+                                            .setView(textInputLayout)
+                                            .setSetViewContent((customDialog1, view1, reload) -> {
+                                                CustomUtility.setMargins(textInputLayout, 12, 16);
+                                                textInputLayout.setHint("Bild-Url (.jpg/.png)");
+                                                editText.setText(((ParentClass_Tmdb) parentClass).getImagePath());
+
+                                                TextInputLayout defaultEditLayout = customDialog.findViewById(R.id.dialog_custom_edit_editLayout);
+                                                new com.finn.androidUtilities.Helpers.TextInputHelper(result -> {
+                                                    customDialog.getActionButton().setEnabled(result && !Utility.stringExists(defaultEditLayout.getError()));
+                                                }, textInputLayout).setValidation(textInputLayout, (validator, text) -> {
+                                                    validator.asWhiteList();
+                                                    if (text.isEmpty() || text.matches("((http(s?):)|/)([()/|.|\\w|\\s|-])*\\.(?:jpg|png)"))
+                                                        validator.setValid();
+                                                    if (text.toLowerCase().contains("http") && !text.toLowerCase().contains("https"))
+                                                        validator.setInvalid("Die URL muss 'https' sein!");
+                                                }).validate();
+                                            });
+                                }
                             })
                             .show();
                 })
@@ -501,7 +544,7 @@ public class CategoriesActivity extends AppCompatActivity {
                                 START_CATIGORY_SEARCH);
                         break;
                     }
-                    com.finn.androidUtilities.CustomDialog.Builder(this)
+                    CustomDialog.Builder(this)
                             .setTitle("Aktion Auswählen")
                             .setText("Möchtest du als '&', oder '|' suchen, oder die Auswahl zurücksetzen?")
                             .addButton("Zurücksetzen", customDialog -> {

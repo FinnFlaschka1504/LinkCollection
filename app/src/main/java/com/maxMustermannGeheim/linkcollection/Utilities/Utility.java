@@ -265,7 +265,7 @@ public class Utility implements java.io.Serializable {
                                     .putExtra(CategoriesActivity.EXTRA_SEARCH, s));
                         };
 
-                        if (!(parentClass instanceof Darsteller))
+                        if (!(parentClass instanceof Darsteller) || ((Darsteller) parentClass).getTmdbId() == 0)
                             openCategoriesActivity.run();
                         else {
                             CustomDialog.Builder(activity)
@@ -1717,8 +1717,8 @@ public class Utility implements java.io.Serializable {
 
     // ---
 
-    public static boolean stringExists(String s) {
-        return s != null && !s.trim().isEmpty();
+    public static boolean stringExists(CharSequence s) {
+        return s != null && !s.toString().trim().isEmpty();
     }
     //  <------------------------- EasyLogic -------------------------
 

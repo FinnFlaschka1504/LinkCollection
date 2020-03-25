@@ -32,6 +32,7 @@ public class Show extends ParentClass{
     private boolean notifyNew;
     private List<Episode> alreadyAiredList = new ArrayList<>();
     private String imagePath;
+    private String language;
 
     public Show(String name) {
         uuid = "show_" + UUID.randomUUID().toString();
@@ -169,6 +170,15 @@ public class Show extends ParentClass{
 
     public boolean hasSpecials() {
         return !seasonList.isEmpty() && seasonList.get(0).getSeasonNumber() == 0;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public Show setLanguage(String language) {
+        this.language = language;
+        return this;
     }
 
     @Override

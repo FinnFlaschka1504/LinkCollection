@@ -831,7 +831,6 @@ public class Settings extends AppCompatActivity {
 
                                 ((CheckBox) itemView.findViewById(R.id.list_spaceSetting_shown)).setChecked(space.isShown());
                             })
-                            .removeLastDivider()
                             .setOnClickListener((customRecycler, itemView, space, index) -> {
                                 CheckBox list_spaceSetting_shown = itemView.findViewById(R.id.list_spaceSetting_shown);
                                 boolean checked = list_spaceSetting_shown.isChecked();
@@ -854,6 +853,9 @@ public class Settings extends AppCompatActivity {
                                 setResult(RESULT_OK);
                             })
                             .setDividerMargin_inDp(16)
+                            .enableDivider()
+                            .disableCustomRipple()
+                            .removeLastDivider()
                             .generateRecyclerView())
                     .setOnDialogDismiss(dialog -> updateSpaceStatusSettings())
                     .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK)
@@ -874,7 +876,6 @@ public class Settings extends AppCompatActivity {
 
                                 ((CheckBox) itemView.findViewById(R.id.list_spaceSetting_shown)).setChecked(space.isEncrypted());
                             })
-                            .removeLastDivider()
                             .setOnClickListener((customRecycler, itemView, space, index) -> {
                                 CheckBox list_spaceSetting_shown = itemView.findViewById(R.id.list_spaceSetting_shown);
                                 boolean checked = list_spaceSetting_shown.isChecked();
@@ -889,6 +890,9 @@ public class Settings extends AppCompatActivity {
 
                             })
                             .setDividerMargin_inDp(16)
+                            .enableDivider()
+                            .disableCustomRipple()
+                            .removeLastDivider()
                             .generateRecyclerView())
                     .addButton("Passwort Ändern", customDialog -> {
                         CustomDialog.Builder(this)

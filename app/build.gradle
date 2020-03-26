@@ -43,7 +43,6 @@ dependencies {
     implementation 'com.akexorcist:RoundCornerProgressBar:2.0.3'
     implementation 'com.google.android.material:material:1.1.0'
     implementation 'com.github.psinetron:slycalendarview:0.0.9'
-//    implementation 'com.github.kizitonwose:CalendarView:0.2.9'
     implementation 'com.mikhaellopez:lazydatepicker:1.0.5'
     implementation 'com.android.volley:volley:1.1.1'
     implementation 'com.maltaisn:calcdialog:2.1.0'
@@ -65,6 +64,9 @@ dependencies {
     implementation 'joda-time:joda-time:2.10.5'
     implementation 'com.scottyab:aescrypt:0.0.1'
     implementation 'me.zhanghai.android.materialratingbar:library:1.4.0'
+    implementation 'com.squareup.okhttp3:okhttp:3.12.1'
+    implementation 'com.pixplicity.sharp:library:1.1.0'
+    implementation 'com.github.stfalcon:StfalconPriceRangeBar:0.1.2'
 
     implementation group: 'org.apache-extras.beanshell', name: 'bsh', version: '2.0b6'
     implementation group: 'com.google.guava', name: 'guava', version: '28.2-android'

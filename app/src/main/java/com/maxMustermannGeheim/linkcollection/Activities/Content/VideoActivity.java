@@ -37,6 +37,8 @@ import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
+import com.stfalcon.pricerangebar.model.BarEntry;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputLayout;
@@ -60,6 +62,7 @@ import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.mikhaellopez.lazydatepicker.LazyDatePicker;
+import com.stfalcon.pricerangebar.RangeBarWithChart;
 
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
@@ -424,6 +427,9 @@ public class VideoActivity extends AppCompatActivity {
             filterdVideoList = allVideoList.stream().filter(Video::isUpcoming).collect(Collectors.toCollection(CustomList::new));
         }
         if (!searchQuery.trim().equals("")) {
+
+            // ToDo: Nach Sternen Filtern: \*(([0-4](,\d{1,2})?)|5(,0)?)-(([0-4](,\d{1,2})?)|5(,00?)?)\*
+
             if (searchQuery.contains("|")) {
                 filterdVideoList = filterdVideoList.filterOr(searchQuery.split("\\|"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), false);
             } else {
@@ -608,10 +614,19 @@ public class VideoActivity extends AppCompatActivity {
                                 , Helpers.SpannableStringHelper.SPAN_TYPE.ITALIC).get();
                     }
                     ((TextView) view.findViewById(R.id.dialog_video_views)).setText(viewsText);
-                    ((TextView) view.findViewById(R.id.dialog_video_release)).setText(video.getRelease() != null ? new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(video.getRelease()) : "");
-                    int length = video.getLength();
-                    int intHours = (int) (length / 60d);
-                    ((TextView) view.findViewById(R.id.dialog_video_length)).setText(length > 0 ? intHours + "h " + (length - intHours * 60) + "m" : "");
+
+                    if (Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_SHOW_RELEASE))
+                        ((TextView) view.findViewById(R.id.dialog_video_release)).setText(video.getRelease() != null ? new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(video.getRelease()) : "");
+                    else
+                        view.findViewById(R.id.dialog_video_release_layout).setVisibility(View.GONE);
+
+                    if (Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_SHOW_LENGTH)) {
+                        int length = video.getLength();
+                        int intHours = (int) (length / 60d);
+                        ((TextView) view.findViewById(R.id.dialog_video_length)).setText(length > 0 ? intHours + "h " + (length - intHours * 60) + "m" : "");
+                    } else
+                        view.findViewById(R.id.dialog_video_length_layout).setVisibility(View.GONE);
+
                     ((RatingBar) view.findViewById(R.id.dialog_video_rating)).setRating(video.getRating());
 
                     if (video.getImagePath() != null && !video.getImagePath().isEmpty()) {
@@ -1593,6 +1608,20 @@ public class VideoActivity extends AppCompatActivity {
                 }
                 commitSearch();
                 setSearchHint();
+                break;
+            case R.id.taskBar_video_filterByRating:
+                CustomDialog.Builder(this) // ToDo: https://android-arsenal.com/details/1/7325
+                        .setTitle("Nach Bewertung Filtern")
+                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                        .setView(R.layout.dialog_filter_by_rating)
+                        .setSetViewContent((customDialog, view, reload) -> {
+                            RangeBarWithChart rangeBar = customDialog.findViewById(R.id.dialog_filterByRating_rangeBar);
+                            List<BarEntry> barEntryList = new ArrayList<>();
+                            Map<Float, List<Float>> collect = database.videoMap.values().stream().map(ParentClass_Ratable::getRating).collect(Collectors.groupingBy(aFloat -> aFloat));
+                            ArrayList<BarEntry> entries = collect.entrySet().stream().map(entry -> new BarEntry(entry.getKey(), entry.getValue().size())).collect(Collectors.toCollection(ArrayList::new));
+                            rangeBar.setEntries(entries);
+                        })
+                        .show();
                 break;
 
             case R.id.taskBar_video_modeAll:

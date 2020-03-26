@@ -312,31 +312,40 @@ public class CategoriesActivity extends AppCompatActivity {
                     if (parentClassIntegerPair.first instanceof ParentClass_Tmdb && Utility.stringExists(((ParentClass_Tmdb) parentClassIntegerPair.first).getImagePath())) {
                         listItem_categoryItem_image.setVisibility(View.VISIBLE);
                         String imagePath = ((ParentClass_Tmdb) parentClassIntegerPair.first).getImagePath();
-                        Glide
-                                .with(this)
-                                .load((imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/w92/") + imagePath)
-                                .placeholder(R.drawable.ic_download)
-                                .into(listItem_categoryItem_image);
+                        if (imagePath.endsWith(".svg")) {
+                            Utility.fetchSvg(this, imagePath, listItem_categoryItem_image);
+                        } else {
+                            Glide
+                                    .with(this)
+                                    .load((imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/w92/") + imagePath)
+                                    .placeholder(R.drawable.ic_download)
+                                    .into(listItem_categoryItem_image);
+                        }
                         listItem_categoryItem_image.setOnClickListener(v -> {
                             removeFocusFromSearch();
-                            CustomDialog posterDialog = CustomDialog.Builder(this)
+                            CustomDialog.Builder(this)
                                     .setView(R.layout.dialog_poster)
                                     .setSetViewContent((customDialog1, view1, reload1) -> {
                                         ImageView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
-                                        Glide
-                                                .with(this)
-                                                .load((imagePath.contains("https") ?  "" : "https://image.tmdb.org/t/p/original/") + imagePath)
-                                                .placeholder(R.drawable.ic_download)
-                                                .into(dialog_poster_poster);
+                                        if (imagePath.endsWith(".svg")) {
+                                            Utility.fetchSvg(this, imagePath, dialog_poster_poster);
+                                        } else {
+                                            Glide
+                                                    .with(this)
+                                                    .load((imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/original/") + imagePath)
+                                                    .placeholder(R.drawable.ic_download)
+                                                    .into(dialog_poster_poster);
+                                        }
                                         dialog_poster_poster.setOnContextClickListener(v1 -> {
                                             customDialog1.dismiss();
                                             return true;
                                         });
 
-                                    });
-                            if (catigory != CATEGORIES.STUDIOS)
-                                    posterDialog.removeBackground();
-                            posterDialog
+                                    })
+                                    .addOptionalModifications(customDialog -> {
+                                        if (!(imagePath.endsWith(".png") || imagePath.endsWith(".svg")))
+                                            customDialog.removeBackground();
+                                    })
                                     .disableScroll()
                                     .show();
                         });
@@ -368,14 +377,12 @@ public class CategoriesActivity extends AppCompatActivity {
                 .setOnLongClickListener((customRecycler, view, item, index) -> {
                     if (!Utility.isOnline(this))
                         return;
+
+                    removeFocusFromSearch();
                     ParentClass parentClass = item.first;
-                    int urlEditId = View.generateViewId();
 
                     CustomDialog.Builder(this)
                             .setTitle(catigory.getSingular() + " Umbenennen, oder Löschen")
-                            .setEdit(new CustomDialog.EditBuilder()
-                                    .setText(parentClass.getName())
-                                    .setHint("Name"))
                             .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                             .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
                                 CustomDialog.Builder(this)
@@ -393,42 +400,48 @@ public class CategoriesActivity extends AppCompatActivity {
                             .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
                                 if (!Utility.isOnline(this))
                                     return;
-                                item.first.setName(customDialog.getEditText());
+                                item.first.setName(((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim());
                                 if (parentClass instanceof ParentClass_Tmdb) {
-                                    String url = ((TextInputLayout) customDialog.findViewById(urlEditId)).getEditText().getText().toString().trim();
+                                    String url = ((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
                                     ((ParentClass_Tmdb) parentClass).setImagePath(url);
                                 }
-                                    reLoadRecycler();
+                                reLoadRecycler();
                                 Database.saveAll();
                             })
-                            .addOptionalModifications(customDialog -> {
+                            .setView(R.layout.dialog_edit_tmdb_category)
+                            .setSetViewContent((customDialog, view1, reload) -> {
+                                TextInputLayout dialog_editTmdbCategory_name_layout = view1.findViewById(R.id.dialog_editTmdbCategory_name_layout);
+                                dialog_editTmdbCategory_name_layout.getEditText().setText(parentClass.getName());
+
+                                com.finn.androidUtilities.Helpers.TextInputHelper helper =
+                                        new com.finn.androidUtilities.Helpers.TextInputHelper(result -> customDialog.getActionButton().setEnabled(result), dialog_editTmdbCategory_name_layout);
+
                                 if (parentClass instanceof ParentClass_Tmdb) {
-                                    EditText editText = new EditText(this);
-                                    editText.setSelectAllOnFocus(true);
-                                    TextInputLayout textInputLayout = new TextInputLayout(this);
-                                    textInputLayout.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-                                    textInputLayout.addView(editText, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
-                                    textInputLayout.setId(urlEditId);
+                                    ImageView dialog_editTmdbCategory_internet = view.findViewById(R.id.dialog_editTmdbCategory_internet);
+                                    if (((ParentClass_Tmdb) parentClass).getTmdbId() != 0) {
+                                        dialog_editTmdbCategory_internet.setOnClickListener(v -> Utility.openUrl(this, "https://www.themoviedb.org/person/" + ((ParentClass_Tmdb) parentClass).getTmdbId(), true));
+                                        dialog_editTmdbCategory_internet.setVisibility(View.VISIBLE);
+                                    }
 
-                                    customDialog
-                                            .setView(textInputLayout)
-                                            .setSetViewContent((customDialog1, view1, reload) -> {
-                                                CustomUtility.setMargins(textInputLayout, 12, 16);
-                                                textInputLayout.setHint("Bild-Url (.jpg / .png)");
-                                                editText.setText(((ParentClass_Tmdb) parentClass).getImagePath());
+                                    CustomUtility.setMargins(view1.findViewById(R.id.dialog_editTmdbCategory_nameLayout), -1, -1, -1, 0);
+                                    view1.findViewById(R.id.dialog_editTmdbCategory_urlLayout).setVisibility(View.VISIBLE);
+                                    TextInputLayout dialog_editTmdbCategory_url_layout = view1.findViewById(R.id.dialog_editTmdbCategory_url_layout);
+                                    dialog_editTmdbCategory_url_layout.getEditText().setText(((ParentClass_Tmdb) parentClass).getImagePath());
+                                    helper.addValidator(dialog_editTmdbCategory_url_layout).setValidation(dialog_editTmdbCategory_url_layout, (validator, text) -> {
+                                        validator.asWhiteList();
+                                        if (text.isEmpty() || text.matches("((http(s?):)|/)([()/|.|\\w|\\s|-])+\\.(?:jpg|png|svg)"))
+                                            validator.setValid();
+                                        if (text.toLowerCase().contains("http") && !text.toLowerCase().contains("https"))
+                                            validator.setInvalid("Die URL muss 'https' sein!");
+                                    }).validate();
 
-                                                TextInputLayout defaultEditLayout = customDialog.findViewById(R.id.dialog_custom_edit_editLayout);
-                                                new com.finn.androidUtilities.Helpers.TextInputHelper(result -> {
-                                                    customDialog.getActionButton().setEnabled(result && !Utility.stringExists(defaultEditLayout.getError()));
-                                                }, textInputLayout).setValidation(textInputLayout, (validator, text) -> {
-                                                    validator.asWhiteList();
-                                                    if (text.isEmpty() || text.matches("((http(s?):)|/)([()/|.|\\w|\\s|-])*\\.(?:jpg|png)"))
-                                                        validator.setValid();
-                                                    if (text.toLowerCase().contains("http") && !text.toLowerCase().contains("https"))
-                                                        validator.setInvalid("Die URL muss 'https' sein!");
-                                                }).validate();
-                                            });
                                 }
+                            })
+                            .enableDoubleClickOutsideToDismiss(customDialog -> {
+                                boolean result = !((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim().equals(parentClass.getName());
+                                if (result || (parentClass instanceof ParentClass_Tmdb && !((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim().equals(((ParentClass_Tmdb) parentClass).getImagePath())))
+                                    return true;
+                                return result;
                             })
                             .show();
                 })

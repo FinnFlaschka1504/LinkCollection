@@ -64,12 +64,14 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
+import com.pixplicity.sharp.Sharp;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
@@ -87,6 +89,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import okhttp3.Cache;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Response;
 import top.defaults.drawabletoolbox.DrawableBuilder;
 
 
@@ -1390,7 +1397,50 @@ public class Utility implements java.io.Serializable {
             v.requestLayout();
         }
     }
-//  <----- Pixels -----
+    //  <----- Pixels -----
+
+
+    //  ------------------------- LoadImageFromUrl ------------------------->
+//    public static void loadImageFromUrl(Context context, ImageView imageView, String url, boolean canFullsize){
+//        requestBuilder = Glide.with(mActivity)
+//                .using(Glide.buildStreamModelLoader(Uri.class, mActivity), InputStream.class)
+//                .from(Uri.class)
+//                .as(SVG.class)
+//                .transcode(new SvgDrawableTranscoder(), PictureDrawable.class)
+//                .sourceEncoder(new StreamEncoder())
+//                .cacheDecoder(new FileToStreamDecoder<SVG>(new SvgDecoder()))
+//                .decoder(new SvgDecoder())
+//                .placeholder(R.drawable.ic_facebook)
+//                .error(R.drawable.ic_web)
+//                .animate(android.R.anim.fade_in)
+//                .listener(new SvgSoftwareLayerSetter<Uri>());
+//    }
+    private static OkHttpClient httpClient;
+
+    public static void fetchSvg(Context context, String url, final ImageView target) {
+        if (httpClient == null) {
+            // Use cache for performance and basic offline capability
+            httpClient = new OkHttpClient.Builder()
+                    .cache(new Cache(context.getCacheDir(), 5 * 1024 * 1014))
+                    .build();
+        }
+
+        okhttp3.Request request = new okhttp3.Request.Builder().url(url).build();
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                target.setImageResource(R.drawable.ic_download);
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                InputStream stream = response.body().byteStream();
+                Sharp.loadInputStream(stream).into(target);
+                stream.close();
+            }
+        });
+    }
+    //  <------------------------- LoadImageFromUrl -------------------------
 
 
     public static void sendText(AppCompatActivity activity, String text) {

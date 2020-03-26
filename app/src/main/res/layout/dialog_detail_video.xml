@@ -218,6 +218,7 @@
 
             <LinearLayout
 
+                android:id="@+id/dialog_video_release_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="2"
@@ -242,6 +243,7 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/dialog_video_length_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="3"

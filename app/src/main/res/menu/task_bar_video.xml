@@ -81,6 +81,9 @@
                     </group>
                 </menu>
             </item>
+            <item
+                android:id="@+id/taskBar_video_filterByRating"
+                android:title="Nach Bewertung" />
         </menu>
     </item>
     <item

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/dialog_editTmdbCategory_nameLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/dialog_editTmdbCategory_name_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Name"
+            app:errorEnabled="true">
+
+            <EditText
+                android:id="@+id/dialog_editTmdbCategory_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:completionThreshold="0"
+                android:inputType="textCapSentences"
+                android:singleLine="true" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <ImageView
+            android:id="@+id/dialog_editTmdbCategory_internet"
+            style="@style/ImageButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:srcCompat="@drawable/ic_internet"
+            tools:visibility="visible" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/dialog_editTmdbCategory_urlLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginVertical="8dp"
+            android:background="?android:attr/listDivider" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/dialog_editTmdbCategory_url_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginVertical="8dp"
+            android:hint="Bild-Url (.jpg / .png / .svg)"
+            app:errorEnabled="true">
+
+            <EditText
+                android:id="@+id/dialog_editTmdbCategory_url"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:completionThreshold="0"
+                android:inputType="textUri|textCapSentences"
+                android:selectAllOnFocus="true"
+                android:singleLine="true" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
+
+</LinearLayout>

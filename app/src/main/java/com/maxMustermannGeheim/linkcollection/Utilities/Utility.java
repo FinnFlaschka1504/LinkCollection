@@ -29,6 +29,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SearchView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -38,11 +39,14 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.finn.androidUtilities.CustomDialog;
+import com.finn.androidUtilities.CustomUtility;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
 import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.innovattic.rangeseekbar.RangeSeekBar;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -87,6 +91,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 import okhttp3.Cache;
@@ -97,7 +102,7 @@ import okhttp3.Response;
 import top.defaults.drawabletoolbox.DrawableBuilder;
 
 
-public class Utility implements java.io.Serializable {
+public class Utility {
 
     //  --------------- isOnline --------------->
     static public boolean isOnline(Context context) {
@@ -318,10 +323,7 @@ public class Utility implements java.io.Serializable {
                 textView.onTouchEvent(e);
             }
         });
-        textView.setOnTouchListener((v, event) -> {
-
-            return detector.onTouchEvent(event);
-        });
+        textView.setOnTouchListener((v, event) -> detector.onTouchEvent(event));
 
         textView.setText(builder);
         textView.setMovementMethod(LinkMovementMethod.getInstance());
@@ -330,7 +332,6 @@ public class Utility implements java.io.Serializable {
 //                activity.getResources().getColorStateList(R.color.clickable_text_color, null));
     }
 
-    // ToDo: Button Doppelclick Klasse
 
     //  ------------------------- TMDb Api ------------------------->
     public static void importTmdbGenre(Context context, boolean isVideo) {
@@ -1063,7 +1064,7 @@ public class Utility implements java.io.Serializable {
     }
     //  <--------------- Toast ---------------
 
-    public static com.finn.androidUtilities.CustomDialog showEditItemDialog(Context context, com.finn.androidUtilities.CustomDialog addOrEditDialog, List<String> preSelectedUuidList, Object o, CategoriesActivity.CATEGORIES category) {
+    public static CustomDialog showEditItemDialog(Context context, CustomDialog addOrEditDialog, List<String> preSelectedUuidList, Object o, CategoriesActivity.CATEGORIES category) {
         Database database = Database.getInstance();
 
         if (preSelectedUuidList == null)
@@ -1097,9 +1098,9 @@ public class Utility implements java.io.Serializable {
 
         int saveButtonId = View.generateViewId();
 
-        com.finn.androidUtilities.CustomDialog dialog_AddActorOrGenre = com.finn.androidUtilities.CustomDialog.Builder(context)
+        CustomDialog dialog_AddActorOrGenre = CustomDialog.Builder(context)
                 .setTitle(editType_string + " Bearbeiten")
-                .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .setView(R.layout.dialog_edit_item)
                 .setDimensions(true, true)
                 .disableScroll()
@@ -1142,7 +1143,7 @@ public class Utility implements java.io.Serializable {
 
                 }, false)
                 .alignPreviousButtonsLeft()
-                .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
+                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     List<String> nameList = new ArrayList<>();
                     switch (category) {
                         case DARSTELLER:
@@ -1441,6 +1442,126 @@ public class Utility implements java.io.Serializable {
         });
     }
     //  <------------------------- LoadImageFromUrl -------------------------
+
+
+    //  ------------------------- FilterStars ------------------------->
+    public static CustomDialog showRangeSelectDialog(Context context, SearchView searchView) {
+        boolean[] singleMode = {false};
+        final int[] min = {0};
+        final int[] max = {20};
+        boolean preSelected = false;
+        Matcher matcher = VideoActivity.pattern.matcher(searchView.getQuery());
+        if (matcher.find()) {
+            String[] range = matcher.group(0).replaceAll("\\*", "").replaceAll(",", ".").split("-");
+            min[0] = Math.round(Float.parseFloat(range[0]) * 4);
+            max[0] = Math.round(Float.parseFloat(range.length < 2 ? range[0] : range[1]) * 4);
+            preSelected = true;
+            singleMode[0] = range.length < 2;
+        }
+
+        boolean finalPreSelected = preSelected;
+        return CustomDialog.Builder(context)
+                .setTitle("Nach Bewertung Filtern")
+                .setView(R.layout.dialog_filter_by_rating)
+                .setSetViewContent((customDialog, view, reload) -> {
+                    TextView rangeText = customDialog.findViewById(R.id.dialog_filterByRating_range);
+                    CustomUtility.GenericInterface<Pair<Integer, Integer>> setText = pair -> {
+                        if (singleMode[0])
+                            rangeText.setText(String.format(Locale.getDefault(), "%.2f ☆", pair.first / 4d));
+                        else
+                            rangeText.setText(String.format(Locale.getDefault(), "%.2f ☆ – %.2f ☆", pair.first / 4d, pair.second / 4d));
+                    };
+                    RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_filterByRating_rangeBar);
+                    SeekBar singleBar = customDialog.findViewById(R.id.dialog_filterByRating_singleBar);
+                    singleBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                        @Override
+                        public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                            if (fromUser) {
+                                rangeBar.setMinThumbValue(progress);
+                                setText.runGenericInterface(Pair.create(progress, progress));
+                            }
+                        }
+
+                        @Override
+                        public void onStartTrackingTouch(SeekBar seekBar) {
+
+                        }
+
+                        @Override
+                        public void onStopTrackingTouch(SeekBar seekBar) {
+
+                        }
+                    });
+                    rangeText.setOnClickListener(v -> {
+                        if (singleMode[0] && singleBar.getProgress() == 20) {
+                            singleBar.setProgress(19);
+                            rangeBar.setMaxThumbValue(20);
+                        }
+                        singleMode[0] = !singleMode[0];
+                        rangeBar.setVisibility(singleMode[0] ? View.INVISIBLE : View.VISIBLE);
+                        singleBar.setClickable(singleMode[0]);
+                        setText.runGenericInterface(Pair.create(rangeBar.getMinThumbValue(), rangeBar.getMaxThumbValue()));
+                    });
+                    singleBar.setProgress(min[0]);
+                    rangeBar.setMaxThumbValue(max[0]);
+                    rangeBar.setMinThumbValue(min[0]);
+                    setText.runGenericInterface(Pair.create(min[0], max[0]));
+
+                    rangeBar.setSeekBarChangeListener(new RangeSeekBar.SeekBarChangeListener() {
+                        @Override
+                        public void onStartedSeeking() {
+
+                        }
+
+                        @Override
+                        public void onStoppedSeeking() {
+                        }
+
+                        @Override
+                        public void onValueChanged(int min, int max) {
+                            setText.runGenericInterface(Pair.create(min, max));
+                            singleBar.setProgress(min);
+                        }
+                    });
+                })
+                .addOptionalModifications(customDialog -> {
+                    if (finalPreSelected) {
+                        customDialog
+                                .addButton("Reset", customDialog1 -> {
+                                    String removedQuery = searchView.getQuery().toString().replaceAll(VideoActivity.pattern.pattern(), "").trim();
+                                    searchView.setQuery(removedQuery, true);
+                                    })
+                                .alignPreviousButtonsLeft();
+                    }
+                })
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
+                    RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_filterByRating_rangeBar);
+
+                    min[0] = rangeBar.getMinThumbValue();
+                    max[0] = rangeBar.getMaxThumbValue();
+
+                    String removedQuery = searchView.getQuery().toString().replaceAll(VideoActivity.pattern.pattern(), "").trim();
+                    if (min[0] == 0 && max[0] == 20) {
+                        if (finalPreSelected)
+                            searchView.setQuery(removedQuery, true);
+                        return;
+                    }
+
+                    String filter;
+                    if (singleMode[0])
+                        filter = String.format(Locale.getDefault(), "*%.2f*", min[0] / 4d);
+                    else
+                        filter = String.format(Locale.getDefault(), "*%.2f-%.2f*", min[0] / 4d, max[0] / 4d);
+                    searchView.setQuery(removedQuery + (removedQuery.isEmpty() ? "" : " ") + filter, true);
+
+                })
+                .setOnTouchOutside(CustomDialog::dismiss)
+                .setDismissWhenClickedOutside(false)
+                .show();
+
+    }
+    //  <------------------------- FilterStars -------------------------
 
 
     public static void sendText(AppCompatActivity activity, String text) {

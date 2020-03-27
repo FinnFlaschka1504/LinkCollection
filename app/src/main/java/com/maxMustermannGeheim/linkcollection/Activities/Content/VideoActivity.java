@@ -38,7 +38,6 @@ import com.bumptech.glide.Glide;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
-import com.stfalcon.pricerangebar.model.BarEntry;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputLayout;
@@ -62,7 +61,6 @@ import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.mikhaellopez.lazydatepicker.LazyDatePicker;
-import com.stfalcon.pricerangebar.RangeBarWithChart;
 
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
@@ -85,7 +83,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import bsh.StringUtil;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
@@ -143,6 +145,8 @@ public class VideoActivity extends AppCompatActivity {
     private WebView webView;
     private boolean isShared;
     private boolean isDialog;
+    public static Pattern pattern = Pattern.compile("\\*(([0-4]((,|\\.)\\d{1,2})?)|5(,0)?)(-(([0-4]((,|\\.)\\d{1,2})?)|5(,00?)?))?\\*");
+
 
     List<Video> allVideoList = new ArrayList<>();
     CustomList<Video> filterdVideoList = new CustomList<>();
@@ -428,12 +432,25 @@ public class VideoActivity extends AppCompatActivity {
         }
         if (!searchQuery.trim().equals("")) {
 
-            // ToDo: Nach Sternen Filtern: \*(([0-4](,\d{1,2})?)|5(,0)?)-(([0-4](,\d{1,2})?)|5(,00?)?)\*
+            // ToDo: Nach Sternen Filtern: \*(([0-4]((,|\.)\d{1,2})?)|5(,0)?)-(([0-4]((,|\.)\d{1,2})?)|5(,00?)?)\*
 
-            if (searchQuery.contains("|")) {
-                filterdVideoList = filterdVideoList.filterOr(searchQuery.split("\\|"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), false);
+            String subQuery = searchQuery;
+            if (searchQuery.contains("*")) {
+
+                Matcher matcher = pattern.matcher(searchQuery);
+                if (matcher.find()) {
+                    String[] range = matcher.group(0).replaceAll("\\*", "").replaceAll(",", ".").split("-");
+                    float min = Float.parseFloat(range[0]);
+                    float max = Float.parseFloat(range.length < 2 ? range[0] : range[1]);
+                    filterdVideoList.filter(video -> video.getRating() >= min && video.getRating() <= max, true);
+                    subQuery = matcher.replaceFirst("");
+                }
+            }
+
+            if (subQuery.contains("|")) {
+                filterdVideoList = filterdVideoList.filterOr(subQuery.split("\\|"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), true);
             } else {
-                filterdVideoList = filterdVideoList.filterAnd(searchQuery.split("&"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), false);
+                filterdVideoList.filterAnd(subQuery.split("&"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), true);
             }
         }
         return filterdVideoList;
@@ -1610,18 +1627,7 @@ public class VideoActivity extends AppCompatActivity {
                 setSearchHint();
                 break;
             case R.id.taskBar_video_filterByRating:
-                CustomDialog.Builder(this) // ToDo: https://android-arsenal.com/details/1/7325
-                        .setTitle("Nach Bewertung Filtern")
-                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
-                        .setView(R.layout.dialog_filter_by_rating)
-                        .setSetViewContent((customDialog, view, reload) -> {
-                            RangeBarWithChart rangeBar = customDialog.findViewById(R.id.dialog_filterByRating_rangeBar);
-                            List<BarEntry> barEntryList = new ArrayList<>();
-                            Map<Float, List<Float>> collect = database.videoMap.values().stream().map(ParentClass_Ratable::getRating).collect(Collectors.groupingBy(aFloat -> aFloat));
-                            ArrayList<BarEntry> entries = collect.entrySet().stream().map(entry -> new BarEntry(entry.getKey(), entry.getValue().size())).collect(Collectors.toCollection(ArrayList::new));
-                            rangeBar.setEntries(entries);
-                        })
-                        .show();
+                Utility.showRangeSelectDialog(this, videos_search);
                 break;
 
             case R.id.taskBar_video_modeAll:

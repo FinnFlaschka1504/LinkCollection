@@ -417,7 +417,7 @@ public class CategoriesActivity extends AppCompatActivity {
                                         new com.finn.androidUtilities.Helpers.TextInputHelper(result -> customDialog.getActionButton().setEnabled(result), dialog_editTmdbCategory_name_layout);
 
                                 if (parentClass instanceof ParentClass_Tmdb) {
-                                    ImageView dialog_editTmdbCategory_internet = view.findViewById(R.id.dialog_editTmdbCategory_internet);
+                                    ImageView dialog_editTmdbCategory_internet = view1.findViewById(R.id.dialog_editTmdbCategory_internet);
                                     if (((ParentClass_Tmdb) parentClass).getTmdbId() != 0) {
                                         dialog_editTmdbCategory_internet.setOnClickListener(v -> Utility.openUrl(this, "https://www.themoviedb.org/person/" + ((ParentClass_Tmdb) parentClass).getTmdbId(), true));
                                         dialog_editTmdbCategory_internet.setVisibility(View.VISIBLE);

@@ -12,7 +12,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewStub;
-import android.view.ViewTreeObserver;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -29,6 +28,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -37,7 +37,7 @@ import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
-import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
+import com.google.android.material.appbar.AppBarLayout;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputLayout;
@@ -87,8 +87,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import bsh.StringUtil;
-
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
 public class VideoActivity extends AppCompatActivity {
@@ -137,6 +135,7 @@ public class VideoActivity extends AppCompatActivity {
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.ACTOR, FILTER_TYPE.GENRE, FILTER_TYPE.STUDIO));
     private MODE mode = MODE.ALL;
     private SearchView.OnQueryTextListener textListener;
+    private TextView elementCount;
     private String searchQuery = "";
     private boolean reverse = false;
     private String singular;
@@ -248,6 +247,17 @@ public class VideoActivity extends AppCompatActivity {
                 Database.saveAll();
                 Toast.makeText(this, toDelete.size() + (toDelete.size() == 1 ? " " + singular : " " + plural) + " gelöscht", Toast.LENGTH_SHORT).show();
             });
+
+            AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
+            elementCount = findViewById(R.id.elementCount);
+            appBarLayout.addOnOffsetChangedListener(new AppBarLayout.OnOffsetChangedListener() {
+                @Override
+                public void onOffsetChanged(AppBarLayout appBarLayout1, int verticalOffset) {
+                    ((AppBarLayout.Behavior) ((CoordinatorLayout.LayoutParams) appBarLayout.getLayoutParams()).getBehavior()).setTopAndBottomOffset(-(VideoActivity.this.findViewById(R.id.elementCount).getHeight()));
+                    appBarLayout.removeOnOffsetChangedListener(this);
+                }
+            });
+
 
             videos_search = findViewById(R.id.search);
 
@@ -515,11 +525,13 @@ public class VideoActivity extends AppCompatActivity {
                     List<Video> filteredList = sortList(filterList());
                     TextView noItem = findViewById(R.id.no_item);
                     noItem.setText(videos_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche");
-                    noItem.setVisibility(filteredList.isEmpty() ? View.VISIBLE : View.GONE);
+                    int size = filteredList.size();
+                    noItem.setVisibility(size == 0 ? View.VISIBLE : View.GONE);
+                    ((AppBarLayout.LayoutParams) videos_search.getLayoutParams()).setScrollFlags(size == 0 ? 0 : AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL | AppBarLayout.LayoutParams.SCROLL_FLAG_SNAP | AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS);
+                    elementCount.setText(size > 1 ? size + " Elemente" : (size == 1 ? "Ein" : "Kein") + " Element");
                     return filteredList;
 
                 })
-//                .setObjectList(filterdVideoList)
                 .setSetItemContent((customRecycler, itemView, video) -> {
                     itemView.findViewById(R.id.listItem_video_deleteCheck).setVisibility(delete ? View.VISIBLE : View.GONE);
                     ((TextView) itemView.findViewById(R.id.listItem_video_Titel)).setText(video.getName());

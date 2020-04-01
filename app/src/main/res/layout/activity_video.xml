@@ -7,49 +7,123 @@
     android:layout_height="match_parent"
     tools:context=".Activities.Content.VideoActivity">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+<!--    <LinearLayout-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="match_parent"-->
+<!--        android:orientation="vertical">-->
 
-        <SearchView
-            android:id="@+id/search"
+<!--        <SearchView-->
+<!--            android:id="@+id/search"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:focusable="auto"-->
+<!--            android:iconifiedByDefault="false"-->
+<!--            android:inputType="textCapSentences"-->
+<!--            android:queryBackground="@android:color/transparent"-->
+<!--            android:queryHint="Filter eingeben ('&amp;' als 'und'; '|' als 'oder')"/>-->
+
+
+<!--        <View-->
+<!--            android:id="@+id/divider"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="1dp"-->
+<!--            android:background="?android:attr/listDivider"-->
+<!--            app:layout_constraintTop_toBottomOf="@id/search" />-->
+
+<!--        <FrameLayout-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="match_parent">-->
+
+<!--            <androidx.recyclerview.widget.RecyclerView-->
+<!--                android:id="@+id/recycler"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="match_parent" />-->
+
+<!--            <TextView-->
+<!--                android:id="@+id/no_item"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_gravity="center_horizontal"-->
+<!--                android:layout_marginTop="20dp"-->
+<!--                android:text="Kein Eintrag"-->
+<!--                android:textStyle="italic" />-->
+<!--        </FrameLayout>-->
+<!--    </LinearLayout>-->
+
+
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+
+        <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/appBarLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:focusable="auto"
-            android:iconifiedByDefault="false"
-            android:inputType="textCapSentences"
-            android:queryBackground="@android:color/transparent"
-            android:queryHint="Filter eingeben ('&amp;' als 'und'; '|' als 'oder')">
-
-        </SearchView>
-
-        <View
-            android:id="@+id/divider"
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="?android:attr/listDivider"
-            app:layout_constraintTop_toBottomOf="@id/search" />
-
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recycler"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+            android:background="@color/colorBackground"
+            app:expanded="false">
 
             <TextView
-                android:id="@+id/no_item"
-                android:layout_width="wrap_content"
+                android:id="@+id/elementCount"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="20dp"
-                android:text="Kein Eintrag"
-                android:textStyle="italic" />
-        </FrameLayout>
-    </LinearLayout>
+                android:paddingTop="16dp"
+                android:text="20 Elemente"
+                android:textAlignment="center"
+                android:textSize="24sp"
+                app:layout_scrollFlags="scroll|snap" />
+
+            <SearchView
+                android:id="@+id/search"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="auto"
+                android:iconifiedByDefault="false"
+                android:inputType="textCapSentences"
+                android:queryBackground="@android:color/transparent"
+                android:queryHint="Filter eingeben ('&amp;' als 'und'; '|' als 'oder')"
+                app:layout_scrollFlags="scroll|enterAlways|snap" />
+
+            <View
+                android:id="@+id/divider"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="?android:attr/listDivider"
+                app:layout_scrollFlags="scroll|enterAlways" />
+
+        </com.google.android.material.appbar.AppBarLayout>
+
+
+<!--        <androidx.core.widget.NestedScrollView-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="match_parent"-->
+<!--            app:layout_behavior="@string/appbar_scrolling_view_behavior">-->
+
+<!--                    <FrameLayout-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="match_parent">-->
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/recycler"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
+
+<!--                    </FrameLayout>-->
+
+<!--        </androidx.core.widget.NestedScrollView>-->
+
+        <TextView
+            android:id="@+id/no_item"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="69dp"
+            android:text="Kein Eintrag"
+            android:textStyle="italic" />
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/videos_confirmDelete"

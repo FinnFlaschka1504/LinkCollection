@@ -10,6 +10,7 @@ import android.text.SpannableStringBuilder;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewStub;
 import android.webkit.WebSettings;
@@ -20,6 +21,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.SeekBar;
@@ -28,6 +30,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 
 import com.android.volley.Request;
@@ -161,7 +164,7 @@ public class VideoActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         if (!(isDialog = Objects.equals(getIntent().getAction(), MainActivity.ACTION_SHOW_AS_DIALOG)))
-            setTheme(R.style.AppTheme);
+            setTheme(R.style.AppTheme_NoTitle);
 
         super.onCreate(savedInstanceState);
 
@@ -248,15 +251,11 @@ public class VideoActivity extends AppCompatActivity {
                 Toast.makeText(this, toDelete.size() + (toDelete.size() == 1 ? " " + singular : " " + plural) + " gelöscht", Toast.LENGTH_SHORT).show();
             });
 
-            AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
+            Toolbar toolbar = findViewById(R.id.toolbar);
+            toolbar.setTitle(plural);
+            setSupportActionBar(toolbar);
             elementCount = findViewById(R.id.elementCount);
-            appBarLayout.addOnOffsetChangedListener(new AppBarLayout.OnOffsetChangedListener() {
-                @Override
-                public void onOffsetChanged(AppBarLayout appBarLayout1, int verticalOffset) {
-                    ((AppBarLayout.Behavior) ((CoordinatorLayout.LayoutParams) appBarLayout.getLayoutParams()).getBehavior()).setTopAndBottomOffset(-(VideoActivity.this.findViewById(R.id.elementCount).getHeight()));
-                    appBarLayout.removeOnOffsetChangedListener(this);
-                }
-            });
+
 
 
             videos_search = findViewById(R.id.search);
@@ -431,6 +430,7 @@ public class VideoActivity extends AppCompatActivity {
             whenLoaded.run();
     }
 
+
     private List<Video> filterList() {
         filterdVideoList = new CustomList<>(allVideoList);
         if (mode.equals(MODE.SEEN)) {
@@ -527,7 +527,7 @@ public class VideoActivity extends AppCompatActivity {
                     noItem.setText(videos_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche");
                     int size = filteredList.size();
                     noItem.setVisibility(size == 0 ? View.VISIBLE : View.GONE);
-                    ((AppBarLayout.LayoutParams) videos_search.getLayoutParams()).setScrollFlags(size == 0 ? 0 : AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL | AppBarLayout.LayoutParams.SCROLL_FLAG_SNAP | AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS);
+//                    ((LinearLayout.LayoutParams) videos_search.getLayoutParams()).setScrollFlags(size == 0 ? 0 : AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL | AppBarLayout.LayoutParams.SCROLL_FLAG_SNAP | AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS);
                     elementCount.setText(size > 1 ? size + " Elemente" : (size == 1 ? "Ein" : "Kein") + " Element");
                     return filteredList;
 

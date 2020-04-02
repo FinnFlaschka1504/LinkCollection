@@ -17,6 +17,7 @@ import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.util.Pair;
 import android.view.GestureDetector;
+import android.view.GestureDetector.OnGestureListener;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -922,33 +923,46 @@ public class Utility {
         layout.findViewById(R.id.fragmentCalender_noViews).setOnTouchListener(touchListener);
     }
 
+
+
     public static class OnHorizontalSwipeTouchListener implements View.OnTouchListener {
 
         private final GestureDetector gestureDetector;
+        Runnable cancelTouch;
+
 
         public OnHorizontalSwipeTouchListener(Context ctx) {
             gestureDetector = new GestureDetector(ctx, new GestureListener());
+
         }
+
+
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
+            cancelTouch = () -> {
+                event.setAction(MotionEvent.ACTION_CANCEL);
+                v.onTouchEvent(event);
+            };
             return gestureDetector.onTouchEvent(event);
         }
 
         private final class GestureListener extends GestureDetector.SimpleOnGestureListener {
 
-            private static final int SWIPE_THRESHOLD = 100;
+            private static final int SWIPE_THRESHOLD = 200;
             private static final int SWIPE_VELOCITY_THRESHOLD = 100;
 //            @Override
 //            public boolean onDown(MotionEvent e) {
 //                return true;
 //            }
 
+
+
             @Override
             public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
                 boolean result = false;
                 try {
-                    float diffY = e2.getY() - e1.getY();
+                    float diffY = e2.getY() - e1.getY(  );
                     float diffX = e2.getX() - e1.getX();
                     if (Math.abs(diffX) > Math.abs(diffY)) {
                         if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
@@ -971,6 +985,8 @@ public class Utility {
                 } catch (Exception exception) {
                     exception.printStackTrace();
                 }
+                if (!result && cancelTouch != null)
+                    cancelTouch.run();
                 return result;
             }
         }

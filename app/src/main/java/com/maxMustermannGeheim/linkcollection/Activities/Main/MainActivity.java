@@ -8,6 +8,7 @@ import android.graphics.drawable.Icon;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
@@ -16,6 +17,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
@@ -89,6 +91,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
     private static Settings.Space currentSpace;
     private View main_offline;
+    private Utility.OnHorizontalSwipeTouchListener touchListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -240,6 +243,9 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 Utility.showCenteredToast(this, "Datenbank:\n" + Database.databaseCode);
             }
 
+            Toolbar toolbar = findViewById(R.id.toolbar);
+            setSupportActionBar(toolbar);
+
             setLayout();
 
             database = database_neu;
@@ -256,8 +262,6 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
     private void setLayout() {
         BottomNavigationView bottomNavigationView = findViewById(R.id.main_bottom_navigation);
-
-//        Settings.startSettings_ifNeeded(this);
 
         ShortcutManager shortcutManager = getSystemService(ShortcutManager.class);
         List<ShortcutInfo> shortcutInfoList = new ArrayList<>();
@@ -324,7 +328,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 mySPR_settings.edit().putInt(SETTING_LAST_OPEN_SPACE, currentSpace.getItemId()).apply();
             if (Settings.Space.allSpaces.filter(Settings.Space::isShown, false).size() > 1) {
                 ViewGroup view = (ViewGroup) currentSpace.getFragment().getView();
-                Utility.OnHorizontalSwipeTouchListener touchListener = new Utility.OnHorizontalSwipeTouchListener(MainActivity.this) {
+                touchListener = new Utility.OnHorizontalSwipeTouchListener(MainActivity.this) {
                     @Override
                     public void onSwipeRight() {
                         ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.allSpaces.filter(Settings.Space::isShown, false).previous(currentSpace).getItemId());
@@ -335,6 +339,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                         ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.allSpaces.filter(Settings.Space::isShown, false).next(currentSpace).getItemId());
                     }
                 };
+                findViewById(R.id.scrollView).setOnTouchListener(touchListener);
                 view.setOnTouchListener(touchListener);
                 Utility.applyToAllViews(view, SquareLayout.class, squareLayout -> squareLayout.setOnTouchListener(touchListener));
             }
@@ -344,6 +349,16 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
         return true;
     };
+
+//    @Override
+//    public boolean dispatchTouchEvent(MotionEvent ev) {
+//        if (touchListener != null && touchListener.onTouch(null, ev)) {
+////            return true;
+//            String BREAKPOINT = null;
+//        }
+//        return super.dispatchTouchEvent(ev);
+//    }
+
 
     interface OnDatabaseCodeFinish {
         void runOndatabaseCodeFinish(String databaseCode);

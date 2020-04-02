@@ -28,7 +28,7 @@
         <activity
             android:name=".Activities.Main.MainActivity"
             android:configChanges="orientation|screenSize"
-            android:theme="@style/AppTheme">
+            android:theme="@style/AppTheme.NoTitle">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -39,7 +39,7 @@
             android:name=".Activities.Content.VideoActivity"
             android:label="@string/VideoActivity_label"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:theme="@style/DialogActivityTheme">
+            android:theme="@style/DialogActivityTheme.NoTitle">
             <intent-filter
                 android:icon="@drawable/ic_videos"
                 android:label="Video hinzufügen">

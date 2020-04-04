@@ -32,7 +32,9 @@
 
                 <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="375dp">
+                    android:layout_height="375dp"
+                    app:layout_collapseMode="parallax"
+                    app:layout_collapseParallaxMultiplier="0.18">
 
 
                     <ImageView
@@ -51,6 +53,7 @@
                     android:layout_gravity="bottom"
                     app:layout_collapseMode="pin"
                     app:menu="@menu/task_bar_main"
+                    app:popupTheme="@style/TitleTextStyle"
                     app:title="@string/app_name" />
 
 

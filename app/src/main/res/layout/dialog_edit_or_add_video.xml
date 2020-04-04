@@ -17,16 +17,16 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <TextView
                 android:id="@+id/dialog_editOrAddVideo_title_label"
                 style="@style/TextButtonStyle"
-                android:enabled="false"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="8dp"
+                android:enabled="false"
                 android:text="Titel:"
                 android:textStyle="bold" />
 
@@ -54,6 +54,13 @@
                 android:visibility="gone"
                 app:srcCompat="@drawable/ic_translate"
                 tools:visibility="visible" />
+
+            <ImageView
+                android:id="@+id/dialog_editOrAddVideo_thumbnail"
+                style="@style/ImageButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:srcCompat="@drawable/ic_photo" />
         </LinearLayout>
 
         <LinearLayout
@@ -64,12 +71,12 @@
 
             <TextView
                 android:id="@+id/dialog_editOrAddVideo_actor_label"
+                style="@style/TextButtonStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="8dp"
-                android:text="Darsteller:"
-                style="@style/TextButtonStyle"
                 android:enabled="false"
+                android:text="Darsteller:"
                 android:textStyle="bold" />
 
             <TextView
@@ -104,12 +111,12 @@
 
             <TextView
                 android:id="@+id/dialog_editOrAddVideo_studio_label"
+                style="@style/TextButtonStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="8dp"
-                android:text="Studio:"
-                style="@style/TextButtonStyle"
                 android:enabled="false"
+                android:text="Studio:"
                 android:textStyle="bold" />
 
             <TextView
@@ -161,8 +168,8 @@
             android:id="@+id/dialog_editOrAddVideo_url_allLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -264,15 +271,15 @@
                 android:text="Bewertung:"
                 android:textStyle="bold" />
 
-<!--            <RatingBar-->
-<!--                android:id="@+id/dialog_editOrAddVideo_rating"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:max="5"-->
-<!--                android:numStars="5"-->
-<!--                android:rating="-1"-->
-<!--                android:stepSize="0.5"-->
-<!--                tools:visibility="gone" />-->
+            <!--            <RatingBar-->
+            <!--                android:id="@+id/dialog_editOrAddVideo_rating"-->
+            <!--                android:layout_width="wrap_content"-->
+            <!--                android:layout_height="wrap_content"-->
+            <!--                android:max="5"-->
+            <!--                android:numStars="5"-->
+            <!--                android:rating="-1"-->
+            <!--                android:stepSize="0.5"-->
+            <!--                tools:visibility="gone" />-->
 
             <FrameLayout
                 android:id="@+id/customRating_layout"
@@ -300,7 +307,6 @@
                     android:max="20"
                     android:progress="0" />
             </FrameLayout>
-
 
 
         </LinearLayout>

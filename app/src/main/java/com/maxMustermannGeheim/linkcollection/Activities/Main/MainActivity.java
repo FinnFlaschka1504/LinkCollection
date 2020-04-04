@@ -8,7 +8,6 @@ import android.graphics.drawable.Icon;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
@@ -20,7 +19,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import com.finn.androidUtilities.CustomDialog;
-import com.finn.androidUtilities.CustomUtility;
 import com.finn.androidUtilities.Helpers;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -30,8 +28,8 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
-import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomInternetHelper;
@@ -39,14 +37,11 @@ import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.maxMustermannGeheim.linkcollection.Utilities.VersionControl;
-import com.scottyab.aescrypt.AESCrypt;
 
 import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -122,6 +117,9 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         });
 
         CustomInternetHelper.initialize(this);
+
+//        List<String> imageUrlsFromHtml = Utility.getImageUrlsFromHtml(WebisteHtml.websiteHtml);
+        String BREAKPOINT = null;
 
 //        CustomUtility.PingTask.simulate(false, 3000);
 
@@ -243,9 +241,6 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 Utility.showCenteredToast(this, "Datenbank:\n" + Database.databaseCode);
             }
 
-            Toolbar toolbar = findViewById(R.id.toolbar);
-            setSupportActionBar(toolbar);
-
             setLayout();
 
             database = database_neu;
@@ -261,6 +256,9 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     }
 
     private void setLayout() {
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
         BottomNavigationView bottomNavigationView = findViewById(R.id.main_bottom_navigation);
 
         ShortcutManager shortcutManager = getSystemService(ShortcutManager.class);

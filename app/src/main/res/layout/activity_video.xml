@@ -51,10 +51,11 @@
                     android:layout_width="match_parent"
                     android:layout_height="?attr/actionBarSize"
                     android:layout_gravity="bottom"
-                    android:layout_marginBottom="?attr/actionBarSize"
+                    android:layout_marginBottom="49dp"
                     app:layout_collapseMode="pin"
                     app:menu="@menu/task_bar_video"
                     app:navigationIcon="@drawable/ic_arrow_back_white"
+                    app:popupTheme="@style/TitleTextStyle"
                     app:title="test" />
 
 

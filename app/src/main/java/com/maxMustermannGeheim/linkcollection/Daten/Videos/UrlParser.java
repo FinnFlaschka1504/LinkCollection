@@ -1,14 +1,15 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Videos;
 
 import android.content.Context;
-import android.graphics.Bitmap;
+import android.os.Handler;
+import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.finn.androidUtilities.CustomDialog;
@@ -28,10 +29,14 @@ import bsh.EvalError;
 import bsh.Interpreter;
 
 public class UrlParser extends ParentClass {
+    private String thumbnailCode;
     private String code;
     private String exampleUrl;
     private TYPE type = TYPE.JAVA;
     public static Map<String,WebView> webViewMap = new HashMap<>();
+    private int openJs;
+    private boolean debug = false;
+    private CustomDialog webViewDialog;
 
 
     public enum TYPE {
@@ -116,11 +121,20 @@ public class UrlParser extends ParentClass {
         this.type = type;
         return this;
     }
+
+    public String getThumbnailCode() {
+        return thumbnailCode;
+    }
+
+    public UrlParser setThumbnailCode(String thumbnailCode) {
+        this.thumbnailCode = thumbnailCode;
+        return this;
+    }
     //  <------------------------- Getter & Setter -------------------------
 
 
     //  ------------------------- Convenience ------------------------->
-    public String parseUrl(@Nullable Context context, String url, @Nullable Utility.GenericInterface<String> onParseResult) {
+    public String parseUrl(@Nullable Context context, String url, @NonNull Utility.GenericInterface<String> onParseNameResult, @Nullable Utility.GenericInterface<String> onParseThumbnailResult) {
         if (!url.contains(name)) {
             if (context != null) Toast.makeText(context, "Keine passende URL", Toast.LENGTH_SHORT).show();
             return null;
@@ -152,11 +166,11 @@ public class UrlParser extends ParentClass {
                 if (resultO == null) {
                     if (context != null)
                         Toast.makeText(context, "Kein Ergebnis", Toast.LENGTH_SHORT).show();
-                    if (onParseResult != null) onParseResult.runGenericInterface("");
+                    onParseNameResult.runGenericInterface("");
                     return "";
                 }
                 String result = resultO.toString();
-                if (onParseResult != null) onParseResult.runGenericInterface(result);
+                onParseNameResult.runGenericInterface(result);
                 return result;
 
             } catch (EvalError evalError) {
@@ -164,19 +178,25 @@ public class UrlParser extends ParentClass {
                     Toast.makeText(context, evalError.getMessage(), Toast.LENGTH_LONG).show();
                 return null;
             }
-        } else if (type == TYPE.JAVA_SCRIPT){
+        }
+        if (type == TYPE.JAVA_SCRIPT || (Utility.stringExists(thumbnailCode) && onParseThumbnailResult != null)){
             if (context == null)
                 return null;
             if (!webViewMap.containsKey(name)) {
                 WebView webView = new WebView(context);
+                webView.setAlpha(0f);
                 webViewMap.put(name, webView);
                 WebSettings settings = webView.getSettings();
                 settings.setJavaScriptEnabled(true);
                 String newUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36";
                 settings.setUserAgentString(newUA);
+                settings.setUseWideViewPort(true);
+                settings.setLoadWithOverviewMode(true);
 
-                final boolean[] loadingFinished = {true};
-                final boolean[] redirect = {false};
+                settings.setSupportZoom(true);
+                settings.setBuiltInZoomControls(true);
+                settings.setDisplayZoomControls(false);
+
 //                webView.setWebViewClient(new WebViewClient() {
 //
 //                    @Override
@@ -200,7 +220,7 @@ public class UrlParser extends ParentClass {
 //                    public void onPageFinished(WebView view, String url) {
 //                        if (!redirect[0]) {
 //                            loadingFinished[0] = true;
-//                            evaluateJavaScript(onParseResult, 0);
+//                            evaluateJavaScript(onParseNameResult, 0);
 //                        } else {
 //                            redirect[0] = false;
 //                        }
@@ -209,19 +229,43 @@ public class UrlParser extends ParentClass {
                 webView.setWebViewClient(new WebViewClient(){
                     @Override
                     public void onPageFinished(WebView view, String url) {
-                        evaluateJavaScript(onParseResult, 0);
+                        if (type == TYPE.JAVA_SCRIPT) {
+                            openJs++;
+                            evaluateJavaScript(true, onParseNameResult, 0);
+                        }
+                        if (Utility.stringExists(thumbnailCode) && onParseThumbnailResult != null) {
+                            openJs++;
+                            evaluateJavaScript(false, onParseThumbnailResult, 0);
+                        }
                         super.onPageFinished(view, url);
                     }
                 });
                 webView.loadUrl(url);
-            } else
-                evaluateJavaScript(onParseResult, 0);
+            } else {
+                if (type == TYPE.JAVA_SCRIPT) {
+                    openJs++;
+                    evaluateJavaScript(true, onParseNameResult, 0);
+                }
+                if (Utility.stringExists(thumbnailCode) && onParseThumbnailResult != null) {
+                    openJs++;
+                    evaluateJavaScript(false, onParseThumbnailResult, 0);
+                }
+            }
 
-//            CustomDialog.Builder(context)
-//                    .setView(webViewMap.get(name))
-//                    .setDimensions(true, true)
-//                    .setOnDialogDismiss(customDialog -> ((ViewGroup) customDialog.findViewById(R.id.dialog_custom_layout_view_interface)).removeAllViews())
-//                    .show();
+            if (debug || (Utility.stringExists(thumbnailCode) && onParseThumbnailResult != null)) {
+                webViewDialog = CustomDialog.Builder(context)
+                        .setView(webViewMap.get(name))
+                        .setDimensions(false, false)
+                        .setOnDialogDismiss(customDialog -> ((ViewGroup) customDialog.findViewById(R.id.dialog_custom_layout_view_interface)).removeAllViews())
+                        .addOptionalModifications(customDialog -> {
+//                            if (!debug)
+//                                customDialog.addOnDialogShown(CustomDialog::dismiss);
+                        })
+                        .enableDoubleClickOutsideToDismiss(customDialog -> true, "Thumbnail wird Geladen")
+                        .removeBackground()
+                        .show();
+            }
+
             Toast.makeText(context, "Einen Moment bitte..", Toast.LENGTH_LONG).show();
             return "JavaScript";
         } else
@@ -229,20 +273,41 @@ public class UrlParser extends ParentClass {
 
     }
 
-    private void evaluateJavaScript(Utility.GenericInterface<String> onParseResult, int tryCount) {
+
+
+    private void evaluateJavaScript(boolean isName, Utility.GenericInterface<String> onParseResult, int tryCount) {
         if (!webViewMap.containsKey(name))
             return;
 
-        webViewMap.get(name).evaluateJavascript(code, t -> {
+        String script = isName ? code : thumbnailCode;
+
+        if (script.startsWith("{") && script.endsWith("}")) {
+            script = "(function() " + script + ")();";
+
+        } else {
+            if (!script.endsWith(";"))
+                script += ";";
+        }
+
+        webViewMap.get(name).evaluateJavascript(script, t -> {
             if (t.startsWith("\"") && t.endsWith("\""))
                 t = Utility.subString(t, 1, -1);
 
-            if (t.equals("null") && tryCount < 100) {
-                evaluateJavaScript(onParseResult, tryCount + 1);
+            if (t.matches("null|") && tryCount < 50) {
+                Handler handler = new Handler();
+                handler.postDelayed(() -> evaluateJavaScript(isName, onParseResult, tryCount + 1), 100);
             } else {
-                onParseResult.runGenericInterface(t + (tryCount < 100 ? "" : " (" + tryCount + ")"));
-                webViewMap.get(name).destroy();
-                webViewMap.clear();
+                onParseResult.runGenericInterface(t + (tryCount < 50 ? "" : " (" + tryCount + ")"));
+                if (openJs <= 1 && !debug) {
+                    openJs--;
+                    webViewMap.get(name).destroy();
+                    webViewMap.remove(name);
+                    if (webViewDialog != null) {
+                        webViewDialog.dismiss();
+                        webViewDialog = null;
+                    }
+                } else
+                    openJs--;
             }
         });
     }
@@ -271,6 +336,7 @@ public class UrlParser extends ParentClass {
             if (Utility.stringExists(name)) name = AESCrypt.encrypt(key, name);
             if (Utility.stringExists(exampleUrl)) exampleUrl = AESCrypt.encrypt(key, exampleUrl);
             if (Utility.stringExists(code)) code = AESCrypt.encrypt(key, code);
+            if (Utility.stringExists(thumbnailCode)) thumbnailCode = AESCrypt.encrypt(key, thumbnailCode);
             return true;
         } catch (GeneralSecurityException e) {
             return false;
@@ -283,6 +349,7 @@ public class UrlParser extends ParentClass {
             if (Utility.stringExists(name)) name = AESCrypt.decrypt(key, name);
             if (Utility.stringExists(exampleUrl)) exampleUrl = AESCrypt.decrypt(key, exampleUrl);
             if (Utility.stringExists(code)) code= AESCrypt.decrypt(key, code);
+            if (Utility.stringExists(thumbnailCode)) thumbnailCode= AESCrypt.decrypt(key, thumbnailCode);
             return true;
         } catch (GeneralSecurityException e) {
             return false;

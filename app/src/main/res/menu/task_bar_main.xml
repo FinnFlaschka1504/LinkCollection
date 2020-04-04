@@ -7,4 +7,11 @@
         android:icon="@drawable/ic_settings"
         android:title="Einstellungen"
         app:showAsAction="always" />
+<!--    <item-->
+<!--        android:title="Item"-->
+<!--        app:showAsAction="always" />-->
+<!--    <item-->
+<!--        android:checkable="true"-->
+<!--        android:checked="true"-->
+<!--        android:title="Item2" />-->
 </menu>

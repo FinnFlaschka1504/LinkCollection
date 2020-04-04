@@ -59,9 +59,10 @@
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:textColorPrimary">@android:color/white</item>
         <item name="android:textColorSecondary">@android:color/white</item>
-<!--        <item name="actionOverflowButtonStyle">@style/Widget.AppCompat.ActionButton.Overflow</item>-->
-<!--        <item name="drawerArrowStyle">@style/Widget.AppCompat.DrawerArrowToggle</item>-->
-        <item name="actionMenuTextColor">@color/colorPrimary</item>
-        <item name="android:actionMenuTextColor">@color/colorAccent</item>
     </style>
+
+    <style name="TitleTextStyle" parent="AppTheme">
+        <item name="android:textColor">@color/colorText</item>
+    </style>
+
 </resources>

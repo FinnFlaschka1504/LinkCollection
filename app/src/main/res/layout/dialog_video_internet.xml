@@ -33,5 +33,17 @@
         android:clickable="true"
         app:srcCompat="@drawable/ic_check" />
 
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/dialog_videoInternet_getThumbnails"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="16dp"
+        android:clickable="true"
+        android:tint="#FFFFFF"
+        app:srcCompat="@drawable/ic_photo" />
+
 
 </RelativeLayout>

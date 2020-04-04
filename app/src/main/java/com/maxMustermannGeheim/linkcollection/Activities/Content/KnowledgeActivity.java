@@ -1458,7 +1458,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                 result[0] = s;
                 Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
                 onFound.run();
-            }));
+            }, s -> {}));
         } else
             onFound.run();
         return result[0];

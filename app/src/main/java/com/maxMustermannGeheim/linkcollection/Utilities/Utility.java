@@ -29,17 +29,24 @@ import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.LinearLayout.LayoutParams;
 import android.widget.SearchView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
@@ -93,6 +100,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import okhttp3.Cache;
@@ -962,8 +970,8 @@ public class Utility {
             public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
                 boolean result = false;
                 try {
-                    float diffY = e2.getY() - e1.getY(  );
-                    float diffX = e2.getX() - e1.getX();
+                    float diffY = e2.getRawY() - e1.getRawY();
+                    float diffX = e2.getRawX() - e1.getRawX();
                     if (Math.abs(diffX) > Math.abs(diffY)) {
                         if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
                             if (diffX > 0) {
@@ -1417,49 +1425,6 @@ public class Utility {
     //  <----- Pixels -----
 
 
-    //  ------------------------- LoadImageFromUrl ------------------------->
-//    public static void loadImageFromUrl(Context context, ImageView imageView, String url, boolean canFullsize){
-//        requestBuilder = Glide.with(mActivity)
-//                .using(Glide.buildStreamModelLoader(Uri.class, mActivity), InputStream.class)
-//                .from(Uri.class)
-//                .as(SVG.class)
-//                .transcode(new SvgDrawableTranscoder(), PictureDrawable.class)
-//                .sourceEncoder(new StreamEncoder())
-//                .cacheDecoder(new FileToStreamDecoder<SVG>(new SvgDecoder()))
-//                .decoder(new SvgDecoder())
-//                .placeholder(R.drawable.ic_facebook)
-//                .error(R.drawable.ic_web)
-//                .animate(android.R.anim.fade_in)
-//                .listener(new SvgSoftwareLayerSetter<Uri>());
-//    }
-    private static OkHttpClient httpClient;
-
-    public static void fetchSvg(Context context, String url, final ImageView target) {
-        if (httpClient == null) {
-            // Use cache for performance and basic offline capability
-            httpClient = new OkHttpClient.Builder()
-                    .cache(new Cache(context.getCacheDir(), 5 * 1024 * 1014))
-                    .build();
-        }
-
-        okhttp3.Request request = new okhttp3.Request.Builder().url(url).build();
-        httpClient.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Call call, IOException e) {
-                target.setImageResource(R.drawable.ic_download);
-            }
-
-            @Override
-            public void onResponse(Call call, Response response) throws IOException {
-                InputStream stream = response.body().byteStream();
-                Sharp.loadInputStream(stream).into(target);
-                stream.close();
-            }
-        });
-    }
-    //  <------------------------- LoadImageFromUrl -------------------------
-
-
     //  ------------------------- FilterStars ------------------------->
     public static CustomDialog showRangeSelectDialog(Context context, SearchView searchView) {
         boolean[] singleMode = {false};
@@ -1599,6 +1564,27 @@ public class Utility {
             return null;
         }
     }
+
+
+    //  ------------------------- SetDimensions ------------------------->
+    public static void setDimensions(View view, boolean width, boolean height) {
+        ViewGroup.LayoutParams lp = view.getLayoutParams();
+        if (lp == null) {
+            view.setLayoutParams(
+                    new ViewGroup.LayoutParams(width ? ViewGroup.LayoutParams.MATCH_PARENT : ViewGroup.LayoutParams.WRAP_CONTENT, height ? ViewGroup.LayoutParams.MATCH_PARENT : ViewGroup.LayoutParams.WRAP_CONTENT));
+            return;
+        }
+        if (width)
+            lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+        else
+            lp.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+        if (height)
+            lp.height = ViewGroup.LayoutParams.MATCH_PARENT;
+        else
+            lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+        view.setLayoutParams(lp);
+    }
+    //  <------------------------- SetDimensions -------------------------
 
 
     //  --------------- getViews --------------->
@@ -1907,6 +1893,10 @@ public class Utility {
     public static boolean stringExists(CharSequence s) {
         return s != null && !s.toString().trim().isEmpty();
     }
+
+    public static CharSequence stringExistsOrElse(CharSequence s, String orElse) {
+        return stringExists(s) ? s : orElse;
+    }
     //  <------------------------- EasyLogic -------------------------
 
 
@@ -2007,4 +1997,103 @@ public class Utility {
         T runGenericInterface();
     }
     //  <------------------------- Interfaces -------------------------
+
+
+    //  ------------------------- LoadUrlIntoImageView ------------------------->
+    public static void loadUrlIntoImageView(Context context, ImageView imageView, String imagePath, @Nullable String fullScreenPath, Runnable... onFail_onFullscreen) {
+        if (imagePath.endsWith(".svg")) {
+            Utility.fetchSvg(context, imagePath, imageView);
+        } else {
+            Glide
+                    .with(context)
+                    .load(imagePath)
+                    .addListener(new RequestListener<Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                            if (onFail_onFullscreen.length > 0 && onFail_onFullscreen[0] != null)
+                                onFail_onFullscreen[0].run();
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                            return false;
+                        }
+                    })
+                    .error(R.drawable.ic_broken_image)
+                    .placeholder(R.drawable.ic_download)
+                    .into(imageView);
+        }
+        if (fullScreenPath == null)
+            return;
+        imageView.setOnClickListener(v -> {
+            if (onFail_onFullscreen.length > 1)
+                onFail_onFullscreen[1].run();
+            CustomDialog.Builder(context)
+                    .setView(R.layout.dialog_poster)
+                    .setSetViewContent((customDialog1, view1, reload1) -> {
+                        ImageView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
+                        if (fullScreenPath.endsWith(".svg")) {
+                            Utility.fetchSvg(context, fullScreenPath, dialog_poster_poster);
+                        } else {
+                            Glide
+                                    .with(context)
+                                    .load(fullScreenPath)
+                                    .error(R.drawable.ic_broken_image)
+                                    .placeholder(R.drawable.ic_download)
+                                    .into(dialog_poster_poster);
+                        }
+                        dialog_poster_poster.setOnContextClickListener(v1 -> {
+                            customDialog1.dismiss();
+                            return true;
+                        });
+
+                    })
+                    .addOptionalModifications(customDialog -> {
+                        if (!(fullScreenPath.endsWith(".png") || fullScreenPath.endsWith(".svg")))
+                            customDialog.removeBackground();
+                    })
+                    .disableScroll()
+                    .show();
+        });
+    }
+
+    private static OkHttpClient httpClient;
+
+    public static void fetchSvg(Context context, String url, final ImageView target) {
+        if (httpClient == null) {
+            // Use cache for performance and basic offline capability
+            httpClient = new OkHttpClient.Builder()
+                    .cache(new Cache(context.getCacheDir(), 5 * 1024 * 1014))
+                    .build();
+        }
+
+        okhttp3.Request request = new okhttp3.Request.Builder().url(url).build();
+        httpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                target.setImageResource(R.drawable.ic_broken_image);
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                InputStream stream = response.body().byteStream();
+                Sharp.loadInputStream(stream).into(target);
+                stream.close();
+            }
+        });
+    }
+    //  <------------------------- LoadUrlIntoImageView -------------------------
+
+
+    //  ------------------------- GetImageUrlsFromHtml ------------------------->
+    public static CustomList<String> getImageUrlsFromHtml(String html){
+        Matcher matcher = Pattern.compile(CategoriesActivity.pictureRegex).matcher(html);
+        CustomList<String> urlList = new CustomList<>();
+        while (matcher.find()) {
+            urlList.add(matcher.group(0));
+        }
+        return urlList;
+    }
+    //  <------------------------- GetImageUrlsFromHtml -------------------------
 }

@@ -10,6 +10,7 @@ import android.content.pm.ShortcutManager;
 import android.graphics.Color;
 import android.graphics.drawable.Icon;
 import android.os.Bundle;
+import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
@@ -40,6 +41,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivi
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.DialogActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
@@ -235,6 +237,13 @@ public class Settings extends AppCompatActivity {
                                     TextView listItem_urlParser_code = itemView.findViewById(R.id.listItem_urlParser_code);
                                     listItem_urlParser_code.setText(urlParser.getCode());
                                     listItem_urlParser_code.setSingleLine(!expanded);
+                                    if (Utility.stringExists(urlParser.getThumbnailCode())) {
+                                        TextView listItem_urlParser_thumbnailCode = itemView.findViewById(R.id.listItem_urlParser_thumbnailCode);
+                                        listItem_urlParser_thumbnailCode.setText(urlParser.getThumbnailCode());
+                                        listItem_urlParser_thumbnailCode.setSingleLine(!expanded);
+                                        itemView.findViewById(R.id.listItem_urlParser_thumbnailCode_layout).setVisibility(View.VISIBLE);
+                                    } else
+                                        itemView.findViewById(R.id.listItem_urlParser_thumbnailCode_layout).setVisibility(View.GONE);
                                 }))
                                 .addSubOnClickListener(R.id.listItem_urlParser_delete, (customRecycler1, itemView, urlParserExpandable, index) -> {
                                     CustomDialog.Builder(settingsContext)
@@ -358,6 +367,8 @@ public class Settings extends AppCompatActivity {
     private static void showAddOrEditUrlParserDialog(@Nullable UrlParser oldUrlParser, Context context, CustomRecycler<CustomRecycler.Expandable<UrlParser>> customRecycler) {
         UrlParser editUrlParser = oldUrlParser != null ? oldUrlParser.clone() : new UrlParser("");
 
+        // ToDo: wenn geändert doppelclick zum dismiss
+
         CustomDialog.Builder(context)
                 .setTitle("URL-Parser " + (oldUrlParser == null ? "Hinzufügen" : "Bearbeiten"))
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
@@ -366,6 +377,7 @@ public class Settings extends AppCompatActivity {
                     TextInputLayout dialog_editOrAdd_urlParser_name_layout = view.findViewById(R.id.dialog_editOrAdd_urlParser_name_layout);
                     TextInputLayout dialog_editOrAdd_urlParser_url_layout = view.findViewById(R.id.dialog_editOrAdd_urlParser_url_layout);
                     TextInputLayout dialog_editOrAdd_urlParser_code_layout = view.findViewById(R.id.dialog_editOrAdd_urlParser_code_layout);
+                    TextInputLayout dialog_editOrAdd_urlParser_thumbnailCode_layout = view.findViewById(R.id.dialog_editOrAdd_urlParser_thumbnailCode_layout);
                     Spinner dialog_editOrAdd_urlParser_type = view.findViewById(R.id.dialog_editOrAdd_urlParser_type);
                     TextView dialog_editOrAdd_urlParser_variables = view.findViewById(R.id.dialog_editOrAdd_urlParser_variables);
                     dialog_editOrAdd_urlParser_type.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -389,6 +401,7 @@ public class Settings extends AppCompatActivity {
                         dialog_editOrAdd_urlParser_name_layout.getEditText().setText(editUrlParser.getName());
                         dialog_editOrAdd_urlParser_url_layout.getEditText().setText(editUrlParser.getExampleUrl());
                         dialog_editOrAdd_urlParser_code_layout.getEditText().setText(editUrlParser.getCode());
+                        dialog_editOrAdd_urlParser_thumbnailCode_layout.getEditText().setText(editUrlParser.getThumbnailCode());
                         dialog_editOrAdd_urlParser_type.setSelection(editUrlParser.getType().getIndex());
                     }
 
@@ -408,30 +421,69 @@ public class Settings extends AppCompatActivity {
                 .addButton("Testen", customDialog -> {
                     String name = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_name)).getText().toString();
                     String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_url)).getText().toString();
-                    @SuppressLint("CutPasteId") String code = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_code)).getText().toString();
+                    final String[] code = {((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_code)).getText().toString()};
+                    String thumbnailCode = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_thumbnailCode)).getText().toString();
 
-                    editUrlParser.setExampleUrl(url).setCode(code).setName(name);
+                    editUrlParser.setExampleUrl(url).setCode(code[0]).setThumbnailCode(Utility.stringExists(thumbnailCode)? thumbnailCode : null).setName(name);
 
-                    editUrlParser.parseUrl(context, url, s ->
-                            CustomDialog.Builder(context)
-                                    .setTitle("Ergebnis")
-                                    .setText(Utility.stringExists(s) ? s : "--Kein Ergebnis--")
-//                                    .addButton("Falsch")
-//                                    .addButton("Richtig")
-//                                    .colorLastAddedButton()
-                                    .addButton(CustomDialog.BUTTON_TYPE.BACK_BUTTON)
-                                    .show());
+                    final int[] count = {(Utility.stringExists(code[0]) ? 1 : 0) + (Utility.stringExists(thumbnailCode) ? 1 : 0)};
+                    final String[] resultName = {""};
+                    final String[] resultThumbnail = {""};
+
+                    Runnable showResult = () -> {
+                        CustomDialog.Builder(context)
+                                .setTitle("Ergebnis")
+                                .setText(Utility.stringExists(resultName[0]) ? resultName[0] : "--Kein Ergebnis--")
+                                .addOptionalModifications(customDialog1 -> {
+                                    String path = resultThumbnail[0];
+                                    if (!Utility.stringExists(path))
+                                        return;
+                                    if (path.matches(CategoriesActivity.pictureRegex)) {
+                                        ImageView imageView = new ImageView(context);
+                                        Utility.setDimensions(imageView, true, false);
+                                        imageView.setAdjustViewBounds(true);
+                                        Utility.loadUrlIntoImageView(context, imageView, (path.contains("https") ? "" : "https://image.tmdb.org/t/p/w92/") + path, null);
+                                        imageView.setPadding(Utility.dpToPx(16), Utility.dpToPx(16), Utility.dpToPx(16), Utility.dpToPx(16));
+                                        customDialog1.setView(imageView);
+
+                                    } else {
+                                        TextView textView = new TextView(context);
+                                        textView.setText(resultThumbnail[0]);
+                                        textView.setPadding(Utility.dpToPx(16), Utility.dpToPx(16), Utility.dpToPx(16), Utility.dpToPx(16));
+                                        customDialog1.setView(textView);
+                                    }
+                                })
+                                .addButton(CustomDialog.BUTTON_TYPE.BACK_BUTTON)
+                                .show();
+                    };
+
+                    editUrlParser.parseUrl(context, url, s -> {
+                        resultName[0] = s;
+                        if (count[0] <= 1) {
+                            showResult.run();
+                            count[0]--;
+                        } else
+                            count[0]--;
+                    }, s -> {
+                        resultThumbnail[0] = s;
+                        if (count[0] <= 1) {
+                            showResult.run();
+                            count[0]--;
+                        } else
+                            count[0]--;
+                    });
 
                 }, false)
                 .alignPreviousButtonsLeft()
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     String name = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_name)).getText().toString();
                     String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_url)).getText().toString();
-                    @SuppressLint("CutPasteId") String code = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_code)).getText().toString();
+                    String code = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_code)).getText().toString();
+                    String thumbnailCode = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_thumbnailCode)).getText().toString();
                     UrlParser.TYPE type = UrlParser.TYPE.getTypeByIndex(((Spinner) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_type)).getSelectedItemPosition());
 
                     if (oldUrlParser != null) {
-                        oldUrlParser.setExampleUrl(url).setCode(code).setType(type).setName(name);
+                        oldUrlParser.setExampleUrl(url).setCode(code).setThumbnailCode(Utility.stringExists(thumbnailCode)? thumbnailCode : null).setType(type).setName(name);
                     } else {
                         UrlParser urlParser1 = new UrlParser(name).setExampleUrl(url).setCode(code).setType(type);
                         database.urlParserMap.put(urlParser1.getUuid(), urlParser1);
@@ -440,6 +492,18 @@ public class Settings extends AppCompatActivity {
                     customRecycler.reload();
 
                     Toast.makeText(context, (Database.saveAll_simple() ? "URL-Parser Gespeichert" : "Nichts zum speichern"), Toast.LENGTH_SHORT).show();
+                })
+                .enableDoubleClickOutsideToDismiss(customDialog -> {
+                    String name = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_name)).getText().toString().trim();
+                    String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_url)).getText().toString().trim();
+                    String code = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_code)).getText().toString().trim();
+                    String thumbnailCode = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_thumbnailCode)).getText().toString().trim();
+                    int type = ((Spinner) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_type)).getSelectedItemPosition();
+
+                    if (oldUrlParser == null)
+                        return !name.isEmpty() || !url.isEmpty() || !code.isEmpty() || !thumbnailCode.isEmpty() || type != 0;
+                    else
+                        return !name.equals(oldUrlParser.getName()) || !url.equals(oldUrlParser.getExampleUrl()) || !code.equals(oldUrlParser.getCode()) || !CustomUtility.boolOr(thumbnailCode, oldUrlParser.getThumbnailCode(), "") || type != oldUrlParser.getType().getIndex() || !editUrlParser.equals(oldUrlParser);
                 })
                 .show();
     }

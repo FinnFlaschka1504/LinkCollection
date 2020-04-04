@@ -5,23 +5,23 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Rect;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewStub;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.AutoCompleteTextView;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.SeekBar;
@@ -31,13 +31,11 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
-import com.bumptech.glide.Glide;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
 import com.google.android.material.appbar.AppBarLayout;
@@ -70,6 +68,8 @@ import org.joda.time.LocalDate;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.opengraph.MetaElement;
+import org.opengraph.OpenGraph;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -89,6 +89,8 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import okhttp3.Headers;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
@@ -256,7 +258,9 @@ public class VideoActivity extends AppCompatActivity {
             setSupportActionBar(toolbar);
             elementCount = findViewById(R.id.elementCount);
 
-
+            AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
+            View noItem = findViewById(R.id.no_item);
+            appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> noItem.setVisibility(verticalOffset > -630 ? View.GONE : View.VISIBLE));
 
             videos_search = findViewById(R.id.search);
 
@@ -309,40 +313,125 @@ public class VideoActivity extends AppCompatActivity {
 
                 if (text != null) {
                     isShared = true;
-                    if (Utility.isUrl(text.toString())) {
-                        String url = text.toString().trim();
+                    String trim = text.toString().trim();
+                    if (Utility.isUrl(trim)) {
+                        String url = /*trim.contains("http") && !trim.contains("https") ? trim.replace("http", "https") : */trim;
                         Runnable openEdit = () -> {
                             Video video = new Video("").setUrl(url);
                             Video[] editVideo = {null};
+                            @SuppressLint("StaticFieldLeak") AsyncTask<Utility.GenericInterface<OpenGraph>, Object, OpenGraph> task = new AsyncTask<Utility.GenericInterface<OpenGraph>, Object, OpenGraph>() {
+                                Utility.GenericInterface<OpenGraph> onResult;
+
+                                @Override
+                                protected OpenGraph doInBackground(Utility.GenericInterface<OpenGraph>... onResults) {
+                                    try {
+                                        OpenGraph openGraph = new OpenGraph(url, true);
+                                        String image = openGraph.getContent("image");
+                                        if (onResults.length > 0)
+                                            onResult = onResults[0];
+                                        return openGraph;
+                                    } catch (Exception e) {
+                                        if (onResults.length > 0)
+                                            onResult = onResults[0];
+                                        return null;
+                                    }
+                                }
+
+                                @Override
+                                protected void onPostExecute(OpenGraph openGraph) {
+                                    if (onResult != null) {
+                                        onResult.runGenericInterface(openGraph);
+                                    }
+                                }
+                            };
+
+                            Utility.GenericInterface<String> applyName = name -> {
+                                String resultLow = name.toLowerCase();
+                                List<String> actorIdList = database.darstellerMap.values().stream().filter(darsteller -> resultLow.contains(darsteller.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
+                                List<String> studioIdList = database.studioMap.values().stream().filter(studio -> resultLow.contains(studio.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
+                                List<String> genreIdList = database.genreMap.values().stream().filter(genre -> resultLow.contains(genre.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
+
+                                if (addOrEditDialog != null) {
+                                    ((EditText) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_Title)).setText(name);
+                                    if (editVideo[0] != null) {
+                                        editVideo[0].setDarstellerList(actorIdList);
+                                        editVideo[0].setStudioList(studioIdList);
+                                        editVideo[0].setGenreList(genreIdList);
+                                        ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_actor)).setText(
+                                                editVideo[0].getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                                        ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_studio)).setText(
+                                                editVideo[0].getStudioList().stream().map(uuid -> database.studioMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                                        ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_Genre)).setText(
+                                                editVideo[0].getGenreList().stream().map(uuid -> database.genreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+
+                                    }
+                                } else {
+                                    video.setName(name);
+                                    video.setDarstellerList(actorIdList);
+                                    video.setStudioList(studioIdList);
+                                    video.setGenreList(genreIdList);
+                                }
+                            };
+
+                            task.execute(openGraph -> {
+                                String path;
+                                if (openGraph == null) {
+//                                    Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
+                                boolean isImage = (path = openGraph.getContent("image")) != null && path.matches(CategoriesActivity.pictureRegex);
+
+                                if (editVideo[0] != null && isImage) {
+                                    editVideo[0].setImagePath(path);
+                                    setThumbnailButton(editVideo[0], addOrEditDialog);
+                                }
+
+                                if (UrlParser.getMatchingParser(url) == null) {
+                                    String title = openGraph.getContent("title");
+                                    if (title == null)
+                                        title = openGraph.getContent("description");
+                                    if (title != null)
+                                        applyName.runGenericInterface(title);
+                                }
+
+                                if (true)
+                                    return;
+
+                                String result = "";
+                                for (MetaElement element : openGraph.getProperties()) {
+                                    if (!result.isEmpty())
+                                        result += "\n\n";
+                                    result += String.format(Locale.getDefault(), "<%s>: %s", element.getProperty(), element.getContent());
+                                }
+
+                                CustomDialog.Builder(this)
+                                        .setTitle("Results")
+                                        .setText(result)
+                                        .addOptionalModifications(customDialog -> {
+                                            if (!isImage)
+                                                return;
+                                            ImageView imageView = new ImageView(this);
+                                            Utility.setDimensions(imageView, true, false);
+                                            imageView.setAdjustViewBounds(true);
+                                            imageView.setPadding(Utility.dpToPx(16), Utility.dpToPx(16), Utility.dpToPx(16), Utility.dpToPx(16));
+                                            Utility.loadUrlIntoImageView(this, imageView, path, path);
+                                            customDialog.setView(imageView);
+                                        })
+                                        .show();
+//                                CustomDialog.Builder(this).setView(imageView).show();
+//                                Toast.makeText(this, openGraph, Toast.LENGTH_SHORT).show();
+                            });
+
+
                             Utility.ifNotNull(UrlParser.getMatchingParser(url), urlParser -> {
-                                urlParser.parseUrl(this, url, result -> {
-                                    if (!Utility.stringExists(result))
+                                urlParser.parseUrl(this, url, name -> {
+                                    if (!Utility.stringExists(name))
                                         return;
-
-                                    String resultLow = result.toLowerCase();
-                                    List<String> actorIdList = database.darstellerMap.values().stream().filter(darsteller -> resultLow.contains(darsteller.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
-                                    List<String> studioIdList = database.studioMap.values().stream().filter(studio -> resultLow.contains(studio.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
-                                    List<String> genreIdList = database.genreMap.values().stream().filter(genre -> resultLow.contains(genre.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
-
-                                    if (addOrEditDialog != null) {
-                                        ((EditText) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_Title)).setText(result);
-                                        if (editVideo[0] != null) {
-                                            editVideo[0].setDarstellerList(actorIdList);
-                                            editVideo[0].setStudioList(studioIdList);
-                                            editVideo[0].setGenreList(genreIdList);
-                                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_actor)).setText(
-                                                    editVideo[0].getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
-                                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_studio)).setText(
-                                                    editVideo[0].getStudioList().stream().map(uuid -> database.studioMap.get(uuid).getName()).collect(Collectors.joining(", ")));
-                                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_Genre)).setText(
-                                                    editVideo[0].getGenreList().stream().map(uuid -> database.genreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
-
-                                        }
-                                    } else {
-                                        video.setName(result);
-                                        video.setDarstellerList(actorIdList);
-                                        video.setStudioList(studioIdList);
-                                        video.setGenreList(genreIdList);
+                                    applyName.runGenericInterface(name);
+                                }, s -> {
+                                    if (editVideo[0] != null) {
+                                        editVideo[0].setImagePath(s);
+                                        setThumbnailButton(editVideo[0], addOrEditDialog);
                                     }
                                 });
                             });
@@ -415,6 +504,7 @@ public class VideoActivity extends AppCompatActivity {
                 findViewById(R.id.recycler).setVisibility(View.GONE);
                 videos_search.setVisibility(View.GONE);
                 findViewById(R.id.divider).setVisibility(View.GONE);
+                findViewById(R.id.appBarLayout).setVisibility(View.GONE);
                 if (getIntent().getBooleanExtra(MainActivity.EXTRA_SHOW_RANDOM, false))
                     showRandomDialog();
             }
@@ -442,7 +532,6 @@ public class VideoActivity extends AppCompatActivity {
         }
         if (!searchQuery.trim().equals("")) {
 
-            // ToDo: Nach Sternen Filtern: \*(([0-4]((,|\.)\d{1,2})?)|5(,0)?)-(([0-4]((,|\.)\d{1,2})?)|5(,00?)?)\*
 
             String subQuery = searchQuery;
             if (searchQuery.contains("*")) {
@@ -524,9 +613,10 @@ public class VideoActivity extends AppCompatActivity {
                 .setGetActiveObjectList(() -> {
                     List<Video> filteredList = sortList(filterList());
                     TextView noItem = findViewById(R.id.no_item);
-                    noItem.setText(videos_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche");
+                    String text = videos_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche";
                     int size = filteredList.size();
-                    noItem.setVisibility(size == 0 ? View.VISIBLE : View.GONE);
+
+                    noItem.setText(size == 0 ? text : "");
 //                    ((LinearLayout.LayoutParams) videos_search.getLayoutParams()).setScrollFlags(size == 0 ? 0 : AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL | AppBarLayout.LayoutParams.SCROLL_FLAG_SNAP | AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS);
                     elementCount.setText(size > 1 ? size + " Elemente" : (size == 1 ? "Ein" : "Kein") + " Element");
                     return filteredList;
@@ -658,35 +748,11 @@ public class VideoActivity extends AppCompatActivity {
 
                     ((RatingBar) view.findViewById(R.id.dialog_video_rating)).setRating(video.getRating());
 
-                    if (video.getImagePath() != null && !video.getImagePath().isEmpty()) {
+                    String imagePath = video.getImagePath();
+                    if (imagePath != null && !imagePath.isEmpty()) {
                         ImageView dialog_video_poster = view.findViewById(R.id.dialog_video_poster);
                         dialog_video_poster.setVisibility(View.VISIBLE);
-                        Glide
-                                .with(this)
-                                .load("https://image.tmdb.org/t/p/w92/" + video.getImagePath())
-                                .placeholder(R.drawable.ic_download)
-                                .into(dialog_video_poster);
-                        dialog_video_poster.setOnClickListener(v -> {
-                            CustomDialog posterDialog = CustomDialog.Builder(this)
-                                    .setView(R.layout.dialog_poster)
-                                    .setSetViewContent((customDialog1, view1, reload1) -> {
-                                        ImageView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
-                                        Glide
-                                                .with(this)
-                                                .load("https://image.tmdb.org/t/p/original/" + video.getImagePath())
-                                                .placeholder(R.drawable.ic_download)
-                                                .into(dialog_poster_poster);
-                                        dialog_poster_poster.setOnContextClickListener(v1 -> {
-                                            customDialog1.dismiss();
-                                            return true;
-                                        });
-
-                                    });
-                            posterDialog
-                                    .removeBackground()
-                                    .disableScroll()
-                                    .show();
-                        });
+                        Utility.loadUrlIntoImageView(this, dialog_video_poster, (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/w92/") + imagePath, (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/original/") + imagePath);
                     }
 
 
@@ -763,6 +829,7 @@ public class VideoActivity extends AppCompatActivity {
 
     }
 
+    //  ------------------------- EditVideo ------------------------->
     private Pair<CustomDialog, Video> showEditOrNewDialog(Video video) {
         if (!Utility.isOnline(this))
             return Pair.create(null, null);
@@ -812,8 +879,54 @@ public class VideoActivity extends AppCompatActivity {
                     TextInputLayout dialog_editOrAddVideo_Title_layout = view.findViewById(R.id.dialog_editOrAddVideo_Title_layout);
                     TextInputLayout dialog_editOrAddVideo_Url_layout = view.findViewById(R.id.dialog_editOrAddVideo_url_layout);
 
+
+                    ImageView thumbnailButton = view.findViewById(R.id.dialog_editOrAddVideo_thumbnail);
+                    thumbnailButton.setOnClickListener(v -> {
+                        int showButtonId = View.generateViewId();
+                        ImageView imageView = new ImageView(this);
+                        Utility.setDimensions(imageView, true, false);
+                        imageView.setAdjustViewBounds(true);
+                        imageView.setPadding(Utility.dpToPx(16), Utility.dpToPx(16), Utility.dpToPx(16), Utility.dpToPx(16));
+
+                        CustomDialog.Builder(this)
+                                .setTitle("Thumbnail-URL Bearbeiten")
+                                .setEdit(new CustomDialog.EditBuilder()
+                                        .setShowKeyboard(false)
+                                        .setRegEx(CategoriesActivity.pictureRegex + "|")
+                                        .setText(Utility.stringExistsOrElse(editVideo[0].getImagePath(), "").toString())
+                                        .setHint("TMDb-Pfad, oder Bild-Url (https:...(.jpg / .png / .svg))"))
+                                .addButton("Testen", CustomDialog::reloadView, showButtonId, false)
+                                .alignPreviousButtonsLeft()
+                                .setView(imageView)
+                                .setSetViewContent((customDialog1, view1, reload1) -> {
+                                    String url = customDialog1.getEditText();
+
+                                    if (!customDialog1.getActionButton().getButton().isEnabled()) {
+                                        if (!url.isEmpty())
+                                            Toast.makeText(this, "Ungültige Eingabe", Toast.LENGTH_SHORT).show();
+                                        imageView.setVisibility(View.GONE);
+                                        return;
+                                    }
+
+                                    if (Utility.stringExists(url)) {
+                                        imageView.setVisibility(View.VISIBLE);
+                                        Utility.loadUrlIntoImageView(this, imageView, (url.contains("https") ? "" : "https://image.tmdb.org/t/p/original/") + url, null);
+                                    } else
+                                        imageView.setVisibility(View.GONE);
+                                })
+                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog1 -> {
+                                    String url = customDialog1.getEditText();
+                                    if (url.isEmpty())
+                                        url = null;
+
+                                    editVideo[0].setImagePath(url);
+                                    setThumbnailButton(editVideo[0], addOrEditDialog);
+                                })
+                                .show();
+                    });
+                    setThumbnailButton(editVideo[0], customDialog);
                     view.findViewById(R.id.dialog_editOrAddVideo_internet).setOnClickListener(v -> {
-                        final boolean[] isJsEnabled = {false};
                         if (internetDialog[0] == null) {
                             internetDialog[0] = CustomDialog.Builder(this)
                                     .setView(R.layout.dialog_video_internet)
@@ -823,8 +936,116 @@ public class VideoActivity extends AppCompatActivity {
                                         webView.loadUrl(!url.isEmpty() ? url : "https://www.google.de/");
                                         webView.setWebViewClient(new WebViewClient());
                                         WebSettings webSettings = webView.getSettings();
-//                                        webSettings.setJavaScriptEnabled(true);
+                                        webSettings.setJavaScriptEnabled(true);
+                                        String newUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36";
+                                        webSettings.setUserAgentString(newUA);
+                                        webSettings.setUseWideViewPort(true);
+                                        webSettings.setLoadWithOverviewMode(true);
+
+                                        webSettings.setSupportZoom(true);
                                         webSettings.setBuiltInZoomControls(true);
+                                        webSettings.setDisplayZoomControls(false);
+
+                                        FloatingActionButton dialog_videoInternet_getThumbnails = view1.findViewById(R.id.dialog_videoInternet_getThumbnails);
+                                        dialog_videoInternet_getThumbnails.setOnClickListener(v1 -> {
+                                            webView.evaluateJavascript("$('html').html();"/*"(function() { " +
+                                                    "var elements = document.getElementsByTagName('img');\n" +
+                                                    "var arr = [];\n" +
+                                                    "for (var i = 0; i < elements.length; i++) {\n" +
+                                                    "    arr.push(elements[i].src);\n" +
+                                                    "}\n" +
+                                                    "return arr; })();"*/, value -> {
+
+//                                                CustomList<String> imageUrlList = Arrays.stream(Utility.subString(value, 1, -1).split(","))
+//                                                        .map(s -> Utility.subString(s, 1, -1)).collect(Collectors.toCollection(CustomList::new));
+
+                                                CustomDialog selectThumbnailDialog = CustomDialog.Builder(this);
+                                                CustomList<String> imageUrlList = Utility.getImageUrlsFromHtml(value);
+                                                selectThumbnailDialog
+                                                        .setTitle("Thumbnail Auswählen")
+                                                        .enableTitleBackButton()
+                                                        .setView(new CustomRecycler<String>(this)
+                                                                .setItemLayout(R.layout.list_item_select_thumbnail)
+                                                                .setObjectList(imageUrlList)
+                                                                .setSetItemContent((customRecycler, itemView, s) -> {
+                                                                    ImageView thumbnail = itemView.findViewById(R.id.listItem_selectThumbnail_thumbnail);
+                                                                    thumbnail.setVisibility(View.VISIBLE);
+                                                                    itemView.findViewById(R.id.listItem_selectThumbnail_editLayout).setVisibility(View.GONE);
+
+                                                                    Utility.loadUrlIntoImageView(this, thumbnail, s, null, () -> {
+                                                                        thumbnail.setVisibility(View.GONE);
+                                                                        itemView.findViewById(R.id.listItem_selectThumbnail_editLayout).setVisibility(View.VISIBLE);
+                                                                        TextInputLayout listItem_selectThumbnail_url_layout = itemView.findViewById(R.id.listItem_selectThumbnail_url_layout);
+                                                                        EditText listItem_selectThumbnail_url = listItem_selectThumbnail_url_layout.getEditText();
+                                                                        Button listItem_selectThumbnail_test = itemView.findViewById(R.id.listItem_selectThumbnail_test);
+                                                                        listItem_selectThumbnail_url.setText(s);
+                                                                        new com.finn.androidUtilities.Helpers.TextInputHelper(listItem_selectThumbnail_test::setEnabled, listItem_selectThumbnail_url_layout)
+                                                                                .setValidation(listItem_selectThumbnail_url_layout, (validator, text) -> validator.setRegEx(CategoriesActivity.pictureRegex));
+                                                                        listItem_selectThumbnail_test.setOnClickListener(v2 -> {
+                                                                            String newUrl = listItem_selectThumbnail_url.getText().toString().trim();
+                                                                            int position = customRecycler.getRecycler().getChildAdapterPosition(itemView);
+                                                                            imageUrlList.remove(position);
+                                                                            imageUrlList.add(position, newUrl);
+                                                                            customRecycler.update(position);
+                                                                        });
+                                                                    });
+                                                                })
+                                                                .setOnClickListener((customRecycler, itemView, s, index) -> {
+                                                                    editVideo[0].setImagePath(s);
+                                                                    setThumbnailButton(editVideo[0], customDialog);
+                                                                    selectThumbnailDialog.dismiss();
+                                                                    customDialog1.dismiss();
+                                                                })
+//                                                                .setOnLongClickListener((customRecycler, view2, s, index) -> {
+//                                                                    int showButtonId = View.generateViewId();
+//                                                                    ImageView imageView = new ImageView(this);
+//                                                                    Utility.setDimensions(imageView, true, false);
+//                                                                    imageView.setAdjustViewBounds(true);
+//                                                                    imageView.setPadding(Utility.dpToPx(16), Utility.dpToPx(16), Utility.dpToPx(16), Utility.dpToPx(16));
+//
+//                                                                    CustomDialog.Builder(this)
+//                                                                            .setTitle("Thumbnail-URL Bearbeiten")
+//                                                                            .setEdit(new CustomDialog.EditBuilder()
+//                                                                                    .setShowKeyboard(false)
+//                                                                                    .setRegEx(CategoriesActivity.pictureRegex + "|")
+//                                                                                    .setText(Utility.stringExistsOrElse(editVideo[0].getImagePath(), "").toString())
+//                                                                                    .setHint("TMDb-Pfad, oder Bild-Url (https:...(.jpg / .png / .svg))"))
+//                                                                            .addButton("Testen", CustomDialog::reloadView, showButtonId, false)
+//                                                                            .alignPreviousButtonsLeft()
+//                                                                            .setView(imageView)
+//                                                                            .setSetViewContent((customDialog2, view3, reload2) -> {
+//                                                                                String url = customDialog2.getEditText();
+//
+//                                                                                if (!customDialog2.getActionButton().getButton().isEnabled()) {
+//                                                                                    if (!url.isEmpty())
+//                                                                                        Toast.makeText(this, "Ungültige Eingabe", Toast.LENGTH_SHORT).show();
+//                                                                                    imageView.setVisibility(View.GONE);
+//                                                                                    return;
+//                                                                                }
+//
+//                                                                                if (Utility.stringExists(url)) {
+//                                                                                    imageView.setVisibility(View.VISIBLE);
+//                                                                                    Utility.loadUrlIntoImageView(this, imageView, (url.contains("https") ? "" : "https://image.tmdb.org/t/p/original/") + url, null);
+//                                                                                } else
+//                                                                                    imageView.setVisibility(View.GONE);
+//                                                                            })
+//                                                                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+//                                                                            .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog2 -> {
+//                                                                                String url = customDialog2.getEditText();
+//                                                                                if (url.isEmpty())
+//                                                                                    url = null;
+//
+//                                                                                editVideo[0].setImagePath(url);
+//                                                                                setThumbnailButton(editVideo[0], addOrEditDialog);
+//                                                                            })
+//                                                                            .show();
+//                                                                })
+                                                                .generateRecyclerView())
+                                                        .setDimensionsFullscreen()
+                                                        .disableScroll()
+                                                        .show();
+                                            });
+                                        });
 //                                        view1.findViewById(R.id.dialog_videoInternet_toggleJavaScript).setOnClickListener(v1 -> {
 //                                            isJsEnabled[0] = !isJsEnabled[0];
 //                                            webSettings.setJavaScriptEnabled(isJsEnabled[0]);
@@ -833,7 +1054,7 @@ public class VideoActivity extends AppCompatActivity {
 ////                                            ((FloatingActionButton) v1).setbati
 //                                        });
                                         Runnable getSelection = () -> {
-                                            webSettings.setJavaScriptEnabled(true);
+//                                            webSettings.setJavaScriptEnabled(true);
                                             webView.evaluateJavascript("(function(){return window.getSelection().toString()})()", value -> {
                                                 value = Utility.subString(value, 1, -1);
                                                 if (!value.isEmpty()) {
@@ -844,7 +1065,7 @@ public class VideoActivity extends AppCompatActivity {
                                                     customDialog1.dismiss();
                                                 }
                                             });
-                                            webSettings.setJavaScriptEnabled(false);
+//                                            webSettings.setJavaScriptEnabled(false);
                                         };
 
                                         View.OnContextClickListener listener = v1 -> {
@@ -953,7 +1174,7 @@ public class VideoActivity extends AppCompatActivity {
                                     ((EditText) newDialog.findViewById(R.id.dialog_editOrAddVideo_url)).setText(dialog_editOrAddVideo_Url_layout.getEditText().getText().toString());
                                 if (oldVideo.getLength() == 0)
                                     ((EditText) newDialog.findViewById(R.id.dialog_editOrAddVideo_length)).setText(((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_length)).getText());
-                                if (Utility.boolOr(oldVideo.getRating(), 0f , -1f))
+                                if (Utility.boolOr(oldVideo.getRating(), 0f, -1f))
                                     ((SeekBar) newDialog.findViewById(R.id.customRating_seekBar)).setProgress(((SeekBar) customDialog.findViewById(R.id.customRating_seekBar)).getProgress());
                             };
 
@@ -1085,25 +1306,20 @@ public class VideoActivity extends AppCompatActivity {
                 })
                 .enableDynamicWrapHeight(videos_search.getRootView())
                 .show();
-
-//        try {
-//            Method method = KeyboardVisibilityEvent.class.getDeclaredMethod("registerEventListener", Activity.class, KeyboardVisibilityEventListener.class);
-//            method.setAccessible(true);
-//            method.invoke(KeyboardVisibilityEvent.class.newInstance(), this, (KeyboardVisibilityEventListener) b -> {
-//                com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog.setDialogLayoutParameters(returnDialog.getDialog(), true, b);
-//                Toast.makeText(VideoActivity.this, String.valueOf(b), Toast.LENGTH_SHORT).show();
-//            });
-//        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
-//            String BREAKPOINT = null;
-//        }
-//        KeyboardVisibilityEvent.setEventListener(this, new KeyboardVisibilityEventListener() {
-//            @Override
-//            public void onVisibilityChanged(boolean b) {
-//                com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog.setDialogLayoutParameters(returnDialog.getDialog(), true, b);
-//                Toast.makeText(VideoActivity.this, String.valueOf(b), Toast.LENGTH_SHORT).show();
-//            }
-//        });
         return Pair.create(returnDialog, editVideo[0]);
+    }
+
+    private void setThumbnailButton(Video video, CustomDialog customDialog) {
+        if (video == null || customDialog == null)
+            return;
+        String path = video.getImagePath();
+        boolean stringExists = Utility.stringExists(path);
+        ImageView thumbnail = customDialog.findViewById(R.id.dialog_editOrAddVideo_thumbnail);
+        CustomUtility.ifNotNull(thumbnail, view -> {
+            view.setAlpha(stringExists ? 1f : 0.4f);
+        });
+        if (stringExists)
+            Utility.loadUrlIntoImageView(this, thumbnail, (path.contains("https") ? "" : "https://image.tmdb.org/t/p/w92/") + path, null);
     }
 
     private void saveVideo(CustomDialog dialog, Video video, String titel, String url, boolean checked, Video editVideo) {
@@ -1153,7 +1369,9 @@ public class VideoActivity extends AppCompatActivity {
 
 
     }
-    
+    //  <------------------------- EditVideo -------------------------
+
+
     //  ------------------------- Api ------------------------->
     private void apiSearchRequest(String queue, CustomDialog customDialog, Video video) {
         if (!Utility.isOnline(this))
@@ -1739,38 +1957,12 @@ public class VideoActivity extends AppCompatActivity {
                             randomVideo.getGenreList().stream().map(uuid -> database.genreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                     view.findViewById(R.id.dialog_video_Darsteller).setSelected(true);
 
-                    if (randomVideo.getImagePath() != null && !randomVideo.getImagePath().isEmpty()) {
+                    String imagePath = randomVideo.getImagePath();
+                    if (imagePath != null && !imagePath.isEmpty()) {
                         ImageView dialog_video_poster = view.findViewById(R.id.dialog_video_poster);
                         dialog_video_poster.setVisibility(View.VISIBLE);
-                        Glide
-                                .with(this)
-                                .load("https://image.tmdb.org/t/p/w92/" + randomVideo.getImagePath())
-                                .placeholder(R.drawable.ic_download)
-                                .into(dialog_video_poster);
 
-                        if (!reload) {
-                            dialog_video_poster.setOnClickListener(v -> {
-                                CustomDialog posterDialog = CustomDialog.Builder(this)
-                                        .setView(R.layout.dialog_poster)
-                                        .setSetViewContent((customDialog1, view1, reload1) -> {
-                                            ImageView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
-                                            Glide
-                                                    .with(this)
-                                                    .load("https://image.tmdb.org/t/p/original/" + randomVideo.getImagePath())
-                                                    .placeholder(R.drawable.ic_download)
-                                                    .into(dialog_poster_poster);
-                                            dialog_poster_poster.setOnContextClickListener(v1 -> {
-                                                customDialog1.dismiss();
-                                                return true;
-                                            });
-
-                                        });
-                                posterDialog
-                                        .removeBackground()
-                                        .disableScroll()
-                                        .show();
-                            });
-                        }
+                        Utility.loadUrlIntoImageView(this, dialog_video_poster, (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/w92/") + imagePath, (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/original/") + imagePath);
                     } else
                         customDialog.findViewById(R.id.dialog_video_poster).setVisibility(View.GONE);
 

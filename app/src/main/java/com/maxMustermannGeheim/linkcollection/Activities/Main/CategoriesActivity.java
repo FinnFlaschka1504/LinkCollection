@@ -1,10 +1,12 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Main;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.speech.tts.UtteranceProgressListener;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
@@ -16,7 +18,6 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -28,9 +29,7 @@ import androidx.core.content.ContextCompat;
 import com.bumptech.glide.Glide;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
-import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.firebase.database.core.utilities.Utilities;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -60,6 +59,7 @@ public class CategoriesActivity extends AppCompatActivity {
     public static final int START_CATIGORY_SEARCH = 001;
     public static final String EXTRA_SEARCH_CATEGORY = "EXTRA_SEARCH_CATOGORY";
     public static final String EXTRA_SEARCH = "EXTRA_SEARCH";
+    public static String pictureRegex = "((https:)|/)([=()/|.|\\w|\\s|-])+\\.(?:jpg|png|svg)";
     private Helpers.SortHelper<Pair<ParentClass, Integer>> sortHelper;
 
     enum SORT_TYPE {
@@ -312,45 +312,7 @@ public class CategoriesActivity extends AppCompatActivity {
                     if (parentClassIntegerPair.first instanceof ParentClass_Tmdb && Utility.stringExists(((ParentClass_Tmdb) parentClassIntegerPair.first).getImagePath())) {
                         listItem_categoryItem_image.setVisibility(View.VISIBLE);
                         String imagePath = ((ParentClass_Tmdb) parentClassIntegerPair.first).getImagePath();
-                        if (imagePath.endsWith(".svg")) {
-                            Utility.fetchSvg(this, imagePath, listItem_categoryItem_image);
-                        } else {
-                            Glide
-                                    .with(this)
-                                    .load((imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/w92/") + imagePath)
-                                    .placeholder(R.drawable.ic_download)
-                                    .into(listItem_categoryItem_image);
-                        }
-                        listItem_categoryItem_image.setOnClickListener(v -> {
-                            removeFocusFromSearch();
-                            CustomDialog.Builder(this)
-                                    .setView(R.layout.dialog_poster)
-                                    .setSetViewContent((customDialog1, view1, reload1) -> {
-                                        ImageView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
-                                        if (imagePath.endsWith(".svg")) {
-                                            Utility.fetchSvg(this, imagePath, dialog_poster_poster);
-                                        } else {
-                                            Glide
-                                                    .with(this)
-                                                    .load((imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/original/") + imagePath)
-                                                    .placeholder(R.drawable.ic_download)
-                                                    .into(dialog_poster_poster);
-                                        }
-                                        dialog_poster_poster.setOnContextClickListener(v1 -> {
-                                            customDialog1.dismiss();
-                                            return true;
-                                        });
-
-                                    })
-                                    .addOptionalModifications(customDialog -> {
-                                        if (!(imagePath.endsWith(".png") || imagePath.endsWith(".svg")))
-                                            customDialog.removeBackground();
-                                    })
-                                    .disableScroll()
-                                    .show();
-                        });
-
-
+                        Utility.loadUrlIntoImageView(this, listItem_categoryItem_image, (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/w92/") + imagePath, (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/original/") + imagePath, this::removeFocusFromSearch);
                     } else
                         listItem_categoryItem_image.setVisibility(View.GONE);
 
@@ -429,7 +391,7 @@ public class CategoriesActivity extends AppCompatActivity {
                                     dialog_editTmdbCategory_url_layout.getEditText().setText(((ParentClass_Tmdb) parentClass).getImagePath());
                                     helper.addValidator(dialog_editTmdbCategory_url_layout).setValidation(dialog_editTmdbCategory_url_layout, (validator, text) -> {
                                         validator.asWhiteList();
-                                        if (text.isEmpty() || text.matches("((http(s?):)|/)([()/|.|\\w|\\s|-])+\\.(?:jpg|png|svg)"))
+                                        if (text.isEmpty() || text.matches(pictureRegex))
                                             validator.setValid();
                                         if (text.toLowerCase().contains("http") && !text.toLowerCase().contains("https"))
                                             validator.setInvalid("Die URL muss 'https' sein!");

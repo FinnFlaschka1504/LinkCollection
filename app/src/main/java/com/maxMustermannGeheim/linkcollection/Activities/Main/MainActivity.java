@@ -118,7 +118,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
         CustomInternetHelper.initialize(this);
 
-//        List<String> imageUrlsFromHtml = Utility.getImageUrlsFromHtml(WebisteHtml.websiteHtml);
+//        List<String> imageUrlsFromHtml = Utility.getImageUrlsFromText(WebisteHtml.websiteHtml);
         String BREAKPOINT = null;
 
 //        CustomUtility.PingTask.simulate(false, 3000);

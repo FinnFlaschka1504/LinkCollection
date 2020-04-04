@@ -29,6 +29,8 @@ import bsh.EvalError;
 import bsh.Interpreter;
 
 public class UrlParser extends ParentClass {
+    public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36";
+
     private String thumbnailCode;
     private String code;
     private String exampleUrl;
@@ -188,8 +190,7 @@ public class UrlParser extends ParentClass {
                 webViewMap.put(name, webView);
                 WebSettings settings = webView.getSettings();
                 settings.setJavaScriptEnabled(true);
-                String newUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36";
-                settings.setUserAgentString(newUA);
+                settings.setUserAgentString(USER_AGENT);
                 settings.setUseWideViewPort(true);
                 settings.setLoadWithOverviewMode(true);
 
@@ -197,35 +198,6 @@ public class UrlParser extends ParentClass {
                 settings.setBuiltInZoomControls(true);
                 settings.setDisplayZoomControls(false);
 
-//                webView.setWebViewClient(new WebViewClient() {
-//
-//                    @Override
-//                    public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-//                        if (!loadingFinished[0]) {
-//                            redirect[0] = true;
-//                        }
-//
-//                        loadingFinished[0] = false;
-//                        webView.loadUrl(request.getUrl().toString());
-//                        return true;
-//                    }
-//
-//                    @Override
-//                    public void onPageStarted(WebView view, String url, Bitmap favicon) {
-//                        super.onPageStarted(view, url, favicon);
-//                        loadingFinished[0] = false;
-//                    }
-//
-//                    @Override
-//                    public void onPageFinished(WebView view, String url) {
-//                        if (!redirect[0]) {
-//                            loadingFinished[0] = true;
-//                            evaluateJavaScript(onParseNameResult, 0);
-//                        } else {
-//                            redirect[0] = false;
-//                        }
-//                    }
-//                });
                 webView.setWebViewClient(new WebViewClient(){
                     @Override
                     public void onPageFinished(WebView view, String url) {
@@ -257,10 +229,10 @@ public class UrlParser extends ParentClass {
                         .setView(webViewMap.get(name))
                         .setDimensions(false, false)
                         .setOnDialogDismiss(customDialog -> ((ViewGroup) customDialog.findViewById(R.id.dialog_custom_layout_view_interface)).removeAllViews())
-                        .addOptionalModifications(customDialog -> {
-//                            if (!debug)
-//                                customDialog.addOnDialogShown(CustomDialog::dismiss);
+                        .setSetViewContent((customDialog, view, reload) -> {
+
                         })
+                        .disableScroll()
                         .enableDoubleClickOutsideToDismiss(customDialog -> true, "Thumbnail wird Geladen")
                         .removeBackground()
                         .show();
@@ -272,8 +244,6 @@ public class UrlParser extends ParentClass {
             return null;
 
     }
-
-
 
     private void evaluateJavaScript(boolean isName, Utility.GenericInterface<String> onParseResult, int tryCount) {
         if (!webViewMap.containsKey(name))

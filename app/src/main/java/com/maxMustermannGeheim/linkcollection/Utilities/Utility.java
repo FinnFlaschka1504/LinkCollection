@@ -1,5 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Utilities;
 
+import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -8,6 +10,7 @@ import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -74,6 +77,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.pixplicity.sharp.Sharp;
@@ -81,6 +85,8 @@ import com.pixplicity.sharp.Sharp;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.opengraph.MetaElement;
+import org.opengraph.OpenGraph;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -1453,6 +1459,7 @@ public class Utility {
                             rangeText.setText(String.format(Locale.getDefault(), "%.2f ☆ – %.2f ☆", pair.first / 4d, pair.second / 4d));
                     };
                     RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_filterByRating_rangeBar);
+                    rangeBar.setVisibility(singleMode[0] ? View.INVISIBLE : View.VISIBLE);
                     SeekBar singleBar = customDialog.findViewById(R.id.dialog_filterByRating_singleBar);
                     singleBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                         @Override
@@ -2002,7 +2009,7 @@ public class Utility {
     //  ------------------------- LoadUrlIntoImageView ------------------------->
     public static void loadUrlIntoImageView(Context context, ImageView imageView, String imagePath, @Nullable String fullScreenPath, Runnable... onFail_onFullscreen) {
         if (imagePath.endsWith(".svg")) {
-            Utility.fetchSvg(context, imagePath, imageView);
+            Utility.fetchSvg(context, imagePath, imageView, onFail_onFullscreen);
         } else {
             Glide
                     .with(context)
@@ -2034,7 +2041,7 @@ public class Utility {
                     .setSetViewContent((customDialog1, view1, reload1) -> {
                         ImageView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
                         if (fullScreenPath.endsWith(".svg")) {
-                            Utility.fetchSvg(context, fullScreenPath, dialog_poster_poster);
+                            Utility.fetchSvg(context, fullScreenPath, dialog_poster_poster, onFail_onFullscreen);
                         } else {
                             Glide
                                     .with(context)
@@ -2060,7 +2067,7 @@ public class Utility {
 
     private static OkHttpClient httpClient;
 
-    public static void fetchSvg(Context context, String url, final ImageView target) {
+    public static void fetchSvg(Context context, String url, final ImageView target, Runnable... onFailure) {
         if (httpClient == null) {
             // Use cache for performance and basic offline capability
             httpClient = new OkHttpClient.Builder()
@@ -2068,11 +2075,20 @@ public class Utility {
                     .build();
         }
 
+        if (!url.startsWith("http"))
+            url = "https://" + url;
         okhttp3.Request request = new okhttp3.Request.Builder().url(url).build();
         httpClient.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                target.setImageResource(R.drawable.ic_broken_image);
+                if (context instanceof Activity) {
+                    ((Activity) context).runOnUiThread(() -> {
+                        target.setImageResource(R.drawable.ic_broken_image);
+                        if (onFailure.length > 0 && onFailure[0] != null) {
+                            onFailure[0].run();
+                        }
+                    });
+                }
             }
 
             @Override
@@ -2087,7 +2103,7 @@ public class Utility {
 
 
     //  ------------------------- GetImageUrlsFromHtml ------------------------->
-    public static CustomList<String> getImageUrlsFromHtml(String html){
+    public static CustomList<String> getImageUrlsFromText(String html){
         Matcher matcher = Pattern.compile(CategoriesActivity.pictureRegex).matcher(html);
         CustomList<String> urlList = new CustomList<>();
         while (matcher.find()) {
@@ -2096,4 +2112,37 @@ public class Utility {
         return urlList;
     }
     //  <------------------------- GetImageUrlsFromHtml -------------------------
+
+
+    //  ------------------------- GetOpenGraphFromWebsite ------------------------->
+    public static void getOpenGraphFromWebsite(String url, GenericInterface<OpenGraph> onResult){
+        @SuppressLint("StaticFieldLeak") AsyncTask<GenericInterface<OpenGraph>, Object, OpenGraph> task = new AsyncTask<Utility.GenericInterface<OpenGraph>, Object, OpenGraph>() {
+            Utility.GenericInterface<OpenGraph> onResult;
+
+            @Override
+            protected OpenGraph doInBackground(Utility.GenericInterface<OpenGraph>... onResults) {
+                try {
+                    OpenGraph openGraph = new OpenGraph(url, true);
+                    if (onResults.length > 0)
+                        onResult = onResults[0];
+                    return openGraph;
+                } catch (Exception e) {
+                    if (onResults.length > 0)
+                        onResult = onResults[0];
+                    return null;
+                }
+            }
+
+            @Override
+            protected void onPostExecute(OpenGraph openGraph) {
+                if (onResult != null) {
+                    onResult.runGenericInterface(openGraph);
+                }
+            }
+        };
+
+        task.execute(onResult);
+
+    }
+    //  <------------------------- GetOpenGraphFromWebsite -------------------------
 }

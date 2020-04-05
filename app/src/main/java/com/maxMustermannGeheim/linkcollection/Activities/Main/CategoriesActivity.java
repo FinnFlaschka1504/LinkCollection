@@ -59,7 +59,8 @@ public class CategoriesActivity extends AppCompatActivity {
     public static final int START_CATIGORY_SEARCH = 001;
     public static final String EXTRA_SEARCH_CATEGORY = "EXTRA_SEARCH_CATOGORY";
     public static final String EXTRA_SEARCH = "EXTRA_SEARCH";
-    public static String pictureRegex = "((https:)|/)([=()/|.|\\w|\\s|-])+\\.(?:jpe?g|png|svg)";
+    public static String pictureRegex = "((https:)|/)([+%&?=()/|.|\\w|\\s|-])+\\.(?:jpe?g|png|svg)";
+    public static String pictureRegexAll = pictureRegex.split("\\\\\\.")[0];
     private Helpers.SortHelper<Pair<ParentClass, Integer>> sortHelper;
 
     enum SORT_TYPE {
@@ -391,7 +392,7 @@ public class CategoriesActivity extends AppCompatActivity {
                                     dialog_editTmdbCategory_url_layout.getEditText().setText(((ParentClass_Tmdb) parentClass).getImagePath());
                                     helper.addValidator(dialog_editTmdbCategory_url_layout).setValidation(dialog_editTmdbCategory_url_layout, (validator, text) -> {
                                         validator.asWhiteList();
-                                        if (text.isEmpty() || text.matches(pictureRegex))
+                                        if (text.isEmpty() || text.matches(pictureRegexAll))
                                             validator.setValid();
                                         if (text.toLowerCase().contains("http") && !text.toLowerCase().contains("https"))
                                             validator.setInvalid("Die URL muss 'https' sein!");
@@ -401,9 +402,7 @@ public class CategoriesActivity extends AppCompatActivity {
                             })
                             .enableDoubleClickOutsideToDismiss(customDialog -> {
                                 boolean result = !((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim().equals(parentClass.getName());
-                                if (result || (parentClass instanceof ParentClass_Tmdb && !((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim().equals(((ParentClass_Tmdb) parentClass).getImagePath())))
-                                    return true;
-                                return result;
+                                return result || (parentClass instanceof ParentClass_Tmdb && !Utility.boolOr(((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim(), ((ParentClass_Tmdb) parentClass).getImagePath(), ""));
                             })
                             .show();
                 })

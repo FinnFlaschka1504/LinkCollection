@@ -49,7 +49,7 @@ dependencies {
 
     // Crash
     implementation 'com.google.firebase:firebase-crash:16.2.1'
-    implementation 'com.google.firebase:firebase-analytics:17.2.3'
+    implementation 'com.google.firebase:firebase-analytics:17.3.0'
     implementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
 
     // Eigene
@@ -69,6 +69,7 @@ dependencies {
 //    implementation 'com.github.stfalcon:StfalconPriceRangeBar:0.1.2'
     implementation 'com.github.Innovattic:range-seek-bar:v1.0.6'
     implementation 'com.github.johndeverall:opengraph-java:2d69b89c1a'
+    implementation 'com.github.chrisbanes:PhotoView:2.3.0'
 
     implementation group: 'org.apache-extras.beanshell', name: 'bsh', version: '2.0b6'
     implementation group: 'com.google.guava', name: 'guava', version: '28.2-android'

@@ -654,7 +654,7 @@ public class VideoActivity extends AppCompatActivity {
                 })
                 .setSetItemContent((customRecycler, itemView, video) -> {
                     itemView.findViewById(R.id.listItem_video_deleteCheck).setVisibility(delete ? View.VISIBLE : View.GONE);
-                    ((TextView) itemView.findViewById(R.id.listItem_video_Titel)).setText((Utility.stringExists(video.getImagePath()) ? "" : "• ") + video.getName());
+                    ((TextView) itemView.findViewById(R.id.listItem_video_Titel)).setText(/*(Utility.stringExists(video.getImagePath()) ? "" : "• ") + */video.getName());
                     if (!video.getDateList().isEmpty()) {
                         itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.VISIBLE);
                         ((TextView) itemView.findViewById(R.id.listItem_video_Views)).setText(String.valueOf(video.getDateList().size()));
@@ -922,9 +922,9 @@ public class VideoActivity extends AppCompatActivity {
                                 .setTitle("Thumbnail-URL Bearbeiten")
                                 .setEdit(new CustomDialog.EditBuilder()
                                         .setShowKeyboard(false)
-                                        .setRegEx(CategoriesActivity.pictureRegex + "|")
+                                        .setRegEx(CategoriesActivity.pictureRegexAll + "|")
                                         .setText(Utility.stringExistsOrElse(editVideo[0].getImagePath(), "").toString())
-                                        .setHint("TMDb-Pfad, oder Bild-Url (https:...(.jpg / .png / .svg))"))
+                                        .setHint("TMDb-Pfad, oder Bild-Url (https:...(.jpg / .png / .svg / ...))"))
                                 .addButton("Testen", CustomDialog::reloadView, showButtonId, false)
                                 .alignPreviousButtonsLeft()
                                 .setView(imageView)
@@ -1313,15 +1313,26 @@ public class VideoActivity extends AppCompatActivity {
         //       -------------------- Getter -------------------->
         Runnable getFromUrlParser = () -> {
             Utility.ifNotNull(UrlParser.getMatchingParser(url), urlParser -> {
-                if (!Utility.stringExists(urlParser.getThumbnailCode())) {
+                String script = urlParser.getThumbnailCode();
+                if (!Utility.stringExists(script)) {
                     lowerCount.run();
                     return;
                 }
-                urlParser.parseUrl(this, url, s -> {
-                }, s -> {
+                if (script.startsWith("{") && script.endsWith("}")) {
+                    script = "(function() " + script + ")();";
+
+                } else {
+                    if (!script.endsWith(";"))
+                        script += ";";
+                }
+                webView.evaluateJavascript(script, s -> {
+                    if (s.startsWith("\"") && s.endsWith("\""))
+                        s = Utility.subString(s, 1, -1);
+
                     if (s.matches(CategoriesActivity.pictureRegex))
                         imageFromUrlParser.add(s);
                     lowerCount.run();
+
                 });
             }, lowerCount);
         };

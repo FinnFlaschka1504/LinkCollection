@@ -14,11 +14,12 @@
 <!--        app:targetMode="height"-->
 <!--        android:gravity="center">-->
 
-    <ImageView
+    <com.github.chrisbanes.photoview.PhotoView
         android:id="@+id/dialog_poster_poster"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:adjustViewBounds="true"
+        android:padding="16dp"
         tools:src="@drawable/simpsons_movie_poster" />
 <!--    </com.maxMustermannGeheim.linkcollection.Utilitys.AspectRatioLayout>-->
 

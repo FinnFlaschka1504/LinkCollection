@@ -2040,6 +2040,9 @@ public class Utility {
                     .setView(R.layout.dialog_poster)
                     .setSetViewContent((customDialog1, view1, reload1) -> {
                         ImageView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
+                        if (fullScreenPath.endsWith(".png") || fullScreenPath.endsWith(".svg"))
+                            dialog_poster_poster.setPadding(0,0, 0,0);
+
                         if (fullScreenPath.endsWith(".svg")) {
                             Utility.fetchSvg(context, fullScreenPath, dialog_poster_poster, onFail_onFullscreen);
                         } else {
@@ -2058,7 +2061,7 @@ public class Utility {
                     })
                     .addOptionalModifications(customDialog -> {
                         if (!(fullScreenPath.endsWith(".png") || fullScreenPath.endsWith(".svg")))
-                            customDialog.removeBackground();
+                            customDialog.removeBackground_and_margin();
                     })
                     .disableScroll()
                     .show();
@@ -2102,7 +2105,7 @@ public class Utility {
     //  <------------------------- LoadUrlIntoImageView -------------------------
 
 
-    //  ------------------------- GetImageUrlsFromHtml ------------------------->
+    //  ------------------------- GetImageUrlsFromText ------------------------->
     public static CustomList<String> getImageUrlsFromText(String html){
         Matcher matcher = Pattern.compile(CategoriesActivity.pictureRegex).matcher(html);
         CustomList<String> urlList = new CustomList<>();
@@ -2111,7 +2114,7 @@ public class Utility {
         }
         return urlList;
     }
-    //  <------------------------- GetImageUrlsFromHtml -------------------------
+    //  <------------------------- GetImageUrlsFromText -------------------------
 
 
     //  ------------------------- GetOpenGraphFromWebsite ------------------------->

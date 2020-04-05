@@ -64,7 +64,7 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="12dp"
             android:layout_marginVertical="8dp"
-            android:hint="Bild-Url (.jpg / .png / .svg)"
+            android:hint="Bild-Url (.jpg / .png / .svg / ...)"
             app:errorEnabled="true">
 
             <EditText

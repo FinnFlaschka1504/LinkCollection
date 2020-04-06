@@ -1,10 +1,12 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Content;
 
 import android.annotation.SuppressLint;
+import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Rect;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.speech.tts.UtteranceProgressListener;
@@ -31,6 +33,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
@@ -263,7 +266,6 @@ public class VideoActivity extends AppCompatActivity {
             AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
             View noItem = findViewById(R.id.no_item);
             LinearLayout search_layout = findViewById(R.id.search_layout);
-            CollapsingToolbarLayout collapsingToolbarLayout = findViewById(R.id.collapsingToolbarLayout);
             appBarLayout.measure(0,0);
             toolbar.measure(0,0);
             search_layout.measure(0,0);
@@ -647,7 +649,6 @@ public class VideoActivity extends AppCompatActivity {
                     int size = filteredList.size();
 
                     noItem.setText(size == 0 ? text : "");
-//                    ((LinearLayout.LayoutParams) videos_search.getLayoutParams()).setScrollFlags(size == 0 ? 0 : AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL | AppBarLayout.LayoutParams.SCROLL_FLAG_SNAP | AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS);
                     elementCount.setText(size > 1 ? size + " Elemente" : (size == 1 ? "Ein" : "Kein") + " Element");
                     return filteredList;
 
@@ -721,6 +722,8 @@ public class VideoActivity extends AppCompatActivity {
         CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle(video.getName())//"Detail Ansicht")
                 .setView(R.layout.dialog_detail_video)
+                .addButton(R.drawable.ic_search, customDialog -> showSearchDialog(video, null), false)
+                .alignPreviousButtonsLeft()
                 .addButton("Bearbeiten", customDialog ->
                         addOrEditDialog = showEditOrNewDialog(video).first, false)
                 .addButton("Öffnen mit...", customDialog -> openUrl(video.getUrl(), true), openWithButtonId, false)
@@ -859,6 +862,93 @@ public class VideoActivity extends AppCompatActivity {
 
     }
 
+    private void showSearchDialog(Video video, @Nullable CustomDialog editDialog) {
+        CustomDialog.Builder(this)
+                .setTitle("Nach " + singular + " Suchen")
+                .setView(R.layout.dialog_search_video)
+                .setSetViewContent((customDialog, view, reload) -> {
+                    String name;
+                    if (editDialog != null)
+                        name = ((EditText) editDialog.findViewById(R.id.dialog_editOrAddVideo_Title)).getText().toString().trim();
+                    else
+                        name = video.getName();
+                    String actors = video.getDarstellerList().stream().map(s -> database.darstellerMap.get(s).getName()).collect(Collectors.joining(", "));
+                    String studios = video.getStudioList().stream().map(s -> database.studioMap.get(s).getName()).collect(Collectors.joining(", "));
+                    String genre = video.getGenreList().stream().map(s -> database.genreMap.get(s).getName()).collect(Collectors.joining(", "));
+
+                    EditText editTitle = customDialog.findViewById(R.id.dialog_searchVideo_title);
+                    CheckBox editTitle_check = customDialog.findViewById(R.id.dialog_searchVideo_title_check);
+                    EditText editActor = customDialog.findViewById(R.id.dialog_searchVideo_actor);
+                    CheckBox editActor_check = customDialog.findViewById(R.id.dialog_searchVideo_actor_check);
+                    EditText editStudio = customDialog.findViewById(R.id.dialog_searchVideo_studio);
+                    CheckBox editStudio_check = customDialog.findViewById(R.id.dialog_searchVideo_studio_check);
+                    EditText editGenre = customDialog.findViewById(R.id.dialog_searchVideo_genre);
+                    CheckBox editGenre_check = customDialog.findViewById(R.id.dialog_searchVideo_genre_check);
+
+                    editTitle.setText(name);
+                    editTitle_check.setChecked(Utility.stringExists(name));
+                    editActor.setText(actors);
+                    editActor_check.setChecked(Utility.stringExists(actors));
+                    editStudio.setText(studios);
+                    editStudio_check.setChecked(Utility.stringExists(studios));
+                    editGenre.setText(genre);
+                    editGenre_check.setChecked(Utility.stringExists(genre));
+                })
+                .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
+                .addButton("Suchen", customDialog -> {
+                    CustomList<String> searchList = new CustomList<>();
+
+                    EditText editTitle = customDialog.findViewById(R.id.dialog_searchVideo_title);
+                    CheckBox editTitle_check = customDialog.findViewById(R.id.dialog_searchVideo_title_check);
+                    EditText editActor = customDialog.findViewById(R.id.dialog_searchVideo_actor);
+                    CheckBox editActor_check = customDialog.findViewById(R.id.dialog_searchVideo_actor_check);
+                    EditText editStudio = customDialog.findViewById(R.id.dialog_searchVideo_studio);
+                    CheckBox editStudio_check = customDialog.findViewById(R.id.dialog_searchVideo_studio_check);
+                    EditText editGenre = customDialog.findViewById(R.id.dialog_searchVideo_genre);
+                    CheckBox editGenre_check = customDialog.findViewById(R.id.dialog_searchVideo_genre_check);
+
+                    if (editTitle_check.isChecked()) {
+                        String title = editTitle.getText().toString();
+                        if (Utility.stringExists(title))
+                            searchList.add(title);
+                    }
+                    if (editActor_check.isChecked()) {
+                        String actor = editActor.getText().toString();
+                        if (Utility.stringExists(actor))
+                            searchList.add(actor);
+                    }
+                    if (editStudio_check.isChecked()) {
+                        String studio = editStudio.getText().toString();
+                        if (Utility.stringExists(studio))
+                            searchList.add(studio);
+                    }
+                    if (editGenre_check.isChecked()) {
+                        String genre = editGenre.getText().toString();
+                        if (Utility.stringExists(genre))
+                            searchList.add(genre);
+                    }
+
+
+                    if (searchList.isEmpty()) {
+                        Toast.makeText(this, "Nix zum Suchen", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    String query = String.join(", ", searchList);
+                    String url = "https://www.google.de/search?q=" + query;
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setData(Uri.parse(url));
+                    Intent chooser = Intent.createChooser(intent, "Suchen mit...");
+                    if (chooser.resolveActivity(getPackageManager()) != null)
+                        startActivity(chooser);
+                    else
+                        Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
+
+                }, false)
+                .colorLastAddedButton()
+                .show();
+    }
+
     //  ------------------------- EditVideo ------------------------->
     private Pair<CustomDialog, Video> showEditOrNewDialog(Video video) {
         if (!Utility.isOnline(this))
@@ -879,6 +969,8 @@ public class VideoActivity extends AppCompatActivity {
         CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle(video == null ? "Neu: " + singular : singular + " Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
+                .addButton(R.drawable.ic_search, customDialog -> showSearchDialog(editVideo[0], customDialog), false)
+                .alignPreviousButtonsLeft()
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     String titel = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_Title)).getText().toString().trim();

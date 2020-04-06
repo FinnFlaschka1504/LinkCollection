@@ -27,7 +27,7 @@
                 android:theme="@style/ToolBarStyle"
                 app:contentScrim="?attr/colorPrimary"
                 app:expandedTitleGravity="top"
-                app:expandedTitleMarginStart="50dp"
+                app:expandedTitleMarginStart="55dp"
                 app:expandedTitleMarginTop="10dp"
                 app:layout_scrollFlags="scroll|exitUntilCollapsed|snap">
 
@@ -35,16 +35,16 @@
                     android:id="@+id/elementCount"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:minHeight="306dp"
+                    android:layout_marginBottom="73dp"
                     android:layout_gravity="bottom"
-                    android:layout_marginTop="120dp"
-                    android:layout_marginBottom="210dp"
                     android:gravity="center_vertical"
                     android:text="Test"
                     android:textAlignment="center"
                     android:textColor="#FFFFFF"
                     android:textSize="36sp"
                     app:layout_collapseMode="parallax"
-                    app:layout_collapseParallaxMultiplier="0.4" />
+                    app:layout_collapseParallaxMultiplier="0.35" />
 
                 <androidx.appcompat.widget.Toolbar
                     android:id="@+id/toolbar"

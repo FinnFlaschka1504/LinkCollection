@@ -26,22 +26,22 @@
                 android:theme="@style/ToolBarStyle"
                 app:contentScrim="?attr/colorPrimary"
                 app:expandedTitleGravity="top"
-                app:expandedTitleMarginStart="50dp"
                 app:expandedTitleMarginTop="10dp"
                 app:layout_scrollFlags="scroll|exitUntilCollapsed|snap">
 
                 <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="375dp"
+                    android:layout_height="331dp"
                     app:layout_collapseMode="parallax"
-                    app:layout_collapseParallaxMultiplier="0.18">
+                    app:layout_collapseParallaxMultiplier="0.13">
 
 
                     <ImageView
                         android:layout_width="150dp"
                         android:layout_height="150dp"
                         android:layout_gravity="center"
-                        android:src="@mipmap/ic_launcher_round" />
+                        android:src="@mipmap/ic_launcher_round"
+                        android:layout_marginBottom="12dp"/>
 
 
                 </FrameLayout>

@@ -7,8 +7,11 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.speech.tts.UtteranceProgressListener;
+import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.style.RelativeSizeSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.util.Pair;
@@ -23,6 +26,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.Spinner;
@@ -31,6 +35,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.res.ResourcesCompat;
 
 import com.bumptech.glide.Glide;
@@ -40,6 +45,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
+import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
@@ -121,6 +127,7 @@ public class ShowActivity extends AppCompatActivity {
     private SORT_TYPE sort_type = SORT_TYPE.LATEST;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.GENRE));
     private SearchView.OnQueryTextListener textListener;
+    private TextView elementCount;
     private boolean reverse = false;
     private String singular;
     private String plural;
@@ -167,9 +174,31 @@ public class ShowActivity extends AppCompatActivity {
             allShowList = new CustomList<>(database.showMap.values());
             sortList(allShowList);
 
-            loadRecycler();
+            Toolbar toolbar = findViewById(R.id.toolbar);
+            toolbar.setTitle(plural);
+            setSupportActionBar(toolbar);
+            elementCount = findViewById(R.id.elementCount);
+
+            AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
+            View noItem = findViewById(R.id.no_item);
+            LinearLayout search_layout = findViewById(R.id.search_layout);
+            appBarLayout.measure(0,0);
+            toolbar.measure(0,0);
+            search_layout.measure(0,0);
+            float maxOffset = -(appBarLayout.getMeasuredHeight() - (toolbar.getMeasuredHeight() + search_layout.getMeasuredHeight()));
+            float distance = 118;
+            appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> {
+//                noItem.setVisibility(verticalOffset > -630 ? View.GONE : View.VISIBLE);
+                float alpha = 1f - ((verticalOffset - maxOffset) / distance);
+                noItem.setAlpha(alpha > 0f ? alpha : 0f);
+//                ((AppBarLayout.Behavior) ((CoordinatorLayout.LayoutParams) appBarLayout.getLayoutParams()).getBehavior()).setTopAndBottomOffset(-(appBarLayout.getHeight() - (toolbar.getHeight() + search_layout.getHeight())));
+//                ((AppBarLayout.LayoutParams) collapsingToolbarLayout.getLayoutParams()).setScrollFlags(0);
+            });
 
             shows_search = findViewById(R.id.search);
+
+            loadRecycler();
+
             textListener = new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String s) {
@@ -508,8 +537,15 @@ public class ShowActivity extends AppCompatActivity {
                 .setGetActiveObjectList(customRecycler -> {
                     CustomList<Show> filteredList = sortList(filterList(new CustomList<>(database.showMap.values())));
                     TextView noItem = findViewById(R.id.no_item);
-                    noItem.setText(searchQuery.isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche");
-                    noItem.setVisibility(filteredList.isEmpty() ? View.VISIBLE : View.GONE);
+                    String text = shows_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche";
+                    int size = filteredList.size();
+
+                    noItem.setText(size == 0 ? text : "");
+                    String elementCountText = size > 1 ? size + " Elemente" : (size == 1 ? "Ein" : "Kein") + " Element";
+                    List<Show.Episode> episodeList = Utility.concatenateCollections(filteredList, show -> Utility.concatenateCollections(show.getSeasonList(), season -> season.getEpisodeMap().values()));
+                    int views = getViews(episodeList);
+                    String viewsCountText = (views > 1 ? views + " Episoden" : (views == 1 ? "Eine" : "Keine") + " Episode") + " angesehen";
+                    elementCount.setText(new SpannableStringBuilder().append(elementCountText).append("\n").append(viewsCountText, new RelativeSizeSpan(0.5f), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE));
                     return filteredList;
                 })
                 .setSetItemContent((customRecycler, itemView, show) -> {
@@ -899,33 +935,34 @@ public class ShowActivity extends AppCompatActivity {
                     });
 
                     if (show.getImagePath() != null && !show.getImagePath().isEmpty()) {
-                        ImageView dialog_video_poster = view.findViewById(R.id.dialog_detailShow_poster);
-                        dialog_video_poster.setVisibility(View.VISIBLE);
-                        Glide
-                                .with(this)
-                                .load("https://image.tmdb.org/t/p/w92/" + show.getImagePath())
-                                .placeholder(R.drawable.ic_download)
-                                .into(dialog_video_poster);
-                        dialog_video_poster.setOnClickListener(v -> {
-                            CustomDialog posterDialog = CustomDialog.Builder(this)
-                                    .setView(R.layout.dialog_poster)
-                                    .setSetViewContent((customDialog1, view1, reload1) -> {
-                                        ImageView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
-                                        Glide
-                                                .with(this)
-                                                .load("https://image.tmdb.org/t/p/original/" + show.getImagePath())
-                                                .placeholder(R.drawable.ic_download)
-                                                .into(dialog_poster_poster);
-                                        dialog_poster_poster.setOnContextClickListener(v1 -> {
-                                            customDialog1.dismiss();
-                                            return true;
-                                        });
-                                    });
-                            posterDialog
-                                    .removeBackground()
-                                    .disableScroll()
-                                    .show();
-                        });
+                        ImageView dialog_show_poster = view.findViewById(R.id.dialog_detailShow_poster);
+                        dialog_show_poster.setVisibility(View.VISIBLE);
+                        Utility.loadUrlIntoImageView(this, dialog_show_poster, "https://image.tmdb.org/t/p/w92/" + show.getImagePath(), "https://image.tmdb.org/t/p/original/" + show.getImagePath());
+//                        Glide
+//                                .with(this)
+//                                .load("https://image.tmdb.org/t/p/w92/" + show.getImagePath())
+//                                .placeholder(R.drawable.ic_download)
+//                                .into(dialog_show_poster);
+//                        dialog_show_poster.setOnClickListener(v -> {
+//                            CustomDialog posterDialog = CustomDialog.Builder(this)
+//                                    .setView(R.layout.dialog_poster)
+//                                    .setSetViewContent((customDialog1, view1, reload1) -> {
+//                                        ImageView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
+//                                        Glide
+//                                                .with(this)
+//                                                .load("https://image.tmdb.org/t/p/original/" + show.getImagePath())
+//                                                .placeholder(R.drawable.ic_download)
+//                                                .into(dialog_poster_poster);
+//                                        dialog_poster_poster.setOnContextClickListener(v1 -> {
+//                                            customDialog1.dismiss();
+//                                            return true;
+//                                        });
+//                                    });
+//                            posterDialog
+//                                    .removeBackground()
+//                                    .disableScroll()
+//                                    .show();
+//                        });
                     }
 
 

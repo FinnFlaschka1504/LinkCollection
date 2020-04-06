@@ -52,7 +52,8 @@
         </activity>
         <activity
             android:name=".Activities.Content.ShowActivity"
-            android:parentActivityName=".Activities.Main.MainActivity" />
+            android:parentActivityName=".Activities.Main.MainActivity"
+            android:theme="@style/AppTheme.NoTitle"/>
         <activity
             android:name=".Activities.Content.KnowledgeActivity"
             android:label="Wissen"
@@ -83,7 +84,8 @@
         <activity
             android:name=".Activities.Settings"
             android:label="Einstellungen"
-            android:parentActivityName=".Activities.Main.MainActivity" />
+            android:parentActivityName=".Activities.Main.MainActivity"
+            android:theme="@style/AppTheme.NoTitle"/>
 
         <provider
             android:name="androidx.core.content.FileProvider"

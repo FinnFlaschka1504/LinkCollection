@@ -30,9 +30,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.finn.androidUtilities.CustomRecycler;
+import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
@@ -81,7 +83,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         }
 
         public boolean hasName() {
-            return  name != null;
+            return name != null;
         }
 
         public String getName() {
@@ -97,6 +99,7 @@ public class KnowledgeActivity extends AppCompatActivity {
     private String searchQuery = "";
     private SharedPreferences mySPR_daten;
     private SearchView.OnQueryTextListener textListener;
+    private TextView elementCount;
     private SearchView knowledge_search;
     private ArrayList<Knowledge> allKnowledgeList;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.CATEGORY, FILTER_TYPE.CONTENT));
@@ -107,7 +110,7 @@ public class KnowledgeActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         if (!(isDialog = Objects.equals(getIntent().getAction(), MainActivity.ACTION_SHOW_AS_DIALOG)))
-            setTheme(R.style.AppTheme);
+            setTheme(R.style.AppTheme_NoTitle);
 
         super.onCreate(savedInstanceState);
 
@@ -142,9 +145,28 @@ public class KnowledgeActivity extends AppCompatActivity {
     private void loadDatabase() {
         @SuppressLint("RestrictedApi") Runnable whenLoaded = () -> {
             setContentView(R.layout.activity_knowledge);
-            loadRecycler();
+
+            Toolbar toolbar = findViewById(R.id.toolbar);
+            setSupportActionBar(toolbar);
+            elementCount = findViewById(R.id.elementCount);
+
+            AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
+            View noItem = findViewById(R.id.no_item);
+            LinearLayout search_layout = findViewById(R.id.search_layout);
+            appBarLayout.measure(0, 0);
+            toolbar.measure(0, 0);
+            search_layout.measure(0, 0);
+            float maxOffset = -(appBarLayout.getMeasuredHeight() - (toolbar.getMeasuredHeight() + search_layout.getMeasuredHeight()));
+            float distance = 118;
+            appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> {
+                float alpha = 1f - ((verticalOffset - maxOffset) / distance);
+                noItem.setAlpha(alpha > 0f ? alpha : 0f);
+            });
 
             knowledge_search = findViewById(R.id.search);
+
+            loadRecycler();
+
             textListener = new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String s) {
@@ -270,8 +292,12 @@ public class KnowledgeActivity extends AppCompatActivity {
                         filteredList = toExpandableList(filterList(allKnowledgeList));
 
                     TextView noItem = findViewById(R.id.no_item);
-                    noItem.setText(searchQuery.isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche");
-                    noItem.setVisibility(filteredList.isEmpty() ? View.VISIBLE : View.GONE);
+                    String text = knowledge_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche";
+                    int size = filteredList.size();
+
+                    noItem.setText(size == 0 ? text : "");
+                    String elementCountText = size > 1 ? size + " Elemente" : (size == 1 ? "Ein" : "Kein") + " Element";
+                    elementCount.setText(elementCountText);
                     return filteredList;
                 })
 
@@ -406,7 +432,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                                     Toast.makeText(this, "Wissen gelöscht", Toast.LENGTH_SHORT).show();
                                 })
                                 .show();
-                    },false)
+                    }, false)
                     .alignPreviousButtonsLeft();
         }
 
@@ -1453,12 +1479,14 @@ public class KnowledgeActivity extends AppCompatActivity {
                 result[0] = substring;
         }
 
-        if (result[0].contains("youtu")) {
-            Utility.ifNotNull(UrlParser.getMatchingParser(url), urlParser -> urlParser.parseUrl(this, url, s -> {
+        UrlParser urlParser = UrlParser.getMatchingParser(url);
+        if (urlParser != null) {
+            urlParser.parseUrl(this, url, s -> {
                 result[0] = s;
                 Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
                 onFound.run();
-            }, s -> {}));
+            }, s -> {
+            });
         } else
             onFound.run();
         return result[0];

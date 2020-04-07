@@ -12,14 +12,17 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import com.finn.androidUtilities.CustomRecycler;
+import com.google.android.material.appbar.AppBarLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
@@ -79,6 +82,7 @@ public class JokeActivity extends AppCompatActivity {
     private String searchQuery = "";
     private SharedPreferences mySPR_daten;
     private SearchView.OnQueryTextListener textListener;
+    private TextView elementCount;
     private SearchView joke_search;
     private ArrayList<Joke> allJokeList;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.CATEGORY, FILTER_TYPE.PUNCHLINE));
@@ -88,7 +92,7 @@ public class JokeActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         if (!(isDialog = Objects.equals(getIntent().getAction(), MainActivity.ACTION_SHOW_AS_DIALOG)))
-            setTheme(R.style.AppTheme);
+            setTheme(R.style.AppTheme_NoTitle);
 
         super.onCreate(savedInstanceState);
 
@@ -108,9 +112,28 @@ public class JokeActivity extends AppCompatActivity {
     private void loadDatabase() {
         @SuppressLint("RestrictedApi") Runnable whenLoaded = () -> {
             setContentView(R.layout.activity_joke);
-            loadRecycler();
+
+            Toolbar toolbar = findViewById(R.id.toolbar);
+            setSupportActionBar(toolbar);
+            elementCount = findViewById(R.id.elementCount);
+
+            AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
+            View noItem = findViewById(R.id.no_item);
+            LinearLayout search_layout = findViewById(R.id.search_layout);
+            appBarLayout.measure(0,0);
+            toolbar.measure(0,0);
+            search_layout.measure(0,0);
+            float maxOffset = -(appBarLayout.getMeasuredHeight() - (toolbar.getMeasuredHeight() + search_layout.getMeasuredHeight()));
+            float distance = 118;
+            appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> {
+                float alpha = 1f - ((verticalOffset - maxOffset) / distance);
+                noItem.setAlpha(alpha > 0f ? alpha : 0f);
+            });
 
             joke_search = findViewById(R.id.search);
+
+            loadRecycler();
+
             textListener = new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String s) {
@@ -201,8 +224,12 @@ public class JokeActivity extends AppCompatActivity {
                         filteredList = toExpandableList(filterList(allJokeList));
 
                     TextView noItem = findViewById(R.id.no_item);
-                    noItem.setText(searchQuery.isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche");
-                    noItem.setVisibility(filteredList.isEmpty() ? View.VISIBLE : View.GONE);
+                    String text = joke_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche";
+                    int size = filteredList.size();
+
+                    noItem.setText(size == 0 ? text : "");
+                    String elementCountText = size > 1 ? size + " Elemente" : (size == 1 ? "Ein" : "Kein") + " Element";
+                    elementCount.setText(elementCountText);
                     return filteredList;
 
                 })

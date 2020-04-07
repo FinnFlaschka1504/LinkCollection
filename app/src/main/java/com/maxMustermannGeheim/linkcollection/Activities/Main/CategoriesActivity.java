@@ -1,12 +1,10 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Main;
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
-import android.speech.tts.UtteranceProgressListener;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
@@ -18,17 +16,19 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 
-import com.bumptech.glide.Glide;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
+import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
@@ -107,6 +107,7 @@ public class CategoriesActivity extends AppCompatActivity {
     private CustomRecycler customRecycler;
     private SearchView catigorys_search;
     private SearchView.OnQueryTextListener textListener;
+    private TextView elementCount;
 
     private List<Pair<ParentClass, Integer>> allDatenObjektPairList;
 
@@ -126,12 +127,30 @@ public class CategoriesActivity extends AppCompatActivity {
                 .finish();
 
         catigory = (CATEGORIES) getIntent().getSerializableExtra(MainActivity.EXTRA_CATEGORY);
-        setTitle(catigory.getPlural());
         setDatenObjektIntegerPairLiist();
 
         sortList(allDatenObjektPairList);
 
-        catigorys_search = findViewById(R.id.catigorys_search);
+
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        toolbar.setTitle(catigory.getPlural());
+        setSupportActionBar(toolbar);
+        elementCount = findViewById(R.id.elementCount);
+
+        AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
+        View noItem = findViewById(R.id.no_item);
+        LinearLayout search_layout = findViewById(R.id.search_layout);
+        appBarLayout.measure(0,0);
+        toolbar.measure(0,0);
+        search_layout.measure(0,0);
+        float maxOffset = -(appBarLayout.getMeasuredHeight() - (toolbar.getMeasuredHeight() + search_layout.getMeasuredHeight()));
+        float distance = 118;
+        appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> {
+            float alpha = 1f - ((verticalOffset - maxOffset) / distance);
+            noItem.setAlpha(alpha > 0f ? alpha : 0f);
+        });
+
+        catigorys_search = findViewById(R.id.search);
 
         loadRecycler();
 
@@ -267,14 +286,18 @@ public class CategoriesActivity extends AppCompatActivity {
     }
 
     private void loadRecycler() {
-        customRecycler = new CustomRecycler<Pair<ParentClass, Integer>>(this, findViewById(R.id.catigorys_recycler))
+        customRecycler = new CustomRecycler<Pair<ParentClass, Integer>>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_catigory_item)
                 .setGetActiveObjectList(() -> {
                     List<Pair<ParentClass, Integer>> filteredList = sortList(filterList(allDatenObjektPairList));
 
                     TextView noItem = findViewById(R.id.no_item);
-                    noItem.setText(catigorys_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche");
-                    noItem.setVisibility(filteredList.isEmpty() ? View.VISIBLE : View.GONE);
+                    String text = catigorys_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche";
+                    int size = filteredList.size();
+
+                    noItem.setText(size == 0 ? text : "");
+                    String elementCountText = size > 1 ? size + " Elemente" : (size == 1 ? "Ein" : "Kein") + " Element";
+                    elementCount.setText(elementCountText);
                     return filteredList;
 
                 })

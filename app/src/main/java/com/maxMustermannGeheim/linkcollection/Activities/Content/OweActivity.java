@@ -2,6 +2,7 @@ package com.maxMustermannGeheim.linkcollection.Activities.Content;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 
 import android.annotation.SuppressLint;
 import android.app.Dialog;
@@ -33,6 +34,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maltaisn.calcdialog.CalcDialog;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
@@ -101,6 +103,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
     private String searchQuery = "";
     private SharedPreferences mySPR_daten;
     private SearchView.OnQueryTextListener textListener;
+    private TextView elementCount;
     private SearchView owe_search;
     private ArrayList<Owe> allOweList;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.DESCRIPTION, FILTER_TYPE.PERSON, FILTER_TYPE.OWN, FILTER_TYPE.OTHER
@@ -158,9 +161,28 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
     private void loadDatabase() {
         @SuppressLint("RestrictedApi") Runnable whenLoaded = () -> {
             setContentView(R.layout.activity_owe);
-            loadRecycler();
+
+            Toolbar toolbar = findViewById(R.id.toolbar);
+            setSupportActionBar(toolbar);
+            elementCount = findViewById(R.id.elementCount);
+
+            AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
+            View noItem = findViewById(R.id.no_item);
+            LinearLayout search_layout = findViewById(R.id.search_layout);
+            appBarLayout.measure(0,0);
+            toolbar.measure(0,0);
+            search_layout.measure(0,0);
+            float maxOffset = -(appBarLayout.getMeasuredHeight() - (toolbar.getMeasuredHeight() + search_layout.getMeasuredHeight()));
+            float distance = 118;
+            appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> {
+                float alpha = 1f - ((verticalOffset - maxOffset) / distance);
+                noItem.setAlpha(alpha > 0f ? alpha : 0f);
+            });
 
             owe_search = findViewById(R.id.search);
+
+            loadRecycler();
+
             textListener = new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String s) {
@@ -202,24 +224,26 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                 .setGetActiveObjectList(() -> {
                     allOweList = new ArrayList<>(database.oweMap.values());
                     List<Owe> newOweList;
+
                     if (searchQuery.equals("") && filterTypeSet.contains(FILTER_TYPE.OWN) && filterTypeSet.contains(FILTER_TYPE.OTHER) && filterTypeSet.contains(FILTER_TYPE.OPEN) && filterTypeSet.contains(FILTER_TYPE.CLOSED)) {
                         newOweList = allOweList;
                         sortList(newOweList);
-                        if (newOweList.isEmpty()) {
+                        if (newOweList.isEmpty())
                             noItem.setText("Keine Einträge");
-                            noItem.setVisibility(View.VISIBLE);
-                        }
                         else
-                            noItem.setVisibility(View.GONE);
+                            noItem.setText("");
                     } else {
                         newOweList = filterList(allOweList);
-                        if (newOweList.isEmpty()) {
+                        if (newOweList.isEmpty())
                             noItem.setText("Kein Eintrag für die Suche");
-                            noItem.setVisibility(View.VISIBLE);
-                        }
                         else
-                            noItem.setVisibility(View.GONE);
+                            noItem.setText("");
                     }
+
+                    int size = newOweList.size();
+
+                    String elementCountText = size > 1 ? size + " Elemente" : (size == 1 ? "Ein" : "Kein") + " Element";
+                    elementCount.setText(elementCountText);
                     return newOweList;
                 })
                 .setSetItemContent((customRecycler, itemView, owe) -> {

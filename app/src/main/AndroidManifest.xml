@@ -58,7 +58,7 @@
             android:name=".Activities.Content.KnowledgeActivity"
             android:label="Wissen"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:theme="@style/DialogActivityTheme">
+            android:theme="@style/DialogActivityTheme.NoTitle">
             <intent-filter
                 android:icon="@drawable/ic_knowledge"
                 android:label="Quelle hinzufügen">
@@ -72,15 +72,17 @@
         <activity
             android:name=".Activities.Content.OweActivity"
             android:label="Schulden"
-            android:parentActivityName=".Activities.Main.MainActivity" />
+            android:parentActivityName=".Activities.Main.MainActivity"
+            android:theme="@style/AppTheme.NoTitle"/>
         <activity
             android:name=".Activities.Content.JokeActivity"
             android:label="Witze"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:theme="@style/DialogActivityTheme"/>
+            android:theme="@style/DialogActivityTheme.NoTitle"/>
         <activity
             android:name=".Activities.Main.CategoriesActivity"
-            android:parentActivityName=".Activities.Main.MainActivity" />
+            android:parentActivityName=".Activities.Main.MainActivity"
+            android:theme="@style/AppTheme.NoTitle"/>
         <activity
             android:name=".Activities.Settings"
             android:label="Einstellungen"

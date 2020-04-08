@@ -35,16 +35,16 @@
                     android:id="@+id/elementCount"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="306dp"
-                    android:layout_marginBottom="73dp"
                     android:layout_gravity="bottom"
+                    android:layout_marginBottom="73dp"
                     android:gravity="center_vertical"
+                    android:minHeight="306dp"
                     android:text="Test"
                     android:textAlignment="center"
                     android:textColor="#FFFFFF"
                     android:textSize="36sp"
                     app:layout_collapseMode="parallax"
-                    app:layout_collapseParallaxMultiplier="0.35" />
+                    app:layout_collapseParallaxMultiplier="0.3" />
 
                 <androidx.appcompat.widget.Toolbar
                     android:id="@+id/toolbar"

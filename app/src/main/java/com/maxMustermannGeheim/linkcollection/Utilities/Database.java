@@ -180,7 +180,7 @@ public class Database {
 
         onInstanceFinishedLoadingList.add(onInstanceFinishedLoading);
         if (onInstanceFinishedLoadingList.size() > 1)
-            return null;
+            return database;
 
         if (Database.exists())
             reload = true;

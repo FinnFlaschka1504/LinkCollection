@@ -891,7 +891,6 @@ public class Utility {
         }
         dateList.sorted(Date::compareTo).replaceAll(Utility::removeTime);
         dateList.distinct();
-//        dateList = dateSet.stream().sorted(Date::compareTo).collect(Collectors.toCollection(CustomList::new));
 
         View dialog_editViews_previous = layout.findViewById(R.id.dialog_editViews_previous);
         dialog_editViews_previous.setOnClickListener(v -> {
@@ -900,7 +899,7 @@ public class Utility {
                 calendarView.setCurrentDate(previous);
                 ((TextView) layout.findViewById(R.id.fragmentCalender_month)).setText(new SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(previous));
                 currentDate = previous;
-                setButtons(layout, size, calendarView, list, customRecycler);
+                setButtons(layout, 1, calendarView, list, customRecycler);
                 loadVideoList(calendarView.getEvents(previous), layout, customRecycler);
 
             }
@@ -913,7 +912,7 @@ public class Utility {
                 calendarView.setCurrentDate(next);
                 ((TextView) layout.findViewById(R.id.fragmentCalender_month)).setText(new SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(next));
                 currentDate = next;
-                setButtons(layout, size, calendarView, list, customRecycler);
+                setButtons(layout, 1, calendarView, list, customRecycler);
                 loadVideoList(calendarView.getEvents(next), layout, customRecycler);
             }
         });
@@ -2081,23 +2080,32 @@ public class Utility {
         if (!url.startsWith("http"))
             url = "https://" + url;
         okhttp3.Request request = new okhttp3.Request.Builder().url(url).build();
+
+        Runnable runOnFailure = () -> {
+            if (context instanceof Activity) {
+                ((Activity) context).runOnUiThread(() -> {
+                    target.setImageResource(R.drawable.ic_broken_image);
+                    if (onFailure.length > 0 && onFailure[0] != null) {
+                        onFailure[0].run();
+                    }
+                });
+            }
+        };
+
         httpClient.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
-                if (context instanceof Activity) {
-                    ((Activity) context).runOnUiThread(() -> {
-                        target.setImageResource(R.drawable.ic_broken_image);
-                        if (onFailure.length > 0 && onFailure[0] != null) {
-                            onFailure[0].run();
-                        }
-                    });
-                }
+                runOnFailure.run();
             }
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 InputStream stream = response.body().byteStream();
-                Sharp.loadInputStream(stream).into(target);
+                try {
+                    Sharp.loadInputStream(stream).into(target);
+                } catch (Exception e) {
+                    runOnFailure.run();
+                }
                 stream.close();
             }
         });

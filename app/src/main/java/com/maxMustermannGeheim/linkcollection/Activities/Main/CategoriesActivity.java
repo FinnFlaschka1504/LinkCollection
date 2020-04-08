@@ -59,7 +59,7 @@ public class CategoriesActivity extends AppCompatActivity {
     public static final int START_CATIGORY_SEARCH = 001;
     public static final String EXTRA_SEARCH_CATEGORY = "EXTRA_SEARCH_CATOGORY";
     public static final String EXTRA_SEARCH = "EXTRA_SEARCH";
-    public static String pictureRegex = "((https:)|/)([+%&?=()/|.|\\w|\\s|-])+\\.(?:jpe?g|png|svg)";
+    public static String pictureRegex = "((https:)|/)([,+%&?=()/|.|\\w|\\s|-])+\\.(?:jpe?g|png|svg)";
     public static String pictureRegexAll = pictureRegex.split("\\\\\\.")[0];
     private Helpers.SortHelper<Pair<ParentClass, Integer>> sortHelper;
 

@@ -10,7 +10,9 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.speech.tts.UtteranceProgressListener;
+import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.style.RelativeSizeSpan;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -53,6 +55,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
@@ -649,7 +652,18 @@ public class VideoActivity extends AppCompatActivity {
                     int size = filteredList.size();
 
                     noItem.setText(size == 0 ? text : "");
-                    elementCount.setText(size > 1 ? size + " Elemente" : (size == 1 ? "Ein" : "Kein") + " Element");
+                    String elementCountText = size > 1 ? size + " Elemente" : (size == 1 ? "Ein" : "Kein") + " Element";
+                    SpannableStringBuilder builder = new SpannableStringBuilder().append(elementCountText);
+                    if (size > 0) {
+                        int viewSum = filteredList.stream().mapToInt(video -> video.getDateList().size()).sum();
+                        String viewSumText = viewSum > 1 ? viewSum + " Ansichten" : (viewSum == 1 ? "Eine" : "Keine") + " Ansicht";
+                        builder.append("\n").append(viewSumText, new RelativeSizeSpan(0.5f), Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
+
+                        double averageRating = filteredList.stream().filter(video -> video.getRating() > 0).mapToDouble(ParentClass_Ratable::getRating).average().orElse(-1);
+                        if (averageRating != -1)
+                            builder.append("  |  ").append(String.format(Locale.getDefault(), "Ø %.2f ☆", averageRating).replaceAll("([.,]?0*)(?= ☆)", ""));
+                    }
+                    elementCount.setText(builder);
                     return filteredList;
 
                 })
@@ -1552,7 +1566,7 @@ public class VideoActivity extends AppCompatActivity {
 
         String requestUrl = "https://api.themoviedb.org/3/search/movie?api_key=09e015a2106437cbc33bf79eb512b32d&language=de&query=" +
                 queue +
-                "&page=1&include_adult=true";
+                "&page=1&include_adult=false";
         RequestQueue requestQueue = Volley.newRequestQueue(this);
 
         Toast.makeText(this, "Einen Moment bitte..", Toast.LENGTH_SHORT).show();

@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     private static SharedPreferences mySPR_daten;
     private SharedPreferences mySPR_settings;
     private com.finn.androidUtilities.CustomDialog calenderDialog;
-    private boolean firstTime;
+    private static boolean isLoadingLayout;
 
     private static Settings.Space currentSpace;
     private View main_offline;
@@ -91,12 +91,12 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        isLoadingLayout = savedInstanceState == null;
 
-        if (savedInstanceState == null)
+        if (isLoadingLayout)
             setContentView(R.layout.loading_screen);
         else
             setContentView(R.layout.activity_main);
-        firstTime = savedInstanceState == null;
 
         mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_DATA, MODE_PRIVATE);
         mySPR_settings = getSharedPreferences(SHARED_PREFERENCES_SETTINGS, MODE_PRIVATE);
@@ -106,8 +106,10 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         if (Database.exists())
             Database.removeDatabaseReloadListener(null);
         Database.addDatabaseReloadListener(database_neu -> {
-            if (firstTime)
+            if (isLoadingLayout) {
                 setContentView(R.layout.activity_main);
+                isLoadingLayout = false;
+            }
 
             if (database_neu.isOnline())
                 Toast.makeText(this, "Datenbank wieder verbunden", Toast.LENGTH_SHORT).show();
@@ -236,9 +238,10 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
             VersionControl.showChangeLog(this, false);
             VersionControl.checkForUpdate(this, false);
 
-            if (firstTime) {
+            if (isLoadingLayout) {
                 setContentView(R.layout.activity_main);
                 Utility.showCenteredToast(this, "Datenbank:\n" + Database.databaseCode);
+                isLoadingLayout = false;
             }
 
             setLayout();
@@ -317,34 +320,37 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         if (!selectedSpace.isShown())
             selectedSpace = Settings.Space.getFirstShown();
 
-        if (!selectedSpace.hasFragment())
-            selectedSpace.setFragment(new SpaceFragment(selectedSpace.getFragmentLayoutId()));
-        SpaceFragment.currentSpace = selectedSpace;
-        getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container, selectedSpace.getFragment()).runOnCommit(() -> {
+        if (!selectedSpace.hasFragment() || selectedSpace != currentSpace || ((FrameLayout) findViewById(R.id.main_frame_container)).getChildCount() == 0) {
+            if (!selectedSpace.hasFragment())
+                selectedSpace.setFragment(new SpaceFragment(selectedSpace.getFragmentLayoutId()));
+            SpaceFragment.currentSpace = selectedSpace;
+            getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container, selectedSpace.getFragment()).runOnCommit(() -> {
+                setCounts(this);
+                if (currentSpace != null)
+                    mySPR_settings.edit().putInt(SETTING_LAST_OPEN_SPACE, currentSpace.getItemId()).apply();
+                if (Settings.Space.allSpaces.filter(Settings.Space::isShown, false).size() > 1) {
+                    ViewGroup view = (ViewGroup) currentSpace.getFragment().getView();
+                    touchListener = new Utility.OnHorizontalSwipeTouchListener(MainActivity.this) {
+                        @Override
+                        public void onSwipeRight() {
+                            ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.allSpaces.filter(Settings.Space::isShown, false).previous(currentSpace).getItemId());
+                        }
+
+                        @Override
+                        public void onSwipeLeft() {
+                            ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.allSpaces.filter(Settings.Space::isShown, false).next(currentSpace).getItemId());
+                        }
+                    };
+                    findViewById(R.id.scrollView).setOnTouchListener(touchListener);
+                    view.setOnTouchListener(touchListener);
+                    Utility.applyToAllViews(view, SquareLayout.class, squareLayout -> squareLayout.setOnTouchListener(touchListener));
+                }
+            }).commitAllowingStateLoss();
+            currentSpace = selectedSpace;
+        } else {
+            SpaceFragment.currentSpace = selectedSpace;
             setCounts(this);
-            if (currentSpace != null)
-                mySPR_settings.edit().putInt(SETTING_LAST_OPEN_SPACE, currentSpace.getItemId()).apply();
-            if (Settings.Space.allSpaces.filter(Settings.Space::isShown, false).size() > 1) {
-                ViewGroup view = (ViewGroup) currentSpace.getFragment().getView();
-                touchListener = new Utility.OnHorizontalSwipeTouchListener(MainActivity.this) {
-                    @Override
-                    public void onSwipeRight() {
-                        ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.allSpaces.filter(Settings.Space::isShown, false).previous(currentSpace).getItemId());
-                    }
-
-                    @Override
-                    public void onSwipeLeft() {
-                        ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.allSpaces.filter(Settings.Space::isShown, false).next(currentSpace).getItemId());
-                    }
-                };
-                findViewById(R.id.scrollView).setOnTouchListener(touchListener);
-                view.setOnTouchListener(touchListener);
-                Utility.applyToAllViews(view, SquareLayout.class, squareLayout -> squareLayout.setOnTouchListener(touchListener));
-            }
-        }).commitAllowingStateLoss();
-        currentSpace = selectedSpace;
-
-
+        }
         return true;
     };
 
@@ -664,16 +670,16 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
             else if (database != null) {
                 Settings.database = database;
                 currentSpace.setLayout();
-//                if (activity != null)
-//                    Toast.makeText(activity, "Wäre gerade abgeschmiert  - Vers. 1", Toast.LENGTH_SHORT).show();
             } else {
                 if (activity != null) {
                     activity.setContentView(R.layout.loading_screen);
-//                    Toast.makeText(activity, "Wäre gerade abgeschmiert  - Vers. 2", Toast.LENGTH_SHORT).show();
+                    isLoadingLayout = true;
                 }
                 Database.getInstance(mySPR_daten, database1 -> {
-                    if (activity != null)
+                    if (activity != null) {
                         activity.setContentView(R.layout.activity_main);
+                        isLoadingLayout = false;
+                    }
 
                     Settings.database = database1;
                     database = database1;

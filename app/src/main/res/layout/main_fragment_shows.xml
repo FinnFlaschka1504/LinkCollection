@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#00FF0000"
     android:fillViewport="true"
     android:orientation="vertical"
     tools:context=".Activities.Main.MainActivity">
@@ -376,8 +377,8 @@
                     android:foreground="@drawable/ripple"
                     android:gravity="center"
                     android:onClick="showLaterMenu_show"
-                    android:visibility="invisible"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:visibility="invisible">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"

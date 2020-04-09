@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     private static SharedPreferences mySPR_daten;
     private SharedPreferences mySPR_settings;
     private com.finn.androidUtilities.CustomDialog calenderDialog;
-    private static boolean isLoadingLayout;
+    public static boolean isLoadingLayout;
 
     private static Settings.Space currentSpace;
     private View main_offline;
@@ -106,10 +106,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         if (Database.exists())
             Database.removeDatabaseReloadListener(null);
         Database.addDatabaseReloadListener(database_neu -> {
-            if (isLoadingLayout) {
-                setContentView(R.layout.activity_main);
-                isLoadingLayout = false;
-            }
+            changeLayout_ifNecessary(this);
 
             if (database_neu.isOnline())
                 Toast.makeText(this, "Datenbank wieder verbunden", Toast.LENGTH_SHORT).show();
@@ -238,11 +235,9 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
             VersionControl.showChangeLog(this, false);
             VersionControl.checkForUpdate(this, false);
 
-            if (isLoadingLayout) {
-                setContentView(R.layout.activity_main);
+            if (changeLayout_ifNecessary(this))
                 Utility.showCenteredToast(this, "Datenbank:\n" + Database.databaseCode);
-                isLoadingLayout = false;
-            }
+
 
             setLayout();
 
@@ -665,9 +660,14 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
     public static void setCounts(MainActivity activity) {
         if (currentSpace != null) {
-            if (Settings.database != null)
+            if (Settings.database != null) {
+                if (!isLayoutSet(activity))
+                    activity.setContentView(R.layout.activity_main);
                 currentSpace.setLayout();
-            else if (database != null) {
+            } else if (database != null) {
+                if (!isLayoutSet(activity))
+                    activity.setContentView(R.layout.activity_main);
+
                 Settings.database = database;
                 currentSpace.setLayout();
             } else {
@@ -688,6 +688,19 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 });
             }
         }
+    }
+
+    private static boolean isLayoutSet(MainActivity activity) {
+        return activity != null && activity.findViewById(R.id.main_frame_container) != null;
+    }
+
+    private static boolean changeLayout_ifNecessary(MainActivity activity) {
+        if (isLoadingLayout || !isLayoutSet(activity)) {
+            activity.setContentView(R.layout.activity_main);
+            isLoadingLayout = false;
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -713,11 +726,15 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
             if (requestCode == START_VIDEO_FROM_CALENDER) {
                 calenderDialog.dismiss();
                 showFilmCalenderDialog(null);
+                changeLayout_ifNecessary(this);
                 setCounts(this);
             } else if (requestCode == START_SETTINGS) {
+                changeLayout_ifNecessary(this);
                 setLayout();
-            } else
+            } else {
+                changeLayout_ifNecessary(this);
                 setCounts(this);
+            }
         }
         super.onActivityResult(requestCode, resultCode, data);
     }

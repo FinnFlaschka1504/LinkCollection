@@ -36,4 +36,11 @@
         <item>@string/parserType_java</item>
         <item>@string/parserType_javaScript</item>
     </string-array>
+
+    <string-array name="showSearchButtonAt">
+        <item>Beide</item>
+        <item>Details</item>
+        <item>Edit</item>
+        <item>Keine</item>
+    </string-array>
 </resources>

@@ -102,6 +102,7 @@ public class Settings extends AppCompatActivity {
     public static final String SETTING_VIDEO_AUTO_SEARCH = "SETTING_VIDEO_AUTO_SEARCH";
     public static final String SETTING_VIDEO_LOAD_CAST_AND_STUDIOS = "SETTING_VIDEO_LOAD_CAST_AND_STUDIOS";
     public static final String SETTING_VIDEO_TMDB_SHORTCUT = "SETTING_VIDEO_TMDB_SHORTCUT";
+    public static final String SETTING_VIDEO_SHOW_SEARCH = "SETTING_VIDEO_SHOW_SEARCH";
 
     public static final String SETTING_SPACE_SHOWN_ = "SETTING_SPACE_SHOWN_";
     public static final String SETTING_SPACE_NAMES_ = "SETTING_SPACE_NAMES_";
@@ -162,6 +163,7 @@ public class Settings extends AppCompatActivity {
         settingsMap.put(SETTING_VIDEO_ASK_FOR_GENRE_IMPORT, "true");
         settingsMap.put(SETTING_SHOW_ASK_FOR_GENRE_IMPORT, "true");
         settingsMap.put(SETTING_VIDEO_LOAD_CAST_AND_STUDIOS, "true");
+        settingsMap.put(SETTING_VIDEO_SHOW_SEARCH, "0");
     }
 
     public static boolean changeSetting(String key, String newValue) {
@@ -222,6 +224,7 @@ public class Settings extends AppCompatActivity {
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_autoSearch)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_AUTO_SEARCH));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_tmdbShortcut)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_TMDB_SHORTCUT));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_loadCastAndStudios)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_LOAD_CAST_AND_STUDIOS));
+                    ((Spinner) view.findViewById(R.id.dialogSettingsVideo_more_showSearch)).setSelection(Integer.parseInt(getSingleSetting(context, SETTING_VIDEO_SHOW_SEARCH)));
 
                     view.findViewById(R.id.dialogSettingsVideo_edit_importGenres).setOnClickListener(v -> {
                         Utility.importTmdbGenre(context, true);
@@ -285,6 +288,7 @@ public class Settings extends AppCompatActivity {
                         changeSetting(SETTING_VIDEO_AUTO_SEARCH, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_autoSearch)).isChecked()));
                         changeSetting(SETTING_VIDEO_TMDB_SHORTCUT, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_tmdbShortcut)).isChecked()));
                         changeSetting(SETTING_VIDEO_LOAD_CAST_AND_STUDIOS, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_loadCastAndStudios)).isChecked()));
+                        changeSetting(SETTING_VIDEO_SHOW_SEARCH, String.valueOf(((Spinner) customDialog.findViewById(R.id.dialogSettingsVideo_more_showSearch)).getSelectedItemPosition()));
                     }
                 })));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_show), context.getString(R.string.bottomMenu_shows)).setActivity(ShowActivity.class).setItemId(Space.SPACE_SHOW).setIconId(R.drawable.ic_shows).setFragmentLayoutId(R.layout.main_fragment_shows)

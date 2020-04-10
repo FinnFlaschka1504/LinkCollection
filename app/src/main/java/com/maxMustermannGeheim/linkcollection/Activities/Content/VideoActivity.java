@@ -157,7 +157,7 @@ public class VideoActivity extends AppCompatActivity {
     private WebView webView;
     private boolean isShared;
     private boolean isDialog;
-    public static Pattern pattern = Pattern.compile("\\*(([0-4]((,|\\.)\\d{1,2})?)|5(,0)?)(-(([0-4]((,|\\.)\\d{1,2})?)|5(,00?)?))?\\*");
+    public static Pattern pattern = Pattern.compile("\\*(([0-4]([,.]\\d{1,2})?)|5(,0)?)(-(([0-4]([,.]\\d{1,2})?)|5([,.]00?)?))?\\*");
 
 
     List<Video> allVideoList = new ArrayList<>();
@@ -736,8 +736,12 @@ public class VideoActivity extends AppCompatActivity {
         CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle(video.getName())//"Detail Ansicht")
                 .setView(R.layout.dialog_detail_video)
-                .addButton(R.drawable.ic_search, customDialog -> showSearchDialog(video, null), false)
-                .alignPreviousButtonsLeft()
+                .addOptionalModifications(customDialog -> {
+                    if (Utility.boolOr(Integer.parseInt(Settings.getSingleSetting(this, Settings.SETTING_VIDEO_SHOW_SEARCH)), 0, 1))
+                        customDialog
+                                .addButton(R.drawable.ic_search, customDialog1 -> showSearchDialog(video, null), false)
+                                .alignPreviousButtonsLeft();
+                })
                 .addButton("Bearbeiten", customDialog ->
                         addOrEditDialog = showEditOrNewDialog(video).first, false)
                 .addButton("Öffnen mit...", customDialog -> openUrl(video.getUrl(), true), openWithButtonId, false)
@@ -980,35 +984,40 @@ public class VideoActivity extends AppCompatActivity {
 
         com.finn.androidUtilities.Helpers.TextInputHelper helper = new com.finn.androidUtilities.Helpers.TextInputHelper();
         final boolean[] checked = {video != null && video.isWatchLater()}; // Utility.getWatchLaterList().contains(video)};
+        CustomDialog.OnClick onClickSave = customDialog -> {
+            String titel = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_Title)).getText().toString().trim();
+            String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_url)).getText().toString().trim();
+            if (editVideo[0].isWatchLater() && !editVideo[0].hasRating() && !Utility.boolOr(((RatingBar) customDialog.findViewById(R.id.customRating_ratingBar)).getRating(), -1f, 0f))
+                CustomDialog.Builder(this)
+                        .setTitle("Ansicht Hinzufügen?")
+                        .setText("Soll eine neue Ansicht zu dem Video hinzugefügt werden?")
+                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                        .addButton(CustomDialog.BUTTON_TYPE.NO_BUTTON, customDialog1 -> saveVideo(customDialog, video, titel, url, checked[0], editVideo[0]))
+                        .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
+                            boolean before = editVideo[0].addDate(new Date(), true);
+                            editVideo[0].setWatchLater(false);
+                            checked[0] = false;
+                            Utility.showCenteredToast(this, "Ansicht Hinzugefügt" + (before ? "\n(Gestern)" : ""));
+                            saveVideo(customDialog, video, titel, url, checked[0], editVideo[0]);
+                        })
+                        .enableColoredActionButtons()
+                        .show();
+            else
+                saveVideo(customDialog, video, titel, url, checked[0], editVideo[0]);
+
+        };
         CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle(video == null ? "Neu: " + singular : singular + " Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
-                .addButton(R.drawable.ic_search, customDialog -> showSearchDialog(editVideo[0], customDialog), false)
-                .alignPreviousButtonsLeft()
+                .addOptionalModifications(customDialog -> {
+                    if (Utility.boolOr(Integer.parseInt(Settings.getSingleSetting(this, Settings.SETTING_VIDEO_SHOW_SEARCH)), 0, 2))
+                        customDialog
+                                .addButton(R.drawable.ic_search, customDialog1 -> showSearchDialog(editVideo[0], customDialog1), false)
+                                .alignPreviousButtonsLeft();
+                })
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
-                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
-                    String titel = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_Title)).getText().toString().trim();
-                    String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_url)).getText().toString().trim();
-                    if (editVideo[0].isWatchLater() && !editVideo[0].hasRating() && !Utility.boolOr(((RatingBar) customDialog.findViewById(R.id.customRating_ratingBar)).getRating(), -1f, 0f))
-                        CustomDialog.Builder(this)
-                                .setTitle("Ansicht Hinzufügen?")
-                                .setText("Soll eine neue Ansicht zu dem Video hinzugefügt werden?")
-                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
-                                .addButton(CustomDialog.BUTTON_TYPE.NO_BUTTON, customDialog1 -> saveVideo(customDialog, video, titel, url, checked[0], editVideo[0]))
-                                .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
-                                    boolean before = editVideo[0].addDate(new Date(), true);
-                                    editVideo[0].setWatchLater(false);
-                                    checked[0] = false;
-                                    Utility.showCenteredToast(this, "Ansicht Hinzugefügt" + (before ? "\n(Gestern)" : ""));
-                                    saveVideo(customDialog, video, titel, url, checked[0], editVideo[0]);
-                                })
-                                .enableColoredActionButtons()
-                                .show();
-                    else
-                        saveVideo(customDialog, video, titel, url, checked[0], editVideo[0]);
-
-                }, false)
-//                .addOnLongClickToLastAddedButton(customDialog -> customDialog.getActionButton().)
+                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, onClickSave, false)
+                .addOnLongClickToLastAddedButton(onClickSave)
                 .disableLastAddedButton()
                 .setSetViewContent((editDialog, view, reload) -> {
                     final CustomDialog[] internetDialog = {null};
@@ -1308,6 +1317,8 @@ public class VideoActivity extends AppCompatActivity {
                     } else {
                         dialog_editOrAddVideo_watchLater.setVisibility(View.VISIBLE);
                         editVideo[0] = new Video("");
+                        if (Utility.stringExists(searchQuery))
+                            dialog_editOrAddVideo_Title_layout.getEditText().setText(searchQuery);
                     }
 
                     ((LazyDatePicker) view.findViewById(R.id.dialog_editOrAddVideo_datePicker)).setOnDatePickListener(dateSelected -> {
@@ -1594,7 +1605,7 @@ public class VideoActivity extends AppCompatActivity {
                 for (int i = 0; i < genre_ids.length(); i++) {
                     integerList.add(genre_ids.getInt(i));
                 }
-                Map<Integer, String> idUuidMap = database.genreMap.values().stream().collect(Collectors.toMap(Genre::getTmdbGenreId, ParentClass::getUuid));
+                Map<Integer, String> idUuidMap = database.genreMap.values().stream().filter(genre -> genre.getTmdbGenreId() != 0).collect(Collectors.toMap(Genre::getTmdbGenreId, ParentClass::getUuid));
 
                 CustomList uuidList = integerList.map((Function<Integer, Object>) idUuidMap::get).filter(Objects::nonNull, false);
                 video.setGenreList(uuidList);
@@ -1693,7 +1704,7 @@ public class VideoActivity extends AppCompatActivity {
                         if (!video.getDarstellerList().contains(optional.get().getUuid()))
                             video.getDarstellerList().add(optional.get().getUuid());
                     } else {
-                        ParentClass_Tmdb actor = new Darsteller(name).setTmdbId(object.getInt("id")).setImagePath(object.getString("profile_path"));
+                        ParentClass_Tmdb actor = (ParentClass_Tmdb) new Darsteller(name).setTmdbId(object.getInt("id")).setImagePath(object.getString("profile_path"));
                         if (actor.getImagePath().equals("null"))
                             actor.setImagePath(null);
 
@@ -1741,7 +1752,7 @@ public class VideoActivity extends AppCompatActivity {
                         if (!video.getStudioList().contains(optional.get().getUuid()))
                             video.getStudioList().add(optional.get().getUuid());
                     } else {
-                        ParentClass_Tmdb studio = new Studio(name).setTmdbId(object.getInt("id")).setImagePath(object.getString("logo_path"));
+                        ParentClass_Tmdb studio = (ParentClass_Tmdb) new Studio(name).setTmdbId(object.getInt("id")).setImagePath(object.getString("logo_path"));
                         if (studio.getImagePath().equals("null"))
                             studio.setImagePath(null);
 

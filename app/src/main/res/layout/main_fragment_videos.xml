@@ -403,6 +403,7 @@
                 android:orientation="horizontal">
 
                 <com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout
+                    android:id="@+id/main_collection"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_margin="8dp"
@@ -412,6 +413,7 @@
                     android:elevation="3dp"
                     android:foreground="@drawable/ripple"
                     android:gravity="center"
+                    android:onClick="openCollectionActivity"
                     android:orientation="vertical">
 
                     <androidx.constraintlayout.widget.ConstraintLayout

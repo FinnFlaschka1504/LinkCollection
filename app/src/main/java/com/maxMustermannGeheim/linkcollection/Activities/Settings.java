@@ -1,6 +1,5 @@
 package com.maxMustermannGeheim.linkcollection.Activities;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -10,7 +9,6 @@ import android.content.pm.ShortcutManager;
 import android.graphics.Color;
 import android.graphics.drawable.Icon;
 import android.os.Bundle;
-import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
@@ -41,7 +39,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
-import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.DialogActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
@@ -79,8 +77,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import bsh.StringUtil;
-
 import static com.maxMustermannGeheim.linkcollection.Activities.Settings.Space.allSpaces;
 
 public class Settings extends AppCompatActivity {
@@ -103,6 +99,7 @@ public class Settings extends AppCompatActivity {
     public static final String SETTING_VIDEO_LOAD_CAST_AND_STUDIOS = "SETTING_VIDEO_LOAD_CAST_AND_STUDIOS";
     public static final String SETTING_VIDEO_TMDB_SHORTCUT = "SETTING_VIDEO_TMDB_SHORTCUT";
     public static final String SETTING_VIDEO_SHOW_SEARCH = "SETTING_VIDEO_SHOW_SEARCH";
+    public static final String SETTING_VIDEO_SHOW_COLLECTIONS = "SETTING_VIDEO_SHOW_COLLECTIONS";
 
     public static final String SETTING_SPACE_SHOWN_ = "SETTING_SPACE_SHOWN_";
     public static final String SETTING_SPACE_NAMES_ = "SETTING_SPACE_NAMES_";
@@ -164,6 +161,7 @@ public class Settings extends AppCompatActivity {
         settingsMap.put(SETTING_SHOW_ASK_FOR_GENRE_IMPORT, "true");
         settingsMap.put(SETTING_VIDEO_LOAD_CAST_AND_STUDIOS, "true");
         settingsMap.put(SETTING_VIDEO_SHOW_SEARCH, "0");
+        settingsMap.put(SETTING_VIDEO_SHOW_COLLECTIONS, "true");
     }
 
     public static boolean changeSetting(String key, String newValue) {
@@ -214,6 +212,10 @@ public class Settings extends AppCompatActivity {
                     database.videoMap.values().forEach(video -> video.getDateList().forEach(date -> dateSet.add(Utility.removeTime(date))));
                     ((TextView) view.findViewById(R.id.main_daysCount)).setText(String.valueOf(dateSet.size()));
                     ((TextView) view.findViewById(R.id.main_watchLaterCount)).setText(String.valueOf(Utility.getWatchLaterList().size()));
+                    Boolean showCollection = getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_COLLECTIONS);
+                    if (showCollection)
+                        ((TextView) view.findViewById(R.id.main_collectionCount)).setText(String.valueOf(database.collectionMap.size()));
+                    view.findViewById(R.id.main_collection).setVisibility(showCollection ? View.VISIBLE : View.INVISIBLE);
                 })
                 .setAssociatedClasses(Video.class, Darsteller.class, Studio.class, Genre.class, UrlParser.class)
                 .setSettingsDialog(new Utility.Triple<>(R.layout.dialog_settings_video, (customDialog, view, space) -> {
@@ -225,6 +227,7 @@ public class Settings extends AppCompatActivity {
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_tmdbShortcut)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_TMDB_SHORTCUT));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_loadCastAndStudios)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_LOAD_CAST_AND_STUDIOS));
                     ((Spinner) view.findViewById(R.id.dialogSettingsVideo_more_showSearch)).setSelection(Integer.parseInt(getSingleSetting(context, SETTING_VIDEO_SHOW_SEARCH)));
+                    ((Switch) view.findViewById(R.id.dialogSettingsVideo_more_showCollections)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_COLLECTIONS));
 
                     view.findViewById(R.id.dialogSettingsVideo_edit_importGenres).setOnClickListener(v -> {
                         Utility.importTmdbGenre(context, true);
@@ -289,6 +292,7 @@ public class Settings extends AppCompatActivity {
                         changeSetting(SETTING_VIDEO_TMDB_SHORTCUT, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_tmdbShortcut)).isChecked()));
                         changeSetting(SETTING_VIDEO_LOAD_CAST_AND_STUDIOS, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_loadCastAndStudios)).isChecked()));
                         changeSetting(SETTING_VIDEO_SHOW_SEARCH, String.valueOf(((Spinner) customDialog.findViewById(R.id.dialogSettingsVideo_more_showSearch)).getSelectedItemPosition()));
+                        changeSetting(SETTING_VIDEO_SHOW_COLLECTIONS, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_more_showCollections)).isChecked()));
                     }
                 })));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_show), context.getString(R.string.bottomMenu_shows)).setActivity(ShowActivity.class).setItemId(Space.SPACE_SHOW).setIconId(R.drawable.ic_shows).setFragmentLayoutId(R.layout.main_fragment_shows)

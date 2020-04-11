@@ -19,12 +19,13 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme"
+        android:theme="@style/AppTheme.NoTitle"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".Activities.Main.DialogActivity"
+        <activity
+            android:name=".Activities.Main.DialogActivity"
             android:launchMode="singleTop"
             android:noHistory="true"
-            android:theme="@style/DialogActivityTheme"/>
+            android:theme="@style/DialogActivityTheme" />
         <activity
             android:name=".Activities.Main.MainActivity"
             android:configChanges="orientation|screenSize"
@@ -36,7 +37,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".Activities.Content.VideoActivity"
+            android:name=".Activities.Content.Videos.VideoActivity"
             android:label="@string/VideoActivity_label"
             android:parentActivityName=".Activities.Main.MainActivity"
             android:theme="@style/DialogActivityTheme.NoTitle">
@@ -50,10 +51,12 @@
                 <data android:mimeType="text/*" />
             </intent-filter>
         </activity>
+        <activity android:name=".Activities.Content.Videos.CollectionActivity"
+            android:parentActivityName=".Activities.Main.MainActivity" />
         <activity
             android:name=".Activities.Content.ShowActivity"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:theme="@style/AppTheme.NoTitle"/>
+            android:theme="@style/AppTheme.NoTitle" />
         <activity
             android:name=".Activities.Content.KnowledgeActivity"
             android:label="Wissen"
@@ -73,21 +76,21 @@
             android:name=".Activities.Content.OweActivity"
             android:label="Schulden"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:theme="@style/AppTheme.NoTitle"/>
+            android:theme="@style/AppTheme.NoTitle" />
         <activity
             android:name=".Activities.Content.JokeActivity"
             android:label="Witze"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:theme="@style/DialogActivityTheme.NoTitle"/>
+            android:theme="@style/DialogActivityTheme.NoTitle" />
         <activity
             android:name=".Activities.Main.CategoriesActivity"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:theme="@style/AppTheme.NoTitle"/>
+            android:theme="@style/AppTheme.NoTitle" />
         <activity
             android:name=".Activities.Settings"
             android:label="Einstellungen"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:theme="@style/AppTheme.NoTitle"/>
+            android:theme="@style/AppTheme.NoTitle" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -28,7 +28,8 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
-import com.maxMustermannGeheim.linkcollection.Activities.Content.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.CollectionActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.R;
@@ -65,6 +66,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     public static final int START_SEEN = ++count;
     public static final int START_WATCH_LATER = ++count;
     public static final int START_UPCOMING = ++count;
+    public static final int START_CATEGORIES = ++count;
     public static final int START_SETTINGS = ++count;
     public static final int START_KNOWLEDGE = ++count;
     public static final int START_KNOWLEDGE_CATEGORY = ++count;
@@ -315,7 +317,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         if (!selectedSpace.isShown())
             selectedSpace = Settings.Space.getFirstShown();
 
-        if (!selectedSpace.hasFragment() || selectedSpace != currentSpace || ((FrameLayout) findViewById(R.id.main_frame_container)).getChildCount() == 0) {
+//        if (true || !selectedSpace.hasFragment() || selectedSpace != currentSpace || ((FrameLayout) findViewById(R.id.main_frame_container)).getChildCount() == 0) {
             if (!selectedSpace.hasFragment())
                 selectedSpace.setFragment(new SpaceFragment(selectedSpace.getFragmentLayoutId()));
             SpaceFragment.currentSpace = selectedSpace;
@@ -342,10 +344,10 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 }
             }).commitAllowingStateLoss();
             currentSpace = selectedSpace;
-        } else {
-            SpaceFragment.currentSpace = selectedSpace;
-            setCounts(this);
-        }
+//        } else {
+//            SpaceFragment.currentSpace = selectedSpace;
+//            setCounts(this);
+//        }
         return true;
     };
 
@@ -527,6 +529,13 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     public void showLaterMenu(View view) {
         VideoActivity.showModeMenu(this, view);
     }
+
+    public void openCollectionActivity(View view) {
+        if (!Database.isReady())
+            return;
+        Intent intent = new Intent(this, CollectionActivity.class);
+        startActivityForResult(intent, START_CATEGORIES);
+    }
 //  <----- VIDEO -----
 
 
@@ -662,11 +671,11 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         if (currentSpace != null) {
             if (Settings.database != null) {
                 if (!isLayoutSet(activity))
-                    activity.setContentView(R.layout.activity_main);
+                    activity.setContentView(R.layout.activity_main); // nein
                 currentSpace.setLayout();
             } else if (database != null) {
                 if (!isLayoutSet(activity))
-                    activity.setContentView(R.layout.activity_main);
+                    activity.setContentView(R.layout.activity_main); // nein
 
                 Settings.database = database;
                 currentSpace.setLayout();
@@ -677,7 +686,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 }
                 Database.getInstance(mySPR_daten, database1 -> {
                     if (activity != null) {
-                        activity.setContentView(R.layout.activity_main);
+                        activity.setContentView(R.layout.activity_main); // nein
                         isLoadingLayout = false;
                     }
 

@@ -19,25 +19,38 @@ import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.finn.androidUtilities.CustomDialog;
+import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
 import com.finn.androidUtilities.Helpers;
+import com.finn.androidUtilities.ParentClass;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Collection;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
 public class CollectionActivity extends AppCompatActivity {
     enum SORT_TYPE {
@@ -77,6 +90,7 @@ public class CollectionActivity extends AppCompatActivity {
     private SearchView searchView;
     private CustomRecycler<Collection> customRecycler;
     private CustomDialog editDialog;
+    private CustomDialog detailDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,6 +113,8 @@ public class CollectionActivity extends AppCompatActivity {
 //                    video.setWatchLater(true);
 ////                    database.watchLaterList.add(video.getUuid());
 //            }
+            String BREAKPOINT = null;
+            // ToDo: Gelöschte Filme entfernen
 
             setContentView(R.layout.activity_collection);
 
@@ -301,7 +317,7 @@ public class CollectionActivity extends AppCompatActivity {
     private void loadRecycler() {
         customRecycler = new CustomRecycler<Collection>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_collection)
-                .setGetActiveObjectList(() -> {
+                .setGetActiveObjectList(customRecycler -> {
                     CustomList<Collection> filteredList = sortList(filterList(getAllCollections()));
                     TextView noItem = findViewById(R.id.no_item);
                     String text = searchView.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche";
@@ -323,47 +339,60 @@ public class CollectionActivity extends AppCompatActivity {
                     return filteredList;
 
                 })
-                .setSetItemContent((customRecycler, itemView, video) -> {
-                    ((TextView) itemView.findViewById(R.id.listItem_collection_Titel)).setText(/*(Utility.stringExists(video.getImagePath()) ? "" : "• ") + */video.getName());
-//                    if (!video.getDateList().isEmpty()) {
+                .setSetItemContent((customRecycler, itemView, collection) -> {
+                    String imagePath = collection.getImagePath();
+                    ImageView thumbnail = itemView.findViewById(R.id.listItem_collection_thumbnail);
+                    if (Utility.stringExists(imagePath)) {
+                        Utility.loadUrlIntoImageView(this, thumbnail, (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/w92/") + imagePath,
+                                (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/original/") + imagePath);
+                        thumbnail.setVisibility(View.VISIBLE);
+                    } else
+                        thumbnail.setVisibility(View.GONE);
+
+
+                    if (!collection.getFilmIdList().isEmpty()) {
+                        ((TextView) itemView.findViewById(R.id.listItem_collection_videos_count)).setText(String.valueOf(collection.getFilmIdList().size()));
+                        itemView.findViewById(R.id.listItem_collection_videos_count_layout).setVisibility(View.VISIBLE);
+                    } else
+                        itemView.findViewById(R.id.listItem_collection_videos_count_layout).setVisibility(View.GONE);
+                    ((TextView) itemView.findViewById(R.id.listItem_collection_Titel)).setText(/*(Utility.stringExists(collection.getImagePath()) ? "" : "• ") + */collection.getName());
+//                    if (!collection.getDateList().isEmpty()) {
 //                        itemView.findViewById(R.id.listItem_collection_Views_layout).setVisibility(View.VISIBLE);
-//                        ((TextView) itemView.findViewById(R.id.listItem_collection_Views)).setText(String.valueOf(video.getDateList().size()));
+//                        ((TextView) itemView.findViewById(R.id.listItem_collection_Views)).setText(String.valueOf(collection.getDateList().size()));
 //                    } else
 //                        itemView.findViewById(R.id.listItem_collection_Views_layout).setVisibility(View.GONE);
 //
-//                    itemView.findViewById(R.id.listItem_collection_later).setVisibility(Utility.getWatchLaterList().contains(video) ? View.VISIBLE : View.GONE);
-//                    itemView.findViewById(R.id.listItem_collection_upcoming).setVisibility(video.isUpcoming() ? View.VISIBLE : View.GONE);
+//                    itemView.findViewById(R.id.listItem_collection_later).setVisibility(Utility.getWatchLaterList().contains(collection) ? View.VISIBLE : View.GONE);
+//                    itemView.findViewById(R.id.listItem_collection_upcoming).setVisibility(collection.isUpcoming() ? View.VISIBLE : View.GONE);
 //
 //                    List<String> darstellerNames = new ArrayList<>();
-//                    video.getDarstellerList().forEach(uuid -> darstellerNames.add(database.darstellerMap.get(uuid).getName()));
+//                    collection.getDarstellerList().forEach(uuid -> darstellerNames.add(database.darstellerMap.get(uuid).getName()));
 //                    ((TextView) itemView.findViewById(R.id.listItem_collection_Darsteller)).setText(String.join(", ", darstellerNames));
 //                    itemView.findViewById(R.id.listItem_collection_Darsteller).setSelected(scrolling);
 //
-//                    if (video.getRating() > 0) {
+//                    if (collection.getRating() > 0) {
 //                        itemView.findViewById(R.id.listItem_collection_rating_layout).setVisibility(View.VISIBLE);
-//                        ((TextView) itemView.findViewById(R.id.listItem_collection_rating)).setText(String.valueOf(video.getRating()));
+//                        ((TextView) itemView.findViewById(R.id.listItem_collection_rating)).setText(String.valueOf(collection.getRating()));
 //                    } else
 //                        itemView.findViewById(R.id.listItem_collection_rating_layout).setVisibility(View.GONE);
 //
 //                    List<String> studioNames = new ArrayList<>();
-//                    video.getStudioList().forEach(uuid -> studioNames.add(database.studioMap.get(uuid).getName()));
+//                    collection.getStudioList().forEach(uuid -> studioNames.add(database.studioMap.get(uuid).getName()));
 //                    ((TextView) itemView.findViewById(R.id.listItem_collection_Studio)).setText(String.join(", ", studioNames));
 //                    itemView.findViewById(R.id.listItem_collection_Studio).setSelected(scrolling);
 //
-//                    List<String> genreNames = new ArrayList<>();
-//                    video.getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
-//                    ((TextView) itemView.findViewById(R.id.listItem_collection_Genre)).setText(String.join(", ", genreNames));
-//                    itemView.findViewById(R.id.listItem_collection_Genre).setSelected(scrolling);
+                    TextView videoNames = itemView.findViewById(R.id.listItem_collection_videos);
+                    videoNames.setText(collection.getFilmIdList().stream().map(uuid -> database.videoMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                    videoNames.setSelected(scrolling);
                 })
-                .setOnClickListener((customRecycler, view, object, index) -> {
+                .setOnClickListener((customRecycler, view, collection, index) -> {
+                    showDetailDialog(collection);
                 })
-                .addSubOnClickListener(R.id.listItem_collection_details, (customRecycler, view, object, index) -> {
-//                    detailDialog = showDetailDialog(object);
+                .addSubOnClickListener(R.id.listItem_collection_search, (customRecycler, view, collection, index) -> {
                 }, false)
                 .setOnLongClickListener((customRecycler, view, collection, index) -> {
                     showEditDialog(collection);
                 })
-                .hideDivider()
                 .generate();
     }
 
@@ -371,6 +400,58 @@ public class CollectionActivity extends AppCompatActivity {
         customRecycler.reload();
     }
     //  <------------------------- Recycler -------------------------
+
+
+    //  ------------------------- Detail ------------------------->
+    private CustomDialog showDetailDialog(Collection collection) {
+        final boolean[] hasChanged = {false};
+        detailDialog = CustomDialog.Builder(this)
+                .setTitle(collection.getName())
+                .setView(R.layout.dialog_detail_collection)
+                .setSetViewContent((customDialog, view, reload) -> {
+                    CustomRecycler<Video> videoRecycler = new CustomRecycler<Video>(this, customDialog.findViewById(R.id.dialogDetail_collection_videos))
+                            .setItemLayout(R.layout.list_item_collection_video)
+                            .setGetActiveObjectList(customRecycler -> collection.getFilmIdList().stream().map(s -> database.videoMap.get(s)).collect(Collectors.toList()))
+                            .setSetItemContent((customRecycler1, itemView, video) -> {
+                                String imagePath = video.getImagePath();
+                                ImageView thumbnail = itemView.findViewById(R.id.listItem_collectionVideo_thumbnail);
+                                if (Utility.stringExists(imagePath)) {
+                                    imagePath = Utility.getTmdbImagePath_ifNecessary(imagePath, true);
+                                    Utility.loadUrlIntoImageView(this, thumbnail,
+                                            imagePath, imagePath, null, () -> Utility.roundImageView(thumbnail, 8));
+                                    thumbnail.setVisibility(View.VISIBLE);
+                                } else
+                                    thumbnail.setImageResource(R.drawable.ic_no_image);
+
+                                // ToDo: collection Sortieren
+
+                                ((TextView) itemView.findViewById(R.id.listItem_collectionVideo_text)).setText(video.getName());
+                            })
+                            .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
+                            .enableDragAndDrop(R.id.listItem_collectionVideo_text, (customRecycler1, objectList) -> {
+                                collection.setFilmIdList(objectList.stream().map(ParentClass::getUuid).collect(Collectors.toList()));
+                                hasChanged[0] = true;
+                            }, true)
+                            .generate();
+
+                    view.findViewById(R.id.dialogDetail_collection_edtiVideos).setOnClickListener(v -> {
+                        Utility.showEditItemDialog(this, null, collection.getFilmIdList(), collection, CategoriesActivity.CATEGORIES.COLLECTION)
+                                .addOnDialogDismiss(customDialog1 -> {
+                                    videoRecycler.reload();
+                                    Database.saveAll();
+                                });
+                    });
+                })
+                .addOnDialogDismiss(customDialog -> {
+                    if (hasChanged[0]) {
+                        Database.saveAll();
+                        reLoadRecycler();
+                    }
+                })
+                .show();
+        return detailDialog;
+    }
+    //  <------------------------- Detail -------------------------
 
 
     //  ------------------------- Edit ------------------------->
@@ -392,6 +473,8 @@ public class CollectionActivity extends AppCompatActivity {
                         if (editCollection.getName() != null) {
                             editTitle.setText(editCollection.getName());
                         }
+
+                        setThumbnailButton(editCollection, customDialog);
 
                         ImageView thumbnailButton = view.findViewById(R.id.dialog_editOrAddCollection_thumbnail);
                         thumbnailButton.setOnClickListener(v -> {
@@ -440,6 +523,20 @@ public class CollectionActivity extends AppCompatActivity {
                         });
                         setThumbnailButton(editCollection, editDialog);
 
+                        ((TextView) customDialog.findViewById(R.id.dialog_editOrAddCollection_films)).setText(
+                                editCollection.getFilmIdList().stream().map(uuid -> database.videoMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+
+                        ImageView editFilms = customDialog.findViewById(R.id.dialog_editOrAddCollection_editFilms);
+                        editFilms.setOnClickListener(v -> {
+                            Utility.showEditItemDialog(this, customDialog, editCollection.getFilmIdList(), editCollection, CategoriesActivity.CATEGORIES.COLLECTION);
+                        });
+
+                        customDialog.findViewById(R.id.dialog_editOrAddCollection_autoImportToCollection).setOnClickListener(v -> {
+                            String title = editTitle.getText().toString().trim();
+                            if (!Utility.stringExists(title))
+                                Toast.makeText(this, "Erst einen Namen eingeben", Toast.LENGTH_SHORT).show();
+                            apiSearchRequest(title, customDialog, editCollection);
+                        });
                     })
                     .addOptionalModifications(customDialog -> {
                         if (oldCollection != null)
@@ -477,8 +574,6 @@ public class CollectionActivity extends AppCompatActivity {
             Utility.loadUrlIntoImageView(this, thumbnail, (path.contains("https") ? "" : "https://image.tmdb.org/t/p/w92/") + path, null);
     }
 
-    // ToDo: Filmauswahl in der Detailansicht (evl. mit Liste aus Bildern) und automatisch zuweisen (und evl. auch filme importieren) mit MultiSearch
-
     private void saveCollection(CustomDialog editDialog, @Nullable Collection oldCollection, Collection editCollection) {
         boolean isNew = oldCollection == null;
         if (isNew)
@@ -498,6 +593,57 @@ public class CollectionActivity extends AppCompatActivity {
             ((CustomDialog) editDialog.getPayload()).reloadView();
     }
     //  <------------------------- Edit -------------------------
+
+
+    //  ------------------------- API-Call ------------------------->
+    private void apiSearchRequest(String queue, CustomDialog customDialog, Collection collection) {
+        if (!Utility.isOnline(this))
+            return;
+
+        String requestUrl = "https://api.themoviedb.org/3/search/multi?api_key=09e015a2106437cbc33bf79eb512b32d&language=de&query=" +
+                queue +
+                "&page=1&include_adult=false";
+        RequestQueue requestQueue = Volley.newRequestQueue(this);
+
+        Toast.makeText(this, "Einen Moment bitte..", Toast.LENGTH_SHORT).show();
+
+
+
+        JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {
+            JSONArray results;
+            try {
+                results = response.getJSONArray("results");
+
+                if (results.length() == 0) {
+                    Toast.makeText(this, "Keine Ergebnisse gefunden", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                List<String> foundList = new ArrayList<>();
+
+                for (int i = 0; i < results.length(); i++) {
+                    JSONObject object = results.getJSONObject(i);
+
+                    int id = object.getInt("id");
+
+                    database.videoMap.values().stream().filter(video -> video.getTmdId() == id).findFirst().ifPresent(video -> foundList.add(video.getUuid()));
+
+                }
+
+                foundList.removeAll(collection.getFilmIdList());
+                collection.getFilmIdList().addAll(foundList);
+                customDialog.reloadView();
+                Toast.makeText(this, foundList.isEmpty() ? "Nichts hinzugefügt" : (foundList.size() == 1 ? "Einen" : foundList.size()) + " hinzugefügt", Toast.LENGTH_SHORT).show();
+
+            } catch (JSONException ignored) {
+            }
+
+        }, error -> Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show());
+
+        requestQueue.add(jsonArrayRequest);
+
+    }
+    //  <------------------------- API-Call -------------------------
 
 
     //  ------------------------- Convenience ------------------------->

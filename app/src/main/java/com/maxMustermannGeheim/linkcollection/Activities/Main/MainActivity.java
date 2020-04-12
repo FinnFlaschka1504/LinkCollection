@@ -122,6 +122,21 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //        List<String> imageUrlsFromHtml = Utility.getImageUrlsFromText(WebisteHtml.websiteHtml);
         String BREAKPOINT = null;
 
+//        Test test = Test.create();
+//        Test test2 = Test.create();
+//
+//        test.setTest(0);
+//        test2.setTest(1);
+//
+//        test.getTest();
+//        test2.getTest();
+//
+//        test.setTest(2);
+//        test2.setTest(3);
+//
+//        test.getTest();
+//        test2.getTest();
+
 //        CustomUtility.PingTask.simulate(false, 3000);
 
 //        Interpreter interpreter = new Interpreter();

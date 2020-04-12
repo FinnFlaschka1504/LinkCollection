@@ -244,6 +244,8 @@ public class VideoActivity extends AppCompatActivity {
                     filterdVideoList.remove(database.videoMap.get(uuidVideo));
                     allVideoList.remove(database.videoMap.get(uuidVideo));
                     database.videoMap.remove(uuidVideo);
+
+                    database.collectionMap.values().forEach(collection -> collection.getFilmIdList().remove(uuidVideo));
                 }
                 delete = false;
                 videos_confirmDelete.setVisibility(View.GONE);
@@ -797,7 +799,7 @@ public class VideoActivity extends AppCompatActivity {
                     if (imagePath != null && !imagePath.isEmpty()) {
                         ImageView dialog_video_poster = view.findViewById(R.id.dialog_video_poster);
                         dialog_video_poster.setVisibility(View.VISIBLE);
-                        Utility.loadUrlIntoImageView(this, dialog_video_poster, (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/w92/") + imagePath, (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/original/") + imagePath);
+                        Utility.loadUrlIntoImageView(this, dialog_video_poster, Utility.getTmdbImagePath_ifNecessary(imagePath, false), Utility.getTmdbImagePath_ifNecessary(imagePath, true));
                     }
 
 
@@ -1049,7 +1051,7 @@ public class VideoActivity extends AppCompatActivity {
 
                                     if (Utility.stringExists(url)) {
                                         imageView.setVisibility(View.VISIBLE);
-                                        Utility.loadUrlIntoImageView(this, imageView, (url.contains("https") ? "" : "https://image.tmdb.org/t/p/original/") + url, null);
+                                        Utility.loadUrlIntoImageView(this, imageView, Utility.getTmdbImagePath_ifNecessary(url, false), null);
                                     } else
                                         imageView.setVisibility(View.GONE);
                                 })
@@ -1511,7 +1513,7 @@ public class VideoActivity extends AppCompatActivity {
             view.setAlpha(stringExists ? 1f : 0.4f);
         });
         if (stringExists)
-            Utility.loadUrlIntoImageView(this, thumbnail, (path.contains("https") ? "" : "https://image.tmdb.org/t/p/w92/") + path, null);
+            Utility.loadUrlIntoImageView(this, thumbnail, Utility.getTmdbImagePath_ifNecessary(path, false), null);
     }
 
     private void saveVideo(CustomDialog dialog, Video video, String titel, String url, boolean checked, Video editVideo) {
@@ -2154,7 +2156,7 @@ public class VideoActivity extends AppCompatActivity {
                         ImageView dialog_video_poster = view.findViewById(R.id.dialog_video_poster);
                         dialog_video_poster.setVisibility(View.VISIBLE);
 
-                        Utility.loadUrlIntoImageView(this, dialog_video_poster, (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/w92/") + imagePath, (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/original/") + imagePath);
+                        Utility.loadUrlIntoImageView(this, dialog_video_poster, Utility.getTmdbImagePath_ifNecessary(imagePath, false), Utility.getTmdbImagePath_ifNecessary(imagePath, true));
                     } else
                         customDialog.findViewById(R.id.dialog_video_poster).setVisibility(View.GONE);
 

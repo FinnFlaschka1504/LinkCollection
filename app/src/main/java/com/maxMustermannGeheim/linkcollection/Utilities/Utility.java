@@ -7,7 +7,14 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -47,6 +54,7 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.DrawableImageViewTarget;
 import com.bumptech.glide.request.target.Target;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
@@ -87,6 +95,7 @@ import org.opengraph.OpenGraph;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -933,7 +942,6 @@ public class Utility {
     }
 
 
-
     public static class OnHorizontalSwipeTouchListener implements View.OnTouchListener {
 
         private final GestureDetector gestureDetector;
@@ -944,7 +952,6 @@ public class Utility {
             gestureDetector = new GestureDetector(ctx, new GestureListener());
 
         }
-
 
 
         @Override
@@ -964,7 +971,6 @@ public class Utility {
 //            public boolean onDown(MotionEvent e) {
 //                return true;
 //            }
-
 
 
             @Override
@@ -1119,6 +1125,8 @@ public class Utility {
             case SHOW_GENRES:
                 allObjectsList = new ArrayList<>(database.showGenreMap.values());
                 break;
+            case COLLECTION:
+                allObjectsList = new ArrayList<>(database.videoMap.values());
         }
 
         int saveButtonId = View.generateViewId();
@@ -1129,45 +1137,50 @@ public class Utility {
                 .setView(R.layout.dialog_edit_item)
                 .setDimensions(true, true)
                 .disableScroll()
-                .addButton("Hinzufügen", customDialog -> {
-                    CustomDialog.Builder(context)
-                            .setTitle(editType_string + " Hinzufügen")
-                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
-                            .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
-                                ParentClass parentClass = ParentClass.newCategory(category, customDialog1.getEditText());
-                                switch (category) {
-                                    case DARSTELLER:
-                                        database.darstellerMap.put(parentClass.getUuid(), (Darsteller) parentClass);
-                                        break;
-                                    case STUDIOS:
-                                        database.studioMap.put(parentClass.getUuid(), (Studio) parentClass);
-                                        break;
-                                    case GENRE:
-                                        database.genreMap.put(parentClass.getUuid(), (Genre) parentClass);
-                                        break;
-                                    case KNOWLEDGE_CATEGORIES:
-                                        database.knowledgeCategoryMap.put(parentClass.getUuid(), (KnowledgeCategory) parentClass);
-                                        break;
-                                    case JOKE_CATEGORIES:
-                                        database.jokeCategoryMap.put(parentClass.getUuid(), (JokeCategory) parentClass);
-                                        break;
-                                    case SHOW_GENRES:
-                                        database.showGenreMap.put(parentClass.getUuid(), (ShowGenre) parentClass);
-                                        break;
-                                }
-                                selectedUuidList.add(parentClass.getUuid());
-                                customDialog1.dismiss();
-                                customDialog.dismiss();
-                                showEditItemDialog(context, addOrEditDialog, selectedUuidList, o, category);
-                                Database.saveAll();
-                            })
-                            .setEdit(new CustomDialog.EditBuilder()
-                                    .setHint(editType_string + "-Name")
-                                    .setText(((SearchView) customDialog.findViewById(R.id.dialogEditCategory_search)).getQuery().toString()))
-                            .show();
+                .addOptionalModifications(customDialog0 -> {
+                    if (category.equals(CategoriesActivity.CATEGORIES.COLLECTION))
+                        return;
+                    customDialog0
+                            .addButton("Hinzufügen", customDialog -> {
+                                CustomDialog.Builder(context)
+                                        .setTitle(editType_string + " Hinzufügen")
+                                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                                        .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                                            ParentClass parentClass = ParentClass.newCategory(category, customDialog1.getEditText());
+                                            switch (category) {
+                                                case DARSTELLER:
+                                                    database.darstellerMap.put(parentClass.getUuid(), (Darsteller) parentClass);
+                                                    break;
+                                                case STUDIOS:
+                                                    database.studioMap.put(parentClass.getUuid(), (Studio) parentClass);
+                                                    break;
+                                                case GENRE:
+                                                    database.genreMap.put(parentClass.getUuid(), (Genre) parentClass);
+                                                    break;
+                                                case KNOWLEDGE_CATEGORIES:
+                                                    database.knowledgeCategoryMap.put(parentClass.getUuid(), (KnowledgeCategory) parentClass);
+                                                    break;
+                                                case JOKE_CATEGORIES:
+                                                    database.jokeCategoryMap.put(parentClass.getUuid(), (JokeCategory) parentClass);
+                                                    break;
+                                                case SHOW_GENRES:
+                                                    database.showGenreMap.put(parentClass.getUuid(), (ShowGenre) parentClass);
+                                                    break;
+                                            }
+                                            selectedUuidList.add(parentClass.getUuid());
+                                            customDialog1.dismiss();
+                                            customDialog.dismiss();
+                                            showEditItemDialog(context, addOrEditDialog, selectedUuidList, o, category);
+                                            Database.saveAll();
+                                        })
+                                        .setEdit(new CustomDialog.EditBuilder()
+                                                .setHint(editType_string + "-Name")
+                                                .setText(((SearchView) customDialog.findViewById(R.id.dialogEditCategory_search)).getQuery().toString()))
+                                        .show();
 
-                }, false)
-                .alignPreviousButtonsLeft()
+                            }, false)
+                            .alignPreviousButtonsLeft();
+                })
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     List<String> nameList = new ArrayList<>();
                     switch (category) {
@@ -1201,10 +1214,17 @@ public class Utility {
                             selectedUuidList.forEach(uuid -> nameList.add(database.showGenreMap.get(uuid).getName()));
                             ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAdd_show_Genre)).setText(String.join(", ", nameList));
                             break;
+                        case COLLECTION:
+                            ((com.maxMustermannGeheim.linkcollection.Daten.Videos.Collection) o).setFilmIdList(new com.finn.androidUtilities.CustomList<>(selectedUuidList));
+                            if (addOrEditDialog != null)
+                                ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddCollection_films)).setText(
+                                        selectedUuidList.stream().map(uuid -> database.videoMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+
                     }
                 }, saveButtonId)
                 .show();
 
+        SearchView searchView = dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_search);
 
         CustomRecycler<ParentClass> customRecycler_selectList = new CustomRecycler<>(context, dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_selectCategories));
 
@@ -1238,7 +1258,7 @@ public class Utility {
 
 
         customRecycler_selectList
-                .setItemLayout(R.layout.list_item_select_actor)
+                .setItemLayout(R.layout.list_item_select)
                 .setMultiClickEnabled(true)
                 .setGetActiveObjectList(() -> {
                     if (searchQuery[0].equals("")) {
@@ -1249,6 +1269,23 @@ public class Utility {
                             .sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList());
                 })
                 .setSetItemContent((customRecycler, itemView, parentClass) -> {
+                    ImageView thumbnail = itemView.findViewById(R.id.selectList_thumbnail);
+                    String imagePath;
+
+                    try {
+                        Method getImagePath = parentClass.getClass().getMethod("getImagePath");
+                        imagePath = (String) getImagePath.invoke(parentClass);
+                        if (Utility.stringExists(imagePath)) {
+                            Utility.loadUrlIntoImageView(context, thumbnail, (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/w92/") + imagePath,
+                                    (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/original/") + imagePath, null, () -> roundImageView(thumbnail, 4), searchView::clearFocus);
+                            thumbnail.setVisibility(View.VISIBLE);
+                        } else
+                            thumbnail.setVisibility(View.GONE);
+
+                    } catch (Exception e) {
+                        thumbnail.setVisibility(View.GONE);
+                    }
+
                     ((TextView) itemView.findViewById(R.id.selectList_name)).setText(parentClass.getName());
 
                     ((CheckBox) itemView.findViewById(R.id.selectList_selected)).setChecked(selectedUuidList.contains(parentClass.getUuid()));
@@ -1272,7 +1309,6 @@ public class Utility {
                 })
                 .generate();
 
-        SearchView searchView = dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_search);
         searchView.setQueryHint(category.getPlural() + " durchsuchen");
         searchView.requestFocus();
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -1312,6 +1348,8 @@ public class Utility {
                 return database.jokeCategoryMap;
             case SHOW_GENRES:
                 return database.showGenreMap;
+            case COLLECTION:
+                return database.videoMap;
         }
         return null;
     }
@@ -1513,7 +1551,7 @@ public class Utility {
                                 .addButton("Reset", customDialog1 -> {
                                     String removedQuery = searchView.getQuery().toString().replaceAll(VideoActivity.pattern.pattern(), "").trim();
                                     searchView.setQuery(removedQuery, true);
-                                    })
+                                })
                                 .alignPreviousButtonsLeft();
                     }
                 })
@@ -2001,10 +2039,10 @@ public class Utility {
     //  <------------------------- Interfaces -------------------------
 
 
-    //  ------------------------- LoadUrlIntoImageView ------------------------->
-    public static void loadUrlIntoImageView(Context context, ImageView imageView, String imagePath, @Nullable String fullScreenPath, Runnable... onFail_onFullscreen) {
+    //  ------------------------- ImageView ------------------------->
+    public static void loadUrlIntoImageView(Context context, ImageView imageView, String imagePath, @Nullable String fullScreenPath, Runnable... onFail_onSuccess_onFullscreen) {
         if (imagePath.endsWith(".svg")) {
-            Utility.fetchSvg(context, imagePath, imageView, onFail_onFullscreen);
+            Utility.fetchSvg(context, imagePath, imageView, onFail_onSuccess_onFullscreen);
         } else {
             Glide
                     .with(context)
@@ -2012,34 +2050,49 @@ public class Utility {
                     .addListener(new RequestListener<Drawable>() {
                         @Override
                         public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-                            if (onFail_onFullscreen.length > 0 && onFail_onFullscreen[0] != null)
-                                onFail_onFullscreen[0].run();
+                            if (onFail_onSuccess_onFullscreen.length > 0 && onFail_onSuccess_onFullscreen[0] != null)
+                                onFail_onSuccess_onFullscreen[0].run();
                             return false;
                         }
 
                         @Override
                         public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+//                            if (onFail_onSuccess_onFullscreen.length > 1 && onFail_onSuccess_onFullscreen[1] != null)
+//                                onFail_onSuccess_onFullscreen[1].run();
+
                             return false;
                         }
+
                     })
                     .error(R.drawable.ic_broken_image)
                     .placeholder(R.drawable.ic_download)
-                    .into(imageView);
+                    .into(new DrawableImageViewTarget(imageView) {
+                        @Override
+                        protected void setResource(@Nullable Drawable resource) {
+                            if (resource == null)
+                                return;
+                            super.setResource(resource);
+                            if (onFail_onSuccess_onFullscreen.length > 1 && onFail_onSuccess_onFullscreen[1] != null)
+                                onFail_onSuccess_onFullscreen[1].run();
+
+                        }
+                    });
+//                    .into(imageView);
         }
         if (fullScreenPath == null)
             return;
         imageView.setOnClickListener(v -> {
-            if (onFail_onFullscreen.length > 1)
-                onFail_onFullscreen[1].run();
+            if (onFail_onSuccess_onFullscreen.length > 2 && onFail_onSuccess_onFullscreen[2] != null)
+                onFail_onSuccess_onFullscreen[2].run();
             CustomDialog.Builder(context)
                     .setView(R.layout.dialog_poster)
                     .setSetViewContent((customDialog1, view1, reload1) -> {
                         ImageView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
                         if (fullScreenPath.endsWith(".png") || fullScreenPath.endsWith(".svg"))
-                            dialog_poster_poster.setPadding(0,0, 0,0);
+                            dialog_poster_poster.setPadding(0, 0, 0, 0);
 
                         if (fullScreenPath.endsWith(".svg")) {
-                            Utility.fetchSvg(context, fullScreenPath, dialog_poster_poster, onFail_onFullscreen);
+                            Utility.fetchSvg(context, fullScreenPath, dialog_poster_poster, onFail_onSuccess_onFullscreen);
                         } else {
                             Glide
                                     .with(context)
@@ -2065,7 +2118,7 @@ public class Utility {
 
     private static OkHttpClient httpClient;
 
-    public static void fetchSvg(Context context, String url, final ImageView target, Runnable... onFailure) {
+    public static void fetchSvg(Context context, String url, final ImageView target, Runnable... onFail_onSuccess) {
         if (httpClient == null) {
             // Use cache for performance and basic offline capability
             httpClient = new OkHttpClient.Builder()
@@ -2081,8 +2134,18 @@ public class Utility {
             if (context instanceof Activity) {
                 ((Activity) context).runOnUiThread(() -> {
                     target.setImageResource(R.drawable.ic_broken_image);
-                    if (onFailure.length > 0 && onFailure[0] != null) {
-                        onFailure[0].run();
+                    if (onFail_onSuccess.length > 0 && onFail_onSuccess[0] != null) {
+                        onFail_onSuccess[0].run();
+                    }
+                });
+            }
+        };
+
+        Runnable runOnSuccess = () -> {
+            if (context instanceof Activity) {
+                ((Activity) context).runOnUiThread(() -> {
+                    if (onFail_onSuccess.length > 1 && onFail_onSuccess[1] != null) {
+                        onFail_onSuccess[1].run();
                     }
                 });
             }
@@ -2103,14 +2166,68 @@ public class Utility {
                     runOnFailure.run();
                 }
                 stream.close();
+                runOnSuccess.run();
             }
         });
     }
-    //  <------------------------- LoadUrlIntoImageView -------------------------
+
+    // ---------------
+
+    public static class ImageHelper {
+        public static Bitmap getRoundedCornerBitmap(Bitmap bitmap, int pixels) {
+            Bitmap output = Bitmap.createBitmap(bitmap.getWidth(), bitmap
+                    .getHeight(), Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(output);
+
+            final int color = 0xff424242;
+            final Paint paint = new Paint();
+            final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+            final RectF rectF = new RectF(rect);
+            final float roundPx = pixels;
+
+            paint.setAntiAlias(true);
+            canvas.drawARGB(0, 0, 0, 0);
+            paint.setColor(color);
+            canvas.drawRoundRect(rectF, roundPx, roundPx, paint);
+
+            paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+            canvas.drawBitmap(bitmap, rect, rect, paint);
+
+            return output;
+        }
+    }
+
+    public static void roundImageView(ImageView imageView, int dp) {
+        int radius;
+        if (dp == -1) {
+            imageView.measure(0, 0);
+            radius = Math.max(imageView.getMeasuredWidth(), imageView.getMeasuredHeight()) / 2;
+        } else
+            radius = dpToPx(dp);
+
+//        Bitmap oldBitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
+        imageView.setDrawingCacheEnabled(true);
+        imageView.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        imageView.layout(0, 0,
+                imageView.getMeasuredWidth(), imageView.getMeasuredHeight());
+        imageView.buildDrawingCache(true);
+        Bitmap oldBitmap = Bitmap.createBitmap(imageView.getDrawingCache());
+        imageView.setDrawingCacheEnabled(false);
+        imageView.setImageBitmap(ImageHelper.getRoundedCornerBitmap(oldBitmap, radius));
+    }
+
+    // ---------------
+
+    public static String getTmdbImagePath_ifNecessary(String imagePath, boolean original) {
+        return (imagePath.contains("http") ? "" : "https://image.tmdb.org/t/p/" + (original ? "original" : "w92") + "/") + imagePath;
+    }
+
+    //  <------------------------- ImageView -------------------------
 
 
     //  ------------------------- GetImageUrlsFromText ------------------------->
-    public static CustomList<String> getImageUrlsFromText(String html){
+    public static CustomList<String> getImageUrlsFromText(String html) {
         Matcher matcher = Pattern.compile(CategoriesActivity.pictureRegex).matcher(html);
         CustomList<String> urlList = new CustomList<>();
         while (matcher.find()) {
@@ -2122,7 +2239,7 @@ public class Utility {
 
 
     //  ------------------------- GetOpenGraphFromWebsite ------------------------->
-    public static void getOpenGraphFromWebsite(String url, GenericInterface<OpenGraph> onResult){
+    public static void getOpenGraphFromWebsite(String url, GenericInterface<OpenGraph> onResult) {
         @SuppressLint("StaticFieldLeak") AsyncTask<GenericInterface<OpenGraph>, Object, OpenGraph> task = new AsyncTask<Utility.GenericInterface<OpenGraph>, Object, OpenGraph>() {
             Utility.GenericInterface<OpenGraph> onResult;
 

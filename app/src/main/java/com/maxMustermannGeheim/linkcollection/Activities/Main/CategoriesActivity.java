@@ -59,7 +59,8 @@ public class CategoriesActivity extends AppCompatActivity {
     public static final int START_CATIGORY_SEARCH = 001;
     public static final String EXTRA_SEARCH_CATEGORY = "EXTRA_SEARCH_CATOGORY";
     public static final String EXTRA_SEARCH = "EXTRA_SEARCH";
-    public static String pictureRegex = "((https:)|/)([,+%&?=()/|.|\\w|\\s|-])+\\.(?:jpe?g|png|svg)";
+    public static String pictureRegex = "((https:)|/).+\\.(?:jpe?g|png|svg)";
+//    public static String pictureRegex = "((https:)|/)([,+%&?=()/|.|\\w|\\s|-])+\\.(?:jpe?g|png|svg)";
     public static String pictureRegexAll = pictureRegex.split("\\\\\\.")[0];
     private Helpers.SortHelper<Pair<ParentClass, Integer>> sortHelper;
 
@@ -339,7 +340,8 @@ public class CategoriesActivity extends AppCompatActivity {
                     if (parentClassIntegerPair.first instanceof ParentClass_Tmdb && Utility.stringExists(((ParentClass_Tmdb) parentClassIntegerPair.first).getImagePath())) {
                         listItem_categoryItem_image.setVisibility(View.VISIBLE);
                         String imagePath = ((ParentClass_Tmdb) parentClassIntegerPair.first).getImagePath();
-                        Utility.loadUrlIntoImageView(this, listItem_categoryItem_image, (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/w92/") + imagePath, (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/original/") + imagePath, this::removeFocusFromSearch);
+                        Utility.loadUrlIntoImageView(this, listItem_categoryItem_image, Utility.getTmdbImagePath_ifNecessary(imagePath, false),
+                                Utility.getTmdbImagePath_ifNecessary(imagePath, true), null, () -> Utility.roundImageView(listItem_categoryItem_image, 4), this::removeFocusFromSearch);
                     } else
                         listItem_categoryItem_image.setVisibility(View.GONE);
 

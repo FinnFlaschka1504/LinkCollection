@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="8dp"
-    >
+    android:layout_marginHorizontal="8dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -21,15 +19,15 @@
         android:padding="8dp">
 
         <ImageView
-            android:id="@+id/listItem_categoryItem_image2"
+            android:id="@+id/listItem_collection_thumbnail"
             android:layout_width="wrap_content"
             android:layout_height="60dp"
+            android:layout_marginRight="8dp"
             android:adjustViewBounds="true"
             android:maxWidth="50dp"
             android:visibility="gone"
             app:srcCompat="@drawable/ic_download"
             tools:srcCompat="@drawable/simpsons_movie_poster"
-            android:layout_marginRight="8dp"
             tools:visibility="visible" />
 
 
@@ -73,7 +71,7 @@
                     android:orientation="horizontal">
 
                     <LinearLayout
-                        android:id="@+id/listItem_collection_Views_layout"
+                        android:id="@+id/listItem_collection_videos_count_layout"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
@@ -88,7 +86,7 @@
                             android:background="?android:attr/listDivider" />
 
                         <TextView
-                            android:id="@+id/listItem_collection_Views"
+                            android:id="@+id/listItem_collection_videos_count"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="1" />
@@ -126,12 +124,20 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginRight="8dp"
-                    android:text="Filme (3):"
+                    android:text="Filme:"
                     android:textStyle="bold" />
 
+                <!--                <TextView-->
+                <!--                    android:id="@+id/listItem_collection_videos_count"-->
+                <!--                    android:layout_width="wrap_content"-->
+                <!--                    android:layout_height="wrap_content"-->
+                <!--                    android:layout_marginRight="8dp"-->
+                <!--                    android:text="(3):"-->
+                <!--                    android:textStyle="bold" />-->
+
                 <TextView
-                    android:id="@+id/listItem_collection_Darsteller"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/listItem_collection_videos"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:ellipsize="marquee"
@@ -141,7 +147,7 @@
                     android:marqueeRepeatLimit="marquee_forever"
                     android:scrollHorizontally="true"
                     android:singleLine="true"
-                    android:text="Darsteller1, Darsteller 2, Darsteller 3, Darsteller 4" />
+                    tools:text="Film 1, Film 2, Film 3" />
 
                 <LinearLayout
                     android:id="@+id/listItem_collection_rating_layout"
@@ -236,7 +242,7 @@
         </LinearLayout>
 
         <ImageView
-            android:id="@+id/listItem_collection_details"
+            android:id="@+id/listItem_collection_search"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
@@ -244,7 +250,7 @@
             android:clickable="true"
             android:foreground="@drawable/ripple"
             android:padding="5dp"
-            app:srcCompat="@drawable/ic_info" />
+            app:srcCompat="@drawable/ic_search" />
 
     </LinearLayout>
 </LinearLayout>

@@ -3,6 +3,7 @@ package com.maxMustermannGeheim.linkcollection.Utilities;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Typeface;
+import android.os.Handler;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.Spannable;
@@ -15,13 +16,19 @@ import android.text.style.UnderlineSpan;
 import android.util.Pair;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SeekBar;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
@@ -888,6 +895,7 @@ public class Helpers {
         private int stars = 5;
         private float stepSize = 0.25f;
         private RatingBar.OnRatingBarChangeListener onRatingBarChangeListener;
+
         //  ------------------------- Constructors ------------------------->
         public RatingHelper(FrameLayout layout) {
             this.layout = layout;
@@ -973,7 +981,6 @@ public class Helpers {
         //  <------------------------- Getters & Setters -------------------------
 
 
-
         RatingHelper initialize() {
             seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
@@ -983,7 +990,8 @@ public class Helpers {
                 }
 
                 @Override
-                public void onStartTrackingTouch(SeekBar seekBar) {}
+                public void onStartTrackingTouch(SeekBar seekBar) {
+                }
 
                 @Override
                 public void onStopTrackingTouch(SeekBar seekBar) {
@@ -1022,7 +1030,7 @@ public class Helpers {
         }
         //  <------------------------- Convenience -------------------------
 
-        public static RatingHelper inflate(Context context){
+        public static RatingHelper inflate(Context context) {
             LinearLayout inflate = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.custom_rating, null);
             FrameLayout frameLayout = inflate.findViewById(R.id.customRating_layout);
             inflate.removeAllViews();
@@ -1031,4 +1039,286 @@ public class Helpers {
     }
     //  <------------------------- RatingHelper -------------------------
 
+
+    //  ------------------------- WebViewHelper ------------------------->
+    public static class WebViewHelper {
+        public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36";
+
+        private String userAgent = USER_AGENT;
+        private boolean debug;
+        private boolean loadInvisibleDialog;
+        private boolean destroyOnSuccess = true;
+        private WebView webView;
+        private com.finn.androidUtilities.CustomDialog customDialog;
+        private Context context;
+        private boolean mobileVersion;
+        private String url;
+        private int openJs;
+        private boolean dialogCanceled;
+        private List<Pair<String, Utility.GenericInterface<String>>> requestList = new ArrayList<>();
+        private ExecuteBeforeJavaScript executeBeforeJavaScript;
+        private boolean alreadyLoaded;
+
+        //  ------------------------- Constructor ------------------------->
+        public WebViewHelper(Context context, String url) {
+            this.context = context;
+            this.url = url;
+        }
+
+        public WebViewHelper(Context context, String url, WebView webView) {
+            this.webView = webView;
+            this.context = context;
+            this.url = url;
+        }
+        //  <------------------------- Constructor -------------------------
+
+
+        private void buildWebView() {
+            Toast.makeText(context, "Einen Moment bitte..", Toast.LENGTH_SHORT).show();
+
+            webView = new WebView(context);
+            if (!debug)
+                webView.setAlpha(0f);
+            WebSettings settings = webView.getSettings();
+            settings.setJavaScriptEnabled(true);
+            if (!mobileVersion) {
+                settings.setUserAgentString(userAgent);
+                settings.setUseWideViewPort(true);
+                settings.setLoadWithOverviewMode(true);
+            }
+            settings.setSupportZoom(true);
+            settings.setBuiltInZoomControls(true);
+            settings.setDisplayZoomControls(false);
+
+            webView.setWebViewClient(new WebViewClient() {
+                @Override
+                public void onPageFinished(WebView view, String url) {
+                    if (!dialogCanceled && openJs != 0 && !alreadyLoaded) {
+                        alreadyLoaded = true;
+                        if (executeBeforeJavaScript == null)
+                            onPageLoaded();
+                        else
+                            executeBeforeJavaScript();
+                    }
+                    super.onPageFinished(view, url);
+                }
+            });
+            webView.loadUrl(url);
+
+            if (debug || loadInvisibleDialog)
+                buildDialog();
+        }
+
+        public WebViewHelper addRequest(String javaScript, Utility.GenericInterface<String> onParseResult) {
+            openJs++;
+            requestList.add(Pair.create(javaScript, onParseResult));
+            return this;
+        }
+
+        private void onPageLoaded() {
+            for (Pair<String, Utility.GenericInterface<String>> pair : requestList) {
+                String script = pair.first;
+                Utility.GenericInterface<String> onResult = pair.second;
+                evaluateJavaScript(script, onResult, 0);
+            }
+        }
+
+        private void evaluateJavaScript(String rawScript, Utility.GenericInterface<String> onParseResult, int tryCount) {
+            String script = rawScript;
+            if (script.startsWith("{") && script.endsWith("}")) {
+                script = "(function() " + script + ")();";
+
+            } else {
+                if (!script.endsWith(";"))
+                    script += ";";
+            }
+
+            webView.evaluateJavascript(script, t -> {
+                if (t.startsWith("\"") && t.endsWith("\""))
+                    t = Utility.subString(t, 1, -1);
+
+                if (t.matches("null") && tryCount < 50) {
+                    new Handler().postDelayed(() -> evaluateJavaScript(rawScript, onParseResult, tryCount + 1), 100);
+                } else {
+                    onParseResult.runGenericInterface(t + (tryCount < 50 ? "" : " (" + tryCount + ")"));
+                    if (openJs <= 1 && !debug && destroyOnSuccess) {
+                        openJs--;
+                        webView.destroy();
+                        if (customDialog != null) {
+                            customDialog.dismiss();
+                            customDialog = null;
+                        }
+                    } else
+                        openJs--;
+                }
+            });
+
+        }
+
+        private void buildDialog() {
+            customDialog = com.finn.androidUtilities.CustomDialog.Builder(context)
+                    .setView(webView)
+                    .addOptionalModifications(customDialog1 -> {
+                        if (debug) {
+                            customDialog1
+                                    .setDimensions(true, true);
+                        } else {
+                            customDialog1
+                                    .setDimensions(true, true)
+                                    .removeBackground_and_margin()
+                                    .enableDoubleClickOutsideToDismiss(customDialog -> true, "Daten werden geladen");
+                        }
+                    })
+                    .setOnDialogDismiss(customDialog -> ((ViewGroup) customDialog.findViewById(R.id.dialog_custom_layout_view_interface)).removeAllViews())
+                    .disableScroll()
+                    .show();
+
+            Toast toast = Toast.makeText(context, "Daten werden geladen", Toast.LENGTH_SHORT);
+            com.finn.androidUtilities.Helpers.DoubleClickHelper doubleClickHelper = com.finn.androidUtilities.Helpers.DoubleClickHelper.create()
+                    .setOnFailed(toast::show)
+                    .setOnSuccess(() -> {
+                        toast.cancel();
+                        Toast.makeText(context, "Abgebrochen", Toast.LENGTH_SHORT).show();
+                    });
+            webView.setOnTouchListener((v, event) -> {
+                if (!debug && event.getAction() == MotionEvent.ACTION_UP) {
+                    if (doubleClickHelper.check()) {
+                        customDialog.dismiss();
+                        dialogCanceled = true;
+                    }
+                    return true;
+                } else
+                    return false;
+            });
+        }
+
+        public WebViewHelper go() {
+            dialogCanceled = false;
+            if (webView == null)
+                buildWebView();
+            else {
+                if (debug || loadInvisibleDialog)
+                    buildDialog();
+
+                if (executeBeforeJavaScript == null)
+                    onPageLoaded();
+                else
+                    executeBeforeJavaScript();
+            }
+            return this;
+        }
+
+        public void destroy() {
+
+        }
+
+
+        //  ------------------------- ExecuteBeforeJavaScript ------------------------->
+        public interface ExecuteBeforeJavaScript {
+            void runExecuteBeforeJavaScript(com.finn.androidUtilities.CustomDialog internetDialog, WebView webView, Runnable resume);
+        }
+
+        private void executeBeforeJavaScript() {
+            executeBeforeJavaScript.runExecuteBeforeJavaScript(customDialog, webView, this::onPageLoaded);
+        }
+        //  <------------------------- ExecuteBeforeJavaScript -------------------------
+
+
+        //  ------------------------- Getter & Setter ------------------------->
+        public String getUserAgent() {
+            return userAgent;
+        }
+
+        public WebViewHelper setUserAgent(String userAgent) {
+            this.userAgent = userAgent;
+            return this;
+        }
+
+        public boolean isDebug() {
+            return debug;
+        }
+
+        public WebViewHelper setDebug(boolean debug) {
+            this.debug = debug;
+            return this;
+        }
+
+        public boolean isLoadInvisibleDialog() {
+            return loadInvisibleDialog;
+        }
+
+        public WebViewHelper setLoadInvisibleDialog(boolean loadInvisibleDialog) {
+            this.loadInvisibleDialog = loadInvisibleDialog;
+            return this;
+        }
+
+        public boolean isDestroyOnSuccess() {
+            return destroyOnSuccess;
+        }
+
+        public WebViewHelper setDestroyOnSuccess(boolean destroyOnSuccess) {
+            this.destroyOnSuccess = destroyOnSuccess;
+            return this;
+        }
+
+        public WebView getWebView() {
+            return webView;
+        }
+
+        public WebViewHelper setWebView(WebView webView) {
+            this.webView = webView;
+            return this;
+        }
+
+        public com.finn.androidUtilities.CustomDialog getCustomDialog() {
+            return customDialog;
+        }
+
+        public WebViewHelper setCustomDialog(com.finn.androidUtilities.CustomDialog customDialog) {
+            this.customDialog = customDialog;
+            return this;
+        }
+
+        public Context getContext() {
+            return context;
+        }
+
+        public WebViewHelper setContext(Context context) {
+            this.context = context;
+            return this;
+        }
+
+        public boolean isMobileVersion() {
+            return mobileVersion;
+        }
+
+        public WebViewHelper setMobileVersion(boolean mobileVersion) {
+            this.mobileVersion = mobileVersion;
+            return this;
+        }
+
+        public String getUrl() {
+            return url;
+        }
+
+        public WebViewHelper setUrl(String url) {
+            this.url = url;
+            return this;
+        }
+
+        public WebViewHelper setExecuteBeforeJavaScript(ExecuteBeforeJavaScript executeBeforeJavaScript) {
+            this.executeBeforeJavaScript = executeBeforeJavaScript;
+            return this;
+        }
+        //  <------------------------- Getter & Setter -------------------------
+
+
+        //  ------------------------- Convenience ------------------------->
+        public WebViewHelper addOptional(Utility.GenericInterface<WebViewHelper> addOptional) {
+            addOptional.runGenericInterface(this);
+            return this;
+        }
+        //  <------------------------- Convenience -------------------------
+    }
+    //  <------------------------- WebViewHelper -------------------------
 }

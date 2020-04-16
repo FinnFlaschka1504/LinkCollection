@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public class Collection extends ParentClass_Image {
     private List<String> filmIdList = new CustomList<>();
-
+    private String listId;
 
     public Collection(String name) {
         uuid = "collection_" + UUID.randomUUID().toString();
@@ -18,6 +18,8 @@ public class Collection extends ParentClass_Image {
     public Collection() {
     }
 
+
+    //  ------------------------- Getter & Setter ------------------------->
     public List<String> getFilmIdList() {
         return filmIdList;
     }
@@ -26,6 +28,16 @@ public class Collection extends ParentClass_Image {
         this.filmIdList = filmIdList;
         return this;
     }
+
+    public String getListId() {
+        return listId;
+    }
+
+    public Collection setListId(String listId) {
+        this.listId = listId;
+        return this;
+    }
+    //  <------------------------- Getter & Setter -------------------------
 
     @Override
     public Collection clone() {

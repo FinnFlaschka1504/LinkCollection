@@ -1027,26 +1027,60 @@ public class Utility {
     //  <------------------------- Checks -------------------------
 
 
-    //  ------------------------- String ------------------------->
-    public static String subString(String s, int start) {
-        if (start < 0)
-            start = s.length() + start;
-        return s.substring(start);
+    //  ------------------------- Text ------------------------->
+    public static String removeTrailingZeros(String s){
+        return (s.contains(".") || s.contains(",")) ? s.replaceAll("0*$", "").replaceAll("[,.]$", "") : s;
     }
 
-    public static String subString(String s, int start, int end) {
-        if (start < 0)
-            start = s.length() + start;
-        if (end < 0)
-            end = s.length() + end;
+    public static Pair<Integer,Integer> getTextWithAndHeight(Context context, String text, int size, int... typefaces){
+        TextView textView = new TextView(context);
+        textView.setTextSize(size);
+        for (int typeface : typefaces)
+            textView.setTypeface(textView.getTypeface(), typeface);
+        Rect bounds = new Rect();
+        Paint textPaint = textView.getPaint();
+        textPaint.getTextBounds(text, 0, text.length(), bounds);
+        int width = bounds.width();
+        int height = bounds.height();
+        return Pair.create(width, height);
+    }
 
-        return s.substring(start, end);
+    public static String getEllipsedString(Context context, String text, int maxWidth_px, int size, int... typefaces) {
+        TextView textView = new TextView(context);
+        textView.setTextSize(size);
+        for (int typeface : typefaces)
+            textView.setTypeface(textView.getTypeface(), typeface);
+        Paint textPaint = textView.getPaint();
+        for (int i = 0; i < text.length(); i++) {
+            Rect bounds = new Rect();
+            String sub = Utility.subString(text, 0, i == 0 ? text.length() : -i) + (i == 0 ? "" : "…");
+            textPaint.getTextBounds(sub, 0, sub.length(), bounds);
+            int width = bounds.width();
+            if (width < maxWidth_px)
+                return sub;
+        }
+        return "";
+    }
+
+    public static String subString(String text, int start, int ende){
+        if (start < 0)
+            start = text.length() + start;
+        if (ende < 0)
+            ende = text.length() + ende;
+        return text.substring(start, ende);
+    }
+
+    public static String subString(String text, int start){
+        if (start < 0)
+            start = text.length() + start;
+        return text.substring(start);
     }
 
     public static String stringReplace(String source, int start, int end, String replacement) {
         return source.substring(0, start) + replacement + source.substring(end);
     }
-    //  <------------------------- String -------------------------
+    //  <------------------------- Text -------------------------
+
 
     //  --------------- Time --------------->
     public static Date removeTime(Date date) {
@@ -1934,7 +1968,7 @@ public class Utility {
         return s != null && !s.toString().trim().isEmpty();
     }
 
-    public static CharSequence stringExistsOrElse(CharSequence s, String orElse) {
+    public static <T extends CharSequence> T stringExistsOrElse(T s, T orElse) {
         return stringExists(s) ? s : orElse;
     }
     //  <------------------------- EasyLogic -------------------------

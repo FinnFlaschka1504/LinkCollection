@@ -31,7 +31,7 @@
                 android:textStyle="bold" />
 
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/dialog_editOrAddCollection_Title_layout"
+                android:id="@+id/dialog_editOrAddCollection_title_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -39,7 +39,7 @@
 
 
                 <AutoCompleteTextView
-                    android:id="@+id/dialog_editOrAddCollection_Title"
+                    android:id="@+id/dialog_editOrAddCollection_title"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textCapSentences"
@@ -124,6 +124,42 @@
                 android:layout_weight="1"
                 android:text="Videos Automatisch hinzufügen" />
 
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Listen-Id:"
+                android:textStyle="bold" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/dialog_editOrAddCollection_listId_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="TMDb/IMDB-ID"
+                android:layout_weight="1"
+                app:errorEnabled="true">
+
+
+                <AutoCompleteTextView
+                    android:id="@+id/dialog_editOrAddCollection_listId"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <ImageView
+                android:id="@+id/dialog_editOrAddCollection_internet"
+                style="@style/ImageButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:srcCompat="@drawable/ic_internet" />
         </LinearLayout>
 
         <!--        <LinearLayout-->

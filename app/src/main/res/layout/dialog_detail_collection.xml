@@ -12,15 +12,28 @@
         android:gravity="center_vertical"
         android:orientation="vertical">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/dialogDetail_collection_videos"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:minHeight="200dp"
-            android:requiresFadingEdge="horizontal">
+            android:layout_height="wrap_content">
 
-        </androidx.recyclerview.widget.RecyclerView>
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/dialogDetail_collection_videos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="200dp"
+                android:requiresFadingEdge="horizontal">
+
+            </androidx.recyclerview.widget.RecyclerView>
+
+            <TextView
+                android:id="@+id/dialogDetail_collection_noVideos"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="Noch keine Videos in der Sammlung"
+                android:textStyle="italic" />
+        </FrameLayout>
 
         <LinearLayout
             android:id="@+id/dialogDetail_collection_edtiVideos"

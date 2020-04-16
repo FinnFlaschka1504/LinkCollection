@@ -753,19 +753,17 @@ public class VideoActivity extends AppCompatActivity {
 
                     if (reload)
                         customDialog.setTitle(video.getName());
-//                    ((TextView) view.findViewById(R.id.dialog_video_Titel)).setText(video.getName());
                     Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.DARSTELLER, view.findViewById(R.id.dialog_video_Darsteller), video.getDarstellerList(), database.darstellerMap);
-//                    ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(
-//                            video.getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                     view.findViewById(R.id.dialog_video_Darsteller).setSelected(true);
                     Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.STUDIOS, view.findViewById(R.id.dialog_video_Studio), video.getStudioList(), database.studioMap);
-//                    ((TextView) view.findViewById(R.id.dialog_video_Studio)).setText(
-//                            video.getStudioList().stream().map(uuid -> database.studioMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                     view.findViewById(R.id.dialog_video_Studio).setSelected(true);
                     Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.GENRE, view.findViewById(R.id.dialog_video_Genre), video.getGenreList(), database.genreMap);
-//                    ((TextView) view.findViewById(R.id.dialog_video_Genre)).setText(
-//                            video.getGenreList().stream().map(uuid -> database.genreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                     view.findViewById(R.id.dialog_video_Genre).setSelected(true);
+                    String collectionNames = database.collectionMap.values().stream().filter(collection -> collection.getFilmIdList().contains(video.getUuid())).map(com.finn.androidUtilities.ParentClass::getName).collect(Collectors.joining(", "));
+                    if (Utility.stringExists(collectionNames)) {
+                        ((TextView) view.findViewById(R.id.dialog_video_collection)).setText(collectionNames);
+                        view.findViewById(R.id.dialog_video_collection_layout).setVisibility(View.VISIBLE);
+                    }
                     view.findViewById(R.id.dialog_video_details).setVisibility(View.VISIBLE);
                     ((TextView) view.findViewById(R.id.dialog_video_Url)).setText(video.getUrl());
 
@@ -1051,7 +1049,7 @@ public class VideoActivity extends AppCompatActivity {
 
                                     if (Utility.stringExists(url)) {
                                         imageView.setVisibility(View.VISIBLE);
-                                        Utility.loadUrlIntoImageView(this, imageView, Utility.getTmdbImagePath_ifNecessary(url, false), null);
+                                        Utility.loadUrlIntoImageView(this, imageView, Utility.getTmdbImagePath_ifNecessary(url, true), null);
                                     } else
                                         imageView.setVisibility(View.GONE);
                                 })
@@ -1078,7 +1076,7 @@ public class VideoActivity extends AppCompatActivity {
                                         webView.setWebViewClient(new WebViewClient());
                                         WebSettings webSettings = webView.getSettings();
                                         webSettings.setJavaScriptEnabled(true);
-                                        webSettings.setUserAgentString(UrlParser.USER_AGENT);
+                                        webSettings.setUserAgentString(Helpers.WebViewHelper.USER_AGENT);
                                         webSettings.setUseWideViewPort(true);
                                         webSettings.setLoadWithOverviewMode(true);
 
@@ -1760,6 +1758,8 @@ public class VideoActivity extends AppCompatActivity {
 
                 if (response.has("runtime"))
                     video.setLength(response.getInt("runtime"));
+                if (response.has("imdb_id"))
+                    video.setImdbId(response.getString("imdb_id"));
 
                 customDialog.reloadView();
 

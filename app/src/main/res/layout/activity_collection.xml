@@ -24,7 +24,7 @@
             app:expandedTitleMarginStart="55dp"
             app:expandedTitleMarginTop="10dp"
             app:layout_scrollFlags="scroll|exitUntilCollapsed|snap"
-            app:title="Sammlungen">
+            app:title="@string/CollectionoActivity_label">
 
             <TextView
                 android:id="@+id/elementCount"

@@ -29,6 +29,10 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
@@ -50,6 +54,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Person;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
@@ -64,7 +69,13 @@ import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.maxMustermannGeheim.linkcollection.Utilities.VersionControl;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -72,9 +83,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Settings.Space.allSpaces;
@@ -281,6 +295,113 @@ public class Settings extends AppCompatActivity {
                                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
                                 .setView(customRecycler.generateRecyclerView())
                                 .setOnDialogDismiss(customDialog1 -> UrlParser.webViewMap.clear())
+                                .show();
+                    });
+
+                    view.findViewById(R.id.dialogSettingsVideo_more_refreshVideos).setOnClickListener(v -> {
+                        CustomDialog.Builder(settingsContext)
+                                .setTitle("Videos Aktualisieren")
+                                .setText("Möchtest du wirklich alle Videos aktualisieren? Das kann einige Zeit dauern")
+                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON,customDialog1 -> {
+
+                                    RequestQueue requestQueue = Volley.newRequestQueue(settingsContext);
+                                    CustomList<Video> allVideos = new CustomList<>(database.videoMap.values());
+                                    allVideos.sort((o1, o2) -> o1.getName().compareTo(o2.getName()));
+                                    List<Video> failedList = new ArrayList<>();
+                                    int allCount = allVideos.size();
+                                    if (allCount == 0) {
+                                        Toast.makeText(settingsContext, "Keine Videos vorhanden", Toast.LENGTH_SHORT).show();
+                                        return;
+                                    }
+                                    final Video[] currentVideo = {allVideos.get(0)};
+                                    final int[] finishedCount = {0};
+                                    int closeButtonId = View.generateViewId();
+                                    CustomDialog progressDialog = CustomDialog.Builder(settingsContext)
+                                            .setTitle("Fortschritt")
+                                            .setText(finishedCount[0] + "/" + allCount + " wurden aktualisiert")
+                                            .addButton("Schließen", customDialog2 -> {}, closeButtonId)
+                                            .hideLastAddedButton()
+                                            .enableDoubleClickOutsideToDismiss(customDialog2 -> true)
+                                            .show();
+
+                                    Runnable[] loadDetails = {null};
+
+                                    Runnable isFinished = () -> {
+                                        finishedCount[0]++;
+                                        if (finishedCount[0] >= allCount) {
+                                            String failedString = failedList.stream().map(com.finn.androidUtilities.ParentClass::getName).collect(Collectors.joining(", "));
+                                            progressDialog.setText("Fertig!" + (Utility.stringExists(failedString) ? "\n" + failedString + "\nkonnten nicht aktualisiert werden": "")).getButton(closeButtonId).setVisibility(View.VISIBLE);
+                                            Database.saveAll();
+                                        } else {
+                                            progressDialog.setText(finishedCount[0] + "/" + allCount + " wurden aktualisiert");
+                                            Video nextVideo = allVideos.next(currentVideo[0]);
+                                            if (allVideos.isFirst(nextVideo)) return;
+                                            currentVideo[0] = nextVideo;
+                                            loadDetails[0].run();
+                                        }
+                                    };
+                                    loadDetails[0] = () -> {
+                                        if (currentVideo[0].getTmdId() == 0) {
+                                            failedList.add(currentVideo[0]);
+                                            isFinished.run();
+                                            return;
+                                        }
+                                        String requestUrl = "https://api.themoviedb.org/3/movie/" + currentVideo[0].getTmdId() + "?api_key=09e015a2106437cbc33bf79eb512b32d&language=de";
+
+                                        JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {
+                                            try {
+                                                if (response.has("production_companies")) {
+                                                    JSONArray companies = response.getJSONArray("production_companies");
+
+                                                    for (int i = 0; i < companies.length(); i++) {
+                                                        JSONObject object = companies.getJSONObject(i);
+                                                        String name = object.getString("name");
+
+                                                        Optional<Studio> optional = database.studioMap.values().stream().filter(studio -> studio.getName().equals(name)).findFirst();
+
+                                                        if (optional.isPresent()) {
+                                                            if (!currentVideo[0].getStudioList().contains(optional.get().getUuid()))
+                                                                currentVideo[0].getStudioList().add(optional.get().getUuid());
+                                                        }
+                                                    }
+                                                }
+
+                                                if (response.has("runtime"))
+                                                    currentVideo[0].setLength(response.getInt("runtime"));
+                                                if (response.has("imdb_id"))
+                                                    currentVideo[0].setImdbId(response.getString("imdb_id"));
+                                                if (response.has("release_date"))
+                                                    currentVideo[0].setRelease(new SimpleDateFormat("yyyy-MM-dd", Locale.GERMANY).parse(response.getString("release_date")));
+                                                if (response.has("poster_path"))
+                                                    currentVideo[0].setImagePath(response.getString("poster_path"));
+                                                if (response.has("genre_ids")) {
+                                                    JSONArray genre_ids = response.getJSONArray("genre_ids");
+                                                    CustomList<Integer> integerList = new CustomList<>();
+                                                    for (int i = 0; i < genre_ids.length(); i++) {
+                                                        integerList.add(genre_ids.getInt(i));
+                                                    }
+                                                    Map<Integer, String> idUuidMap = database.genreMap.values().stream().filter(genre -> genre.getTmdbGenreId() != 0).collect(Collectors.toMap(Genre::getTmdbGenreId, ParentClass::getUuid));
+
+                                                    CustomList<String> uuidList = integerList.map(idUuidMap::get).filter(Objects::nonNull, false);
+                                                    uuidList.removeAll(currentVideo[0].getGenreList());
+                                                    currentVideo[0].getGenreList().addAll(uuidList);
+                                                }
+                                            } catch (Exception e) {
+                                                failedList.add(currentVideo[0]);
+                                            }
+                                            isFinished.run();
+                                        }, error -> {
+                                            failedList.add(currentVideo[0]);
+                                            isFinished.run();
+                                        });
+
+                                        requestQueue.add(jsonArrayRequest);
+
+                                    };
+
+                                    loadDetails[0].run();
+                                })
                                 .show();
                     });
                 }, new Space.OnClick() {

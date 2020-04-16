@@ -7,6 +7,7 @@ import androidx.appcompat.widget.Toolbar;
 import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.SpannableStringBuilder;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -14,7 +15,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,6 +29,7 @@ import com.finn.androidUtilities.CustomUtility;
 import com.finn.androidUtilities.Helpers;
 import com.finn.androidUtilities.ParentClass;
 import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
@@ -49,7 +50,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class CollectionActivity extends AppCompatActivity {
@@ -108,14 +111,6 @@ public class CollectionActivity extends AppCompatActivity {
 
     private void loadDatabase() {
         @SuppressLint("RestrictedApi") Runnable whenLoaded = () -> {
-//            for (Video video : database.videoMap.values()) {
-//                if (video.getDateList().isEmpty() && !video.isUpcoming() && !Utility.getWatchLaterList().contains(video))
-//                    video.setWatchLater(true);
-////                    database.watchLaterList.add(video.getUuid());
-//            }
-            String BREAKPOINT = null;
-            // ToDo: Gelöschte Filme entfernen
-
             setContentView(R.layout.activity_collection);
 
             Toolbar toolbar = findViewById(R.id.toolbar);
@@ -124,14 +119,30 @@ public class CollectionActivity extends AppCompatActivity {
 
             AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
             View noItem = findViewById(R.id.no_item);
-            LinearLayout search_layout = findViewById(R.id.search_layout);
-            appBarLayout.measure(0, 0);
-            toolbar.measure(0, 0);
-            search_layout.measure(0, 0);
-            float maxOffset = -(appBarLayout.getMeasuredHeight() - (toolbar.getMeasuredHeight() + search_layout.getMeasuredHeight()));
-            float distance = 118;
+            CollapsingToolbarLayout collapsingToolbarLayout = findViewById(R.id.collapsingToolbarLayout);
+
+            final float[] maxOffset = {-1};
+            final float[] distance = new float[1];
+            int stepCount = 5;
+            final int[] prevPart = {-1};
+            final int[] maxWidth = new int[1];
+
+            List<String> ellipsedList = new ArrayList<>();
+
             appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> {
-                float alpha = 1f - ((verticalOffset - maxOffset) / distance);
+                if (maxOffset[0] == -1) {
+                    maxOffset[0] = -appBarLayout.getTotalScrollRange();
+                    distance[0] = noItem.getY() - appBarLayout.getBottom();
+                    maxWidth[0] = toolbar.getChildAt(3).getRight() - toolbar.getChildAt(0).getRight();
+                    for (int i = 0; i <= stepCount; i++)
+                        ellipsedList.add(Utility.getEllipsedString(this, getString(R.string.CollectionoActivity_label), maxWidth[0] - CustomUtility.dpToPx(3) - (int) (55 * ((stepCount - i) / (double) stepCount)), 18 + (int) (16 * (i / (double) stepCount)))); //55
+                }
+
+                int part = stepCount - Math.round(verticalOffset / (maxOffset[0] / stepCount));
+                if (part != prevPart[0])
+                    collapsingToolbarLayout.setTitle(ellipsedList.get(prevPart[0] = part));
+
+                float alpha = 1f - ((verticalOffset - maxOffset[0]) / distance[0]);
                 noItem.setAlpha(alpha > 0f ? alpha : 0f);
             });
 
@@ -411,7 +422,11 @@ public class CollectionActivity extends AppCompatActivity {
                 .setSetViewContent((customDialog, view, reload) -> {
                     CustomRecycler<Video> videoRecycler = new CustomRecycler<Video>(this, customDialog.findViewById(R.id.dialogDetail_collection_videos))
                             .setItemLayout(R.layout.list_item_collection_video)
-                            .setGetActiveObjectList(customRecycler -> collection.getFilmIdList().stream().map(s -> database.videoMap.get(s)).collect(Collectors.toList()))
+                            .setGetActiveObjectList(customRecycler -> {
+                                List<Video> videoList = collection.getFilmIdList().stream().map(s -> database.videoMap.get(s)).collect(Collectors.toList());
+                                customDialog.findViewById(R.id.dialogDetail_collection_noVideos).setVisibility(videoList.isEmpty() ? View.VISIBLE : View.GONE);
+                                return videoList;
+                            })
                             .setSetItemContent((customRecycler1, itemView, video) -> {
                                 String imagePath = video.getImagePath();
                                 ImageView thumbnail = itemView.findViewById(R.id.listItem_collectionVideo_thumbnail);
@@ -448,14 +463,124 @@ public class CollectionActivity extends AppCompatActivity {
                         reLoadRecycler();
                     }
                 })
+                .addButton(R.drawable.ic_sync, customDialog1 -> getFilmsFromListId(customDialog1, collection, collection.getListId(), false), false)
+                .addOptionalModifications(customDialog -> {
+                    if (!Utility.stringExists(collection.getListId()))
+                        customDialog.disableLastAddedButton();
+                })
+                .alignPreviousButtonsLeft()
                 .show();
         return detailDialog;
     }
     //  <------------------------- Detail -------------------------
 
+    private void getFilmsFromListId(CustomDialog customDialog, Collection collection, String id, boolean showResults) {
+        if (!Utility.stringExists(id) || !id.matches("\\d+|ls\\d{9}"))
+            return;
+        if (id.matches("ls\\d{9}")) {
+            String url = "https://www.imdb.com/list/" + id;
+            com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper webViewHelper = new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper(this, url);
+            webViewHelper
+//                    .setDebug(true)
+                    .setLoadInvisibleDialog(true)
+                    .addRequest("{\n" +
+                                    "    var movieList = new Array();\n" +
+                                    "    document.getElementsByClassName(\"lister-item-image ribbonize\").forEach(function test(value) {\n" +
+                                    "        var movie = new Array();\n" +
+                                    "        movie.push(value.getElementsByClassName(\"loadlate\")[0].getAttribute(\"data-tconst\"));\n" +
+                                    "        movie.push(value.getElementsByClassName(\"loadlate\")[0].getAttribute(\"alt\"));\n" +
+                                    "        movie.push(value.getElementsByClassName(\"loadlate\")[0].getAttribute(\"src\"));\n" +
+                                    "        movieList.push(movie);\n" +
+                                    "    });\n" +
+                                    "    return movieList;\n" +
+                                    "}",
+                            result -> {
+                                Toast.makeText(this, "Fertig", Toast.LENGTH_SHORT).show();
+                                List<List<String>> filmList = new ArrayList<>();
+                                Matcher resultMatcher = Pattern.compile("\\[\"tt[0-9]{7}\",\".+?\",\".+?\"\\]").matcher(result);
+                                while (resultMatcher.find()) {
+                                    String filmArray = resultMatcher.group(0);
+                                    Matcher detailMatcher = Pattern.compile("\".+?\"").matcher(filmArray);
+                                    List<String> detailList = new ArrayList<>();
+                                    while (detailMatcher.find()) {
+                                        detailList.add(Utility.subString(detailMatcher.group(0), 1, -1));
+                                    }
+                                    filmList.add(detailList);
+                                }
+
+                                Runnable applyImport = () -> {
+                                    Map<String, Video> videoMap = database.videoMap.values().stream().filter(video -> Utility.stringExists(video.getImdbId())).collect(Collectors.toMap(Video::getImdbId, video -> video));
+                                    List<String> resultVideoIdList = new ArrayList<>();
+                                    for (List<String> list : filmList) {
+                                        Video video = videoMap.get(list.get(0));
+                                        if (video != null)
+                                            resultVideoIdList.add(video.getUuid());
+                                    }
+                                    resultVideoIdList.removeAll(collection.getFilmIdList());
+                                    collection.getFilmIdList().addAll(resultVideoIdList);
+                                    customDialog.reloadView();
+                                    Database.saveAll();
+                                    reLoadRecycler();
+                                };
+
+
+                                if (showResults) {
+                                    CustomDialog.Builder(this)
+                                            .setTitle("Result")
+                                            .setView(new CustomRecycler<List<String>>(this)
+                                                    .setItemLayout(R.layout.list_item_collection_video)
+                                                    .setObjectList(filmList)
+                                                    .setSetItemContent((customRecycler1, itemView, detailList) -> {
+                                                        String imagePath = detailList.get(2);
+                                                        ImageView thumbnail = itemView.findViewById(R.id.listItem_collectionVideo_thumbnail);
+                                                        if (Utility.stringExists(imagePath)) {
+                                                            imagePath = Utility.getTmdbImagePath_ifNecessary(imagePath, true);
+                                                            Utility.loadUrlIntoImageView(this, thumbnail,
+                                                                    imagePath, imagePath, null, () -> Utility.roundImageView(thumbnail, 8));
+                                                            thumbnail.setVisibility(View.VISIBLE);
+                                                        } else
+                                                            thumbnail.setImageResource(R.drawable.ic_no_image);
+
+                                                        ((TextView) itemView.findViewById(R.id.listItem_collectionVideo_text)).setText(detailList.get(1));
+                                                    })
+                                                    .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
+                                                    .generateRecyclerView())
+                                            .addButton("Neue Filme Importieren", customDialog1 -> {
+                                            })
+                                            .disableLastAddedButton()
+                                            .addButton("Anwenden", customDialog1 -> applyImport.run())
+                                            .show();
+                                } else
+                                    applyImport.run();
+                            })
+                    .addOptional(webViewHelper1 -> {
+                        if (!showResults)
+                            return;
+                        webViewHelper1
+                                .setExecuteBeforeJavaScript((internetDialog, webView, resume) -> {
+                                    int height = webView.getHeight();
+                                    int steps = webView.getContentHeight() / height;
+                                    final int[] currentStep = {1};
+                                    Runnable[] scroll = {null};
+                                    scroll[0] = () -> {
+                                        webView.scrollTo(0, height * currentStep[0]);
+                                        if (currentStep[0] < steps)
+                                            new Handler().postDelayed(scroll[0], 1000);
+                                        else
+                                            new Handler().postDelayed(resume, 1000);
+                                        currentStep[0]++;
+                                    };
+                                    scroll[0].run();
+
+                                });
+                    })
+                    .go();
+        }
+    }
 
     //  ------------------------- Edit ------------------------->
     private Collection showEditDialog(@Nullable Collection oldCollection) {
+        setResult(RESULT_OK);
         Collection editCollection = oldCollection == null ? new Collection(null) : oldCollection.clone();
 
         CustomUtility.isOnline(this, () -> {
@@ -465,13 +590,17 @@ public class CollectionActivity extends AppCompatActivity {
                     .setTitle("Sammlung " + (oldCollection == null ? "Hinzufügen" : "Bearbeiten"))
                     .setView(R.layout.dialog_edit_or_add_collection)
                     .setSetViewContent((customDialog, view, reload) -> {
-                        TextInputLayout editTitle_layout = view.findViewById(R.id.dialog_editOrAddCollection_Title_layout);
+                        TextInputLayout editTitle_layout = view.findViewById(R.id.dialog_editOrAddCollection_title_layout);
                         EditText editTitle = editTitle_layout.getEditText();
+                        TextInputLayout editListId_layout = view.findViewById(R.id.dialog_editOrAddCollection_listId_layout);
+                        EditText editListId = editListId_layout.getEditText();
 
-                        Helpers.TextInputHelper helper = new Helpers.TextInputHelper((Button) customDialog.getActionButton().getButton(), editTitle_layout);
+                        Helpers.TextInputHelper helper = new Helpers.TextInputHelper((Button) customDialog.getActionButton().getButton(), editTitle_layout, editListId_layout)
+                                .setValidation(editListId_layout, "|\\d+|ls\\d{9}");
 
                         if (editCollection.getName() != null) {
                             editTitle.setText(editCollection.getName());
+                            editListId.setText(Utility.stringExistsOrElse(editCollection.getListId(), ""));
                         }
 
                         setThumbnailButton(editCollection, customDialog);
@@ -506,7 +635,7 @@ public class CollectionActivity extends AppCompatActivity {
 
                                         if (Utility.stringExists(url)) {
                                             imageView.setVisibility(View.VISIBLE);
-                                            Utility.loadUrlIntoImageView(this, imageView, (url.contains("https") ? "" : "https://image.tmdb.org/t/p/original/") + url, null);
+                                            Utility.loadUrlIntoImageView(this, imageView, Utility.getTmdbImagePath_ifNecessary(url, true), null);
                                         } else
                                             imageView.setVisibility(View.GONE);
                                     })
@@ -537,12 +666,34 @@ public class CollectionActivity extends AppCompatActivity {
                                 Toast.makeText(this, "Erst einen Namen eingeben", Toast.LENGTH_SHORT).show();
                             apiSearchRequest(title, customDialog, editCollection);
                         });
+
+                        // --------------- bindToList
+
+                        EditText listId_edit = view.findViewById(R.id.dialog_editOrAddCollection_listId);
+                        view.findViewById(R.id.dialog_editOrAddCollection_internet).setOnClickListener(v -> {
+                            String id = listId_edit.getText().toString().trim();
+                            getFilmsFromListId(customDialog, editCollection, id, true);
+                        });
                     })
                     .addOptionalModifications(customDialog -> {
                         if (oldCollection != null)
                             customDialog
                                     .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog1 -> {
-                                        Toast.makeText(this, "Löschen", Toast.LENGTH_SHORT).show();
+                                        CustomDialog.Builder(this)
+                                                .setTitle("Löschen")
+                                                .setText("Willst du wirklich '" + oldCollection.getName() + "' löschen?")
+                                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                                .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog2 -> {
+                                                    database.collectionMap.remove(oldCollection.getUuid());
+                                                    reLoadRecycler();
+                                                    customDialog.dismiss();
+                                                    Object payload = customDialog.getPayload();
+                                                    if (payload instanceof CustomDialog) {
+                                                        ((CustomDialog) payload).dismiss();
+                                                    }
+                                                })
+                                                .show();
+
                                     }, false)
                                     .transformPreviousButtonToImageButton()
                                     .alignPreviousButtonsLeft();
@@ -560,6 +711,7 @@ public class CollectionActivity extends AppCompatActivity {
 
         return editCollection;
     }
+
 
     private void setThumbnailButton(Collection collection, CustomDialog customDialog) {
         if (collection == null || customDialog == null)
@@ -581,7 +733,8 @@ public class CollectionActivity extends AppCompatActivity {
         else
             oldCollection.getChangesFrom(editCollection);
 
-        oldCollection.setName(((TextInputLayout) editDialog.findViewById(R.id.dialog_editOrAddCollection_Title_layout)).getEditText().getText().toString().trim());
+        oldCollection.setName(((EditText) editDialog.findViewById(R.id.dialog_editOrAddCollection_title)).getText().toString().trim());
+        oldCollection.setListId(Utility.stringExistsOrElse(((EditText) editDialog.findViewById(R.id.dialog_editOrAddCollection_listId)).getText().toString().trim(), null));
 
         database.collectionMap.put(oldCollection.getUuid(), oldCollection);
 
@@ -606,7 +759,6 @@ public class CollectionActivity extends AppCompatActivity {
         RequestQueue requestQueue = Volley.newRequestQueue(this);
 
         Toast.makeText(this, "Einen Moment bitte..", Toast.LENGTH_SHORT).show();
-
 
 
         JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {

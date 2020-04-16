@@ -17,6 +17,7 @@ import com.finn.androidUtilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.scottyab.aescrypt.AESCrypt;
 
@@ -29,7 +30,6 @@ import bsh.EvalError;
 import bsh.Interpreter;
 
 public class UrlParser extends ParentClass {
-    public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36";
 
     private String thumbnailCode;
     private String code;
@@ -190,7 +190,7 @@ public class UrlParser extends ParentClass {
                 webViewMap.put(name, webView);
                 WebSettings settings = webView.getSettings();
                 settings.setJavaScriptEnabled(true);
-                settings.setUserAgentString(USER_AGENT);
+                settings.setUserAgentString(Helpers.WebViewHelper.USER_AGENT);
                 settings.setUseWideViewPort(true);
                 settings.setLoadWithOverviewMode(true);
 

@@ -29,6 +29,7 @@ public class Video extends ParentClass_Ratable {
     private String imagePath;
     private List<String> translationList = new ArrayList<>();
     private int tmdId;
+    private String imdbId;
     private boolean watchLater;
     private CustomList<ParentClass_Tmdb> tempCastList = new CustomList<>();
     private CustomList<ParentClass_Tmdb> tempStudioList = new CustomList<>();
@@ -179,6 +180,15 @@ public class Video extends ParentClass_Ratable {
 
     public Video setTmdId(int tmdId) {
         this.tmdId = tmdId;
+        return this;
+    }
+
+    public String getImdbId() {
+        return imdbId;
+    }
+
+    public Video setImdbId(String imdbId) {
+        this.imdbId = imdbId;
         return this;
     }
 

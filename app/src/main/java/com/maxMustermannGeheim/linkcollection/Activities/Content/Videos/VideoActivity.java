@@ -112,7 +112,7 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     public enum FILTER_TYPE {
-        NAME("Titel"), ACTOR("Darsteller"), GENRE("Genre"), STUDIO("Studio");
+        NAME("Titel"), ACTOR("Darsteller"), GENRE("Genre"), STUDIO("Studio"), COLLECTION("Sammlung");
 
         String name;
 
@@ -139,7 +139,7 @@ public class VideoActivity extends AppCompatActivity {
     private Video randomVideo;
     private boolean scrolling = true;
     private SORT_TYPE sort_type = SORT_TYPE.LATEST;
-    private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.ACTOR, FILTER_TYPE.GENRE, FILTER_TYPE.STUDIO));
+    private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.ACTOR, FILTER_TYPE.GENRE, FILTER_TYPE.STUDIO, FILTER_TYPE.COLLECTION));
     private MODE mode = MODE.ALL;
     private SearchView.OnQueryTextListener textListener;
     private TextView elementCount;
@@ -513,6 +513,9 @@ public class VideoActivity extends AppCompatActivity {
                         case STUDIOS:
                             filterTypeSet.add(FILTER_TYPE.STUDIO);
                             break;
+                        case COLLECTION:
+                            filterTypeSet.add(FILTER_TYPE.COLLECTION);
+                            break;
                     }
                 }
 
@@ -562,8 +565,6 @@ public class VideoActivity extends AppCompatActivity {
             filterdVideoList = allVideoList.stream().filter(Video::isUpcoming).collect(Collectors.toCollection(CustomList::new));
         }
         if (!searchQuery.trim().equals("")) {
-
-
             String subQuery = searchQuery;
             if (searchQuery.contains("*")) {
 
@@ -1929,6 +1930,8 @@ public class VideoActivity extends AppCompatActivity {
                 .setChecked(filterTypeSet.contains(FILTER_TYPE.STUDIO));
         menu.findItem(R.id.taskBar_video_filterByGenre)
                 .setChecked(filterTypeSet.contains(FILTER_TYPE.GENRE));
+        menu.findItem(R.id.taskBar_video_filterByCollection)
+                .setChecked(filterTypeSet.contains(FILTER_TYPE.COLLECTION));
 
         if (mode.equals(MODE.ALL))
             menu.findItem(R.id.taskBar_video_modeAll).setChecked(true);
@@ -2045,6 +2048,17 @@ public class VideoActivity extends AppCompatActivity {
                     item.setChecked(false);
                 } else {
                     filterTypeSet.add(FILTER_TYPE.STUDIO);
+                    item.setChecked(true);
+                }
+                commitSearch();
+                setSearchHint();
+                break;
+            case R.id.taskBar_video_filterByCollection:
+                if (item.isChecked()) {
+                    filterTypeSet.remove(FILTER_TYPE.COLLECTION);
+                    item.setChecked(false);
+                } else {
+                    filterTypeSet.add(FILTER_TYPE.COLLECTION);
                     item.setChecked(true);
                 }
                 commitSearch();

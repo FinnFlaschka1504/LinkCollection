@@ -68,6 +68,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.CollectionActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
@@ -515,7 +516,12 @@ public class Utility {
                 return true;
         }
         if (filterTypeSet.contains(VideoActivity.FILTER_TYPE.STUDIO)) {
-            return containedInStudio(query, video.getStudioList(), filterTypeSet.size() == 1);
+            if (containedInStudio(query, video.getStudioList(), filterTypeSet.size() == 1))
+                return true;
+        }
+        if (filterTypeSet.contains(VideoActivity.FILTER_TYPE.COLLECTION)) {
+            if (containedInCollection(query, video.getUuid(), filterTypeSet.size() == 1))
+                return true;
         }
         return false;
     }
@@ -567,6 +573,30 @@ public class Utility {
                     return true;
             }
         }
+        return false;
+    }
+
+    private static boolean containedInCollection(String query, String uuid, boolean exact) {
+        Database database = Database.getInstance();
+        for (com.maxMustermannGeheim.linkcollection.Daten.Videos.Collection collection : database.collectionMap.values()) {
+            if (exact) {
+                if (collection.getName().equals(query) && collection.getFilmIdList().contains(uuid))
+                    return true;
+            } else {
+                if (collection.getName().toLowerCase().contains(query.toLowerCase()) && collection.getFilmIdList().contains(uuid))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean containedInCollection(String query, com.maxMustermannGeheim.linkcollection.Daten.Videos.Collection collection, HashSet<CollectionActivity.FILTER_TYPE> filterTypeSet) {
+        Database database = Database.getInstance();
+        String lowerCase = query.toLowerCase();
+        if (filterTypeSet.contains(CollectionActivity.FILTER_TYPE.NAME) && collection.getName().toLowerCase().contains(lowerCase))
+            return true;
+        if (filterTypeSet.contains(CollectionActivity.FILTER_TYPE.FILM) && collection.getFilmIdList().stream().map(uuid -> database.videoMap.get(uuid)).anyMatch(video -> video.getName().toLowerCase().contains(lowerCase)))
+            return true;
         return false;
     }
     //  <----- ... in Videos -----
@@ -1028,6 +1058,21 @@ public class Utility {
 
 
     //  ------------------------- Text ------------------------->
+    public static String removeTrailingZeros(double d){
+        return removeTrailingZeros(String.valueOf(d));
+    }
+
+    public static String removeTrailingZeros(String source, String regex){
+        Matcher matcher = Pattern.compile(regex).matcher(source);
+        StringBuffer buffer = new StringBuffer();
+        while (matcher.find()) {
+            String match = matcher.group(0);
+            matcher.appendReplacement(buffer, removeTrailingZeros(match));
+        }
+        matcher.appendTail(buffer);
+        return buffer.toString();
+    }
+
     public static String removeTrailingZeros(String s){
         return (s.contains(".") || s.contains(",")) ? s.replaceAll("0*$", "").replaceAll("[,.]$", "") : s;
     }
@@ -1310,8 +1355,8 @@ public class Utility {
                         Method getImagePath = parentClass.getClass().getMethod("getImagePath");
                         imagePath = (String) getImagePath.invoke(parentClass);
                         if (Utility.stringExists(imagePath)) {
-                            Utility.loadUrlIntoImageView(context, thumbnail, (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/w92/") + imagePath,
-                                    (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/original/") + imagePath, null, () -> roundImageView(thumbnail, 4), searchView::clearFocus);
+                            Utility.loadUrlIntoImageView(context, thumbnail, getTmdbImagePath_ifNecessary(imagePath, false),
+                                    getTmdbImagePath_ifNecessary(imagePath, true), null, () -> roundImageView(thumbnail, 4), searchView::clearFocus);
                             thumbnail.setVisibility(View.VISIBLE);
                         } else
                             thumbnail.setVisibility(View.GONE);
@@ -2091,9 +2136,6 @@ public class Utility {
 
                         @Override
                         public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-//                            if (onFail_onSuccess_onFullscreen.length > 1 && onFail_onSuccess_onFullscreen[1] != null)
-//                                onFail_onSuccess_onFullscreen[1].run();
-
                             return false;
                         }
 

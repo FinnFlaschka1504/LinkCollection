@@ -142,8 +142,8 @@
                 android:id="@+id/dialog_editOrAddCollection_listId_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="TMDb/IMDB-ID"
                 android:layout_weight="1"
+                android:hint="(TMDb/)IMDB-ID"
                 app:errorEnabled="true">
 
 

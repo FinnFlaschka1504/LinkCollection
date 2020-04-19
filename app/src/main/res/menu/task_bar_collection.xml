@@ -18,8 +18,8 @@
                     android:id="@+id/taskBar_collection_sortByName"
                     android:title="Nach Name" />
                 <item
-                    android:id="@+id/taskBar_collection_sortByViews"
-                    android:title="Nach Ansichten" />
+                    android:id="@+id/taskBar_collection_sortByCount"
+                    android:title="Nach Anzahl" />
                 <item
                     android:id="@+id/taskBar_collection_sortByRating"
                     android:title="Nach Bewertung" />
@@ -47,17 +47,9 @@
                 android:checkable="true"
                 android:title="Nach Name" />
             <item
-                android:id="@+id/taskBar_collection_filterByDarsteller"
+                android:id="@+id/taskBar_collection_filterByFilm"
                 android:checkable="true"
-                android:title="Nach Darsteller" />
-            <item
-                android:id="@+id/taskBar_collection_filterByGenre"
-                android:checkable="true"
-                android:title="Nach Genre" />
-            <item
-                android:id="@+id/taskBar_collection_filterByStudio"
-                android:checkable="true"
-                android:title="Nach Studio" />
+                android:title="Nach Filmen" />
         </menu>
     </item>
     <item

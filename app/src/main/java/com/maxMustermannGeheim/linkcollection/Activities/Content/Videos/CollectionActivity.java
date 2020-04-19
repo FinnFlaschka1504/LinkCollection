@@ -5,14 +5,19 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.Editable;
 import android.text.SpannableStringBuilder;
+import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.SearchView;
@@ -34,6 +39,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Collection;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
@@ -46,22 +52,27 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.OptionalDouble;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class CollectionActivity extends AppCompatActivity {
     enum SORT_TYPE {
-        NAME, VIEWS, RATING, LATEST
+        NAME, COUNT, RATING, LATEST
     }
 
     public enum FILTER_TYPE {
-        NAME("Titel"), ACTOR("Darsteller"), GENRE("Genre"), STUDIO("Studio");
+        NAME("Titel"), FILM("Filme"); //, ACTOR("Darsteller"), GENRE("Genre"), STUDIO("Studio");
 
         String name;
 
@@ -85,7 +96,7 @@ public class CollectionActivity extends AppCompatActivity {
     private SharedPreferences mySPR_daten;
     private boolean scrolling = true;
     private SORT_TYPE sort_type = SORT_TYPE.LATEST;
-    private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.ACTOR, FILTER_TYPE.GENRE, FILTER_TYPE.STUDIO));
+    private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.FILM));
     private SearchView.OnQueryTextListener textListener;
     private TextView elementCount;
     private String searchQuery = "";
@@ -167,25 +178,7 @@ public class CollectionActivity extends AppCompatActivity {
             };
             searchView.setOnQueryTextListener(textListener);
 
-            if (database.genreMap.isEmpty() && Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_ASK_FOR_GENRE_IMPORT)) {
-                CustomDialog.Builder(this)
-                        .setTitle("Genres Importieren")
-                        .setText("Es wurde bisher noch kein Genre hinzugefügt. Sollen die Genres aus der TMDb importiert werden?\nDies kann auch jederzeit in den Einstellungen getan werden.")
-                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
-                        .addButton("Nicht erneut Fragen", customDialog -> {
-                            Settings.changeSetting(Settings.SETTING_VIDEO_ASK_FOR_GENRE_IMPORT, "false");
-                            Toast.makeText(this, "Du wirst nicht erneut gefragt", Toast.LENGTH_SHORT).show();
-                        })
-                        .alignPreviousButtonsLeft()
-                        .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog -> {
-                            Utility.importTmdbGenre(this, true);
-                            setResult(RESULT_OK);
-                        })
-                        .show();
-                return;
-            }
-
-
+            setSearchHint();
 //            CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
 //            if (extraSearchCategory != null) {
 //                if (!extraSearchCategory.equals(CategoriesActivity.CATEGORIES.VIDEO)) {
@@ -238,46 +231,45 @@ public class CollectionActivity extends AppCompatActivity {
 
     private CustomList<Collection> filterList(CustomList<Collection> collectionList) {
         CustomList<Collection> filteredVideoList = new CustomList<>(collectionList);
-//        if (mode.equals(VideoActivity.MODE.SEEN)) {
-//            filteredVideoList = allVideoList.stream().filter(video -> !video.getDateList().isEmpty()).collect(Collectors.toCollection(CustomList::new));
-//        } else if (mode.equals(VideoActivity.MODE.LATER)) {
-//            filteredVideoList = Utility.getWatchLaterList();
-//        } else if (mode.equals(VideoActivity.MODE.UPCOMING)) {
-//            filteredVideoList = allVideoList.stream().filter(Video::isUpcoming).collect(Collectors.toCollection(CustomList::new));
-//        }
-//        if (!searchQuery.trim().equals("")) {
-//
-//
-//            String subQuery = searchQuery;
-//            if (searchQuery.contains("*")) {
-//
-//                Matcher matcher = pattern.matcher(searchQuery);
-//                if (matcher.find()) {
-//                    String[] range = matcher.group(0).replaceAll("\\*", "").replaceAll(",", ".").split("-");
-//                    float min = Float.parseFloat(range[0]);
-//                    float max = Float.parseFloat(range.length < 2 ? range[0] : range[1]);
-//                    filteredVideoList.filter(video -> video.getRating() >= min && video.getRating() <= max, true);
-//                    subQuery = matcher.replaceFirst("");
-//                }
-//            }
-//
-//            if (subQuery.contains("|")) {
-//                filteredVideoList = filteredVideoList.filterOr(subQuery.split("\\|"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), true);
-//            } else {
-//                filteredVideoList.filterAnd(subQuery.split("&"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), true);
-//            }
-//        }
+        if (!searchQuery.trim().equals("")) {
+            String subQuery = searchQuery;
+            if (subQuery.contains("|")) {
+                filteredVideoList.filterOr(subQuery.split("\\|"), (collection, s) -> Utility.containedInCollection(s.trim(), collection, filterTypeSet), true);
+            } else {
+                filteredVideoList.filterAnd(subQuery.split("&"), (collection, s) -> Utility.containedInCollection(s.trim(), collection, filterTypeSet), true);
+            }
+        }
         return filteredVideoList;
     }
 
     private CustomList<Collection> sortList(CustomList<Collection> collectionList) {
+        Helpers.SortHelper<Collection> helper = new Helpers.SortHelper<>();
+        helper.setList(collectionList)
+                .setAllReversed(reverse)
+                .addSorter(SORT_TYPE.NAME, (collection1, collection2) -> collection1.getName().compareTo(collection2.getName()) * (reverse ? -1 : 1))
+
+                .addSorter(SORT_TYPE.COUNT)
+                .changeType(this::getCount)
+                .enableReverseDefaultComparable()
+
+                .addSorter(SORT_TYPE.RATING)
+                .changeType(collection -> getAverageRating(collection).orElse(-1d))
+                .enableReverseDefaultComparable()
+
+                .addSorter(SORT_TYPE.LATEST)
+                .changeType(this::getLatest)
+                .enableReverseDefaultComparable()
+
+                .finish()
+                .sort(() -> sort_type);
+
 //        switch (sort_type) {
 //            case NAME:
 //                collectionList.sort((video1, video2) -> video1.getName().compareTo(video2.getName()));
 //                if (reverse)
 //                    Collections.reverse(collectionList);
 //                break;
-//            case VIEWS:
+//            case COUNT:
 //                collectionList.sort((video1, video2) -> {
 //                    if (video1.getDateList().size() == video2.getDateList().size())
 //                        return video1.getName().compareTo(video2.getName());
@@ -321,6 +313,21 @@ public class CollectionActivity extends AppCompatActivity {
 //        }
         return collectionList;
     }
+
+    private Date getLatest(Collection collection) {
+        List<Date> dates = Utility.concatenateCollections(collection.getFilmIdList(), uuid -> database.videoMap.get(uuid).getDateList());
+        if (dates.isEmpty())
+            return null;
+        return Collections.max(dates);
+    }
+
+    private int getCount(Collection collection) {
+        return collection.getFilmIdList().size();
+    }
+
+    private OptionalDouble getAverageRating(Collection collection) {
+        return collection.getFilmIdList().stream().map(s -> database.videoMap.get(s)).filter(ParentClass_Ratable::hasRating).mapToDouble(ParentClass_Ratable::getRating).average();
+    }
     //  <------------------------- List -------------------------
 
 
@@ -362,10 +369,18 @@ public class CollectionActivity extends AppCompatActivity {
 
 
                     if (!collection.getFilmIdList().isEmpty()) {
-                        ((TextView) itemView.findViewById(R.id.listItem_collection_videos_count)).setText(String.valueOf(collection.getFilmIdList().size()));
+                        ((TextView) itemView.findViewById(R.id.listItem_collection_videos_count)).setText(String.valueOf(getCount(collection)));
                         itemView.findViewById(R.id.listItem_collection_videos_count_layout).setVisibility(View.VISIBLE);
                     } else
                         itemView.findViewById(R.id.listItem_collection_videos_count_layout).setVisibility(View.GONE);
+
+                    OptionalDouble average = getAverageRating(collection);
+                    if (average.isPresent()) {
+                        ((TextView) itemView.findViewById(R.id.listItem_collection_rating)).setText(String.format("Ø %.4s", average.getAsDouble()));
+                        itemView.findViewById(R.id.listItem_collection_rating_layout).setVisibility(View.VISIBLE);
+                    } else
+                        itemView.findViewById(R.id.listItem_collection_rating_layout).setVisibility(View.GONE);
+
                     ((TextView) itemView.findViewById(R.id.listItem_collection_Titel)).setText(/*(Utility.stringExists(collection.getImagePath()) ? "" : "• ") + */collection.getName());
 //                    if (!collection.getDateList().isEmpty()) {
 //                        itemView.findViewById(R.id.listItem_collection_Views_layout).setVisibility(View.VISIBLE);
@@ -400,6 +415,11 @@ public class CollectionActivity extends AppCompatActivity {
                     showDetailDialog(collection);
                 })
                 .addSubOnClickListener(R.id.listItem_collection_search, (customRecycler, view, collection, index) -> {
+                    startActivityForResult(new Intent(this, VideoActivity.class)
+                                    .putExtra(CategoriesActivity.EXTRA_SEARCH, collection.getName())
+                                    .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.COLLECTION),
+                            CategoriesActivity.START_CATIGORY_SEARCH);
+
                 }, false)
                 .setOnLongClickListener((customRecycler, view, collection, index) -> {
                     showEditDialog(collection);
@@ -435,6 +455,15 @@ public class CollectionActivity extends AppCompatActivity {
                                     Utility.loadUrlIntoImageView(this, thumbnail,
                                             imagePath, imagePath, null, () -> Utility.roundImageView(thumbnail, 8));
                                     thumbnail.setVisibility(View.VISIBLE);
+
+                                    thumbnail.setOnLongClickListener(v -> {
+                                        startActivityForResult(new Intent(this, VideoActivity.class)
+                                                        .putExtra(CategoriesActivity.EXTRA_SEARCH, video.getUuid())
+                                                        .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO),
+                                                CategoriesActivity.START_CATIGORY_SEARCH);
+
+                                        return true;
+                                    });
                                 } else
                                     thumbnail.setImageResource(R.drawable.ic_no_image);
 
@@ -474,6 +503,7 @@ public class CollectionActivity extends AppCompatActivity {
     }
     //  <------------------------- Detail -------------------------
 
+
     private void getFilmsFromListId(CustomDialog customDialog, Collection collection, String id, boolean showResults) {
         if (!Utility.stringExists(id) || !id.matches("\\d+|ls\\d{9}"))
             return;
@@ -496,7 +526,7 @@ public class CollectionActivity extends AppCompatActivity {
                                     "}",
                             result -> {
                                 Toast.makeText(this, "Fertig", Toast.LENGTH_SHORT).show();
-                                List<List<String>> filmList = new ArrayList<>();
+                                CustomList<List<String>> filmList = new CustomList<>();
                                 Matcher resultMatcher = Pattern.compile("\\[\"tt[0-9]{7}\",\".+?\",\".+?\"\\]").matcher(result);
                                 while (resultMatcher.find()) {
                                     String filmArray = resultMatcher.group(0);
@@ -507,6 +537,8 @@ public class CollectionActivity extends AppCompatActivity {
                                     }
                                     filmList.add(detailList);
                                 }
+
+                                CustomList<List<String>> notImprtedList = filmList.filter(stringList -> database.videoMap.values().stream().noneMatch(video -> Objects.equals(video.getImdbId(), stringList.get(0))), false);
 
                                 Runnable applyImport = () -> {
                                     Map<String, Video> videoMap = database.videoMap.values().stream().filter(video -> Utility.stringExists(video.getImdbId())).collect(Collectors.toMap(Video::getImdbId, video -> video));
@@ -531,6 +563,10 @@ public class CollectionActivity extends AppCompatActivity {
                                                     .setItemLayout(R.layout.list_item_collection_video)
                                                     .setObjectList(filmList)
                                                     .setSetItemContent((customRecycler1, itemView, detailList) -> {
+                                                        Utility.applyToAllViews((ViewGroup) itemView, View.class, view -> {
+                                                            view.setAlpha(database.videoMap.values().stream().anyMatch(video -> Objects.equals(video.getImdbId(), detailList.get(0))) ? 1f : 0.6f);
+                                                        });
+
                                                         String imagePath = detailList.get(2);
                                                         ImageView thumbnail = itemView.findViewById(R.id.listItem_collectionVideo_thumbnail);
                                                         if (Utility.stringExists(imagePath)) {
@@ -546,8 +582,48 @@ public class CollectionActivity extends AppCompatActivity {
                                                     .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
                                                     .generateRecyclerView())
                                             .addButton("Neue Filme Importieren", customDialog1 -> {
+                                                List<String> importList = filmList.map(stringList -> stringList.get(0));
+                                                CustomDialog.Builder(this)
+                                                        .setTitle("Neue Filme Importieren")
+                                                        .setView(new CustomRecycler<List<String>>(this)
+                                                                .setItemLayout(R.layout.list_item_select)
+                                                                .setMultiClickEnabled(true)
+                                                                .setObjectList(notImprtedList)
+                                                                .setSetItemContent((customRecycler, itemView, detailList) -> {
+                                                                    ImageView thumbnail = itemView.findViewById(R.id.selectList_thumbnail);
+                                                                    String imagePath = detailList.get(2);
+
+                                                                    Utility.loadUrlIntoImageView(this, thumbnail, Utility.getTmdbImagePath_ifNecessary(imagePath, false),
+                                                                            Utility.getTmdbImagePath_ifNecessary(imagePath, true), null, () -> Utility.roundImageView(thumbnail, 4));
+                                                                    thumbnail.setVisibility(View.VISIBLE);
+
+                                                                    ((TextView) itemView.findViewById(R.id.selectList_name)).setText(detailList.get(1));
+
+                                                                    ((CheckBox) itemView.findViewById(R.id.selectList_selected)).setChecked(importList.contains(detailList.get(0)));
+                                                                })
+                                                                .setOnClickListener((customRecycler, view, detailList, index) -> {
+                                                                    CheckBox checkBox = view.findViewById(R.id.selectList_selected);
+                                                                    checkBox.setChecked(!checkBox.isChecked());
+                                                                    if (importList.contains(detailList.get(0)))
+                                                                        importList.remove(detailList.get(0));
+                                                                    else
+                                                                        importList.add(detailList.get(0));
+                                                                })
+                                                                .enableDivider()
+                                                                .disableCustomRipple()
+                                                                .generateRecyclerView())
+                                                        .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
+                                                        .addButton("Importieren", customDialog2 -> {
+
+                                                        })
+                                                        .markLastAddedButtonAsActionButton()
+                                                        .disableScroll()
+                                                        .show();
+                                            }, false)
+                                            .addOptionalModifications(customDialog1 -> {
+                                                if (notImprtedList.isEmpty())
+                                                    customDialog1.disableLastAddedButton();
                                             })
-                                            .disableLastAddedButton()
                                             .addButton("Anwenden", customDialog1 -> applyImport.run())
                                             .show();
                                 } else
@@ -576,7 +652,9 @@ public class CollectionActivity extends AppCompatActivity {
                     })
                     .go();
         }
+
     }
+
 
     //  ------------------------- Edit ------------------------->
     private Collection showEditDialog(@Nullable Collection oldCollection) {
@@ -597,6 +675,25 @@ public class CollectionActivity extends AppCompatActivity {
 
                         Helpers.TextInputHelper helper = new Helpers.TextInputHelper((Button) customDialog.getActionButton().getButton(), editTitle_layout, editListId_layout)
                                 .setValidation(editListId_layout, "|\\d+|ls\\d{9}");
+
+                        editListId.addTextChangedListener(new TextWatcher() {
+                            @Override
+                            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                            }
+
+                            @Override
+                            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                                if (s.toString().matches("https://(www\\.)?(m\\.)?imdb\\.com/list/ls\\d{9}/?")) {
+                                    Matcher matcher = Pattern.compile("ls\\d{9}").matcher(s);
+                                    if (matcher.find())
+                                        editListId.setText(matcher.group(0));
+                                }
+                            }
+
+                            @Override
+                            public void afterTextChanged(Editable s) {
+                            }
+                        });
 
                         if (editCollection.getName() != null) {
                             editTitle.setText(editCollection.getName());
@@ -712,7 +809,6 @@ public class CollectionActivity extends AppCompatActivity {
         return editCollection;
     }
 
-
     private void setThumbnailButton(Collection collection, CustomDialog customDialog) {
         if (collection == null || customDialog == null)
             return;
@@ -795,6 +891,48 @@ public class CollectionActivity extends AppCompatActivity {
         requestQueue.add(jsonArrayRequest);
 
     }
+
+    private void importFromImdbId(String imdbId, Runnable onNext) {
+        String requestUrl = "https://api.themoviedb.org/3/find/" +
+                imdbId +
+                "?api_key=09e015a2106437cbc33bf79eb512b32d&language=de&external_source=imdb_id";
+        RequestQueue requestQueue = Volley.newRequestQueue(this);
+
+        Toast.makeText(this, "Einen Moment bitte..", Toast.LENGTH_SHORT).show();
+
+
+        JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {
+            JSONArray results;
+            try {
+                results = response.getJSONArray("movie_results");
+
+                if (results.length() == 0) {
+//                    Toast.makeText(this, "Keine Ergebnisse gefunden", Toast.LENGTH_SHORT).show();
+                    onNext.run();
+                    return;
+                }
+
+
+                JSONObject object = results.getJSONObject(0);
+
+                int id = object.getInt("id");
+
+//                database.videoMap.values().stream().filter(video -> video.getTmdId() == id).findFirst().ifPresent(video -> foundList.add(video.getUuid()));
+//
+//
+//                foundList.removeAll(collection.getFilmIdList());
+//                collection.getFilmIdList().addAll(foundList);
+//                customDialog.reloadView();
+//                Toast.makeText(this, foundList.isEmpty() ? "Nichts hinzugefügt" : (foundList.size() == 1 ? "Einen" : foundList.size()) + " hinzugefügt", Toast.LENGTH_SHORT).show();
+                // ToDo: import vollenden
+            } catch (JSONException ignored) {
+            }
+
+        }, error -> Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show());
+
+        requestQueue.add(jsonArrayRequest);
+
+    }
     //  <------------------------- API-Call -------------------------
 
 
@@ -803,10 +941,16 @@ public class CollectionActivity extends AppCompatActivity {
         return textListener.onQueryTextChange(searchView.getQuery().toString());
     }
 
+    private void setSearchHint() {
+        String join = filterTypeSet.stream().filter(FILTER_TYPE::hasName).sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).map(FILTER_TYPE::getName).collect(Collectors.joining(", "));
+        searchView.setQueryHint(join.isEmpty() ? "Kein Filter ausgewählt!" : join + " ('&' als 'und'; '|' als 'oder')");
+        Utility.applyToAllViews(searchView, View.class, view -> view.setEnabled(!join.isEmpty()));
+    }
+
     private void removeFocusFromSearch() {
         searchView.clearFocus();
     }
-//  <------------------------- Convenience -------------------------
+    //  <------------------------- Convenience -------------------------
 
 
     //  ------------------------- ToolBar ------------------------->
@@ -816,13 +960,8 @@ public class CollectionActivity extends AppCompatActivity {
 
         menu.findItem(R.id.taskBar_collection_filterByName)
                 .setChecked(filterTypeSet.contains(FILTER_TYPE.NAME));
-        menu.findItem(R.id.taskBar_collection_filterByDarsteller)
-                .setChecked(filterTypeSet.contains(FILTER_TYPE.ACTOR));
-        menu.findItem(R.id.taskBar_collection_filterByStudio)
-                .setChecked(filterTypeSet.contains(FILTER_TYPE.STUDIO));
-        menu.findItem(R.id.taskBar_collection_filterByGenre)
-                .setChecked(filterTypeSet.contains(FILTER_TYPE.GENRE));
-
+        menu.findItem(R.id.taskBar_collection_filterByFilm)
+                .setChecked(filterTypeSet.contains(FILTER_TYPE.FILM));
         return true;
     }
 
@@ -840,16 +979,16 @@ public class CollectionActivity extends AppCompatActivity {
 //            case R.id.taskBar_collection_random:
 //                showRandomDialog();
 //                break;
-//            case R.id.taskBar_collection_scroll:
-//                if (item.isChecked()) {
-//                    item.setChecked(false);
-//                    scrolling = false;
-//                } else {
-//                    item.setChecked(true);
-//                    scrolling = true;
-//                }
-//                customRecycler.reload();
-//                break;
+            case R.id.taskBar_collection_scroll:
+                if (item.isChecked()) {
+                    item.setChecked(false);
+                    scrolling = false;
+                } else {
+                    item.setChecked(true);
+                    scrolling = true;
+                }
+                reLoadRecycler();
+                break;
 //            case R.id.taskBar_collection_delete:
 //                if (database.videoMap.isEmpty()) {
 //                    Toast.makeText(this, "Keine " + plural, Toast.LENGTH_SHORT).show();
@@ -864,77 +1003,55 @@ public class CollectionActivity extends AppCompatActivity {
 //                delete = !delete;
 //                break;
 //
-//            case R.id.taskBar_collection_sortByName:
-//                sort_type = VideoActivity.SORT_TYPE.NAME;
-//                item.setChecked(true);
-//                reLoadRecycler();
-//                break;
-//            case R.id.taskBar_collection_sortByViews:
-//                sort_type = VideoActivity.SORT_TYPE.VIEWS;
-//                item.setChecked(true);
-//                reLoadRecycler();
-//                break;
-//            case R.id.taskBar_collection_sortByRating:
-//                sort_type = VideoActivity.SORT_TYPE.RATING;
-//                item.setChecked(true);
-//                reLoadRecycler();
-//                break;
-//            case R.id.taskBar_collection_sortByLatest:
-//                sort_type = VideoActivity.SORT_TYPE.LATEST;
-//                item.setChecked(true);
-//                reLoadRecycler();
-//                break;
-//            case R.id.taskBar_collection_sortReverse:
-//                boolean checked = !item.isChecked();
-//                item.setChecked(checked);
-//                reverse = checked;
-//                reLoadRecycler();
-//                break;
-//
-//            case R.id.taskBar_collection_filterByName:
-//                if (item.isChecked()) {
-//                    filterTypeSet.remove(VideoActivity.FILTER_TYPE.NAME);
-//                    item.setChecked(false);
-//                } else {
-//                    filterTypeSet.add(VideoActivity.FILTER_TYPE.NAME);
-//                    item.setChecked(true);
-//                }
-//                commitSearch();
-//                setSearchHint();
-//                break;
-//            case R.id.taskBar_collection_filterByDarsteller:
-//                if (item.isChecked()) {
-//                    filterTypeSet.remove(VideoActivity.FILTER_TYPE.ACTOR);
-//                    item.setChecked(false);
-//                } else {
-//                    filterTypeSet.add(VideoActivity.FILTER_TYPE.ACTOR);
-//                    item.setChecked(true);
-//                }
-//                commitSearch();
-//                setSearchHint();
-//                break;
-//            case R.id.taskBar_collection_filterByGenre:
-//                if (item.isChecked()) {
-//                    filterTypeSet.remove(VideoActivity.FILTER_TYPE.GENRE);
-//                    item.setChecked(false);
-//                } else {
-//                    filterTypeSet.add(VideoActivity.FILTER_TYPE.GENRE);
-//                    item.setChecked(true);
-//                }
-//                commitSearch();
-//                setSearchHint();
-//                break;
-//            case R.id.taskBar_collection_filterByStudio:
-//                if (item.isChecked()) {
-//                    filterTypeSet.remove(VideoActivity.FILTER_TYPE.STUDIO);
-//                    item.setChecked(false);
-//                } else {
-//                    filterTypeSet.add(VideoActivity.FILTER_TYPE.STUDIO);
-//                    item.setChecked(true);
-//                }
-//                commitSearch();
-//                setSearchHint();
-//                break;
+            case R.id.taskBar_collection_sortByName:
+                sort_type = SORT_TYPE.NAME;
+                item.setChecked(true);
+                reLoadRecycler();
+                break;
+            case R.id.taskBar_collection_sortByCount:
+                sort_type = SORT_TYPE.COUNT;
+                item.setChecked(true);
+                reLoadRecycler();
+                break;
+            case R.id.taskBar_collection_sortByRating:
+                sort_type = SORT_TYPE.RATING;
+                item.setChecked(true);
+                reLoadRecycler();
+                break;
+            case R.id.taskBar_collection_sortByLatest:
+                sort_type = SORT_TYPE.LATEST;
+                item.setChecked(true);
+                reLoadRecycler();
+                break;
+            case R.id.taskBar_collection_sortReverse:
+                boolean checked = !item.isChecked();
+                item.setChecked(checked);
+                reverse = checked;
+                reLoadRecycler();
+                break;
+
+            case R.id.taskBar_collection_filterByName:
+                if (item.isChecked()) {
+                    filterTypeSet.remove(FILTER_TYPE.NAME);
+                    item.setChecked(false);
+                } else {
+                    filterTypeSet.add(FILTER_TYPE.NAME);
+                    item.setChecked(true);
+                }
+                reLoadRecycler();
+                setSearchHint();
+                break;
+            case R.id.taskBar_collection_filterByFilm:
+                if (item.isChecked()) {
+                    filterTypeSet.remove(FILTER_TYPE.FILM);
+                    item.setChecked(false);
+                } else {
+                    filterTypeSet.add(FILTER_TYPE.FILM);
+                    item.setChecked(true);
+                }
+                reLoadRecycler();
+                setSearchHint();
+                break;
 //            case R.id.taskBar_collection_filterByRating:
 //                Utility.showRangeSelectDialog(this, searchView);
 //                break;

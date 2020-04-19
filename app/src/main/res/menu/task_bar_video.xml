@@ -60,6 +60,10 @@
                 android:checkable="true"
                 android:title="Nach Genre" />
             <item
+                android:id="@+id/taskBar_video_filterByCollection"
+                android:checkable="true"
+                android:title="Nach Sammlung" />
+            <item
                 android:id="@+id/taskBar_video_filterByStudio"
                 android:checkable="true"
                 android:title="Nach Studio" />

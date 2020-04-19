@@ -478,7 +478,7 @@ public class ShowActivity extends AppCompatActivity {
 //            case NAME:
 //                showList.sort((show1, show2) -> show1.getName().compareTo(show2.getName()) * (reverse ? -1 : 1));
 //                break;
-//            case VIEWS:
+//            case COUNT:
 //                showList.sort((show1, show2) -> {
 //                    List<Show.Episode> episodeList1 = showEpisodeMap.get(show1);
 //                    List<Show.Episode> episodeList2 = showEpisodeMap.get(show2);

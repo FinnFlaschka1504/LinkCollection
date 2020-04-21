@@ -838,7 +838,7 @@ public class VideoActivity extends AppCompatActivity {
 
                     ImageView dialog_video_internet = view.findViewById(R.id.dialog_video_internet);
                     if (Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_TMDB_SHORTCUT))
-                        dialog_video_internet.setOnClickListener(v -> Utility.openUrl(this, "https://www.themoviedb.org/movie/" + video.getTmdId(), true));
+                        dialog_video_internet.setOnClickListener(v -> Utility.openUrl(this, "https://www.themoviedb.org/movie/" + video.getTmdbId(), true));
                     else
                         dialog_video_internet.setVisibility(View.GONE);
 
@@ -1583,7 +1583,7 @@ public class VideoActivity extends AppCompatActivity {
         dialog_editOrAddVideo_Titel.setOnItemClickListener((parent, view2, position, id) -> {
             JSONObject jsonObject = (JSONObject) ((ImageAdapterItem) parent.getItemAtPosition(position)).getPayload();
             try {
-                video.setRelease(new SimpleDateFormat("yyyy-MM-dd", Locale.GERMANY).parse(jsonObject.getString("release_date"))).setTmdId(jsonObject.getInt("id"))
+                video.setRelease(new SimpleDateFormat("yyyy-MM-dd", Locale.GERMANY).parse(jsonObject.getString("release_date"))).setTmdbId(jsonObject.getInt("id"))
                         .setName(jsonObject.getString("original_title"));
                 if (jsonObject.has("poster_path")) {
                     try {
@@ -1606,8 +1606,8 @@ public class VideoActivity extends AppCompatActivity {
                 video.setGenreList(uuidList);
 
                 if (Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_LOAD_CAST_AND_STUDIOS)) {
-                    apiCastRequest(video.getTmdId(), customDialog, video);
-                    apiStudioRequest(video.getTmdId(), customDialog, video);
+                    apiCastRequest(video.getTmdbId(), customDialog, video);
+                    apiStudioRequest(video.getTmdbId(), customDialog, video);
                 } else
                     customDialog.reloadView();
             } catch (JSONException | ParseException ignored) {
@@ -1796,7 +1796,7 @@ public class VideoActivity extends AppCompatActivity {
                 for (int i = 0; i < results.length(); i++) {
                     JSONObject object = results.getJSONObject(i);
                     int id = object.getInt("id");
-                    videos.stream().filter(video -> video.getTmdId() == id).findFirst().ifPresent(video -> {
+                    videos.stream().filter(video -> video.getTmdbId() == id).findFirst().ifPresent(video -> {
                         if (!video.getDarstellerList().contains(tmdbObject.getUuid())) {
                             video.getDarstellerList().add(tmdbObject.getUuid());
                             count[0]++;
@@ -1839,7 +1839,7 @@ public class VideoActivity extends AppCompatActivity {
 //                    for (int i = 0; i < results.length(); i++) {
 //                        JSONObject object = results.getJSONObject(i);
 //                        int id = object.getInt("id");
-//                        videos.stream().filter(video -> video.getTmdId() == id).findFirst().ifPresent(video -> {
+//                        videos.stream().filter(video -> video.getTmdbId() == id).findFirst().ifPresent(video -> {
 //                            if (!video.getDarstellerList().contains(tmdbObject.getUuid())) {
 //                                video.getDarstellerList().add(tmdbObject.getUuid());
 //                                count[0]++;

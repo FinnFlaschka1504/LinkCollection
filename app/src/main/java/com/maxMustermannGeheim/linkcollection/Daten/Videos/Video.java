@@ -1,6 +1,5 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Videos;
 
-import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
@@ -28,7 +27,7 @@ public class Video extends ParentClass_Ratable {
     private Date release;
     private String imagePath;
     private List<String> translationList = new ArrayList<>();
-    private int tmdId;
+    private int tmdbId;
     private String imdbId;
     private boolean watchLater;
     private CustomList<ParentClass_Tmdb> tempCastList = new CustomList<>();
@@ -174,12 +173,12 @@ public class Video extends ParentClass_Ratable {
         return this;
     }
 
-    public int getTmdId() {
-        return tmdId;
+    public int getTmdbId() {
+        return tmdbId;
     }
 
-    public Video setTmdId(int tmdId) {
-        this.tmdId = tmdId;
+    public Video setTmdbId(int tmdbId) {
+        this.tmdbId = tmdbId;
         return this;
     }
 

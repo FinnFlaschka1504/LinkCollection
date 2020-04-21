@@ -38,9 +38,9 @@ import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
-import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Collection;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
@@ -52,13 +52,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.lang.reflect.Method;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalDouble;
@@ -558,7 +559,7 @@ public class CollectionActivity extends AppCompatActivity {
 
                                 if (showResults) {
                                     CustomDialog.Builder(this)
-                                            .setTitle("Result")
+                                            .setTitle("Geladene Videos")
                                             .setView(new CustomRecycler<List<String>>(this)
                                                     .setItemLayout(R.layout.list_item_collection_video)
                                                     .setObjectList(filmList)
@@ -582,8 +583,10 @@ public class CollectionActivity extends AppCompatActivity {
                                                     .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
                                                     .generateRecyclerView())
                                             .addButton("Neue Filme Importieren", customDialog1 -> {
-                                                List<String> importList = filmList.map(stringList -> stringList.get(0));
-                                                CustomDialog.Builder(this)
+                                                CustomList<String> importList = notImprtedList.map(stringList -> stringList.get(0));
+
+                                                CustomDialog allFilmsDialog = CustomDialog.Builder(this);
+                                                allFilmsDialog
                                                         .setTitle("Neue Filme Importieren")
                                                         .setView(new CustomRecycler<List<String>>(this)
                                                                 .setItemLayout(R.layout.list_item_select)
@@ -608,12 +611,122 @@ public class CollectionActivity extends AppCompatActivity {
                                                                         importList.remove(detailList.get(0));
                                                                     else
                                                                         importList.add(detailList.get(0));
+                                                                    allFilmsDialog.getActionButton().setEnabled(!importList.isEmpty());
                                                                 })
                                                                 .enableDivider()
+                                                                .removeLastDivider()
                                                                 .disableCustomRipple()
                                                                 .generateRecyclerView())
                                                         .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
                                                         .addButton("Importieren", customDialog2 -> {
+                                                            customDialog1.dismiss();
+                                                            Toast.makeText(this, "Einen Moment bitte..", Toast.LENGTH_SHORT).show();
+                                                            Map<String, List<String>> filmMap = filmList.stream().filter(stringList -> importList.contains(stringList.get(0))).collect(Collectors.toMap(stringList -> stringList.get(0), stringList -> stringList));
+                                                            CustomList<Video> importedFilms = new CustomList<>();
+
+                                                            RequestQueue requestQueue = Volley.newRequestQueue(this);
+                                                            List<String> failedList = new ArrayList<>();
+                                                            int allCount = importList.size();
+                                                            if (allCount == 0) {
+                                                                Toast.makeText(this, "Keine Videos vorhanden", Toast.LENGTH_SHORT).show();
+                                                                return;
+                                                            }
+                                                            final String[] currentVideoId = {importList.get(0)};
+                                                            final int[] finishedCount = {0};
+                                                            int closeButtonId = View.generateViewId();
+                                                            final boolean[] doubleClick = {true};
+                                                            Runnable[] importVideo = {null};
+                                                            CustomDialog progressDialog = CustomDialog.Builder(this)
+                                                                    .setTitle("Fortschritt")
+                                                                    .setText(finishedCount[0] + "/" + allCount + " wurden aktualisiert")
+                                                                    .addButton("Fertig", customDialog3 -> {
+                                                                    }, closeButtonId)
+                                                                    .hideLastAddedButton()
+                                                                    .addButton("Details Laden", customDialog3 -> {
+                                                                        Utility.updateVideos(this, importedFilms, true);
+                                                                    })
+                                                                    .markLastAddedButtonAsActionButton()
+                                                                    .hideLastAddedButton()
+                                                                    .enableDoubleClickOutsideToDismiss(customDialog3 -> doubleClick[0])
+                                                                    .setOnDialogDismiss(customDialog3 -> importVideo[0] = () -> {
+                                                                    })
+                                                                    .show();
+
+
+                                                            Runnable isFinished = () -> {
+                                                                finishedCount[0]++;
+                                                                if (finishedCount[0] >= allCount) {
+                                                                    String failedString = failedList.stream().map(imdbId -> filmMap.get(imdbId).get(1)).collect(Collectors.joining(", "));
+                                                                    progressDialog.setText("Fertig!" + (Utility.stringExists(failedString) ? "\n" + failedString + "\nkonnten nicht aktualisiert werden" : ""));
+                                                                    progressDialog.getButton(closeButtonId).setVisibility(View.VISIBLE);
+                                                                    progressDialog.getActionButton().setVisibility(View.VISIBLE);
+                                                                    Database.saveAll();
+                                                                    doubleClick[0] = false;
+                                                                } else {
+                                                                    progressDialog.setText(finishedCount[0] + "/" + allCount + " wurden aktualisiert");
+                                                                    String nextVideo = importList.next(currentVideoId[0]);
+                                                                    if (importList.isFirst(nextVideo))
+                                                                        return;
+                                                                    currentVideoId[0] = nextVideo;
+                                                                    importVideo[0].run();
+                                                                }
+                                                            };
+                                                            importVideo[0] = () -> {
+                                                                String imdbId = currentVideoId[0];
+                                                                String requestUrl = "https://api.themoviedb.org/3/find/" +
+                                                                        imdbId +
+                                                                        "?api_key=09e015a2106437cbc33bf79eb512b32d&language=de&external_source=imdb_id";
+
+                                                                JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response2 -> {
+                                                                    try {
+                                                                        JSONArray movie_results = response2.getJSONArray("movie_results");
+                                                                        if (movie_results.length() == 0) {
+                                                                            failedList.add(currentVideoId[0]);
+                                                                            isFinished.run();
+                                                                            return;
+                                                                        }
+                                                                        JSONObject movieDetails = movie_results.getJSONObject(0);
+                                                                        Video newVideo = new Video(movieDetails.getString("title")).setWatchLater(true);
+
+                                                                        if (movieDetails.has("original_title"))
+                                                                            newVideo.setTranslationList(Arrays.asList(filmMap.get(currentVideoId[0]).get(1), movieDetails.getString("title"), movieDetails.getString("original_title")));
+                                                                        newVideo.setImdbId(currentVideoId[0]);
+                                                                        if (movieDetails.has("id"))
+                                                                            newVideo.setTmdbId(movieDetails.getInt("id"));
+                                                                        if (movieDetails.has("release_date"))
+                                                                            newVideo.setRelease(new SimpleDateFormat("yyyy-MM-dd", Locale.GERMANY).parse(movieDetails.getString("release_date")));
+                                                                        if (movieDetails.has("poster_path"))
+                                                                            newVideo.setImagePath(movieDetails.getString("poster_path"));
+                                                                        if (movieDetails.has("genre_ids")) {
+                                                                            JSONArray genre_ids = movieDetails.getJSONArray("genre_ids");
+                                                                            CustomList<Integer> integerList = new CustomList<>();
+                                                                            for (int i = 0; i < genre_ids.length(); i++) {
+                                                                                integerList.add(genre_ids.getInt(i));
+                                                                            }
+                                                                            Map<Integer, String> idUuidMap = database.genreMap.values().stream().filter(genre -> genre.getTmdbGenreId() != 0).collect(Collectors.toMap(Genre::getTmdbGenreId, ParentClass::getUuid));
+
+                                                                            CustomList<String> uuidList = integerList.map(idUuidMap::get).filter(Objects::nonNull, false);
+                                                                            uuidList.removeAll(newVideo.getGenreList());
+                                                                            newVideo.getGenreList().addAll(uuidList);
+                                                                        }
+
+                                                                        database.videoMap.put(newVideo.getUuid(), newVideo);
+                                                                        importedFilms.add(newVideo);
+                                                                    } catch (Exception e) {
+                                                                        failedList.add(currentVideoId[0]);
+                                                                    }
+//                                                                    new Handler().postDelayed(isFinished, 2000);
+                                                                    isFinished.run();
+                                                                }, error -> {
+                                                                    failedList.add(currentVideoId[0]);
+                                                                    isFinished.run();
+                                                                });
+
+                                                                requestQueue.add(jsonArrayRequest);
+
+                                                            };
+
+                                                            importVideo[0].run();
 
                                                         })
                                                         .markLastAddedButtonAsActionButton()
@@ -874,7 +987,7 @@ public class CollectionActivity extends AppCompatActivity {
 
                     int id = object.getInt("id");
 
-                    database.videoMap.values().stream().filter(video -> video.getTmdId() == id).findFirst().ifPresent(video -> foundList.add(video.getUuid()));
+                    database.videoMap.values().stream().filter(video -> video.getTmdbId() == id).findFirst().ifPresent(video -> foundList.add(video.getUuid()));
 
                 }
 
@@ -917,7 +1030,7 @@ public class CollectionActivity extends AppCompatActivity {
 
                 int id = object.getInt("id");
 
-//                database.videoMap.values().stream().filter(video -> video.getTmdId() == id).findFirst().ifPresent(video -> foundList.add(video.getUuid()));
+//                database.videoMap.values().stream().filter(video -> video.getTmdbId() == id).findFirst().ifPresent(video -> foundList.add(video.getUuid()));
 //
 //
 //                foundList.removeAll(collection.getFilmIdList());

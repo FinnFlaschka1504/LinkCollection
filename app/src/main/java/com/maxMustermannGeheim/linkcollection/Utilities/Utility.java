@@ -18,6 +18,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Handler;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -1058,11 +1059,11 @@ public class Utility {
 
 
     //  ------------------------- Text ------------------------->
-    public static String removeTrailingZeros(double d){
+    public static String removeTrailingZeros(double d) {
         return removeTrailingZeros(String.valueOf(d));
     }
 
-    public static String removeTrailingZeros(String source, String regex){
+    public static String removeTrailingZeros(String source, String regex) {
         Matcher matcher = Pattern.compile(regex).matcher(source);
         StringBuffer buffer = new StringBuffer();
         while (matcher.find()) {
@@ -1073,11 +1074,11 @@ public class Utility {
         return buffer.toString();
     }
 
-    public static String removeTrailingZeros(String s){
+    public static String removeTrailingZeros(String s) {
         return (s.contains(".") || s.contains(",")) ? s.replaceAll("0*$", "").replaceAll("[,.]$", "") : s;
     }
 
-    public static Pair<Integer,Integer> getTextWithAndHeight(Context context, String text, int size, int... typefaces){
+    public static Pair<Integer, Integer> getTextWithAndHeight(Context context, String text, int size, int... typefaces) {
         TextView textView = new TextView(context);
         textView.setTextSize(size);
         for (int typeface : typefaces)
@@ -1107,7 +1108,7 @@ public class Utility {
         return "";
     }
 
-    public static String subString(String text, int start, int ende){
+    public static String subString(String text, int start, int ende) {
         if (start < 0)
             start = text.length() + start;
         if (ende < 0)
@@ -1115,7 +1116,7 @@ public class Utility {
         return text.substring(start, ende);
     }
 
-    public static String subString(String text, int start){
+    public static String subString(String text, int start) {
         if (start < 0)
             start = text.length() + start;
         return text.substring(start);
@@ -2345,4 +2346,165 @@ public class Utility {
 
     }
     //  <------------------------- GetOpenGraphFromWebsite -------------------------
+
+    //  ------------------------- Videos Aktuallisieren ------------------------->
+    public static void updateVideos(Context context, CustomList<Video> updateList, boolean updateCast) {
+        Database database = Database.getInstance();
+        RequestQueue requestQueue = Volley.newRequestQueue(context);
+        updateList.sort((o1, o2) -> o1.getName().compareTo(o2.getName()));
+        List<Video> failedList = new ArrayList<>();
+        int allCount = updateList.size();
+        if (allCount == 0) {
+            Toast.makeText(context, "Keine Videos vorhanden", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        final Video[] currentVideo = {updateList.get(0)};
+        final int[] finishedCount = {0};
+        int closeButtonId = View.generateViewId();
+        final boolean[] doubleClick = {true};
+        Runnable[] loadDetails = {null};
+        CustomDialog progressDialog = CustomDialog.Builder(context)
+                .setTitle("Fortschritt")
+                .setText(finishedCount[0] + "/" + allCount + " wurden aktualisiert")
+                .addButton("Schließen", customDialog2 -> {
+                }, closeButtonId)
+                .hideLastAddedButton()
+                .enableDoubleClickOutsideToDismiss(customDialog2 -> doubleClick[0])
+                .setOnDialogDismiss(customDialog3 -> loadDetails[0] = () -> {})
+                .show();
+
+
+        Runnable isFinished = () -> {
+            finishedCount[0]++;
+            if (finishedCount[0] >= allCount) {
+                String failedString = failedList.stream().map(com.finn.androidUtilities.ParentClass::getName).collect(Collectors.joining(", "));
+                progressDialog.setText("Fertig!" + (Utility.stringExists(failedString) ? "\n" + failedString + "\nkonnten nicht aktualisiert werden" : "")).getButton(closeButtonId).setVisibility(View.VISIBLE);
+                Database.saveAll();
+                doubleClick[0] = false;
+            } else {
+                progressDialog.setText(finishedCount[0] + "/" + allCount + " wurden aktualisiert");
+                Video nextVideo = updateList.next(currentVideo[0]);
+                if (updateList.isFirst(nextVideo)) return;
+                currentVideo[0] = nextVideo;
+                loadDetails[0].run();
+            }
+        };
+        loadDetails[0] = () -> {
+            int tmdbId = currentVideo[0].getTmdbId();
+            if (tmdbId == 0) {
+                failedList.add(currentVideo[0]);
+                isFinished.run();
+                return;
+            }
+            String requestUrl = "https://api.themoviedb.org/3/movie/" + tmdbId + "?api_key=09e015a2106437cbc33bf79eb512b32d&language=de";
+
+            JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {
+                try {
+                    if (response.has("production_companies")) {
+                        JSONArray companies = response.getJSONArray("production_companies");
+                        CustomList<ParentClass_Tmdb> tempStudioList = new CustomList<>();
+
+                        for (int i = 0; i < companies.length(); i++) {
+                            JSONObject object = companies.getJSONObject(i);
+                            String name = object.getString("name");
+
+                            Optional<Studio> optional = database.studioMap.values().stream().filter(studio -> studio.getName().equals(name)).findFirst();
+
+                            if (optional.isPresent()) {
+                                if (!currentVideo[0].getStudioList().contains(optional.get().getUuid()))
+                                    currentVideo[0].getStudioList().add(optional.get().getUuid());
+                            } else {
+                                ParentClass_Tmdb studio = (ParentClass_Tmdb) new Studio(name).setTmdbId(object.getInt("id")).setImagePath(object.getString("logo_path"));
+                                if (studio.getImagePath().equals("null"))
+                                    studio.setImagePath(null);
+
+                                tempStudioList.add(studio);
+                            }
+                        }
+                        currentVideo[0]._setTempStudioList(tempStudioList);
+                    }
+
+                    if (response.has("runtime"))
+                        currentVideo[0].setLength(response.getInt("runtime"));
+                    if (response.has("imdb_id"))
+                        currentVideo[0].setImdbId(response.getString("imdb_id"));
+                    if (response.has("release_date"))
+                        currentVideo[0].setRelease(new SimpleDateFormat("yyyy-MM-dd", Locale.GERMANY).parse(response.getString("release_date")));
+                    if (response.has("poster_path"))
+                        currentVideo[0].setImagePath(response.getString("poster_path"));
+                    if (response.has("genres")) {
+                        JSONArray genre_ids = response.getJSONArray("genres");
+                        CustomList<Integer> integerList = new CustomList<>();
+                        for (int i = 0; i < genre_ids.length(); i++) {
+                            integerList.add(genre_ids.getJSONObject(i).getInt("id"));
+                        }
+                        Map<Integer, String> idUuidMap = database.genreMap.values().stream().filter(genre -> genre.getTmdbGenreId() != 0).collect(Collectors.toMap(Genre::getTmdbGenreId, ParentClass::getUuid));
+
+                        CustomList<String> uuidList = integerList.map(idUuidMap::get).filter(Objects::nonNull, false);
+                        uuidList.removeAll(currentVideo[0].getGenreList());
+                        currentVideo[0].getGenreList().addAll(uuidList);
+                    }
+                } catch (Exception e) {
+                    failedList.add(currentVideo[0]);
+                }
+                if (updateCast) {
+                    String castRequestUrl = "https://api.themoviedb.org/3/movie/" +
+                            tmdbId +
+                            "/credits?api_key=09e015a2106437cbc33bf79eb512b32d";
+
+                    CustomList<ParentClass_Tmdb> tempCastList = new CustomList<>();
+
+                    JsonObjectRequest castJsonArrayRequest = new JsonObjectRequest(Request.Method.GET, castRequestUrl, null, castRresponse -> {
+                        JSONArray results;
+                        try {
+                            results = castRresponse.getJSONArray("cast");
+
+                            if (results.length() == 0) {
+                                return;
+                            }
+                            for (int i = 0; i < results.length(); i++) {
+                                JSONObject object = results.getJSONObject(i);
+                                String name = object.getString("name");
+
+                                Optional<Darsteller> optional = database.darstellerMap.values().stream().filter(darsteller -> darsteller.getName().equals(name)).findFirst();
+
+                                if (optional.isPresent()) {
+                                    if (!currentVideo[0].getDarstellerList().contains(optional.get().getUuid()))
+                                        currentVideo[0].getDarstellerList().add(optional.get().getUuid());
+                                } else {
+                                    ParentClass_Tmdb actor = (ParentClass_Tmdb) new Darsteller(name).setTmdbId(object.getInt("id")).setImagePath(object.getString("profile_path"));
+                                    if (actor.getImagePath().equals("null"))
+                                        actor.setImagePath(null);
+
+                                    tempCastList.add(actor);
+                                }
+                            }
+
+                            currentVideo[0]._setTempCastList(tempCastList);
+                        } catch (JSONException ignored) {
+                        }
+
+//                        new Handler().postDelayed(isFinished, 1000);
+                        isFinished.run();
+
+                    }, error -> isFinished.run());
+
+                    requestQueue.add(castJsonArrayRequest);
+
+                } else
+//                    new Handler().postDelayed(isFinished, 1000);
+                    isFinished.run();
+            }, error -> {
+                failedList.add(currentVideo[0]);
+                isFinished.run();
+            });
+
+            requestQueue.add(jsonArrayRequest);
+
+        };
+
+        loadDetails[0].run();
+
+    }
+    //  <------------------------- Videos Aktuallisieren -------------------------
 }

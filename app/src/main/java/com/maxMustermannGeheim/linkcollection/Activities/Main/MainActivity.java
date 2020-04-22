@@ -6,21 +6,29 @@ import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 import android.graphics.drawable.Icon;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.widget.FrameLayout;
+import android.widget.ScrollView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.widget.NestedScrollView;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.Helpers;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
+import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.common.hash.Hashing;
@@ -273,6 +281,9 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     private void setLayout() {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
+        Utility.applyExpendableToolbar_scrollView(this, findViewById(R.id.scrollView), appBarLayout);
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.main_bottom_navigation);
 

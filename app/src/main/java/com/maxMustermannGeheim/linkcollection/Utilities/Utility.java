@@ -18,7 +18,6 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Handler;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -39,13 +38,19 @@ import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.SearchView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.widget.NestedScrollView;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -61,6 +66,8 @@ import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
+import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -267,7 +274,7 @@ public class Utility {
 
     public static String formatToEuro(double amount) {
         if (amount == 0)
-            return "N/A";
+            return "N/S";
         if (amount % 1 == 0)
             return String.format(Locale.GERMANY, "%.0f €", amount);
         else
@@ -1728,6 +1735,19 @@ public class Utility {
     public interface ApplyToAll<T extends View> {
         void runApplyToAll(T t);
     }
+
+    public static <S extends View, T extends View> void replaceView(S oldView, T newView, @Nullable TransferState<S,T> transferState){
+        ViewGroup parent = (ViewGroup) oldView.getParent();
+        int index = parent.indexOfChild(oldView);
+        parent.removeView(oldView);
+        parent.addView(newView, index);
+        if (transferState != null)
+            transferState.runTransferState(oldView, newView);
+    }
+
+    public interface TransferState<S, T> {
+        void runTransferState(S source, T target);
+    }
     //  <--------------- getViews ---------------
 
 
@@ -2507,4 +2527,126 @@ public class Utility {
 
     }
     //  <------------------------- Videos Aktuallisieren -------------------------
+
+
+    //  ------------------------- ExpendableToolbar ------------------------->
+    public static Runnable applyExpendableToolbar_recycler(Context context, RecyclerView recycler, Toolbar toolbar, AppBarLayout appBarLayout, CollapsingToolbarLayout collapsingToolbarLayout, TextView noItem, String title){
+        final boolean[] canExpand = {true}; // ToDo: expandableToolbar abstrahieren (auch title)
+        int tolerance = 50;
+        recycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                if (newState == 0) {
+                    canExpand[0] = recycler.computeVerticalScrollOffset() <= tolerance;
+                    recycler.setNestedScrollingEnabled(canExpand[0]);
+                }
+                super.onScrollStateChanged(recyclerView, newState);
+            }
+
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                if (canExpand[0] && recycler.computeVerticalScrollOffset() > tolerance) {
+                    canExpand[0] = false;
+                    recycler.setNestedScrollingEnabled(canExpand[0]);
+                }
+                super.onScrolled(recyclerView, dx, dy);
+            }
+        });
+        CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) appBarLayout.getLayoutParams();
+        if (params.getBehavior() == null)
+            params.setBehavior(new AppBarLayout.Behavior());
+        AppBarLayout.Behavior behaviour = (AppBarLayout.Behavior) params.getBehavior();
+        behaviour.setDragCallback(new AppBarLayout.Behavior.DragCallback() {
+            @Override
+            public boolean canDrag(@NonNull AppBarLayout appBarLayout) {
+                return canExpand[0];
+            }
+        });
+
+        return generateApplyToolBarTitle(context, toolbar, appBarLayout, collapsingToolbarLayout, noItem, title);
+    }
+
+    public static void applyExpendableToolbar_scrollView(Context context, NestedScrollView scrollView, AppBarLayout appBarLayout){
+        final boolean[] canExpand = {true}; // ToDo: expandableToolbar abstrahieren (auch title)
+        final boolean[] touched = {false};
+        final boolean[] scrolled = {false};
+        Runnable[] check = {() -> {}};
+        NestedScrollView newScrollView = new NestedScrollView(context) {
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent ev) {
+                if (ev.getAction() == MotionEvent.ACTION_DOWN)
+                    touched[0] = true;
+                else if (ev.getAction() == MotionEvent.ACTION_UP)
+                    touched[0] = false;
+
+                check[0].run();
+                return super.dispatchTouchEvent(ev);
+            }
+
+        };
+        Utility.replaceView(scrollView, newScrollView, (source, target) -> {
+            target.setId(source.getId());
+            target.setLayoutParams(source.getLayoutParams());
+            while (source.getChildCount() > 0) {
+                View child = source.getChildAt(0);
+                source.removeViewAt(0);
+                target.addView(child);
+            }
+        });
+
+        int tolerance = 50;
+        check[0] = () -> {
+            if (!canExpand[0] && !scrolled[0] && !touched[0]) {
+                canExpand[0] = true;
+                newScrollView.setNestedScrollingEnabled(canExpand[0]);
+            } else if (canExpand[0] && scrolled[0] && touched[0]) {
+                canExpand[0] = false;
+                newScrollView.setNestedScrollingEnabled(canExpand[0]);
+            }
+        };
+
+        newScrollView.setOnScrollChangeListener((NestedScrollView.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+            scrolled[0] = scrollY > tolerance;
+            check[0].run();
+        });
+
+        CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) appBarLayout.getLayoutParams();
+        if (params.getBehavior() == null)
+            params.setBehavior(new AppBarLayout.Behavior());
+        AppBarLayout.Behavior behaviour = (AppBarLayout.Behavior) params.getBehavior();
+        behaviour.setDragCallback(new AppBarLayout.Behavior.DragCallback() {
+            @Override
+            public boolean canDrag(@NonNull AppBarLayout appBarLayout) {
+                return canExpand[0];
+            }
+        });
+    }
+
+    private static Runnable generateApplyToolBarTitle(Context context, Toolbar toolbar, AppBarLayout appBarLayout, CollapsingToolbarLayout collapsingToolbarLayout, TextView noItem, String title) {
+        return () -> {
+            final float[] maxOffset = {-1};
+            float distance = noItem.getY() - appBarLayout.getBottom();
+            int stepCount = 5;
+            final int[] prevPart = {-1};
+            toolbar.measure(0, 0);
+            int maxWidth = toolbar.getChildAt(3).getRight() - toolbar.getChildAt(1).getRight();
+
+            List<String> ellipsedList = new ArrayList<>();
+            for (int i = 0; i <= stepCount; i++)
+                ellipsedList.add(Utility.getEllipsedString(context, title, maxWidth - CustomUtility.dpToPx(3) - (int) (55 * ((stepCount - i) / (double) stepCount)), 18 + (int) (16 * (i / (double) stepCount))));
+
+            appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> {
+                if (maxOffset[0] == -1)
+                    maxOffset[0] = -appBarLayout.getTotalScrollRange();
+
+                int part = stepCount - Math.round(verticalOffset / (maxOffset[0] / stepCount));
+                if (part != prevPart[0])
+                    collapsingToolbarLayout.setTitle(ellipsedList.get(prevPart[0] = part));
+
+                float alpha = 1f - ((verticalOffset - maxOffset[0]) / distance);
+                noItem.setAlpha(alpha > 0f ? alpha : 0f);
+            });
+        };
+    }
+    //  <------------------------- ExpendableToolbar -------------------------
 }

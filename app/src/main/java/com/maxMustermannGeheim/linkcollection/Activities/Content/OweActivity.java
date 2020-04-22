@@ -35,6 +35,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maltaisn.calcdialog.CalcDialog;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
@@ -110,6 +111,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
             , FILTER_TYPE.OPEN, FILTER_TYPE.CLOSED));
     private CustomDialog detailDialog;
     private boolean fireSearch;
+    private Runnable setToolbarTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -167,17 +169,9 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
             elementCount = findViewById(R.id.elementCount);
 
             AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
-            View noItem = findViewById(R.id.no_item);
-            LinearLayout search_layout = findViewById(R.id.search_layout);
-            appBarLayout.measure(0,0);
-            toolbar.measure(0,0);
-            search_layout.measure(0,0);
-            float maxOffset = -(appBarLayout.getMeasuredHeight() - (toolbar.getMeasuredHeight() + search_layout.getMeasuredHeight()));
-            float distance = 118;
-            appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> {
-                float alpha = 1f - ((verticalOffset - maxOffset) / distance);
-                noItem.setAlpha(alpha > 0f ? alpha : 0f);
-            });
+            TextView noItem = findViewById(R.id.no_item);
+            CollapsingToolbarLayout collapsingToolbarLayout = findViewById(R.id.collapsingToolbarLayout);
+            setToolbarTitle = Utility.applyExpendableToolbar_recycler(this, findViewById(R.id.recycler), toolbar, appBarLayout, collapsingToolbarLayout, noItem, toolbar.getTitle().toString());
 
             owe_search = findViewById(R.id.search);
 
@@ -570,6 +564,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
         subMenu.findItem(R.id.taskBar_owe_filterByClosed)
                 .setChecked(filterTypeSet.contains(FILTER_TYPE.CLOSED));
 
+        if (setToolbarTitle != null) setToolbarTitle.run();
         return true;
     }
 

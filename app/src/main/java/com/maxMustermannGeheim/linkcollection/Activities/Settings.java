@@ -37,6 +37,7 @@ import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
 import com.finn.androidUtilities.Helpers;
+import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.common.hash.Hashing;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
@@ -229,7 +230,7 @@ public class Settings extends AppCompatActivity {
                     Boolean showCollection = getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_COLLECTIONS);
                     if (showCollection)
                         ((TextView) view.findViewById(R.id.main_collectionCount)).setText(String.valueOf(database.collectionMap.size()));
-                    view.findViewById(R.id.main_collection).setVisibility(showCollection ? View.VISIBLE : View.INVISIBLE);
+                    view.findViewById(R.id.main_collection_layout).setVisibility(showCollection ? View.VISIBLE : View.GONE);
                 })
                 .setAssociatedClasses(Video.class, Darsteller.class, Studio.class, Genre.class, UrlParser.class)
                 .setSettingsDialog(new Utility.Triple<>(R.layout.dialog_settings_video, (customDialog, view, space) -> {
@@ -596,6 +597,8 @@ public class Settings extends AppCompatActivity {
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
+        Utility.applyExpendableToolbar_scrollView(this, findViewById(R.id.scrollView), appBarLayout);
 
 
         getViews();

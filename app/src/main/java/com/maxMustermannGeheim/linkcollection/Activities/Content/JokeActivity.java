@@ -23,6 +23,7 @@ import androidx.appcompat.widget.Toolbar;
 
 import com.finn.androidUtilities.CustomRecycler;
 import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
@@ -88,6 +89,7 @@ public class JokeActivity extends AppCompatActivity {
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.CATEGORY, FILTER_TYPE.PUNCHLINE));
     private CustomDialog detailDialog;
     private boolean isDialog;
+    private Runnable setToolbarTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,17 +120,9 @@ public class JokeActivity extends AppCompatActivity {
             elementCount = findViewById(R.id.elementCount);
 
             AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
-            View noItem = findViewById(R.id.no_item);
-            LinearLayout search_layout = findViewById(R.id.search_layout);
-            appBarLayout.measure(0,0);
-            toolbar.measure(0,0);
-            search_layout.measure(0,0);
-            float maxOffset = -(appBarLayout.getMeasuredHeight() - (toolbar.getMeasuredHeight() + search_layout.getMeasuredHeight()));
-            float distance = 118;
-            appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> {
-                float alpha = 1f - ((verticalOffset - maxOffset) / distance);
-                noItem.setAlpha(alpha > 0f ? alpha : 0f);
-            });
+            TextView noItem = findViewById(R.id.no_item);
+            CollapsingToolbarLayout collapsingToolbarLayout = findViewById(R.id.collapsingToolbarLayout);
+            setToolbarTitle = Utility.applyExpendableToolbar_recycler(this, findViewById(R.id.recycler), toolbar, appBarLayout, collapsingToolbarLayout, noItem, toolbar.getTitle().toString());
 
             joke_search = findViewById(R.id.search);
 
@@ -196,6 +190,7 @@ public class JokeActivity extends AppCompatActivity {
                 findViewById(R.id.recycler).setVisibility(View.GONE);
                 joke_search.setVisibility(View.GONE);
                 findViewById(R.id.divider).setVisibility(View.GONE);
+                findViewById(R.id.appBarLayout).setVisibility(View.GONE);
                 if (getIntent().getBooleanExtra(MainActivity.EXTRA_SHOW_RANDOM, false))
                     showRandomDialog();
             }
@@ -531,6 +526,7 @@ public class JokeActivity extends AppCompatActivity {
         subMenu.findItem(R.id.taskBar_joke_filterByContent)
                 .setChecked(filterTypeSet.contains(FILTER_TYPE.PUNCHLINE));
 
+        if (setToolbarTitle != null) setToolbarTitle.run();
         return true;
     }
 

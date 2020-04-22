@@ -24,7 +24,6 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.SeekBar;
@@ -44,6 +43,7 @@ import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
 import com.google.android.material.appbar.AppBarLayout;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
+import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
@@ -152,7 +152,7 @@ public class VideoActivity extends AppCompatActivity {
     private boolean isShared;
     private boolean isDialog;
     public static Pattern pattern = Pattern.compile("\\*(([0-4]([,.]\\d{1,2})?)|5(,0)?)(-(([0-4]([,.]\\d{1,2})?)|5([,.]00?)?))?\\*");
-
+    private Runnable setToolbarTitle;
 
     List<Video> allVideoList = new ArrayList<>();
     CustomList<Video> filterdVideoList = new CustomList<>();
@@ -263,21 +263,9 @@ public class VideoActivity extends AppCompatActivity {
             elementCount = findViewById(R.id.elementCount);
 
             AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
-            View noItem = findViewById(R.id.no_item);
-            LinearLayout search_layout = findViewById(R.id.search_layout);
-            appBarLayout.measure(0,0);
-            toolbar.measure(0,0);
-            search_layout.measure(0,0);
-            float maxOffset = -(appBarLayout.getMeasuredHeight() - (toolbar.getMeasuredHeight() + search_layout.getMeasuredHeight()));
-            float distance = 118;
-            appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> {
-//                noItem.setVisibility(verticalOffset > -630 ? View.GONE : View.VISIBLE);
-                float alpha = 1f - ((verticalOffset - maxOffset) / distance);
-                noItem.setAlpha(alpha > 0f ? alpha : 0f);
-//                ((AppBarLayout.Behavior) ((CoordinatorLayout.LayoutParams) appBarLayout.getLayoutParams()).getBehavior()).setTopAndBottomOffset(-(appBarLayout.getHeight() - (toolbar.getHeight() + search_layout.getHeight())));
-//                ((AppBarLayout.LayoutParams) collapsingToolbarLayout.getLayoutParams()).setScrollFlags(0);
-            });
-
+            TextView noItem = findViewById(R.id.no_item);
+            CollapsingToolbarLayout collapsingToolbarLayout = findViewById(R.id.collapsingToolbarLayout);
+            setToolbarTitle = Utility.applyExpendableToolbar_recycler(this, findViewById(R.id.recycler), toolbar, appBarLayout, collapsingToolbarLayout, noItem, plural);
 //            float dimension = getResources().getAttDimension(android.R.attr.actionBarSize);
 
 //            AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
@@ -1941,6 +1929,9 @@ public class VideoActivity extends AppCompatActivity {
             menu.findItem(R.id.taskBar_video_modeLater).setChecked(true);
         else if (mode.equals(MODE.UPCOMING))
             menu.findItem(R.id.taskBar_video_modeUpcoming).setChecked(true);
+
+
+        if (setToolbarTitle != null) setToolbarTitle.run();
         return true;
     }
 

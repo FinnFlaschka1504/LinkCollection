@@ -662,6 +662,10 @@ public class Database {
     public static boolean isReady() {
         return exists() && database.isLoaded();
     }
+
+    public static void destroy(){
+        database = null;
+    }
 //  <----- checks -----
 
 

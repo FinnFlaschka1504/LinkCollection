@@ -182,6 +182,8 @@ public class VideoActivity extends AppCompatActivity {
             setTitle(plural);
         }
 
+//        Database.destroy();
+
         database = Database.getInstance();
         if (database == null)
             setContentView(R.layout.loading_screen);
@@ -266,17 +268,6 @@ public class VideoActivity extends AppCompatActivity {
             TextView noItem = findViewById(R.id.no_item);
             CollapsingToolbarLayout collapsingToolbarLayout = findViewById(R.id.collapsingToolbarLayout);
             setToolbarTitle = Utility.applyExpendableToolbar_recycler(this, findViewById(R.id.recycler), toolbar, appBarLayout, collapsingToolbarLayout, noItem, plural);
-//            float dimension = getResources().getAttDimension(android.R.attr.actionBarSize);
-
-//            AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
-//            elementCount = findViewById(R.id.elementCount);
-//            appBarLayout.addOnOffsetChangedListener(new AppBarLayout.OnOffsetChangedListener() {
-//                @Override
-//                public void onOffsetChanged(AppBarLayout appBarLayout1, int verticalOffset) {
-//                    ((AppBarLayout.Behavior) ((CoordinatorLayout.LayoutParams) appBarLayout.getLayoutParams()).getBehavior()).setTopAndBottomOffset(-(VideoActivity.this.findViewById(R.id.elementCount).getHeight()));
-//                    appBarLayout.removeOnOffsetChangedListener(this);
-//                }
-//            });
 
             videos_search = findViewById(R.id.search);
 

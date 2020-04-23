@@ -2531,7 +2531,7 @@ public class Utility {
 
     //  ------------------------- ExpendableToolbar ------------------------->
     public static Runnable applyExpendableToolbar_recycler(Context context, RecyclerView recycler, Toolbar toolbar, AppBarLayout appBarLayout, CollapsingToolbarLayout collapsingToolbarLayout, TextView noItem, String title){
-        final boolean[] canExpand = {true}; // ToDo: expandableToolbar abstrahieren (auch title)
+        final boolean[] canExpand = {true};
         int tolerance = 50;
         recycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
@@ -2567,7 +2567,7 @@ public class Utility {
     }
 
     public static void applyExpendableToolbar_scrollView(Context context, NestedScrollView scrollView, AppBarLayout appBarLayout){
-        final boolean[] canExpand = {true}; // ToDo: expandableToolbar abstrahieren (auch title)
+        final boolean[] canExpand = {true};
         final boolean[] touched = {false};
         final boolean[] scrolled = {false};
         Runnable[] check = {() -> {}};
@@ -2628,16 +2628,16 @@ public class Utility {
             float distance = noItem.getY() - appBarLayout.getBottom();
             int stepCount = 5;
             final int[] prevPart = {-1};
-            toolbar.measure(0, 0);
-            int maxWidth = toolbar.getChildAt(3).getRight() - toolbar.getChildAt(1).getRight();
 
             List<String> ellipsedList = new ArrayList<>();
-            for (int i = 0; i <= stepCount; i++)
-                ellipsedList.add(Utility.getEllipsedString(context, title, maxWidth - CustomUtility.dpToPx(3) - (int) (55 * ((stepCount - i) / (double) stepCount)), 18 + (int) (16 * (i / (double) stepCount))));
 
             appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> {
-                if (maxOffset[0] == -1)
+                if (maxOffset[0] == -1) {
                     maxOffset[0] = -appBarLayout.getTotalScrollRange();
+                    int maxWidth = toolbar.getChildAt(3).getRight() - toolbar.getChildAt(1).getRight(); //320
+                    for (int i = 0; i <= stepCount; i++)
+                        ellipsedList.add(Utility.getEllipsedString(context, title, maxWidth - CustomUtility.dpToPx(3) - (int) (55 * ((stepCount - i) / (double) stepCount)), 18 + (int) (16 * (i / (double) stepCount))));
+                }
 
                 int part = stepCount - Math.round(verticalOffset / (maxOffset[0] / stepCount));
                 if (part != prevPart[0])

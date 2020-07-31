@@ -21,6 +21,7 @@
 
     <string name="parserType_java">Java</string>
     <string name="parserType_javaScript">JavaScript</string>
+    <string name="parserType_graph">Graph</string>
 
     <string-array name="ownOrOther">
         <item>Fremde</item>
@@ -36,6 +37,7 @@
     <string-array name="parserType">
         <item>@string/parserType_java</item>
         <item>@string/parserType_javaScript</item>
+        <item>@string/parserType_graph</item>
     </string-array>
 
     <string-array name="showSearchButtonAt">

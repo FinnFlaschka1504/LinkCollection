@@ -8,9 +8,11 @@ import android.graphics.PorterDuff;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.speech.tts.UtteranceProgressListener;
+import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.TextWatcher;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
@@ -68,6 +70,8 @@ import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.mikhaellopez.lazydatepicker.LazyDatePicker;
 
+import org.joda.time.Days;
+import org.joda.time.LocalDate;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -86,6 +90,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
@@ -911,7 +917,65 @@ public class ShowActivity extends AppCompatActivity {
                     });
                     view.findViewById(R.id.dialog_detailShow_list).setOnClickListener(view1 -> showSeasonDialog(show));
                     view.findViewById(R.id.dialog_detailShow_internet).setOnClickListener(v -> {
-                        Utility.openUrl(this, "https://www.themoviedb.org/tv/" + show.getTmdbId(), true);
+                        if (!Utility.stringExists(show.getImdbId()))
+                            Utility.openUrl(this, "https://www.themoviedb.org/tv/" + show.getTmdbId(), true);
+                        else
+                            CustomDialog.Builder(this)
+                                    .setTitle("Öffnen mit...")
+                                    .addButton("TMDb", customDialog1 -> Utility.openUrl(this, "https://www.themoviedb.org/tv/" + show.getTmdbId(), true))
+                                    .addButton("IMDB", customDialog1 -> Utility.openUrl(this, "https://www.imdb.com/title/" + show.getImdbId(), true))
+                                    .enableExpandButtons()
+                                    .show();
+                    });
+                    view.findViewById(R.id.dialog_detailShow_internet).setOnLongClickListener(v -> {
+                        CustomDialog.Builder(this)
+                                .setTitle("IMDB-ID " + (Utility.stringExists(show.getImdbId()) ? "Ändern" : "Hinzufügen"))
+                                .setEdit(new CustomDialog.EditBuilder()
+                                        .setInputType(com.finn.androidUtilities.Helpers.TextInputHelper.INPUT_TYPE.TEXT)
+                                        .setHint("IMDB-ID")
+                                        .setText(Utility.stringExistsOrElse(show.getImdbId(), ""))
+                                        .setRegEx("^tt[0-9]{7}$"))
+                                .addOptionalModifications(customDialog1 -> {
+                                    if (Utility.stringExists(show.getImdbId()))
+                                        customDialog1.addButton("Löschen", customDialog2 -> {
+                                            show.setImdbId(null);
+                                            Toast.makeText(this, "IMDB-ID gelöscht", Toast.LENGTH_SHORT).show();
+                                            Database.saveAll();
+                                        })
+                                        .alignPreviousButtonsLeft();
+
+                                })
+                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog1 -> {
+                                    show.setImdbId(customDialog1.getEditText());
+                                    Toast.makeText(this, "IMDB-ID gespeichert", Toast.LENGTH_SHORT).show();
+                                    Database.saveAll();
+                                })
+                                .disableLastAddedButton()
+                                .addOnDialogShown(customDialog1 -> {
+
+                                })
+                                .setSetViewContent((customDialog1, view1, reload1) -> {
+                                    EditText editFilmId = customDialog1.findViewById(R.id.dialog_custom_edit);
+                                    editFilmId.addTextChangedListener(new TextWatcher() {
+                                        @Override
+                                        public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+                                        @Override
+                                        public void onTextChanged(CharSequence s, int start, int before, int count) {
+                                            if (s.toString().matches("https://.*tt\\d{7}.*")) {
+                                                Matcher matcher = Pattern.compile("tt\\d{7}").matcher(s);
+                                                if (matcher.find())
+                                                    editFilmId.setText(matcher.group(0));
+                                            }
+                                        }
+
+                                        @Override
+                                        public void afterTextChanged(Editable s) { }
+                                    });
+                                })
+                                .show();
+                        return true;
                     });
                     view.findViewById(R.id.dialog_detailShow_reset).setOnClickListener(v -> {
                         showResetDialog(new CustomList<>(Utility.concatenateCollections(show.getSeasonList(), season -> season.getEpisodeMap().values())), show, null, null, null, 1);
@@ -1138,6 +1202,8 @@ public class ShowActivity extends AppCompatActivity {
                     ((TextView) itemView.findViewById(R.id.listItem_season_name)).setText(season.getName());
                     if (season.getAirDate() != null)
                         ((TextView) itemView.findViewById(R.id.listItem_season_release)).setText(new SimpleDateFormat("(yyyy)", Locale.getDefault()).format(season.getAirDate()));
+                    else
+                        ((TextView) itemView.findViewById(R.id.listItem_season_release)).setText("");
                     Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
                     int size = (int) season.getEpisodeMap().values().stream().filter(Show.Episode::isWatched).count();
                     if (size == 0) {
@@ -1158,7 +1224,7 @@ public class ShowActivity extends AppCompatActivity {
                     if ((seasonEpisodeMap = database.tempShowSeasonEpisodeMap.get(show)) != null && (episodeMap = seasonEpisodeMap.get(season.getSeasonNumber())) != null)
                         showEpisodeDialog(season, episodeMap, customRecycler);
                     else
-                        apiSeasonRequest(show, season.getSeasonNumber(), () -> {
+                        apiSeasonRequest(show, season.getSeasonNumber(), () ->     {
                             showEpisodeDialog(season, database.tempShowSeasonEpisodeMap.get(show).get(season.getSeasonNumber()), customRecycler);
                         });
                 })
@@ -1229,7 +1295,7 @@ public class ShowActivity extends AppCompatActivity {
         CustomRecycler<Show.Episode> episodeRecycler = new CustomRecycler<Show.Episode>(this)
                 .setGetActiveObjectList(customRecycler -> {
 //                    episodeMap.putAll(season.getEpisodeMap());
-                    applyEpisodeMap(season.getEpisodeMap(), episodeMap);
+//                    applyEpisodeMap(season.getEpisodeMap(), episodeMap);
                     ArrayList<Show.Episode> episodeList = new ArrayList<>(episodeMap.values());
                     episodeList.sort((o1, o2) -> Integer.compare(o1.getEpisodeNumber(), o2.getEpisodeNumber()));
                     return episodeList;
@@ -1319,13 +1385,14 @@ public class ShowActivity extends AppCompatActivity {
     private void applyEpisodeMap(Map<String, Show.Episode> oldMap, Map<String, Show.Episode> newMap) {
         for (Show.Episode oldEpisode : oldMap.values()) {
             Utility.ifNotNull(newMap.get(oldEpisode.getUuid()), newEpisode -> {
-                newEpisode.setDateList(oldEpisode.getDateList());
-                newEpisode.setWatched(oldEpisode.isWatched());
-                newEpisode.setRating(oldEpisode.getRating());
+//                newEpisode.setDateList(oldEpisode.getDateList());
+//                newEpisode.setWatched(oldEpisode.isWatched());
+//                newEpisode.setRating(oldEpisode.getRating());
                 oldEpisode.setAirDate(newEpisode.getAirDate());
                 oldEpisode.setName(newEpisode.getName());
             });
         }
+        newMap.putAll(oldMap);
     }
 
 
@@ -1334,7 +1401,7 @@ public class ShowActivity extends AppCompatActivity {
             Toast.makeText(this, "Es ist ein Fehler aufgetreten", Toast.LENGTH_SHORT).show();
             return;
         }
-        setResult(RESULT_OK);
+//        setResult(RESULT_OK); // vielleich wichtig?
         CustomDialog.Builder(this)
                 .setTitle(episode.getName())
                 .setView(R.layout.dialog_detail_episode)
@@ -1352,18 +1419,28 @@ public class ShowActivity extends AppCompatActivity {
                         show.setAlreadyAiredList(show.getAlreadyAiredList().stream().filter(episode1 -> episode.getTmdbId() != episode1.getTmdbId()).collect(Collectors.toList()));
 
                     }
-                    if (Database.saveAll_simple())
+                    if (Database.saveAll_simple()) {
+                        customRecycler.reload();
                         setResult(RESULT_OK);
+                    }
                 })
                 .disableLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {
                     ((TextView) view.findViewById(R.id.dialog_detailEpisode_title)).setText(episode.getName());
                     ((TextView) view.findViewById(R.id.dialog_detailEpisode_number)).setText(String.valueOf(episode.getEpisodeNumber()));
+
                     Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
-                    helper.append(String.valueOf(episode.getDateList().size()));
-                    if (episode.isWatched())
-                        helper.appendColor("  ✓", getColor(R.color.colorGreen));
-                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_views)).setText(helper.get());
+                    SpannableStringBuilder viewsText = helper.quickItalic("Keine Ansichten");
+                    if (episode.getDateList().size() > 0) {
+                        Date lastWatched = CustomList.cast(episode.getDateList()).getBiggest();
+                        viewsText = helper.append(String.valueOf(episode.getDateList().size())).append(
+                                String.format(Locale.getDefault(), "   (%s – %dd)",
+                                        new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(lastWatched),
+                                        Days.daysBetween(new LocalDate(lastWatched), new LocalDate(new Date())).getDays())
+                                , Helpers.SpannableStringHelper.SPAN_TYPE.ITALIC).get();
+                    }
+                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_views)).setText(viewsText);
+                    
                     ((TextView) view.findViewById(R.id.dialog_detailEpisode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode.getAirDate()));
 
                     RatingBar dialog_detailEpisode_rating = new Helpers.RatingHelper(view.findViewById(R.id.customRating_layout)).setRating(episode.getRating()).getRatingBar();
@@ -1730,7 +1807,14 @@ public class ShowActivity extends AppCompatActivity {
                     JSONObject episode_json = episodes_json.getJSONObject(i);
                     jsonToEpisode(show, episodeMap, episode_json);
                 }
-                Map<Integer, Map<String, Show.Episode>> map = new HashMap<>();
+
+                applyEpisodeMap(show.getSeasonList().get(seasonNumber).getEpisodeMap(), episodeMap);
+
+                Map<Integer, Map<String, Show.Episode>> map;
+                if (database.tempShowSeasonEpisodeMap.containsKey(show))
+                    map = database.tempShowSeasonEpisodeMap.get(show);
+                else
+                    map = new HashMap<>();
                 map.put(seasonNumber, episodeMap);
                 database.tempShowSeasonEpisodeMap.put(show, map);
                 onLoaded.run();

@@ -33,6 +33,7 @@ public class Show extends ParentClass{
     private List<Episode> alreadyAiredList = new ArrayList<>();
     private String imagePath;
     private String language;
+    private String imdbId;
 
     public Show(String name) {
         uuid = "show_" + UUID.randomUUID().toString();
@@ -178,6 +179,15 @@ public class Show extends ParentClass{
 
     public Show setLanguage(String language) {
         this.language = language;
+        return this;
+    }
+
+    public String getImdbId() {
+        return imdbId;
+    }
+
+    public Show setImdbId(String imdbId) {
+        this.imdbId = imdbId;
         return this;
     }
 

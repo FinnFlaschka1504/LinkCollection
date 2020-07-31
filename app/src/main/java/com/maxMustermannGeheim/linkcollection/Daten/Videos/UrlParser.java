@@ -14,6 +14,7 @@ import androidx.annotation.Nullable;
 
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomList;
+import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -35,14 +36,14 @@ public class UrlParser extends ParentClass {
     private String code;
     private String exampleUrl;
     private TYPE type = TYPE.JAVA;
-    public static Map<String,WebView> webViewMap = new HashMap<>();
+    public static Map<String, WebView> webViewMap = new HashMap<>();
     private int openJs;
     private boolean debug = false;
     private CustomDialog webViewDialog;
 
 
     public enum TYPE {
-        JAVA("Java", 0), JAVA_SCRIPT("JavaScript", 1);
+        JAVA("Java", 0), JAVA_SCRIPT("JavaScript", 1), GRAPH("Graph", 2);
 
         private String name;
         private int index;
@@ -77,11 +78,12 @@ public class UrlParser extends ParentClass {
 
 
         //  ------------------------- Convenience ------------------------->
-        public static TYPE getTypeByIndex(int index){
+        public static TYPE getTypeByIndex(int index) {
             return Utility.SwitchExpression.setInput(index)
                     .addCase(JAVA.getIndex(), JAVA)
                     .setLastCaseAsDefault()
                     .addCase(JAVA_SCRIPT.getIndex(), JAVA_SCRIPT)
+                    .addCase(GRAPH.getIndex(), GRAPH)
                     .evaluate();
         }
         //  <------------------------- Convenience -------------------------
@@ -138,7 +140,8 @@ public class UrlParser extends ParentClass {
     //  ------------------------- Convenience ------------------------->
     public String parseUrl(@Nullable Context context, String url, @NonNull Utility.GenericInterface<String> onParseNameResult, @Nullable Utility.GenericInterface<String> onParseThumbnailResult) {
         if (!url.contains(name)) {
-            if (context != null) Toast.makeText(context, "Keine passende URL", Toast.LENGTH_SHORT).show();
+            if (context != null)
+                Toast.makeText(context, "Keine passende URL", Toast.LENGTH_SHORT).show();
             return null;
         }
 
@@ -154,7 +157,7 @@ public class UrlParser extends ParentClass {
                     last = splitList.getLast();
                     lastSplitList.add(last.split("-"));
                 }
-                if (last.contains("?")){
+                if (last.contains("?")) {
                     lastSplitList.clear();
                     lastSplitList.add(last.split("\\?")[0].split("-"));
                 }
@@ -163,7 +166,7 @@ public class UrlParser extends ParentClass {
                 interpreter.set("lastSplit", lastSplitList);
                 interpreter.set("customList", new CustomList<String>());
                 Object resultO = interpreter.eval(code);
-                if (resultO instanceof  CustomList)
+                if (resultO instanceof CustomList)
                     resultO = String.join(" ", (CustomList<String>) resultO);
                 if (resultO == null) {
                     if (context != null)
@@ -181,7 +184,7 @@ public class UrlParser extends ParentClass {
                 return null;
             }
         }
-        if (type == TYPE.JAVA_SCRIPT || (Utility.stringExists(thumbnailCode) && onParseThumbnailResult != null)){
+        if (type == TYPE.JAVA_SCRIPT || (Utility.stringExists(thumbnailCode) && onParseThumbnailResult != null)) {
             if (context == null)
                 return null;
             if (!webViewMap.containsKey(name)) {
@@ -198,7 +201,7 @@ public class UrlParser extends ParentClass {
                 settings.setBuiltInZoomControls(true);
                 settings.setDisplayZoomControls(false);
 
-                webView.setWebViewClient(new WebViewClient(){
+                webView.setWebViewClient(new WebViewClient() {
                     @Override
                     public void onPageFinished(WebView view, String url) {
                         if (type == TYPE.JAVA_SCRIPT) {
@@ -240,8 +243,37 @@ public class UrlParser extends ParentClass {
 
             Toast.makeText(context, "Einen Moment bitte..", Toast.LENGTH_LONG).show();
             return "JavaScript";
-        } else
+        }
+        if (type == TYPE.GRAPH) {
+            Toast.makeText(context, "Einen Moment bitte..", Toast.LENGTH_SHORT).show();
+            Utility.getOpenGraphFromWebsite(url, openGraph -> {
+                String title;
+                if (openGraph != null && (title = openGraph.getContent("title")) != null) {
+
+                    Interpreter interpreter = new Interpreter();
+                    try {
+                        interpreter.set("graph", title);
+                        Object resultO = interpreter.eval(code);
+                        if (resultO == null) {
+                            if (context != null)
+                                Toast.makeText(context, "Kein Ergebnis", Toast.LENGTH_SHORT).show();
+                            onParseNameResult.runGenericInterface("");
+                            return;
+                        }
+                        String result = resultO.toString();
+                        onParseNameResult.runGenericInterface(result);
+
+                    } catch (EvalError evalError) {
+                        if (context != null)
+                            Toast.makeText(context, evalError.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
+            return "Graph";
+
+        } else {
             return null;
+        }
 
     }
 
@@ -286,8 +318,7 @@ public class UrlParser extends ParentClass {
         Database instance = Database.getInstance();
         if (!Database.isReady() || !Utility.isUrl(url)) {
             return null;
-        }
-        else
+        } else
             return instance.urlParserMap.values().stream().filter(urlParser -> url.contains(urlParser.getName())).findFirst().orElse(null);
     }
     //  <------------------------- Convenience -------------------------
@@ -306,7 +337,8 @@ public class UrlParser extends ParentClass {
             if (Utility.stringExists(name)) name = AESCrypt.encrypt(key, name);
             if (Utility.stringExists(exampleUrl)) exampleUrl = AESCrypt.encrypt(key, exampleUrl);
             if (Utility.stringExists(code)) code = AESCrypt.encrypt(key, code);
-            if (Utility.stringExists(thumbnailCode)) thumbnailCode = AESCrypt.encrypt(key, thumbnailCode);
+            if (Utility.stringExists(thumbnailCode))
+                thumbnailCode = AESCrypt.encrypt(key, thumbnailCode);
             return true;
         } catch (GeneralSecurityException e) {
             return false;
@@ -318,8 +350,9 @@ public class UrlParser extends ParentClass {
         try {
             if (Utility.stringExists(name)) name = AESCrypt.decrypt(key, name);
             if (Utility.stringExists(exampleUrl)) exampleUrl = AESCrypt.decrypt(key, exampleUrl);
-            if (Utility.stringExists(code)) code= AESCrypt.decrypt(key, code);
-            if (Utility.stringExists(thumbnailCode)) thumbnailCode= AESCrypt.decrypt(key, thumbnailCode);
+            if (Utility.stringExists(code)) code = AESCrypt.decrypt(key, code);
+            if (Utility.stringExists(thumbnailCode))
+                thumbnailCode = AESCrypt.decrypt(key, thumbnailCode);
             return true;
         } catch (GeneralSecurityException e) {
             return false;

@@ -817,7 +817,14 @@ public class VideoActivity extends AppCompatActivity {
 
                     ImageView dialog_video_internet = view.findViewById(R.id.dialog_video_internet);
                     if (Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_TMDB_SHORTCUT))
-                        dialog_video_internet.setOnClickListener(v -> Utility.openUrl(this, "https://www.themoviedb.org/movie/" + video.getTmdbId(), true));
+                        dialog_video_internet.setOnClickListener(v -> {
+                            CustomDialog.Builder(this)
+                                    .setTitle("Öffnen mit...")
+                                    .addButton("TMDb", customDialog1 -> Utility.openUrl(this, "https://www.themoviedb.org/movie/" + video.getTmdbId(), true))
+                                    .addButton("IMDB", customDialog1 -> Utility.openUrl(this, "https://www.imdb.com/title/" + video.getImdbId(), true))
+                                    .enableExpandButtons()
+                                    .show();
+                        });
                     else
                         dialog_video_internet.setVisibility(View.GONE);
 
@@ -2047,7 +2054,7 @@ public class VideoActivity extends AppCompatActivity {
                 setSearchHint();
                 break;
             case R.id.taskBar_video_filterByRating:
-                Utility.showRangeSelectDialog(this, videos_search);
+                Utility.showRangeSelectDialog(this, videos_search, database.videoMap.values());
                 break;
 
             case R.id.taskBar_video_modeAll:
@@ -2091,50 +2098,109 @@ public class VideoActivity extends AppCompatActivity {
     private void showRandomDialog() {
         removeFocusFromSearch();
 
-        CustomList<Video> randomList = new CustomList<>(filterdVideoList).filter(video -> !video.isUpcoming(), false);
+        com.finn.androidUtilities.CustomList<Video> randomList = new com.finn.androidUtilities.CustomList<>(filterdVideoList).filter(video -> !video.isUpcoming(), false);
         if (randomList.isEmpty()) {
             Toast.makeText(this, "Keine " + plural, Toast.LENGTH_SHORT).show();
             return;
         }
-        randomVideo = randomList.removeRandom();
+        Collections.shuffle(randomList);
+        randomVideo = randomList.get(0);
 
-        int openButtonId = View.generateViewId();
+        com.finn.androidUtilities.CustomList<Video> markedVideos = new com.finn.androidUtilities.CustomList<>();
+
+        int previousButtonId = View.generateViewId();
+        int nextButtonId = View.generateViewId();
+        int markButtonId = View.generateViewId();
+        int unmarkButtonId = View.generateViewId();
+
+        CustomDialog.OnDialogCallback showMarkedFilms = customDialog -> {
+            if (markedVideos.isEmpty())
+                customDialog.dismiss();
+            else {
+                CustomDialog.Builder(this)
+                        .setTitle(String.format(Locale.getDefault(),"Markierte %s (%d)", plural, markedVideos.size()))
+                        .setView(new com.finn.androidUtilities.CustomRecycler<Video>(this, customDialog.findViewById(R.id.dialogDetail_collection_videos))
+                                .setItemLayout(R.layout.list_item_collection_video)
+                                .setGetActiveObjectList(customRecycler -> markedVideos)
+                                .setSetItemContent((customRecycler1, itemView, video) -> {
+                                    String imagePath = video.getImagePath();
+                                    ImageView thumbnail = itemView.findViewById(R.id.listItem_collectionVideo_thumbnail);
+                                    if (Utility.stringExists(imagePath)) {
+                                        imagePath = Utility.getTmdbImagePath_ifNecessary(imagePath, true);
+                                        Utility.loadUrlIntoImageView(this, thumbnail,
+                                                imagePath, imagePath, null, () -> Utility.roundImageView(thumbnail, 8));
+                                        thumbnail.setVisibility(View.VISIBLE);
+
+                                        thumbnail.setOnLongClickListener(v -> {
+                                            startActivityForResult(new Intent(this, VideoActivity.class)
+                                                            .putExtra(CategoriesActivity.EXTRA_SEARCH, video.getUuid())
+                                                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO),
+                                                    CategoriesActivity.START_CATIGORY_SEARCH);
+
+                                            return true;
+                                        });
+                                    } else
+                                        thumbnail.setImageResource(R.drawable.ic_no_image);
+
+
+                                    ((TextView) itemView.findViewById(R.id.listItem_collectionVideo_text)).setText(video.getName());
+                                })
+                                .setOrientation(com.finn.androidUtilities.CustomRecycler.ORIENTATION.HORIZONTAL)
+                                .generateRecyclerView()
+                        )
+                        .show();
+            }
+        };
         CustomDialog randomDialog = CustomDialog.Builder(this)
                 .setTitle(randomVideo.getName())
                 .setView(R.layout.dialog_detail_video)
-                .addButton(R.drawable.ic_info, customDialog -> detailDialog = showDetailDialog(randomVideo).setPayload(customDialog), false);
-
-        if (isDialog) {
-            int switchModeButtonId = View.generateViewId();
-            randomDialog
-                    .addButton(R.drawable.ic_time, customDialog -> {
-                        randomList.clear();
-                        randomList.addAll(new CustomList<>(filterdVideoList).filter(Video::isWatchLater, false));
-                        if (randomList.isEmpty()) {
-                            Toast.makeText(this, "Keine " + plural, Toast.LENGTH_SHORT).show();
-                            customDialog.dismiss();
-                            return;
-                        } else {
-                            Toast.makeText(this, "Zu Später-Ansehen gewechselt", Toast.LENGTH_SHORT).show();
-                            customDialog.getButton(switchModeButtonId).setVisibility(View.GONE);
-                        }
-                        randomVideo = randomList.removeRandom();
-                        customDialog.reloadView();
-                    }, switchModeButtonId, false);
-        }
-
-        randomDialog
-                .alignPreviousButtonsLeft()
-                .addButton("Öffnen", customDialog -> openUrl(randomVideo.getUrl(), false), openButtonId, false)
-                .addButton("Nochmal", customDialog -> {
-                    if (randomList.isEmpty()) {
-                        Toast.makeText(this, "Kein weiterer vorhanden", Toast.LENGTH_SHORT).show();
-                        return;
+                .addButton(R.drawable.ic_info, customDialog -> detailDialog = showDetailDialog(randomVideo).setPayload(customDialog), false)
+                .addOptionalModifications(customDialog -> {
+                    if (isDialog) {
+                        int switchModeButtonId = View.generateViewId();
+                        customDialog
+                                .addButton(R.drawable.ic_time, customDialog1 -> {
+                                    randomList.clear();
+                                    randomList.addAll(new CustomList<>(filterdVideoList).filter(Video::isWatchLater, false));
+                                    if (randomList.isEmpty()) {
+                                        Toast.makeText(this, "Keine " + plural, Toast.LENGTH_SHORT).show();
+                                        customDialog1.dismiss();
+                                        return;
+                                    } else {
+                                        Toast.makeText(this, "Zu Später-Ansehen gewechselt", Toast.LENGTH_SHORT).show();
+                                        customDialog1.getButton(switchModeButtonId).setVisibility(View.GONE);
+                                    }
+                                    Collections.shuffle(randomList);
+                                    randomVideo = randomList.get(0);
+                                    customDialog1.reloadView();
+                                }, switchModeButtonId, false);
                     }
-                    Toast.makeText(this, "Neu", Toast.LENGTH_SHORT).show();
-                    randomVideo = randomList.removeRandom();
+
+                })
+                .addButton(R.drawable.ic_bookmark_empty, customDialog -> {
+                    customDialog.getButton(unmarkButtonId).setVisibility(View.VISIBLE);
+                    customDialog.getButton(markButtonId).setVisibility(View.GONE);
+                    Toast.makeText(this, "Markierung hinzugefügt", Toast.LENGTH_SHORT).show();
+                    if (!markedVideos.contains(randomVideo))
+                        markedVideos.add(randomVideo);
+                }, markButtonId, false)
+                .addButton(R.drawable.ic_bookmark_filled, customDialog -> {
+                    customDialog.getButton(unmarkButtonId).setVisibility(View.GONE);
+                    customDialog.getButton(markButtonId).setVisibility(View.VISIBLE);
+                    Toast.makeText(this, "Markierung entfernt", Toast.LENGTH_SHORT).show();
+                    markedVideos.remove(randomVideo);
+                }, unmarkButtonId, false)
+                .alignPreviousButtonsLeft()
+                .addButton("Zurück", customDialog -> {
+                    Toast.makeText(this, "Vorhäriger", Toast.LENGTH_SHORT).show();
+                    randomVideo = randomList.previous(randomVideo, false);
                     customDialog.reloadView();
-                }, false)
+                }, previousButtonId, false)
+                .addButton("Weiter", customDialog -> {
+                    Toast.makeText(this, "Nächster", Toast.LENGTH_SHORT).show();
+                    randomVideo = randomList.next(randomVideo, false);
+                    customDialog.reloadView();
+                }, nextButtonId, false)
                 .colorLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {
                     if (reload)
@@ -2156,14 +2222,27 @@ public class VideoActivity extends AppCompatActivity {
                     } else
                         customDialog.findViewById(R.id.dialog_video_poster).setVisibility(View.GONE);
 
-                    customDialog.getButton(openButtonId).setEnabled(Utility.stringExists(randomVideo.getUrl()));
+
+                    customDialog.getButton(previousButtonId).setEnabled(!randomList.isFirst(randomVideo));
+                    customDialog.getButton(nextButtonId).setEnabled(!randomList.isLast(randomVideo));
+                    customDialog.getButton(markButtonId).setVisibility(markedVideos.contains(randomVideo) ? View.GONE : View.VISIBLE);
+                    customDialog.getButton(unmarkButtonId).setVisibility(markedVideos.contains(randomVideo) ? View.VISIBLE : View.GONE);
 
                 })
                 .addOnDialogDismiss(customDialog -> {
                     if (isDialog)
                         finish();
                 })
+                .setDismissWhenClickedOutside(false)
+                .enableTitleBackButton()
+                .setOnBackPressedListener(customDialog -> {
+                    showMarkedFilms.runOnDialogCallback(customDialog);
+                    return true;
+                })
+                .setOnTouchOutside(showMarkedFilms)
                 .show();
+
+        // ToDo: in der übersicht beenden und Zufall
 
     }
 

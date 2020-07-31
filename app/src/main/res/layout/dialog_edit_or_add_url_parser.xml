@@ -69,10 +69,20 @@
     </com.google.android.material.textfield.TextInputLayout>
 
     <TextView
-        android:id="@+id/dialog_editOrAdd_urlParser_variables"
+        android:id="@+id/dialog_editOrAdd_urlParser_javaVariables"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Verfügbare Variablen: url, result, split, last, lastSplit, customList"
+        android:textSize="10sp"
+        android:textStyle="italic"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
+    <TextView
+        android:id="@+id/dialog_editOrAdd_urlParser_graphVariables"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Verfügbare Variablen: graph"
         android:textSize="10sp"
         android:textStyle="italic"
         android:visibility="gone"

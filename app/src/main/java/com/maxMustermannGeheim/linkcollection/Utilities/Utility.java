@@ -18,6 +18,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.service.autofill.Dataset;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -47,6 +48,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.ActionMenuView;
+import androidx.appcompat.widget.AppCompatImageButton;
 import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.widget.NestedScrollView;
@@ -64,6 +67,14 @@ import com.bumptech.glide.request.target.DrawableImageViewTarget;
 import com.bumptech.glide.request.target.Target;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
+import com.github.mikephil.charting.animation.Easing;
+import com.github.mikephil.charting.charts.PieChart;
+import com.github.mikephil.charting.components.Legend;
+import com.github.mikephil.charting.data.PieData;
+import com.github.mikephil.charting.data.PieDataSet;
+import com.github.mikephil.charting.data.PieEntry;
+import com.github.mikephil.charting.formatter.PercentFormatter;
+import com.github.mikephil.charting.utils.ColorTemplate;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
 import com.google.android.material.appbar.AppBarLayout;
@@ -86,6 +97,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
@@ -1552,7 +1564,7 @@ public class Utility {
 
 
     //  ------------------------- FilterStars ------------------------->
-    public static CustomDialog showRangeSelectDialog(Context context, SearchView searchView) {
+    public static CustomDialog showRangeSelectDialog(Context context, SearchView searchView, Collection<? extends ParentClass_Ratable> ratables) {
         boolean[] singleMode = {false};
         final int[] min = {0};
         final int[] max = {20};
@@ -1631,7 +1643,124 @@ public class Utility {
                             singleBar.setProgress(min);
                         }
                     });
+
+                    // --------------- Chart
+
+//                    PieChart pieChart = customDialog.findViewById(R.id.dialog_filterByRating_chart);
+//                    pieChart.setUsePercentValues(true);
+//                    pieChart.getDescription().setEnabled(false);
+//
+////                    pieChart.setCenterTextTypeface(tfLight);
+////                    pieChart.setCenterText(generateCenterSpannableText());
+//
+//                    pieChart.setDrawHoleEnabled(true);
+//                    pieChart.setHoleColor(Color.WHITE);
+//
+//                    pieChart.setTransparentCircleColor(Color.WHITE);
+//                    pieChart.setTransparentCircleAlpha(110);
+//
+//                    pieChart.setHoleRadius(58f);
+//                    pieChart.setTransparentCircleRadius(61f);
+//
+//                    pieChart.setDrawCenterText(true);
+//
+//                    pieChart.setRotationEnabled(false);
+//                    pieChart.setHighlightPerTapEnabled(true);
+//
+//                    pieChart.setMaxAngle(180f); // HALF CHART
+//                    pieChart.setRotationAngle(180f);
+//                    pieChart.setCenterTextOffset(0, -20);
+//
+//                    ArrayList<PieEntry> values = new ArrayList<>();
+//                    String[] parties = new String[] {
+//                            "Party A", "Party B", "Party C", "Party D", "Party E", "Party F", "Party G", "Party H",
+//                            "Party I", "Party J", "Party K", "Party L", "Party M", "Party N", "Party O", "Party P",
+//                            "Party Q", "Party R", "Party S", "Party T", "Party U", "Party V", "Party W", "Party X",
+//                            "Party Y", "Party Z"
+//                    };
+//                    for (int i = 0; i < 4; i++) {
+//                        values.add(new PieEntry((float) ((Math.random() * 100) + 100 / 5), parties[i % parties.length]));
+//                    }
+//
+//                    PieDataSet dataSet = new PieDataSet(values, "Election Results");
+//                    dataSet.setSliceSpace(3f);
+//                    dataSet.setSelectionShift(5f);
+//
+//                    dataSet.setColors(ColorTemplate.MATERIAL_COLORS);
+//                    //dataSet.setSelectionShift(0f);
+//
+//                    PieData data = new PieData(dataSet);
+//                    data.setValueFormatter(new PercentFormatter());
+//                    data.setValueTextSize(11f);
+//                    data.setValueTextColor(Color.WHITE);
+////                    data.setValueTypeface(tfLight);
+//                    pieChart.setData(data);
+//
+//                    pieChart.invalidate();
+//
+//
+//                    pieChart.animateY(1400, Easing.EaseInOutQuad);
+//
+//                    Legend l = pieChart.getLegend();
+//                    l.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
+//                    l.setHorizontalAlignment(Legend.LegendHorizontalAlignment.CENTER);
+//                    l.setOrientation(Legend.LegendOrientation.HORIZONTAL);
+//                    l.setDrawInside(false);
+//                    l.setXEntrySpace(7f);
+//                    l.setYEntrySpace(0f);
+//                    l.setYOffset(0f);
+//
+//                    // entry label styling
+//                    pieChart.setEntryLabelColor(Color.WHITE);
+////                    pieChart.setEntryLabelTypeface(tfRegular);
+//                    pieChart.setEntryLabelTextSize(12f); // ToDo: https://www.youtube.com/watch?v=iS7EgKnyDeY
+
+                    // --------------- Chart 2
+
+                    PieChart pieChart = customDialog.findViewById(R.id.dialog_filterByRating_chart);
+                    pieChart.setUsePercentValues(true);
+                    pieChart.getDescription().setEnabled(false);
+
+//                    pieChart.setCenterTextTypeface(tfLight);
+//                    pieChart.setCenterText(generateCenterSpannableText());
+
+                    pieChart.setDrawHoleEnabled(true);
+                    pieChart.setHoleColor(Color.TRANSPARENT);
+
+                    pieChart.setTransparentCircleColor(Color.WHITE);
+                    pieChart.setTransparentCircleAlpha(110);
+
+                    pieChart.setHoleRadius(58f);
+                    pieChart.setTransparentCircleRadius(61f);
+
+                    pieChart.setDrawCenterText(true);
+
+//                    pieChart.setRotationEnabled(false);
+                    pieChart.setHighlightPerTapEnabled(true);
+
+//                    pieChart.setMaxAngle(180f); // HALF CHART
+//                    pieChart.setRotationAngle(180f);
+//                    pieChart.setCenterTextOffset(0, -20);
+
+
+                    List<PieEntry> pieEntryList = new ArrayList<>();
+
+                    Map<Float, ? extends List<? extends ParentClass_Ratable>> map = ratables.stream().collect(Collectors.groupingBy(ParentClass_Ratable::getRating));
+
+                    for (int i = 1; i < 20; i++) {
+                        float rating = i / 4f;
+                        pieEntryList.add(new PieEntry(Utility.returnIfNull(map.get(rating), new ArrayList<ParentClass_Ratable>()).size(),  Utility.removeTrailingZeros(i / 4d) + " ☆"));
+                    }
+
+                    PieDataSet dataSet = new PieDataSet(pieEntryList, "Filme Verteilung");
+                    dataSet.setColors(ColorTemplate.COLORFUL_COLORS);
+                    PieData pieData = new PieData(dataSet);
+
+                    pieChart.setData(pieData);
+                    pieChart.invalidate();
+
                 })
+                .setDimensionsFullscreen()
                 .addOptionalModifications(customDialog -> {
                     if (finalPreSelected) {
                         customDialog
@@ -1925,6 +2054,10 @@ public class Utility {
         } catch (NullPointerException e) {
             return false;
         }
+    }
+
+    public static <T> T returnIfNull(T object, T returnIfNull){
+        return object != null ? object : returnIfNull;
     }
     //  <------------------------- ifNotNull -------------------------
 
@@ -2634,7 +2767,7 @@ public class Utility {
             appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> {
                 if (maxOffset[0] == -1) {
                     maxOffset[0] = -appBarLayout.getTotalScrollRange();
-                    int maxWidth = toolbar.getChildAt(3).getRight() - toolbar.getChildAt(1).getRight(); //320
+                    int maxWidth = Utility.getViewsByType(toolbar, ActionMenuView.class).get(0).getLeft() - Utility.getViewsByType(toolbar, AppCompatImageButton.class).get(0).getRight(); //320
                     for (int i = 0; i <= stepCount; i++)
                         ellipsedList.add(Utility.getEllipsedString(context, title, maxWidth - CustomUtility.dpToPx(3) - (int) (55 * ((stepCount - i) / (double) stepCount)), 18 + (int) (16 * (i / (double) stepCount))));
                 }
@@ -2644,7 +2777,7 @@ public class Utility {
                     collapsingToolbarLayout.setTitle(ellipsedList.get(prevPart[0] = part));
 
                 float alpha = 1f - ((verticalOffset - maxOffset[0]) / distance);
-                noItem.setAlpha(alpha > 0f ? alpha : 0f);
+                noItem.setAlpha(Math.max(alpha, 0f));
             });
         };
     }

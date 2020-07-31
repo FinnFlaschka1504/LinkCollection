@@ -16,7 +16,6 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,6 +28,7 @@ import androidx.core.content.ContextCompat;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
 import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
@@ -107,6 +107,7 @@ public class CategoriesActivity extends AppCompatActivity {
     private String searchQuerry = "";
     private boolean multiSelectMode;
     private List<ParentClass> selectedList = new ArrayList<>();
+    private Runnable setToolbarTitle;
 
     private CustomRecycler customRecycler;
     private SearchView catigorys_search;
@@ -142,17 +143,22 @@ public class CategoriesActivity extends AppCompatActivity {
         elementCount = findViewById(R.id.elementCount);
 
         AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
-        View noItem = findViewById(R.id.no_item);
-        LinearLayout search_layout = findViewById(R.id.search_layout);
-        appBarLayout.measure(0,0);
-        toolbar.measure(0,0);
-        search_layout.measure(0,0);
-        float maxOffset = -(appBarLayout.getMeasuredHeight() - (toolbar.getMeasuredHeight() + search_layout.getMeasuredHeight()));
-        float distance = 118;
-        appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> {
-            float alpha = 1f - ((verticalOffset - maxOffset) / distance);
-            noItem.setAlpha(alpha > 0f ? alpha : 0f);
-        });
+        TextView noItem = findViewById(R.id.no_item);
+        CollapsingToolbarLayout collapsingToolbarLayout = findViewById(R.id.collapsingToolbarLayout);
+        setToolbarTitle = Utility.applyExpendableToolbar_recycler(this, findViewById(R.id.recycler), toolbar, appBarLayout, collapsingToolbarLayout, noItem, toolbar.getTitle().toString());
+
+//        AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
+//        View noItem = findViewById(R.id.no_item);
+//        LinearLayout search_layout = findViewById(R.id.search_layout);
+//        appBarLayout.measure(0,0);
+//        toolbar.measure(0,0);
+//        search_layout.measure(0,0);
+//        float maxOffset = -(appBarLayout.getMeasuredHeight() - (toolbar.getMeasuredHeight() + search_layout.getMeasuredHeight()));
+//        float distance = 118;
+//        appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> {
+//            float alpha = 1f - ((verticalOffset - maxOffset) / distance);
+//            noItem.setAlpha(alpha > 0f ? alpha : 0f);
+//        });
 
         catigorys_search = findViewById(R.id.search);
 
@@ -341,7 +347,10 @@ public class CategoriesActivity extends AppCompatActivity {
                         listItem_categoryItem_image.setVisibility(View.VISIBLE);
                         String imagePath = ((ParentClass_Tmdb) parentClassIntegerPair.first).getImagePath();
                         Utility.loadUrlIntoImageView(this, listItem_categoryItem_image, Utility.getTmdbImagePath_ifNecessary(imagePath, false),
-                                Utility.getTmdbImagePath_ifNecessary(imagePath, true), null, () -> Utility.roundImageView(listItem_categoryItem_image, 4), this::removeFocusFromSearch);
+                                Utility.getTmdbImagePath_ifNecessary(imagePath, true),
+                                () -> ((ParentClass_Tmdb) parentClassIntegerPair.first).tryUpdateData(this, () ->
+                                        customRecycler.update(customRecycler.getRecycler().getChildAdapterPosition(itemView))), // ToDo: wenn bildladen Fahlschlägt daten neu landen
+                                () -> Utility.roundImageView(listItem_categoryItem_image, 4), this::removeFocusFromSearch);
                     } else
                         listItem_categoryItem_image.setVisibility(View.GONE);
 
@@ -527,6 +536,9 @@ public class CategoriesActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.task_bar_catigory, menu);
+
+        if (setToolbarTitle != null) setToolbarTitle.run();
+
         return true;
     }
 

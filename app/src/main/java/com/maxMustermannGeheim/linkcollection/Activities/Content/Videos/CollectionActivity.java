@@ -106,6 +106,7 @@ public class CollectionActivity extends AppCompatActivity {
     private CustomRecycler<Collection> customRecycler;
     private CustomDialog editDialog;
     private CustomDialog detailDialog;
+    private Runnable setToolbarTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,37 +127,39 @@ public class CollectionActivity extends AppCompatActivity {
             setContentView(R.layout.activity_collection);
 
             Toolbar toolbar = findViewById(R.id.toolbar);
+            toolbar.setTitle("Sammlungen");
             setSupportActionBar(toolbar);
             elementCount = findViewById(R.id.elementCount);
 
             AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
-            View noItem = findViewById(R.id.no_item);
+            TextView noItem = findViewById(R.id.no_item);
             CollapsingToolbarLayout collapsingToolbarLayout = findViewById(R.id.collapsingToolbarLayout);
+            setToolbarTitle = Utility.applyExpendableToolbar_recycler(this, findViewById(R.id.recycler), toolbar, appBarLayout, collapsingToolbarLayout, noItem, "Sammlungen");
 
-            final float[] maxOffset = {-1};
-            final float[] distance = new float[1];
-            int stepCount = 5;
-            final int[] prevPart = {-1};
-            final int[] maxWidth = new int[1];
-
-            List<String> ellipsedList = new ArrayList<>();
-
-            appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> {
-                if (maxOffset[0] == -1) {
-                    maxOffset[0] = -appBarLayout.getTotalScrollRange();
-                    distance[0] = noItem.getY() - appBarLayout.getBottom();
-                    maxWidth[0] = toolbar.getChildAt(3).getRight() - toolbar.getChildAt(0).getRight();
-                    for (int i = 0; i <= stepCount; i++)
-                        ellipsedList.add(Utility.getEllipsedString(this, getString(R.string.CollectionoActivity_label), maxWidth[0] - CustomUtility.dpToPx(3) - (int) (55 * ((stepCount - i) / (double) stepCount)), 18 + (int) (16 * (i / (double) stepCount)))); //55
-                }
-
-                int part = stepCount - Math.round(verticalOffset / (maxOffset[0] / stepCount));
-                if (part != prevPart[0])
-                    collapsingToolbarLayout.setTitle(ellipsedList.get(prevPart[0] = part));
-
-                float alpha = 1f - ((verticalOffset - maxOffset[0]) / distance[0]);
-                noItem.setAlpha(alpha > 0f ? alpha : 0f);
-            });
+//            final float[] maxOffset = {-1};
+//            final float[] distance = new float[1];
+//            int stepCount = 5;
+//            final int[] prevPart = {-1};
+//            final int[] maxWidth = new int[1];
+//
+//            List<String> ellipsedList = new ArrayList<>();
+//
+//            appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> {
+//                if (maxOffset[0] == -1) {
+//                    maxOffset[0] = -appBarLayout.getTotalScrollRange();
+//                    distance[0] = noItem.getY() - appBarLayout.getBottom();
+//                    maxWidth[0] = toolbar.getChildAt(3).getRight() - toolbar.getChildAt(0).getRight();
+//                    for (int i = 0; i <= stepCount; i++)
+//                        ellipsedList.add(Utility.getEllipsedString(this, getString(R.string.CollectionoActivity_label), maxWidth[0] - CustomUtility.dpToPx(3) - (int) (55 * ((stepCount - i) / (double) stepCount)), 18 + (int) (16 * (i / (double) stepCount)))); //55
+//                }
+//
+//                int part = stepCount - Math.round(verticalOffset / (maxOffset[0] / stepCount));
+//                if (part != prevPart[0])
+//                    collapsingToolbarLayout.setTitle("TestEdiTestTest"); //ellipsedList.get(prevPart[0] = part));
+//
+//                float alpha = 1f - ((verticalOffset - maxOffset[0]) / distance[0]);
+//                noItem.setAlpha(Math.max(alpha, 0f));
+//            });
 
 
             searchView = findViewById(R.id.search);
@@ -1075,6 +1078,9 @@ public class CollectionActivity extends AppCompatActivity {
                 .setChecked(filterTypeSet.contains(FILTER_TYPE.NAME));
         menu.findItem(R.id.taskBar_collection_filterByFilm)
                 .setChecked(filterTypeSet.contains(FILTER_TYPE.FILM));
+
+        if (setToolbarTitle != null)
+            setToolbarTitle.run();
         return true;
     }
 

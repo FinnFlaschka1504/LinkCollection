@@ -29,10 +29,6 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.android.volley.Request;
-import com.android.volley.RequestQueue;
-import com.android.volley.toolbox.JsonObjectRequest;
-import com.android.volley.toolbox.Volley;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
@@ -55,7 +51,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Person;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
-import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
@@ -70,13 +65,7 @@ import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.maxMustermannGeheim.linkcollection.Utilities.VersionControl;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -84,12 +73,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Settings.Space.allSpaces;
@@ -414,16 +400,23 @@ public class Settings extends AppCompatActivity {
                     TextInputLayout dialog_editOrAdd_urlParser_code_layout = view.findViewById(R.id.dialog_editOrAdd_urlParser_code_layout);
                     TextInputLayout dialog_editOrAdd_urlParser_thumbnailCode_layout = view.findViewById(R.id.dialog_editOrAdd_urlParser_thumbnailCode_layout);
                     Spinner dialog_editOrAdd_urlParser_type = view.findViewById(R.id.dialog_editOrAdd_urlParser_type);
-                    TextView dialog_editOrAdd_urlParser_variables = view.findViewById(R.id.dialog_editOrAdd_urlParser_variables);
+                    TextView dialog_editOrAdd_urlParser_javaVariables = view.findViewById(R.id.dialog_editOrAdd_urlParser_javaVariables);
+                    TextView dialog_editOrAdd_urlParser_graphVariables = view.findViewById(R.id.dialog_editOrAdd_urlParser_graphVariables);
                     dialog_editOrAdd_urlParser_type.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                         @Override
                         public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                             UrlParser.TYPE type = UrlParser.TYPE.getTypeByIndex(dialog_editOrAdd_urlParser_type.getSelectedItemPosition());
                             editUrlParser.setType(type);
-                            if (type == UrlParser.TYPE.JAVA)
-                                dialog_editOrAdd_urlParser_variables.setVisibility(View.VISIBLE);
-                            else
-                                dialog_editOrAdd_urlParser_variables.setVisibility(View.GONE);
+                            if (type == UrlParser.TYPE.JAVA) {
+                                dialog_editOrAdd_urlParser_javaVariables.setVisibility(View.VISIBLE);
+                                dialog_editOrAdd_urlParser_graphVariables.setVisibility(View.GONE);
+                            } else if (type == UrlParser.TYPE.GRAPH) {
+                                dialog_editOrAdd_urlParser_javaVariables.setVisibility(View.GONE);
+                                dialog_editOrAdd_urlParser_graphVariables.setVisibility(View.VISIBLE);
+                            } else {
+                                dialog_editOrAdd_urlParser_javaVariables.setVisibility(View.GONE);
+                                dialog_editOrAdd_urlParser_graphVariables.setVisibility(View.GONE);
+                            }
                             dialog_editOrAdd_urlParser_code_layout.setHint(editUrlParser.getType().getName() + "-Code");
                         }
 

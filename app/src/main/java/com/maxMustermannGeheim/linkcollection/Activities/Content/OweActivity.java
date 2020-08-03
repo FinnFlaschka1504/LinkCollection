@@ -683,6 +683,8 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                 break;
 
             case android.R.id.home:
+                if (getCallingActivity() == null)
+                    startActivity(new Intent(this, MainActivity.class));
                 finish();
                 break;
 

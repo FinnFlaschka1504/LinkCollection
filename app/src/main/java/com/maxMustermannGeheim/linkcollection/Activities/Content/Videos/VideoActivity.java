@@ -4,11 +4,16 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.TextPaint;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
 import android.text.style.RelativeSizeSpan;
 import android.util.Pair;
 import android.view.Menu;
@@ -705,7 +710,7 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     private CustomDialog showDetailDialog(@NonNull Video video) {
-        setResult(RESULT_OK);
+//        setResult(RESULT_OK);
         removeFocusFromSearch();
         final int[] views = {video.getDateList().size()};
         int openWithButtonId = View.generateViewId();
@@ -726,6 +731,7 @@ public class VideoActivity extends AppCompatActivity {
                         if (views[0] < video.getDateList().size() && Utility.getWatchLaterList().contains(video)) {
                             video.setWatchLater(false);
                             Database.saveAll();
+                            setResult(RESULT_OK);
                             textListener.onQueryTextSubmit(videos_search.getQuery().toString());
                         }
                         views[0] = video.getDateList().size();
@@ -739,10 +745,36 @@ public class VideoActivity extends AppCompatActivity {
                     view.findViewById(R.id.dialog_video_Studio).setSelected(true);
                     Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.GENRE, view.findViewById(R.id.dialog_video_Genre), video.getGenreList(), database.genreMap);
                     view.findViewById(R.id.dialog_video_Genre).setSelected(true);
-                    String collectionNames = database.collectionMap.values().stream().filter(collection -> collection.getFilmIdList().contains(video.getUuid())).map(com.finn.androidUtilities.ParentClass::getName).collect(Collectors.joining(", "));
-                    if (Utility.stringExists(collectionNames)) {
-                        ((TextView) view.findViewById(R.id.dialog_video_collection)).setText(collectionNames);
-                        view.findViewById(R.id.dialog_video_collection_layout).setVisibility(View.VISIBLE);
+
+                    SpannableStringBuilder builder = new SpannableStringBuilder();
+
+                    String collectionNames;
+                    database.collectionMap.values().stream().filter(collection -> collection.getFilmIdList().contains(video.getUuid())).map(com.finn.androidUtilities.ParentClass::getName)
+                            .forEach(s -> {
+                                if (builder.length() != 0)
+                                    builder.append(", ");
+                                builder.append(s, new ClickableSpan() {
+                                    @Override
+                                    public void onClick(@NonNull View widget) {
+                                        Toast.makeText(VideoActivity.this, s, Toast.LENGTH_SHORT).show();
+                                        startActivity(new Intent(VideoActivity.this, CollectionActivity.class).putExtra(CategoriesActivity.EXTRA_SEARCH, s));
+                                    }
+
+                                    @Override
+                                    public void updateDrawState(TextPaint ds) {
+                                        super.updateDrawState(ds);
+                                        ds.setUnderlineText(false);
+                                    }
+                                }, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            });
+//                            .collect(Collectors.joining(", "));
+                    if (builder.length() > 0/*Utility.stringExists(collectionNames)*/) {
+                        TextView dialog_video_collection = (TextView) view.findViewById(R.id.dialog_video_collection);
+                        dialog_video_collection.setText(builder);
+                        dialog_video_collection.setMovementMethod(LinkMovementMethod.getInstance());
+                        dialog_video_collection.setHighlightColor(Color.TRANSPARENT);
+                        dialog_video_collection.setLinkTextColor(dialog_video_collection.getTextColors());
+                        view.findViewById(R.id.dialog_video_collection_layout).setVisibility(View.VISIBLE); // ToDo: Link to collection
                     }
                     view.findViewById(R.id.dialog_video_details).setVisibility(View.VISIBLE);
                     ((TextView) view.findViewById(R.id.dialog_video_Url)).setText(video.getUrl());
@@ -806,6 +838,7 @@ public class VideoActivity extends AppCompatActivity {
                         boolean before = video.addDate(new Date(), true);
                         Utility.showCenteredToast(this, "Ansicht Hinzugefügt" + (before ? "\n(Gestern)" : ""));
                         Database.saveAll();
+                        setResult(RESULT_OK);
                         customDialog.reloadView();
                         reLoadVideoRecycler();
                         return true;
@@ -2085,6 +2118,8 @@ public class VideoActivity extends AppCompatActivity {
                     delete = false;
                     return true;
                 }
+                if (getCallingActivity() == null)
+                    startActivity(new Intent(this, MainActivity.class));
                 finish();
                 break;
         }
@@ -2192,12 +2227,10 @@ public class VideoActivity extends AppCompatActivity {
                 }, unmarkButtonId, false)
                 .alignPreviousButtonsLeft()
                 .addButton("Zurück", customDialog -> {
-                    Toast.makeText(this, "Vorhäriger", Toast.LENGTH_SHORT).show();
                     randomVideo = randomList.previous(randomVideo, false);
                     customDialog.reloadView();
                 }, previousButtonId, false)
                 .addButton("Weiter", customDialog -> {
-                    Toast.makeText(this, "Nächster", Toast.LENGTH_SHORT).show();
                     randomVideo = randomList.next(randomVideo, false);
                     customDialog.reloadView();
                 }, nextButtonId, false)

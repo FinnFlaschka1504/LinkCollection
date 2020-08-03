@@ -119,7 +119,11 @@ public class CategoriesActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_catigorys);
+        database = Database.getInstance();
+        if (database == null)
+            setContentView(R.layout.loading_screen);
+        else
+            setContentView(R.layout.activity_catigorys);
         mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
         sortHelper = new Helpers.SortHelper<Pair<ParentClass, Integer>>()
@@ -132,11 +136,33 @@ public class CategoriesActivity extends AppCompatActivity {
                 .finish();
 
         catigory = (CATEGORIES) getIntent().getSerializableExtra(MainActivity.EXTRA_CATEGORY);
-        setDatenObjektIntegerPairLiist();
-
-        sortList(allDatenObjektPairList);
 
 
+        loadDatabase();
+    }
+
+    private void loadDatabase() {
+        Runnable whenLoaded = () -> {
+            setContentView(R.layout.activity_catigorys);
+
+            setDatenObjektIntegerPairLiist();
+            sortList(allDatenObjektPairList);
+
+
+            setLayout();
+        };
+
+        if (Database.isReady() && database != null)
+            whenLoaded.run();
+        else
+            Database.getInstance(mySPR_daten, newDatabase -> {
+                database = newDatabase;
+                whenLoaded.run();
+            }, false);
+
+    }
+
+    private void setLayout() {
         Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setTitle(catigory.getPlural());
         setSupportActionBar(toolbar);
@@ -146,19 +172,6 @@ public class CategoriesActivity extends AppCompatActivity {
         TextView noItem = findViewById(R.id.no_item);
         CollapsingToolbarLayout collapsingToolbarLayout = findViewById(R.id.collapsingToolbarLayout);
         setToolbarTitle = Utility.applyExpendableToolbar_recycler(this, findViewById(R.id.recycler), toolbar, appBarLayout, collapsingToolbarLayout, noItem, toolbar.getTitle().toString());
-
-//        AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
-//        View noItem = findViewById(R.id.no_item);
-//        LinearLayout search_layout = findViewById(R.id.search_layout);
-//        appBarLayout.measure(0,0);
-//        toolbar.measure(0,0);
-//        search_layout.measure(0,0);
-//        float maxOffset = -(appBarLayout.getMeasuredHeight() - (toolbar.getMeasuredHeight() + search_layout.getMeasuredHeight()));
-//        float distance = 118;
-//        appBarLayout.addOnOffsetChangedListener((appBarLayout1, verticalOffset) -> {
-//            float alpha = 1f - ((verticalOffset - maxOffset) / distance);
-//            noItem.setAlpha(alpha > 0f ? alpha : 0f);
-//        });
 
         catigorys_search = findViewById(R.id.search);
 
@@ -173,7 +186,6 @@ public class CategoriesActivity extends AppCompatActivity {
 
             @Override
             public boolean onQueryTextChange(String s) {
-//                filterdDatenObjektPairList = new ArrayList<>(allDatenObjektPairList);
                 searchQuerry = s.trim();
 
                 reLoadRecycler();
@@ -349,7 +361,7 @@ public class CategoriesActivity extends AppCompatActivity {
                         Utility.loadUrlIntoImageView(this, listItem_categoryItem_image, Utility.getTmdbImagePath_ifNecessary(imagePath, false),
                                 Utility.getTmdbImagePath_ifNecessary(imagePath, true),
                                 () -> ((ParentClass_Tmdb) parentClassIntegerPair.first).tryUpdateData(this, () ->
-                                        customRecycler.update(customRecycler.getRecycler().getChildAdapterPosition(itemView))), // ToDo: wenn bildladen Fahlschlägt daten neu landen
+                                        customRecycler.update(customRecycler.getRecycler().getChildAdapterPosition(itemView))),
                                 () -> Utility.roundImageView(listItem_categoryItem_image, 4), this::removeFocusFromSearch);
                     } else
                         listItem_categoryItem_image.setVisibility(View.GONE);

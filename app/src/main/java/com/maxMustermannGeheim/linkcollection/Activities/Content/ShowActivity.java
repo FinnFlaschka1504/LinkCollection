@@ -1937,6 +1937,8 @@ public class ShowActivity extends AppCompatActivity {
                 break;
 
             case android.R.id.home:
+                if (getCallingActivity() == null)
+                    startActivity(new Intent(this, MainActivity.class));
                 finish();
                 break;
 

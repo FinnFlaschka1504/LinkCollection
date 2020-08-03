@@ -103,7 +103,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         super.onCreate(savedInstanceState);
         isLoadingLayout = savedInstanceState == null;
 
-        if (isLoadingLayout)
+        if (!Database.isReady()) //(isLoadingLayout || !Database.isReady()) && !Database.isReady())
             setContentView(R.layout.loading_screen);
         else
             setContentView(R.layout.activity_main);
@@ -269,7 +269,9 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
             database = database_neu;
         };
 
-        if (Database.getInstance(mySPR_daten, onInstanceFinishedLoading, createNew) == null) {
+        if (Database.isReady()) {
+            onInstanceFinishedLoading.runOnInstanceFinishedLoading(Database.getInstance());
+        } else if (Database.getInstance(mySPR_daten, onInstanceFinishedLoading, createNew) == null) {
             getDatabaseCode(databaseCode -> {
                         mySPR_daten.edit().putString(Database.DATABASE_CODE, databaseCode).commit();
                         loadDatabase(true);

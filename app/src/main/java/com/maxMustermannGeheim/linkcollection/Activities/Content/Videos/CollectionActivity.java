@@ -201,8 +201,8 @@ public class CollectionActivity extends AppCompatActivity {
 //                    }
 //                }
 //
-//                String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
-//                if (extraSearch != null) {
+                String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
+                if (extraSearch != null) {
 //                    if (extraSearch.equals(SEEN_SEARCH))
 //                        mode = VideoActivity.MODE.SEEN;
 //                    else if (extraSearch.equals(WATCH_LATER_SEARCH))
@@ -210,9 +210,10 @@ public class CollectionActivity extends AppCompatActivity {
 //                    else if (extraSearch.equals(UPCOMING_SEARCH))
 //                        mode = VideoActivity.MODE.UPCOMING;
 //                    else
-//                        searchView.setQuery(extraSearch, false);
+                    filterTypeSet.remove(FILTER_TYPE.FILM);
+                    searchView.setQuery(extraSearch, false);
 //                    textListener.onQueryTextSubmit(searchView.getQuery().toString());
-//                }
+                }
 //            }
 //            setSearchHint();
 
@@ -689,7 +690,7 @@ public class CollectionActivity extends AppCompatActivity {
                                                                             return;
                                                                         }
                                                                         JSONObject movieDetails = movie_results.getJSONObject(0);
-                                                                        Video newVideo = new Video(movieDetails.getString("title")).setWatchLater(true);
+                                                                        Video newVideo = new Video(movieDetails.getString("title"));
 
                                                                         if (movieDetails.has("original_title"))
                                                                             newVideo.setTranslationList(Arrays.asList(filmMap.get(currentVideoId[0]).get(1), movieDetails.getString("title"), movieDetails.getString("original_title")));
@@ -698,6 +699,8 @@ public class CollectionActivity extends AppCompatActivity {
                                                                             newVideo.setTmdbId(movieDetails.getInt("id"));
                                                                         if (movieDetails.has("release_date"))
                                                                             newVideo.setRelease(new SimpleDateFormat("yyyy-MM-dd", Locale.GERMANY).parse(movieDetails.getString("release_date")));
+                                                                        if (newVideo.getRelease() != null && !Utility.isUpcoming(newVideo.getRelease()))
+                                                                            newVideo.setWatchLater(true);
                                                                         if (movieDetails.has("poster_path"))
                                                                             newVideo.setImagePath(movieDetails.getString("poster_path"));
                                                                         if (movieDetails.has("genre_ids")) {
@@ -712,6 +715,8 @@ public class CollectionActivity extends AppCompatActivity {
                                                                             uuidList.removeAll(newVideo.getGenreList());
                                                                             newVideo.getGenreList().addAll(uuidList);
                                                                         }
+
+                                                                        collection.getFilmIdList().add(newVideo.getUuid());
 
                                                                         database.videoMap.put(newVideo.getUuid(), newVideo);
                                                                         importedFilms.add(newVideo);

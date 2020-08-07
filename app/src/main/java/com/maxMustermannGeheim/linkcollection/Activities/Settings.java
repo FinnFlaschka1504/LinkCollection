@@ -102,6 +102,8 @@ public class Settings extends AppCompatActivity {
     public static final String SETTING_VIDEO_SHOW_SEARCH = "SETTING_VIDEO_SHOW_SEARCH";
     public static final String SETTING_VIDEO_SHOW_COLLECTIONS = "SETTING_VIDEO_SHOW_COLLECTIONS";
 
+    public static final String SETTING_SHOW_EPISODE_PREVIEW = "SETTING_SHOW_EPISODE_PREVIEW";
+
     public static final String SETTING_SPACE_SHOWN_ = "SETTING_SPACE_SHOWN_";
     public static final String SETTING_SPACE_NAMES_ = "SETTING_SPACE_NAMES_";
     public static final String SETTING_SPACE_ORDER = "SETTING_SPACE_ORDER";
@@ -163,6 +165,7 @@ public class Settings extends AppCompatActivity {
         settingsMap.put(SETTING_VIDEO_LOAD_CAST_AND_STUDIOS, "true");
         settingsMap.put(SETTING_VIDEO_SHOW_SEARCH, "0");
         settingsMap.put(SETTING_VIDEO_SHOW_COLLECTIONS, "true");
+        settingsMap.put(SETTING_SHOW_EPISODE_PREVIEW, "1");
     }
 
     public static boolean changeSetting(String key, String newValue) {
@@ -338,6 +341,7 @@ public class Settings extends AppCompatActivity {
                 })
                 .setAssociatedClasses(Show.class, ShowGenre.class)
                 .setSettingsDialog(new Utility.Triple<>(R.layout.dialog_settings_show, (customDialog, view, space) -> {
+                    ((Spinner) view.findViewById(R.id.dialogSettingsShow_episodes_preview)).setSelection(Integer.parseInt(getSingleSetting(context, SETTING_SHOW_EPISODE_PREVIEW)));
                     view.findViewById(R.id.dialogSettingsShow_edit_importGenres).setOnClickListener(v -> {
                         Utility.importTmdbGenre(context, false);
                         context.setResult(RESULT_OK);
@@ -345,7 +349,7 @@ public class Settings extends AppCompatActivity {
                 }, new Space.OnClick() {
                     @Override
                     public void runOnClick(CustomDialog customDialog, Space space) {
-
+                        changeSetting(SETTING_SHOW_EPISODE_PREVIEW, String.valueOf(((Spinner) customDialog.findViewById(R.id.dialogSettingsShow_episodes_preview)).getSelectedItemPosition()));
                     }
                 })));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_knowledge), context.getString(R.string.bottomMenu_knowledge)).setActivity(KnowledgeActivity.class).setItemId(Space.SPACE_KNOWLEDGE).setIconId(R.drawable.ic_knowledge).setFragmentLayoutId(R.layout.main_fragment_knowledge)

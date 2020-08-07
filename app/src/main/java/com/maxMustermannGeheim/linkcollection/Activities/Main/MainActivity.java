@@ -130,6 +130,15 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //        List<String> imageUrlsFromHtml = Utility.getImageUrlsFromText(WebisteHtml.websiteHtml);
         String BREAKPOINT = null;
 
+//        new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper(this, "https://www.imdb.com/title/tt2178782")
+//                .addRequest("document.getElementsByClassName(\"subtext\")[0].innerText", s -> {
+//                    CustomDialog.Builder(this)
+//                            .setTitle(s)
+//                            .show();
+//                })
+//                .setDebug(true)
+//                .go();
+
 //        Test test = Test.create();
 //        Test test2 = Test.create();
 //
@@ -346,32 +355,32 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
             selectedSpace = Settings.Space.getFirstShown();
 
 //        if (true || !selectedSpace.hasFragment() || selectedSpace != currentSpace || ((FrameLayout) findViewById(R.id.main_frame_container)).getChildCount() == 0) {
-            if (!selectedSpace.hasFragment())
-                selectedSpace.setFragment(new SpaceFragment(selectedSpace.getFragmentLayoutId()));
-            SpaceFragment.currentSpace = selectedSpace;
-            getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container, selectedSpace.getFragment()).runOnCommit(() -> {
-                setCounts(this);
-                if (currentSpace != null)
-                    mySPR_settings.edit().putInt(SETTING_LAST_OPEN_SPACE, currentSpace.getItemId()).apply();
-                if (Settings.Space.allSpaces.filter(Settings.Space::isShown, false).size() > 1) {
-                    ViewGroup view = (ViewGroup) currentSpace.getFragment().getView();
-                    touchListener = new Utility.OnHorizontalSwipeTouchListener(MainActivity.this) {
-                        @Override
-                        public void onSwipeRight() {
-                            ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.allSpaces.filter(Settings.Space::isShown, false).previous(currentSpace).getItemId());
-                        }
+        if (!selectedSpace.hasFragment())
+            selectedSpace.setFragment(new SpaceFragment(selectedSpace.getFragmentLayoutId()));
+        SpaceFragment.currentSpace = selectedSpace;
+        getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container, selectedSpace.getFragment()).runOnCommit(() -> {
+            setCounts(this);
+            if (currentSpace != null)
+                mySPR_settings.edit().putInt(SETTING_LAST_OPEN_SPACE, currentSpace.getItemId()).apply();
+            if (Settings.Space.allSpaces.filter(Settings.Space::isShown, false).size() > 1) {
+                ViewGroup view = (ViewGroup) currentSpace.getFragment().getView();
+                touchListener = new Utility.OnHorizontalSwipeTouchListener(MainActivity.this) {
+                    @Override
+                    public void onSwipeRight() {
+                        ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.allSpaces.filter(Settings.Space::isShown, false).previous(currentSpace).getItemId());
+                    }
 
-                        @Override
-                        public void onSwipeLeft() {
-                            ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.allSpaces.filter(Settings.Space::isShown, false).next(currentSpace).getItemId());
-                        }
-                    };
-                    findViewById(R.id.scrollView).setOnTouchListener(touchListener);
-                    view.setOnTouchListener(touchListener);
-                    Utility.applyToAllViews(view, SquareLayout.class, squareLayout -> squareLayout.setOnTouchListener(touchListener));
-                }
-            }).commitAllowingStateLoss();
-            currentSpace = selectedSpace;
+                    @Override
+                    public void onSwipeLeft() {
+                        ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.allSpaces.filter(Settings.Space::isShown, false).next(currentSpace).getItemId());
+                    }
+                };
+                findViewById(R.id.scrollView).setOnTouchListener(touchListener);
+                view.setOnTouchListener(touchListener);
+                Utility.applyToAllViews(view, SquareLayout.class, squareLayout -> squareLayout.setOnTouchListener(touchListener));
+            }
+        }).commitAllowingStateLoss();
+        currentSpace = selectedSpace;
 //        } else {
 //            SpaceFragment.currentSpace = selectedSpace;
 //            setCounts(this);

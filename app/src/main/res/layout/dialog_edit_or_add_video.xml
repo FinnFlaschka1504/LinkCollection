@@ -212,7 +212,7 @@
                 android:id="@+id/dialog_editOrAddVideo_datePicker_layout"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_weight="1"
+                android:layout_weight="2"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -234,27 +234,57 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/dialog_editOrAddVideo_length_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="3"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
+                android:layout_weight="3">
+                <LinearLayout
+                    android:id="@+id/dialog_editOrAddVideo_ageRating_layout"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Länge:"
-                    android:textStyle="bold" />
+                    android:layout_weight="4"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-                <EditText
-                    android:id="@+id/dialog_editOrAddVideo_length"
-                    android:layout_width="wrap_content"
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="FSK:"
+                        android:textStyle="bold" />
+
+                    <EditText
+                        android:id="@+id/dialog_editOrAddVideo_ageRating"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:ems="10"
+                        android:inputType="number"
+                        tools:text="18" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/dialog_editOrAddVideo_length_layout"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:ems="10"
-                    android:hint="Min."
-                    android:inputType="number" />
+                    android:layout_weight="3"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Länge:"
+                        android:textStyle="bold" />
+
+                    <EditText
+                        android:id="@+id/dialog_editOrAddVideo_length"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:ems="10"
+                        android:hint="Min."
+                        android:inputType="number" />
+                </LinearLayout>
+
             </LinearLayout>
         </LinearLayout>
 

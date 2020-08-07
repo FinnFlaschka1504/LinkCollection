@@ -55,8 +55,10 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
@@ -82,6 +84,7 @@ import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import com.innovattic.rangeseekbar.RangeSeekBar;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
@@ -125,6 +128,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -374,7 +378,7 @@ public class Utility {
     }
 
 
-    //  ------------------------- TMDb Api ------------------------->
+    //  ------------------------- Api ------------------------->
     public static void importTmdbGenre(Context context, boolean isVideo) {
         String requestUrl = "https://api.themoviedb.org/3/genre/" +
                 (isVideo ? "movie" : "tv") +
@@ -452,7 +456,69 @@ public class Utility {
         requestQueue.add(jsonArrayRequest);
 
     }
-    //  <------------------------- TMDb Api -------------------------
+
+    // --------------- Trakt
+
+    public static void getImdbIdFromTmdbId(Context context, int tmdbId, String type, CustomUtility.GenericInterface<String> onResult) {
+        String requestUrl = "https://api.trakt.tv/search/tmdb/" + tmdbId + "?type=" + type;
+
+        RequestQueue requestQueue = Volley.newRequestQueue(context);
+
+        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, requestUrl, null, response -> {
+            try {
+                onResult.runGenericInterface(response.getJSONObject(0).getJSONObject(type).getJSONObject("ids").getString("imdb"));
+            } catch (JSONException ignored) {
+            }
+
+        }, error -> Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show()) {
+            @Override
+            public Map<String, String> getHeaders() {
+                Map<String, String> headers = new HashMap<>();
+                headers.put("Content-Type", "application/json");
+                headers.put("trakt-api-version", "2");
+                headers.put("trakt-api-key", "b14293841cd183ea33e42dd61070e57b82d4f71e22a4dab89691290ba7e0be83");
+                return headers;
+            }
+        };
+
+        requestQueue.add(jsonArrayRequest);
+
+    }
+
+    public static <T> void traktApiRequest(Context context, String url, Class<T> returnClass, CustomUtility.GenericInterface<T> onResult) {
+        RequestQueue requestQueue = Volley.newRequestQueue(context);
+
+        Request request = null;
+        if (JSONArray.class.equals(returnClass)) {
+            request = new JsonArrayRequest(Request.Method.GET, url, null, response -> onResult.runGenericInterface((T) response), error -> Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show()) {
+                @Override
+                public Map<String, String> getHeaders() {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("Content-Type", "application/json");
+                    headers.put("trakt-api-version", "2");
+                    headers.put("trakt-api-key", "b14293841cd183ea33e42dd61070e57b82d4f71e22a4dab89691290ba7e0be83");
+                    return headers;
+                }
+            };
+        } else if (JSONObject.class.equals(returnClass)) {
+            request = new JsonObjectRequest(Request.Method.GET, url, null, response -> onResult.runGenericInterface((T) response), error -> Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show()) {
+                @Override
+                public Map<String, String> getHeaders() {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("Content-Type", "application/json");
+                    headers.put("trakt-api-version", "2");
+                    headers.put("trakt-api-key", "b14293841cd183ea33e42dd61070e57b82d4f71e22a4dab89691290ba7e0be83");
+                    return headers;
+                }
+            };
+        }
+
+        if (request != null)
+            requestQueue.add(request);
+
+    }
+
+    //  <------------------------- Api -------------------------
 
     //  ------------------------- watchLater ------------------------->
     public static List<String> getWatchLaterList_uuid() {
@@ -2504,7 +2570,7 @@ public class Utility {
     public static void updateVideos(Context context, CustomList<Video> updateList, boolean updateCast) {
         Database database = Database.getInstance();
         RequestQueue requestQueue = Volley.newRequestQueue(context);
-        updateList.sort((o1, o2) -> o1.getName().compareTo(o2.getName()));
+        updateList.sort((o1, o2) -> o1.getName().compareTo(o2.getName())); // ToDo: updaten
         List<Video> failedList = new ArrayList<>();
         int allCount = updateList.size();
         if (allCount == 0) {

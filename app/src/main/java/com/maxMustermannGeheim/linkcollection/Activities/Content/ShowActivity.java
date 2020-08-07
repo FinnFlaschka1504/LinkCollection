@@ -7,7 +7,6 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.Typeface;
 import android.os.Bundle;
-import android.speech.tts.UtteranceProgressListener;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -28,7 +27,6 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.Spinner;
@@ -40,12 +38,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.res.ResourcesCompat;
 
-import com.bumptech.glide.Glide;
 import com.finn.androidUtilities.CustomRecycler.Expandable;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.finn.androidUtilities.CustomUtility;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
@@ -656,6 +654,13 @@ public class ShowActivity extends AppCompatActivity {
                                                             ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode1.getAirDate()));
                                                         ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode1.getRating() != -1 ? episode1.getRating() + " ☆" : "");
 
+//                                                        ImageView listItem_episode_image = itemView.findViewById(R.id.listItem_episode_image);
+//                                                        if (Utility.stringExists(episode1._getStillPath())) {
+//                                                            listItem_episode_image.setVisibility(View.VISIBLE);
+//                                                            Utility.loadUrlIntoImageView(this, listItem_episode_image, Utility.getTmdbImagePath_ifNecessary(episode1._getStillPath(), false ), Utility.getTmdbImagePath_ifNecessary(episode1._getStillPath(), true ));
+//                                                        } else
+//                                                            listItem_episode_image.setVisibility(View.GONE);
+
                                                     })
                                                     .setOnClickListener((customRecycler2, itemView, episode1, index1) -> {
                                                         Toast.makeText(this, episode1.getName(), Toast.LENGTH_SHORT).show();
@@ -1216,6 +1221,9 @@ public class ShowActivity extends AppCompatActivity {
                             helper.appendColor("Alle " + season.getEpisodesCount(), getColor(R.color.colorGreen));
                     }
                     ((TextView) itemView.findViewById(R.id.listItem_season_episodes)).setText(helper.get());
+
+                    double averageRating = season.getEpisodeMap().values().stream().filter(ParentClass_Ratable::hasRating).mapToDouble(ParentClass_Ratable::getRating).average().orElse(-1);
+                    ((TextView) itemView.findViewById(R.id.listItem_season_rating)).setText(averageRating != -1 ? new DecimalFormat("#.## ☆").format(averageRating)  : "");
                 })
                 .setOnClickListener((customRecycler, itemView, season, index) -> {
                     Map<String, Show.Episode> episodeMap;
@@ -1292,7 +1300,20 @@ public class ShowActivity extends AppCompatActivity {
                 setResult(RESULT_OK);
         };
 
-        CustomRecycler<Show.Episode> episodeRecycler = new CustomRecycler<Show.Episode>(this)
+        Map<Show.Episode, CustomUtility.Triple<ImageView, Integer, Integer>> imageDimensions = new HashMap<>();
+
+        CustomRecycler<Show.Episode> episodeRecycler = new CustomRecycler<Show.Episode>(this) {
+            @Override
+            public CustomRecycler<Show.Episode> reload() {
+                for (CustomUtility.Triple<ImageView, Integer, Integer> triple : imageDimensions.values()) {
+                    ImageView imageView = triple.first;
+                    imageView.measure(0,0);
+                    triple.setSecond(imageView.getMeasuredWidth());
+                    triple.setThird(imageView.getMeasuredHeight());
+                }
+                return super.reload();
+            }
+        }
                 .setGetActiveObjectList(customRecycler -> {
 //                    episodeMap.putAll(season.getEpisodeMap());
 //                    applyEpisodeMap(season.getEpisodeMap(), episodeMap);
@@ -1301,8 +1322,33 @@ public class ShowActivity extends AppCompatActivity {
                     return episodeList;
                 })
                 .setItemLayout(R.layout.list_item_episode)
+                .enableTrackReloading()
+                .setOnReload(customRecycler -> {
+                    for (CustomUtility.Triple<ImageView, Integer, Integer> triple : imageDimensions.values()) {
+                        ImageView imageView = triple.first;
+                        ViewGroup.LayoutParams layoutParams = imageView.getLayoutParams();
+                        layoutParams.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+                        layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+                        imageView.setLayoutParams(layoutParams);
+                    }
+                })
                 .setSetItemContent((customRecycler, itemView, episode) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(episode.getEpisodeNumber()));
+                    ImageView listItem_episode_image = itemView.findViewById(R.id.listItem_episode_image);
+                    if (customRecycler.isReloading() && imageDimensions.containsKey(episode)) {
+                        CustomUtility.Triple<ImageView, Integer, Integer> triple = imageDimensions.get(episode);
+                        ViewGroup.LayoutParams layoutParams = listItem_episode_image.getLayoutParams();
+                        layoutParams.width = triple.second;
+                        layoutParams.height = triple.third;
+                        listItem_episode_image.setLayoutParams(layoutParams);
+                    }
+                    imageDimensions.put(episode,  CustomUtility.Triple.create(listItem_episode_image, listItem_episode_image.getWidth(), listItem_episode_image.getHeight()));
+                    int showPreviewSetting = Integer.parseInt(Settings.getSingleSetting(this, Settings.SETTING_SHOW_EPISODE_PREVIEW));
+                    if (Utility.stringExists(episode._getStillPath()) && (showPreviewSetting == 0 || showPreviewSetting == 1 && episode.isWatched())) {
+                        listItem_episode_image.setVisibility(View.VISIBLE);
+                        Utility.loadUrlIntoImageView(this, listItem_episode_image, Utility.getTmdbImagePath_ifNecessary(episode._getStillPath(), false ), Utility.getTmdbImagePath_ifNecessary(episode._getStillPath(), true ));
+                    } else
+                        listItem_episode_image.setVisibility(View.GONE);
                     ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode.getName());
                     if (episode.getAirDate() != null)
                         ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode.getAirDate()));
@@ -1360,12 +1406,13 @@ public class ShowActivity extends AppCompatActivity {
 
         CustomDialog.Builder(this)
                 .setTitle(season.getName() + " - Folgen")
-                .addGoToButton((com.finn.androidUtilities.CustomRecycler.GoToFilter<Show.Episode>) (search, episode) -> {
+                .addGoToButton((CustomRecycler.GoToFilter<Show.Episode>) (search, episode) -> {
                     if (String.valueOf(episode.getEpisodeNumber()).equals(search)) {
                         return true;
                     }
                     return episode.getName().toLowerCase().contains(search.toLowerCase());
                 }, episodeRecycler)
+//                .addButton(R.drawable.ic_sync, customDialog -> episodeRecycler.reload(), false)
                 .alignPreviousButtonsLeft()
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
                 .setView(episodeRecycler.generateRecyclerView())
@@ -1388,6 +1435,7 @@ public class ShowActivity extends AppCompatActivity {
 //                newEpisode.setDateList(oldEpisode.getDateList());
 //                newEpisode.setWatched(oldEpisode.isWatched());
 //                newEpisode.setRating(oldEpisode.getRating());
+                oldEpisode._setStillPath(newEpisode._getStillPath());
                 oldEpisode.setAirDate(newEpisode.getAirDate());
                 oldEpisode.setName(newEpisode.getName());
             });
@@ -1402,6 +1450,8 @@ public class ShowActivity extends AppCompatActivity {
             return;
         }
 //        setResult(RESULT_OK); // vielleich wichtig?
+        boolean hasChanged = false; // ToDo: jedes mal neuladen des recyclers hiermit unterbinden
+
         CustomDialog.Builder(this)
                 .setTitle(episode.getName())
                 .setView(R.layout.dialog_detail_episode)
@@ -1428,6 +1478,15 @@ public class ShowActivity extends AppCompatActivity {
                 .setSetViewContent((customDialog, view, reload) -> {
                     ((TextView) view.findViewById(R.id.dialog_detailEpisode_title)).setText(episode.getName());
                     ((TextView) view.findViewById(R.id.dialog_detailEpisode_number)).setText(String.valueOf(episode.getEpisodeNumber()));
+
+                    ImageView listItem_episode_image = view.findViewById(R.id.dialog_detailEpisode_preview);
+                    int showPreviewSetting = Integer.parseInt(Settings.getSingleSetting(this, Settings.SETTING_SHOW_EPISODE_PREVIEW));
+                    if (Utility.stringExists(episode._getStillPath())) { // && (showPreviewSetting == 0 || showPreviewSetting == 1 && episode.isWatched())) {
+                        listItem_episode_image.setVisibility(View.VISIBLE);
+                        Utility.loadUrlIntoImageView(this, listItem_episode_image, Utility.getTmdbImagePath_ifNecessary(episode._getStillPath(), false ), Utility.getTmdbImagePath_ifNecessary(episode._getStillPath(), true ));
+                    } else
+                        listItem_episode_image.setVisibility(View.GONE);
+
 
                     Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
                     SpannableStringBuilder viewsText = helper.quickItalic("Keine Ansichten");
@@ -1462,6 +1521,9 @@ public class ShowActivity extends AppCompatActivity {
                         Database.saveAll();
                 })
                 .show();
+        Utility.traktApiRequest(this, String.format(Locale.getDefault(), "https://api.trakt.tv/search/tmdb/%d?type=episode", episode.getTmdbId()), JSONArray.class, jsonArray -> {
+            String BREAKPOINT = null;
+        });
     }
 
     private CustomDialog showResetDialog(List<Show.Episode> episodeList_all, Show show, Show.Season season, CustomDialog customDialog, CustomRecycler customRecycler, int type) {
@@ -1648,6 +1710,10 @@ public class ShowActivity extends AppCompatActivity {
                 CustomList uuidList = integerList.map((Function<Integer, Object>) idUuidMap::get).filter(Objects::nonNull, false);
                 show.setGenreIdList(uuidList);
                 apiDetailRequest(this, show.getTmdbId(), show, customDialog::reloadView, false);
+                Utility.getImdbIdFromTmdbId(this, show.getTmdbId(), "show", s -> {
+                    if (Utility.stringExists(s))
+                        show.setImdbId(s);
+                });
                 customDialog.reloadView();
             } catch (JSONException e) {
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -1836,6 +1902,11 @@ public class ShowActivity extends AppCompatActivity {
             int episodeNumber = episode_json.getInt("episode_number");
             Show.Episode episode = (Show.Episode) new Show.Episode(episode_json.getString("name")).setAirDate(Utility.getDateFromJsonString("air_date", episode_json))
                     .setEpisodeNumber(episodeNumber).setTmdbId(episode_json.getInt("id")).setShowId(show.getUuid()).setSeasonNumber(episode_json.getInt("season_number")).setUuid("E:" + episodeNumber);
+            if (episode_json.has("still_path")) {
+                String stillPath;
+                if (!(stillPath = episode_json.getString("still_path")).equals("null"))
+                    episode._setStillPath(stillPath);
+            }
             if (episodeMap != null)
                 episodeMap.put("E:" + episodeNumber, episode);
             return episode;

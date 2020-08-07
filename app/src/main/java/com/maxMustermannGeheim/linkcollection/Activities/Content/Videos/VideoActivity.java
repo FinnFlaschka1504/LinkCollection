@@ -796,10 +796,14 @@ public class VideoActivity extends AppCompatActivity {
                     else
                         view.findViewById(R.id.dialog_video_release_layout).setVisibility(View.GONE);
 
+                    if (video.getAgeRating() != -1)
+                        ((TextView) view.findViewById(R.id.dialog_video_ageRating)).setText(String.valueOf(video.getAgeRating()));
+
                     if (Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_SHOW_LENGTH)) {
                         int length = video.getLength();
                         int intHours = (int) (length / 60d);
-                        ((TextView) view.findViewById(R.id.dialog_video_length)).setText(length > 0 ? intHours + "h " + (length - intHours * 60) + "m" : "");
+                        int intMin = length - intHours * 60;
+                        ((TextView) view.findViewById(R.id.dialog_video_length)).setText(length > 0 ? (intHours > 0 ? intHours + "h " : "") + (intMin > 0 ? intMin + "m" : "") : "");
                     } else
                         view.findViewById(R.id.dialog_video_length_layout).setVisibility(View.GONE);
 
@@ -1237,6 +1241,8 @@ public class VideoActivity extends AppCompatActivity {
                                 newDialog.reloadView();
                                 if (!Utility.stringExists(oldVideo.getUrl()))
                                     ((EditText) newDialog.findViewById(R.id.dialog_editOrAddVideo_url)).setText(dialog_editOrAddVideo_Url_layout.getEditText().getText().toString());
+                                if (editVideo[0].getAgeRating() == -1)
+                                    ((EditText) newDialog.findViewById(R.id.dialog_editOrAddVideo_ageRating)).setText(((EditText) editDialog.findViewById(R.id.dialog_editOrAddVideo_ageRating)).getText());
                                 if (oldVideo.getLength() == 0)
                                     ((EditText) newDialog.findViewById(R.id.dialog_editOrAddVideo_length)).setText(((EditText) editDialog.findViewById(R.id.dialog_editOrAddVideo_length)).getText());
                                 if (Utility.boolOr(oldVideo.getRating(), 0f, -1f))
@@ -1315,6 +1321,10 @@ public class VideoActivity extends AppCompatActivity {
                         if (editVideo[0].getRelease() != null) {
                             ((LazyDatePicker) view.findViewById(R.id.dialog_editOrAddVideo_datePicker)).setDate(editVideo[0].getRelease());
                         }
+                        EditText dialog_editOrAddVideo_ageRating = view.findViewById(R.id.dialog_editOrAddVideo_ageRating);
+                        String ageRating = dialog_editOrAddVideo_ageRating.getText().toString().trim();
+                        if (editVideo[0].getAgeRating() != -1 && ageRating.isEmpty())
+                            dialog_editOrAddVideo_ageRating.setText(String.valueOf(editVideo[0].getAgeRating()));
                         EditText dialog_editOrAddVideo_length = view.findViewById(R.id.dialog_editOrAddVideo_length);
                         String length = dialog_editOrAddVideo_length.getText().toString().trim();
                         if (editVideo[0].getLength() > 0 && length.isEmpty())
@@ -1364,12 +1374,13 @@ public class VideoActivity extends AppCompatActivity {
                 .enableDoubleClickOutsideToDismiss(customDialog -> {
                     String title = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_Title)).getText().toString().trim();
                     String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_url)).getText().toString().trim();
+                    String ageRating = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_ageRating)).getText().toString().trim();
                     String length = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_length)).getText().toString().trim();
                     float rating = ((RatingBar) customDialog.findViewById(R.id.customRating_ratingBar)).getRating();
                     if (video == null)
-                        return !title.isEmpty() || !url.isEmpty() || !Utility.boolOr(rating, -1f, 0f) || !length.isEmpty() || !editVideo[0].getDarstellerList().isEmpty() || !editVideo[0].getStudioList().isEmpty() || !editVideo[0].getGenreList().isEmpty();
+                        return !title.isEmpty() || !url.isEmpty() || !Utility.boolOr(rating, -1f, 0f) || !ageRating.isEmpty() || !length.isEmpty() || !editVideo[0].getDarstellerList().isEmpty() || !editVideo[0].getStudioList().isEmpty() || !editVideo[0].getGenreList().isEmpty();
                     else
-                        return !title.equals(video.getName()) || !url.equals(video.getUrl()) || rating != video.getRating() || (length.isEmpty() ? 0 : Integer.parseInt(length)) != video.getLength() || !editVideo[0].equals(video);
+                        return !title.equals(video.getName()) || !url.equals(video.getUrl()) || rating != video.getRating() || (ageRating.isEmpty() ? -1 : Integer.parseInt(ageRating)) != video.getAgeRating() || (length.isEmpty() ? 0 : Integer.parseInt(length)) != video.getLength() || !editVideo[0].equals(video);
                 })
                 .enableDynamicWrapHeight(videos_search.getRootView())
                 .show();
@@ -1549,8 +1560,10 @@ public class VideoActivity extends AppCompatActivity {
             finalVideo.setUrl(url);
             finalVideo.setRating(((RatingBar) dialog.findViewById(R.id.customRating_ratingBar)).getRating());
             finalVideo.setRelease(((LazyDatePicker) dialog.findViewById(R.id.dialog_editOrAddVideo_datePicker)).getDate());
+            String ageRating = ((EditText) dialog.findViewById(R.id.dialog_editOrAddVideo_ageRating)).getText().toString().trim();
+            finalVideo.setAgeRating(ageRating.isEmpty() ? -1 : Integer.parseInt(ageRating));
             String length = ((EditText) dialog.findViewById(R.id.dialog_editOrAddVideo_length)).getText().toString().trim();
-            finalVideo.setLength(length.isEmpty() ? 0 : Integer.valueOf(length));
+            finalVideo.setLength(length.isEmpty() ? 0 : Integer.parseInt(length));
 
             boolean addedYesterday = false;
             boolean upcoming = false;
@@ -1625,8 +1638,9 @@ public class VideoActivity extends AppCompatActivity {
                 video.setGenreList(uuidList);
 
                 if (Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_LOAD_CAST_AND_STUDIOS)) {
-                    apiCastRequest(video.getTmdbId(), customDialog, video);
-                    apiStudioRequest(video.getTmdbId(), customDialog, video);
+                    apiDetailRequest(video.getTmdbId(), customDialog, video);
+//                    apiCastRequest(video.getTmdbId(), customDialog, video);
+//                    apiStudioRequest(video.getTmdbId(), customDialog, video);
                 } else
                     customDialog.reloadView();
             } catch (JSONException | ParseException ignored) {
@@ -1687,6 +1701,95 @@ public class VideoActivity extends AppCompatActivity {
             }
 
         }, error -> Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show());
+
+        requestQueue.add(jsonArrayRequest);
+
+    }
+
+    private void apiDetailRequest(int tmdbId, CustomDialog customDialog, Video video) {
+        String requestUrl = "https://api.themoviedb.org/3/movie/" +
+                tmdbId +
+                "?api_key=09e015a2106437cbc33bf79eb512b32d&language=de&append_to_response=credits%2Crelease_dates";
+
+        RequestQueue requestQueue = Volley.newRequestQueue(this);
+        CustomList<ParentClass_Tmdb> tempCastList = new CustomList<>();
+        CustomList<ParentClass_Tmdb> tempStudioList = new CustomList<>();
+
+        JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {
+            JSONArray results;
+            try {
+                if (response.has("runtime"))
+                    video.setLength(response.getInt("runtime"));
+                if (response.has("imdb_id"))
+                    video.setImdbId(response.getString("imdb_id"));
+
+            } catch (JSONException ignored) {}
+
+            try {
+                if (response.has("release_dates")) {
+                    JSONArray array = response.getJSONObject("release_dates").getJSONArray("results");
+                    for (int i = 0; i < array.length(); i++) {
+                        if (array.getJSONObject(i).getString("iso_3166_1").equals("DE"))
+                            video.setAgeRating(array.getJSONObject(i).getJSONArray("release_dates").getJSONObject(0).getInt("certification"));
+                    }
+                }
+            } catch (JSONException ignored) {}
+
+            try {
+                results = response.getJSONArray("production_companies");
+
+                if (results.length() != 0) {
+                    for (int i = 0; i < results.length(); i++) {
+                        JSONObject object = results.getJSONObject(i);
+                        String name = object.getString("name");
+
+                        Optional<Studio> optional = database.studioMap.values().stream().filter(studio -> studio.getName().equals(name)).findFirst();
+
+                        if (optional.isPresent()) {
+                            if (!video.getStudioList().contains(optional.get().getUuid()))
+                                video.getStudioList().add(optional.get().getUuid());
+                        } else {
+                            ParentClass_Tmdb studio = (ParentClass_Tmdb) new Studio(name).setTmdbId(object.getInt("id")).setImagePath(object.getString("logo_path"));
+                            if (studio.getImagePath().equals("null"))
+                                studio.setImagePath(null);
+
+                            tempStudioList.add(studio);
+                        }
+                    }
+
+                    video._setTempStudioList(tempStudioList);
+                }
+            } catch (JSONException ignored) {}
+
+            try {
+                results = response.getJSONObject("credits").getJSONArray("cast");
+
+                if (results.length() != 0) {
+                    for (int i = 0; i < results.length(); i++) {
+                        JSONObject object = results.getJSONObject(i);
+                        String name = object.getString("name");
+
+                        Optional<Darsteller> optional = database.darstellerMap.values().stream().filter(darsteller -> darsteller.getName().equals(name)).findFirst();
+
+                        if (optional.isPresent()) {
+                            if (!video.getDarstellerList().contains(optional.get().getUuid()))
+                                video.getDarstellerList().add(optional.get().getUuid());
+                        } else {
+                            ParentClass_Tmdb actor = (ParentClass_Tmdb) new Darsteller(name).setTmdbId(object.getInt("id")).setImagePath(object.getString("profile_path"));
+                            if (actor.getImagePath().equals("null"))
+                                actor.setImagePath(null);
+
+                            tempCastList.add(actor);
+                        }
+                    }
+
+                    video._setTempCastList(tempCastList);
+                }
+            } catch (JSONException ignored) {}
+
+            customDialog.reloadView();
+        }, error -> {
+        });
 
         requestQueue.add(jsonArrayRequest);
 
@@ -2153,7 +2256,7 @@ public class VideoActivity extends AppCompatActivity {
                 customDialog.dismiss();
             else {
                 CustomDialog.Builder(this)
-                        .setTitle(String.format(Locale.getDefault(),"Markierte %s (%d)", plural, markedVideos.size()))
+                        .setTitle(String.format(Locale.getDefault(), "Markierte %s (%d)", plural, markedVideos.size()))
                         .setView(new com.finn.androidUtilities.CustomRecycler<Video>(this, customDialog.findViewById(R.id.dialogDetail_collection_videos))
                                 .setItemLayout(R.layout.list_item_collection_video)
                                 .setGetActiveObjectList(customRecycler -> markedVideos)
@@ -2215,15 +2318,15 @@ public class VideoActivity extends AppCompatActivity {
                 .addButton(R.drawable.ic_bookmark_empty, customDialog -> {
                     customDialog.getButton(unmarkButtonId).setVisibility(View.VISIBLE);
                     customDialog.getButton(markButtonId).setVisibility(View.GONE);
-                    Toast.makeText(this, "Markierung hinzugefügt", Toast.LENGTH_SHORT).show();
                     if (!markedVideos.contains(randomVideo))
                         markedVideos.add(randomVideo);
+                    Toast.makeText(this, String.format(Locale.getDefault(), "Markierung hinzugefügt (%d)", markedVideos.size()), Toast.LENGTH_SHORT).show();
                 }, markButtonId, false)
                 .addButton(R.drawable.ic_bookmark_filled, customDialog -> {
                     customDialog.getButton(unmarkButtonId).setVisibility(View.GONE);
                     customDialog.getButton(markButtonId).setVisibility(View.VISIBLE);
-                    Toast.makeText(this, "Markierung entfernt", Toast.LENGTH_SHORT).show();
                     markedVideos.remove(randomVideo);
+                    Toast.makeText(this, String.format(Locale.getDefault(), "Markierung entfernt (%d)", markedVideos.size()), Toast.LENGTH_SHORT).show();
                 }, unmarkButtonId, false)
                 .alignPreviousButtonsLeft()
                 .addButton("Zurück", customDialog -> {

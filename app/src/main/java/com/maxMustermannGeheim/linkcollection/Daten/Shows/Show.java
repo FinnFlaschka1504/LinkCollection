@@ -332,6 +332,7 @@ public class Show extends ParentClass{
         private int episodeNumber;
         private boolean watched;
 //        private Float rating = -1f;
+        private String stillPath;
         private List<Date> dateList = new ArrayList<>();
         private String showId;
         private int seasonNumber;
@@ -387,14 +388,14 @@ public class Show extends ParentClass{
             return this;
         }
 
-//        public Float getRating() {
-//            return rating;
-//        }
-//
-//        public Episode setRating(Float rating) {
-//            this.rating = rating;
-//            return this;
-//        }
+        public String _getStillPath() { // ToDo: evl. zu Encryption hinzufügen
+            return stillPath;
+        }
+
+        public Episode _setStillPath(String stillPath) {
+            this.stillPath = stillPath;
+            return this;
+        }
 
         public List<Date> getDateList() {
             return dateList;

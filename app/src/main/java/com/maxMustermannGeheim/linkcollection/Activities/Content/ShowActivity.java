@@ -993,6 +993,23 @@ public class ShowActivity extends AppCompatActivity {
                             Toast.makeText(this, "Fertig", Toast.LENGTH_SHORT).show();
                         }, true);
                     });
+                    view.findViewById(R.id.dialog_detailShow_sync).setOnLongClickListener(v -> {
+                        Utility.GenericInterface<Boolean> updateEpisodes = all -> {
+                            com.finn.androidUtilities.CustomList<Show.Episode> episodes = new com.finn.androidUtilities.CustomList<>(Utility.concatenateCollections(show.getSeasonList(), season -> season.getEpisodeMap().values()));
+                            if (!all)
+                                episodes.filter(episode -> !Utility.stringExists(episode.getAgeRating()) || episode.getLength() == -1, true);
+
+                            getDetailsFromImdb(episodes, true);
+                        };
+                        CustomDialog.Builder(this)
+                                .setTitle("EpisodenDetails Aktualisieren")
+                                .addButton("Alle", customDialog1 -> updateEpisodes.runGenericInterface(true))
+                                .addButton("Wo Nötig", customDialog1 -> updateEpisodes.runGenericInterface(false))
+                                .markLastAddedButtonAsActionButton()
+                                .enableExpandButtons()
+                                .show();
+                        return true;
+                    });
 
                     if (show.getImagePath() != null && !show.getImagePath().isEmpty()) {
                         ImageView dialog_show_poster = view.findViewById(R.id.dialog_detailShow_poster);
@@ -1676,7 +1693,7 @@ public class ShowActivity extends AppCompatActivity {
     //  <--------------- Season & Episode ---------------
 
 
-    //  --------------- TMDb Api --------------->
+    //  --------------- Api --------------->
     private void apiSearchRequest(String queue, CustomDialog customDialog, Show show) {
         if (!Utility.isOnline(this))
             return;
@@ -1915,7 +1932,52 @@ public class ShowActivity extends AppCompatActivity {
         }
         return null;
     }
-    //  <--------------- TMDb Api ---------------
+
+    // --------------- imdb
+
+    private void getDetailsFromImdb(com.finn.androidUtilities.CustomList<Show.Episode> episodeList, boolean showDialog) {
+        if (episodeList.isEmpty())
+            return;
+        episodeList.sort((e1, e2) -> {
+            int compare;
+            if ((compare = Integer.compare(e1.getSeasonNumber(), e2.getSeasonNumber())) != 0)
+                return compare;
+            if ((compare = Integer.compare(e1.getEpisodeNumber(), e2.getEpisodeNumber())) != 0)
+                return compare;
+            return 0;
+        });
+        String[] urls = episodeList.map(episode -> "https://www.imdb.com/title/" + episode.getImdbId()).toArray(new String[0]);
+        final int[] counter = {0};
+        new Helpers.WebViewHelper(this, urls)
+                .addRequest("document.getElementsByClassName(\"subtext\")[0].innerText", s -> {
+                    if (showDialog) {
+                        CustomDialog.Builder(this)
+                                .setTitle(s)
+                                .show();
+                    }
+                    for (String sub : s.split(" \\| ")) {
+                        if (sub.matches("^\\d{1,2}$")) {
+                            episodeList.get(counter[0]).setAgeRating(sub);
+                        } else if (sub.matches("(\\d+h )?\\d{1,2}min")) {
+                            int length = 0;
+                            Matcher hourMatcher = Pattern.compile("\\d+(?=h \\d{1,2}min)").matcher(sub);
+                            if (hourMatcher.find())
+                                length += Integer.parseInt(hourMatcher.group(0)) * 60;
+                            Matcher minuteMatcher = Pattern.compile("\\d{1,2}(?=min)").matcher(sub);
+                            if (minuteMatcher.find())
+                                length += Integer.parseInt(minuteMatcher.group(0));
+                            episodeList.get(counter[0]).setLength(length);
+                        }
+
+                    }
+                    counter[0]++;
+                })
+                .setDebug(showDialog)
+                .setOnAllComplete(Database::saveAll)
+                .go();
+
+    }
+    //  <--------------- Api ---------------
 
 
     private void removeFocusFromSearch() {

@@ -468,6 +468,7 @@ public class Utility {
             try {
                 onResult.runGenericInterface(response.getJSONObject(0).getJSONObject(type).getJSONObject("ids").getString("imdb"));
             } catch (JSONException ignored) {
+                onResult.runGenericInterface(null);
             }
 
         }, error -> Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show()) {
@@ -1815,7 +1816,7 @@ public class Utility {
 
                     for (int i = 1; i < 20; i++) {
                         float rating = i / 4f;
-                        pieEntryList.add(new PieEntry(Utility.returnIfNull(map.get(rating), new ArrayList<ParentClass_Ratable>()).size(),  Utility.removeTrailingZeros(i / 4d) + " ☆"));
+                        pieEntryList.add(new PieEntry(Utility.returnIfNull(map.get(rating), new ArrayList<ParentClass_Ratable>()).size(), Utility.removeTrailingZeros(i / 4d) + " ☆"));
                     }
 
                     PieDataSet dataSet = new PieDataSet(pieEntryList, "Filme Verteilung");
@@ -1931,7 +1932,7 @@ public class Utility {
         void runApplyToAll(T t);
     }
 
-    public static <S extends View, T extends View> void replaceView(S oldView, T newView, @Nullable TransferState<S,T> transferState){
+    public static <S extends View, T extends View> void replaceView(S oldView, T newView, @Nullable TransferState<S, T> transferState) {
         ViewGroup parent = (ViewGroup) oldView.getParent();
         int index = parent.indexOfChild(oldView);
         parent.removeView(oldView);
@@ -2122,7 +2123,7 @@ public class Utility {
         }
     }
 
-    public static <T> T returnIfNull(T object, T returnIfNull){
+    public static <T> T returnIfNull(T object, T returnIfNull) {
         return object != null ? object : returnIfNull;
     }
     //  <------------------------- ifNotNull -------------------------
@@ -2334,6 +2335,14 @@ public class Utility {
 
     public interface GenericReturnOnlyInterface<T> {
         T runGenericInterface();
+    }
+
+    public static <T> boolean runGenericInterface(GenericInterface<T> genericInterface, T parameter) {
+        if (genericInterface != null) {
+            genericInterface.runGenericInterface(parameter);
+            return true;
+        }
+        return false;
     }
     //  <------------------------- Interfaces -------------------------
 
@@ -2567,10 +2576,11 @@ public class Utility {
     //  <------------------------- GetOpenGraphFromWebsite -------------------------
 
     //  ------------------------- Videos Aktuallisieren ------------------------->
-    public static void updateVideos(Context context, CustomList<Video> updateList, boolean updateCast) {
+    public static void updateVideos(Context context, CustomList<Video> updateList) {
         Database database = Database.getInstance();
         RequestQueue requestQueue = Volley.newRequestQueue(context);
-        updateList.sort((o1, o2) -> o1.getName().compareTo(o2.getName())); // ToDo: updaten
+        updateList.sort((o1, o2) -> o1.getName().compareTo(o2.getName()));
+//        updateList.filter(video -> video.getAgeRating() == -1, true);
         List<Video> failedList = new ArrayList<>();
         int allCount = updateList.size();
         if (allCount == 0) {
@@ -2581,6 +2591,7 @@ public class Utility {
         final int[] finishedCount = {0};
         int closeButtonId = View.generateViewId();
         final boolean[] doubleClick = {true};
+
         Runnable[] loadDetails = {null};
         CustomDialog progressDialog = CustomDialog.Builder(context)
                 .setTitle("Fortschritt")
@@ -2615,9 +2626,36 @@ public class Utility {
                 isFinished.run();
                 return;
             }
-            String requestUrl = "https://api.themoviedb.org/3/movie/" + tmdbId + "?api_key=09e015a2106437cbc33bf79eb512b32d&language=de";
+            String requestUrl = "https://api.themoviedb.org/3/movie/" + tmdbId + "?api_key=09e015a2106437cbc33bf79eb512b32d&language=de&append_to_response=credits%2Crelease_dates";
 
             JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {
+                boolean isFailed = false;
+                try {
+                    if (response.has("runtime"))
+                        currentVideo[0].setLength(response.getInt("runtime"));
+                    if (response.has("imdb_id"))
+                        currentVideo[0].setImdbId(response.getString("imdb_id"));
+                } catch (JSONException ignored) { isFailed = true;
+                }
+
+                try {
+                    if (response.has("release_dates")) {
+                        JSONArray array = response.getJSONObject("release_dates").getJSONArray("results");
+                        for (int i = 0; i < array.length(); i++) {
+                            if (array.getJSONObject(i).getString("iso_3166_1").equals("DE")) {
+                                JSONArray releaseDates = array.getJSONObject(i).getJSONArray("release_dates");
+                                for (int i1 = 0; i1 < releaseDates.length(); i1++) {
+                                    if (Utility.stringExists(releaseDates.getJSONObject(i1).get("certification").toString()))
+                                        currentVideo[0].setAgeRating(releaseDates.getJSONObject(i1).getInt("certification"));
+                                }
+                                break;
+                            }
+                        }
+                    }
+                } catch (JSONException ignored) {
+                    isFailed = true;
+                }
+
                 try {
                     if (response.has("production_companies")) {
                         JSONArray companies = response.getJSONArray("production_companies");
@@ -2643,6 +2681,11 @@ public class Utility {
                         currentVideo[0]._setTempStudioList(tempStudioList);
                     }
 
+                } catch (JSONException ignored) {
+                    isFailed = true;
+                }
+
+                try {
                     if (response.has("runtime"))
                         currentVideo[0].setLength(response.getInt("runtime"));
                     if (response.has("imdb_id"))
@@ -2664,55 +2707,92 @@ public class Utility {
                         currentVideo[0].getGenreList().addAll(uuidList);
                     }
                 } catch (Exception e) {
-                    failedList.add(currentVideo[0]);
+                    isFailed = true;
                 }
-                if (updateCast) {
-                    String castRequestUrl = "https://api.themoviedb.org/3/movie/" +
-                            tmdbId +
-                            "/credits?api_key=09e015a2106437cbc33bf79eb512b32d";
 
+                try {
+                    JSONArray actors = response.getJSONObject("credits").getJSONArray("cast");
                     CustomList<ParentClass_Tmdb> tempCastList = new CustomList<>();
 
-                    JsonObjectRequest castJsonArrayRequest = new JsonObjectRequest(Request.Method.GET, castRequestUrl, null, castRresponse -> {
-                        JSONArray results;
-                        try {
-                            results = castRresponse.getJSONArray("cast");
+                    if (actors.length() != 0) {
+                        for (int i = 0; i < actors.length(); i++) {
+                            JSONObject object = actors.getJSONObject(i);
+                            String name = object.getString("name");
 
-                            if (results.length() == 0) {
-                                return;
+                            Optional<Darsteller> optional = database.darstellerMap.values().stream().filter(darsteller -> darsteller.getName().equals(name)).findFirst();
+
+                            if (optional.isPresent()) {
+                                if (!currentVideo[0].getDarstellerList().contains(optional.get().getUuid()))
+                                    currentVideo[0].getDarstellerList().add(optional.get().getUuid());
+                            } else {
+                                ParentClass_Tmdb actor = (ParentClass_Tmdb) new Darsteller(name).setTmdbId(object.getInt("id")).setImagePath(object.getString("profile_path"));
+                                if (actor.getImagePath().equals("null"))
+                                    actor.setImagePath(null);
+
+                                tempCastList.add(actor);
                             }
-                            for (int i = 0; i < results.length(); i++) {
-                                JSONObject object = results.getJSONObject(i);
-                                String name = object.getString("name");
-
-                                Optional<Darsteller> optional = database.darstellerMap.values().stream().filter(darsteller -> darsteller.getName().equals(name)).findFirst();
-
-                                if (optional.isPresent()) {
-                                    if (!currentVideo[0].getDarstellerList().contains(optional.get().getUuid()))
-                                        currentVideo[0].getDarstellerList().add(optional.get().getUuid());
-                                } else {
-                                    ParentClass_Tmdb actor = (ParentClass_Tmdb) new Darsteller(name).setTmdbId(object.getInt("id")).setImagePath(object.getString("profile_path"));
-                                    if (actor.getImagePath().equals("null"))
-                                        actor.setImagePath(null);
-
-                                    tempCastList.add(actor);
-                                }
-                            }
-
-                            currentVideo[0]._setTempCastList(tempCastList);
-                        } catch (JSONException ignored) {
                         }
 
-//                        new Handler().postDelayed(isFinished, 1000);
-                        isFinished.run();
+                        currentVideo[0]._setTempCastList(tempCastList);
+                    }
+                } catch (JSONException ignored) {
+                    isFailed = true;
+                }
 
-                    }, error -> isFinished.run());
+//                if (updateCast) {
+//                    String castRequestUrl = "https://api.themoviedb.org/3/movie/" +
+//                            tmdbId +
+//                            "/credits?api_key=09e015a2106437cbc33bf79eb512b32d";
+//
+//                    CustomList<ParentClass_Tmdb> tempCastList = new CustomList<>();
+//
+//                    JsonObjectRequest castJsonArrayRequest = new JsonObjectRequest(Request.Method.GET, castRequestUrl, null, castRresponse -> {
+//                        JSONArray results;
+//                        try {
+//                            results = castRresponse.getJSONArray("cast");
+//
+//                            if (results.length() == 0) {
+//                                return;
+//                            }
+//                            for (int i = 0; i < results.length(); i++) {
+//                                JSONObject object = results.getJSONObject(i);
+//                                String name = object.getString("name");
+//
+//                                Optional<Darsteller> optional = database.darstellerMap.values().stream().filter(darsteller -> darsteller.getName().equals(name)).findFirst();
+//
+//                                if (optional.isPresent()) {
+//                                    if (!currentVideo[0].getDarstellerList().contains(optional.get().getUuid()))
+//                                        currentVideo[0].getDarstellerList().add(optional.get().getUuid());
+//                                } else {
+//                                    ParentClass_Tmdb actor = (ParentClass_Tmdb) new Darsteller(name).setTmdbId(object.getInt("id")).setImagePath(object.getString("profile_path"));
+//                                    if (actor.getImagePath().equals("null"))
+//                                        actor.setImagePath(null);
+//
+//                                    tempCastList.add(actor);
+//                                }
+//                            }
+//
+//                            currentVideo[0]._setTempCastList(tempCastList);
+//                        } catch (JSONException ignored) {
+//                        }
+//
+////                        new Handler().postDelayed(isFinished, 1000);
+//                        isFinished.run();
+//
+//                    }, error -> isFinished.run());
+//
+//                    requestQueue.add(castJsonArrayRequest);
+//
+//                } else
+////                    new Handler().postDelayed(isFinished, 1000);
 
-                    requestQueue.add(castJsonArrayRequest);
 
-                } else
-//                    new Handler().postDelayed(isFinished, 1000);
-                    isFinished.run();
+                if (isFailed)
+                    failedList.add(currentVideo[0]);
+
+                isFinished.run();
+
+
             }, error -> {
                 failedList.add(currentVideo[0]);
                 isFinished.run();
@@ -2729,7 +2809,7 @@ public class Utility {
 
 
     //  ------------------------- ExpendableToolbar ------------------------->
-    public static Runnable applyExpendableToolbar_recycler(Context context, RecyclerView recycler, Toolbar toolbar, AppBarLayout appBarLayout, CollapsingToolbarLayout collapsingToolbarLayout, TextView noItem, String title){
+    public static Runnable applyExpendableToolbar_recycler(Context context, RecyclerView recycler, Toolbar toolbar, AppBarLayout appBarLayout, CollapsingToolbarLayout collapsingToolbarLayout, TextView noItem, String title) {
         final boolean[] canExpand = {true};
         int tolerance = 50;
         recycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -2765,11 +2845,12 @@ public class Utility {
         return generateApplyToolBarTitle(context, toolbar, appBarLayout, collapsingToolbarLayout, noItem, title);
     }
 
-    public static void applyExpendableToolbar_scrollView(Context context, NestedScrollView scrollView, AppBarLayout appBarLayout){
+    public static void applyExpendableToolbar_scrollView(Context context, NestedScrollView scrollView, AppBarLayout appBarLayout) {
         final boolean[] canExpand = {true};
         final boolean[] touched = {false};
         final boolean[] scrolled = {false};
-        Runnable[] check = {() -> {}};
+        Runnable[] check = {() -> {
+        }};
         NestedScrollView newScrollView = new NestedScrollView(context) {
             @Override
             public boolean dispatchTouchEvent(MotionEvent ev) {

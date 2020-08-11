@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 import android.graphics.drawable.Icon;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -13,6 +14,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
+import android.webkit.WebSettings;
 import android.widget.FrameLayout;
 import android.widget.ScrollView;
 import android.widget.Toast;
@@ -21,6 +23,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.RecyclerView;
@@ -130,14 +133,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //        List<String> imageUrlsFromHtml = Utility.getImageUrlsFromText(WebisteHtml.websiteHtml);
         String BREAKPOINT = null;
 
-//        new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper(this, "https://www.imdb.com/title/tt2178782")
-//                .addRequest("document.getElementsByClassName(\"subtext\")[0].innerText", s -> {
-//                    CustomDialog.Builder(this)
-//                            .setTitle(s)
-//                            .show();
-//                })
-//                .setDebug(true)
-//                .go();
+
 
 //        Test test = Test.create();
 //        Test test2 = Test.create();
@@ -759,6 +755,16 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         switch (id) {
+            case R.id.browser:
+//                String url = "https://www.imdb.com/title/tt8135530/";
+//                CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
+//                builder.setToolbarColor(getColor(R.color.colorPrimary));
+//                builder.addDefaultShareMenuItem();
+//
+//                CustomTabsIntent customTabsIntent = builder.build();
+//                customTabsIntent.launchUrl(this, Uri.parse(url));
+
+                break;
             case R.id.taskBar_main_settings:
                 startActivityForResult(new Intent(this, Settings.class), START_SETTINGS);
                 break;

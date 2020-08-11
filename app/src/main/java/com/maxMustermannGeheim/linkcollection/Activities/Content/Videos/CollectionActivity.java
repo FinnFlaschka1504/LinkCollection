@@ -647,7 +647,7 @@ public class CollectionActivity extends AppCompatActivity {
                                                                     }, closeButtonId)
                                                                     .hideLastAddedButton()
                                                                     .addButton("Details Laden", customDialog3 -> {
-                                                                        Utility.updateVideos(this, importedFilms, true);
+                                                                        Utility.updateVideos(this, importedFilms);
                                                                     })
                                                                     .markLastAddedButtonAsActionButton()
                                                                     .hideLastAddedButton()

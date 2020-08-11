@@ -95,6 +95,7 @@ public class Settings extends AppCompatActivity {
     public static final String SETTING_SHOW_ASK_FOR_GENRE_IMPORT = "SETTING_SHOW_ASK_FOR_GENRE_IMPORT";
 
     public static final String SETTING_VIDEO_SHOW_RELEASE = "SETTING_VIDEO_SHOW_RELEASE";
+    public static final String SETTING_VIDEO_SHOW_AGE_RATING = "SETTING_VIDEO_SHOW_AGE_RATING";
     public static final String SETTING_VIDEO_SHOW_LENGTH = "SETTING_VIDEO_SHOW_LENGTH";
     public static final String SETTING_VIDEO_AUTO_SEARCH = "SETTING_VIDEO_AUTO_SEARCH";
     public static final String SETTING_VIDEO_LOAD_CAST_AND_STUDIOS = "SETTING_VIDEO_LOAD_CAST_AND_STUDIOS";
@@ -154,6 +155,7 @@ public class Settings extends AppCompatActivity {
 //            return;
 
         settingsMap.put(SETTING_VIDEO_SHOW_RELEASE, "true");
+        settingsMap.put(SETTING_VIDEO_SHOW_AGE_RATING, "true");
         settingsMap.put(SETTING_VIDEO_SHOW_LENGTH, "true");
         settingsMap.put(SETTING_VIDEO_AUTO_SEARCH, "true");
         settingsMap.put(SETTING_VIDEO_TMDB_SHORTCUT, "true");
@@ -226,6 +228,7 @@ public class Settings extends AppCompatActivity {
                     Context settingsContext = customDialog.getDialog().getContext();
 
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showRelease)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_RELEASE));
+                    ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showAgeRating)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_AGE_RATING));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showLength)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_LENGTH));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_autoSearch)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_AUTO_SEARCH));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_tmdbShortcut)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_TMDB_SHORTCUT));
@@ -294,7 +297,7 @@ public class Settings extends AppCompatActivity {
                                 .setText("Möchtest du wirklich alle Videos aktualisieren? Das kann einige Zeit dauern")
                                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
                                 .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON,customDialog1 -> {
-                                        Utility.updateVideos(settingsContext, new CustomList<>(database.videoMap.values()), true);
+                                        Utility.updateVideos(settingsContext, new CustomList<>(database.videoMap.values()));
                                 })
                                 .show();
                     });
@@ -302,6 +305,7 @@ public class Settings extends AppCompatActivity {
                     @Override
                     public void runOnClick(CustomDialog customDialog, Space space) {
                         changeSetting(SETTING_VIDEO_SHOW_RELEASE, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_showRelease)).isChecked()));
+                        changeSetting(SETTING_VIDEO_SHOW_AGE_RATING, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_showAgeRating)).isChecked()));
                         changeSetting(SETTING_VIDEO_SHOW_LENGTH, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_showLength)).isChecked()));
                         changeSetting(SETTING_VIDEO_AUTO_SEARCH, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_autoSearch)).isChecked()));
                         changeSetting(SETTING_VIDEO_TMDB_SHORTCUT, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_tmdbShortcut)).isChecked()));
@@ -342,6 +346,52 @@ public class Settings extends AppCompatActivity {
                 .setAssociatedClasses(Show.class, ShowGenre.class)
                 .setSettingsDialog(new Utility.Triple<>(R.layout.dialog_settings_show, (customDialog, view, space) -> {
                     ((Spinner) view.findViewById(R.id.dialogSettingsShow_episodes_preview)).setSelection(Integer.parseInt(getSingleSetting(context, SETTING_SHOW_EPISODE_PREVIEW)));
+                    view.findViewById(R.id.dialogSettingsShow_episodes_update).setOnClickListener(v -> {
+                        com.finn.androidUtilities.CustomList<Show.Episode> episodes = new com.finn.androidUtilities.CustomList<>(Utility.concatenateCollections(Utility.concatenateCollections(database.showMap.values(), Show::getSeasonList), season -> season.getEpisodeMap().values())).filter(episode -> !Utility.stringExists(episode.getImdbId()), false);
+
+                        int length = episodes.size();
+                        final int[] doneCount = {0};
+
+                        final Show.Episode[] currentEpisode = {episodes.getFirst()};
+                        final Runnable[] loadDetails = {null};
+
+                        CustomDialog statusDialog = CustomDialog.Builder(view.getContext())
+                                .setTitle("Status")
+                                .setText("Fortschritt: 0/" + length)
+                                .addButton("Fertig")
+                                .markLastAddedButtonAsActionButton()
+                                .hideLastAddedButton()
+                                .addOnDialogDismiss(customDialog1 -> {
+                                    loadDetails[0] = () -> {
+                                    };
+                                })
+                                .show();
+
+                        Runnable updateStatus = () -> {
+                            statusDialog.setText("Fortschritt: " + doneCount[0] + "/" + length);
+
+                            if (doneCount[0] < length) {
+                                currentEpisode[0] = episodes.next(currentEpisode[0], false);
+                                loadDetails[0].run();
+                            }
+                            else {
+                                Database.saveAll();
+                                Toast.makeText(context, "Aktualisierung abgeschlossen", Toast.LENGTH_SHORT).show();
+                                statusDialog.getActionButton().setVisibility(View.VISIBLE);
+                            }
+                        };
+
+                        loadDetails[0] = () -> {
+                            Utility.getImdbIdFromTmdbId(context, currentEpisode[0].getTmdbId(), "episode", s -> {
+                                currentEpisode[0].setImdbId(s);
+                                doneCount[0]++;
+                                updateStatus.run();
+                            });
+                        };
+
+                        loadDetails[0].run();
+
+                    });
                     view.findViewById(R.id.dialogSettingsShow_edit_importGenres).setOnClickListener(v -> {
                         Utility.importTmdbGenre(context, false);
                         context.setResult(RESULT_OK);

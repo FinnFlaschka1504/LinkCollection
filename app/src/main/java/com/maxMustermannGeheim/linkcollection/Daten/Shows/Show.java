@@ -336,6 +336,9 @@ public class Show extends ParentClass{
         private List<Date> dateList = new ArrayList<>();
         private String showId;
         private int seasonNumber;
+        private String imdbId;
+        private int length = -1;
+        private String ageRating;
 
         public Episode(String name) {
             uuid = "episode_" + UUID.randomUUID().toString();
@@ -458,6 +461,33 @@ public class Show extends ParentClass{
                 dateList.remove(count);
                 return true;
             });
+        }
+
+        public String getImdbId() {
+            return imdbId;
+        }
+
+        public Episode setImdbId(String imdbId) {
+            this.imdbId = imdbId;
+            return this;
+        }
+
+        public int getLength() {
+            return length;
+        }
+
+        public Episode setLength(int length) {
+            this.length = length;
+            return this;
+        }
+
+        public String getAgeRating() {
+            return ageRating;
+        }
+
+        public Episode setAgeRating(String ageRating) {
+            this.ageRating = ageRating;
+            return this;
         }
 
         public Episode createRaw() {

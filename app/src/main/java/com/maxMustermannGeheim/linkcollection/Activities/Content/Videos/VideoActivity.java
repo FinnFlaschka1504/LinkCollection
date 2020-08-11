@@ -1352,6 +1352,8 @@ public class VideoActivity extends AppCompatActivity {
 
                     if (!Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_SHOW_RELEASE))
                         view.findViewById(R.id.dialog_editOrAddVideo_datePicker_layout).setVisibility(View.GONE);
+                    if (!Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_SHOW_AGE_RATING))
+                        view.findViewById(R.id.dialog_editOrAddVideo_ageRating_layout).setVisibility(View.GONE);
                     if (!Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_SHOW_LENGTH))
                         view.findViewById(R.id.dialog_editOrAddVideo_length_layout).setVisibility(View.GONE);
 
@@ -1722,15 +1724,20 @@ public class VideoActivity extends AppCompatActivity {
                     video.setLength(response.getInt("runtime"));
                 if (response.has("imdb_id"))
                     video.setImdbId(response.getString("imdb_id"));
-
             } catch (JSONException ignored) {}
 
             try {
                 if (response.has("release_dates")) {
                     JSONArray array = response.getJSONObject("release_dates").getJSONArray("results");
                     for (int i = 0; i < array.length(); i++) {
-                        if (array.getJSONObject(i).getString("iso_3166_1").equals("DE"))
-                            video.setAgeRating(array.getJSONObject(i).getJSONArray("release_dates").getJSONObject(0).getInt("certification"));
+                        if (array.getJSONObject(i).getString("iso_3166_1").equals("DE")) {
+                            JSONArray releaseDates = array.getJSONObject(i).getJSONArray("release_dates");
+                            for (int i1 = 0; i1 < releaseDates.length(); i1++) {
+                                if (Utility.stringExists(releaseDates.getJSONObject(i1).get("certification").toString()))
+                                    video.setAgeRating(releaseDates.getJSONObject(i1).getInt("certification"));
+                            }
+                            break;
+                        }
                     }
                 }
             } catch (JSONException ignored) {}

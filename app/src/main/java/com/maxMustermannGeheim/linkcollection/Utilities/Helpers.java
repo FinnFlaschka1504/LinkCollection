@@ -1052,29 +1052,34 @@ public class Helpers {
         private com.finn.androidUtilities.CustomDialog customDialog;
         private Context context;
         private boolean mobileVersion;
-        private String url;
+        private String[] urls;
         private int openJs;
         private boolean dialogCanceled;
         private List<Pair<String, Utility.GenericInterface<String>>> requestList = new ArrayList<>();
         private ExecuteBeforeJavaScript executeBeforeJavaScript;
         private boolean alreadyLoaded;
+        private Utility.GenericInterface<WebSettings> setSettings;
+        private boolean showToasts = true;
+        private int urlsIndex;
+        private Runnable onAllComplete;
 
         //  ------------------------- Constructor ------------------------->
-        public WebViewHelper(Context context, String url) {
+        public WebViewHelper(Context context, String... urls) {
             this.context = context;
-            this.url = url;
+            this.urls = urls;
         }
 
-        public WebViewHelper(Context context, String url, WebView webView) {
+        public WebViewHelper(Context context, WebView webView, String... urls) {
             this.webView = webView;
             this.context = context;
-            this.url = url;
+            this.urls = urls;
         }
         //  <------------------------- Constructor -------------------------
 
 
         private void buildWebView() {
-            Toast.makeText(context, "Einen Moment bitte..", Toast.LENGTH_SHORT).show();
+            if (showToasts)
+                Toast.makeText(context, "Einen Moment bitte..", Toast.LENGTH_SHORT).show();
 
             webView = new WebView(context);
             if (!debug)
@@ -1089,6 +1094,13 @@ public class Helpers {
             settings.setSupportZoom(true);
             settings.setBuiltInZoomControls(true);
             settings.setDisplayZoomControls(false);
+            settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
+            settings.setLoadWithOverviewMode(true);
+            settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
+            settings.setDomStorageEnabled(true);
+
+
+            Utility.runGenericInterface(setSettings, settings);
 
             webView.setWebViewClient(new WebViewClient() {
                 @Override
@@ -1103,14 +1115,21 @@ public class Helpers {
                     super.onPageFinished(view, url);
                 }
             });
-            webView.loadUrl(url);
+
+            loadNextPage();
 
             if (debug || loadInvisibleDialog)
                 buildDialog();
         }
 
+        private void loadNextPage() {
+            openJs = requestList.size();
+            alreadyLoaded = false;
+            webView.loadUrl(urls[urlsIndex]);
+            urlsIndex++;
+        }
+
         public WebViewHelper addRequest(String javaScript, Utility.GenericInterface<String> onParseResult) {
-            openJs++;
             requestList.add(Pair.create(javaScript, onParseResult));
             return this;
         }
@@ -1141,12 +1160,20 @@ public class Helpers {
                     new Handler().postDelayed(() -> evaluateJavaScript(rawScript, onParseResult, tryCount + 1), 100);
                 } else {
                     onParseResult.runGenericInterface(t + (tryCount < 50 ? "" : " (" + tryCount + ")"));
-                    if (openJs <= 1 && !debug && destroyOnSuccess) {
+                    if (openJs <= 1) {
                         openJs--;
-                        webView.destroy();
-                        if (customDialog != null) {
-                            customDialog.dismiss();
-                            customDialog = null;
+                        if (urlsIndex < urls.length) {
+                            loadNextPage();
+                        } else {
+                            if (onAllComplete != null)
+                                onAllComplete.run();
+                            if (!debug && destroyOnSuccess) {
+                                webView.destroy();
+                                if (customDialog != null) {
+                                    customDialog.dismiss();
+                                    customDialog = null;
+                                }
+                            }
                         }
                     } else
                         openJs--;
@@ -1297,12 +1324,12 @@ public class Helpers {
             return this;
         }
 
-        public String getUrl() {
-            return url;
+        public String[] getUrls() {
+            return urls;
         }
 
-        public WebViewHelper setUrl(String url) {
-            this.url = url;
+        public WebViewHelper setUrls(String... urls) {
+            this.urls = urls;
             return this;
         }
 
@@ -1310,6 +1337,21 @@ public class Helpers {
             this.executeBeforeJavaScript = executeBeforeJavaScript;
             return this;
         }
+
+        public WebViewHelper setSetSettings(Utility.GenericInterface<WebSettings> setSettings) {
+            this.setSettings = setSettings;
+            return this;
+        }
+
+        public Runnable getOnAllComplete() {
+            return onAllComplete;
+        }
+
+        public WebViewHelper setOnAllComplete(Runnable onAllComplete) {
+            this.onAllComplete = onAllComplete;
+            return this;
+        }
+
         //  <------------------------- Getter & Setter -------------------------
 
 

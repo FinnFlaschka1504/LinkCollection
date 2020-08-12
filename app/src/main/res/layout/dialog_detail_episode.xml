@@ -71,6 +71,67 @@
                         android:singleLine="true"
                         tools:text="5" />
                 </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/dialog_video_ageRating_layout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="5"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginRight="8dp"
+                            android:text="FSK:"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/dialog_detailEpisode_ageRating"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginRight="8dp"
+                            android:layout_weight="1"
+                            tools:text="18" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/dialog_video_length_layout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="4"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginRight="8dp"
+                            android:text="Länge:"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/dialog_detailEpisode_length"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            tools:text="1h 27m" />
+
+                    </LinearLayout>
+
+                    <ImageView
+                        android:id="@+id/dialog_detailEpisode_sync"
+                        style="@style/ImageButtonStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:srcCompat="@drawable/ic_sync" />
+
+                </LinearLayout>
             </LinearLayout>
             <ImageView
                 android:id="@+id/dialog_detailEpisode_preview"

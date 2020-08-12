@@ -1,8 +1,13 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Shows;
 
+import android.content.Context;
+
+import com.finn.androidUtilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
+import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.scottyab.aescrypt.AESCrypt;
 
@@ -19,6 +24,19 @@ import java.util.UUID;
 public class Show extends ParentClass{
     public static final String EMPTY_SEASON = "EMPTY_SEASON";
 
+    public enum REQUEST_IMDB_ID_TYPE {
+        TRAKT, SEASON, PREVIOUS;
+
+        public static int indexOf(REQUEST_IMDB_ID_TYPE type) {
+            return new com.finn.androidUtilities.CustomList<>(values()).indexOf(type);
+        }
+
+        public static REQUEST_IMDB_ID_TYPE byIndex(int index) {
+            return values()[index];
+        }
+    }
+
+
     private List<String> genreIdList = new ArrayList<>();
     private int seasonsCount = -1;
     private int allEpisodesCount = -1;
@@ -34,6 +52,7 @@ public class Show extends ParentClass{
     private String imagePath;
     private String language;
     private String imdbId;
+    private REQUEST_IMDB_ID_TYPE requestImdbIdType = REQUEST_IMDB_ID_TYPE.TRAKT;
 
     public Show(String name) {
         uuid = "show_" + UUID.randomUUID().toString();
@@ -191,6 +210,15 @@ public class Show extends ParentClass{
         return this;
     }
 
+    public REQUEST_IMDB_ID_TYPE getRequestImdbIdType() {
+        return requestImdbIdType;
+    }
+
+    public Show setRequestImdbIdType(REQUEST_IMDB_ID_TYPE requestImdbIdType) {
+        this.requestImdbIdType = requestImdbIdType;
+        return this;
+    }
+
     @Override
     public Show clone() {
         return (Show) super.clone();
@@ -331,7 +359,6 @@ public class Show extends ParentClass{
         private Date airDate;
         private int episodeNumber;
         private boolean watched;
-//        private Float rating = -1f;
         private String stillPath;
         private List<Date> dateList = new ArrayList<>();
         private String showId;
@@ -470,6 +497,40 @@ public class Show extends ParentClass{
         public Episode setImdbId(String imdbId) {
             this.imdbId = imdbId;
             return this;
+        }
+
+        public void requestImdbId(Context context, Runnable onFinished, REQUEST_IMDB_ID_TYPE differentRequestType) {
+            Show show = Database.getInstance().showMap.get(showId);
+            REQUEST_IMDB_ID_TYPE requestImdbIdType = differentRequestType != null ? differentRequestType : show.requestImdbIdType;
+            switch (requestImdbIdType) {
+                case TRAKT:
+                    Utility.getImdbIdFromTmdbId(context, tmdbId, "episode", s -> {
+                        imdbId = s;
+                        Utility.runRunnable(onFinished);
+                    });
+                    break;
+                case SEASON:
+                    new Helpers.WebViewHelper(context, "https://www.imdb.com/title/" + show.getImdbId() + "/episodes?season=" + seasonNumber)
+                            .addRequest("{\n" +
+                                    "    var episodeIdList = new Array();\n" +
+                                    "    document.getElementsByClassName(\"list detail eplist\")[0].children.forEach(function test(value) {\n" +
+                                    "        episodeIdList.push(value.getElementsByClassName(\"image\")[0].children[0].getAttribute(\"href\").split(\"/\")[2]);\n" +
+                                    "    });\n" +
+                                    "    return episodeIdList;\n" +
+                                    "}", s -> {
+                                CustomDialog.Builder(context)
+                                        .setTitle("Result")
+                                        .setText(s )
+                                        .show();
+                                Utility.runRunnable(onFinished);
+                            })
+                            .setDebug(true)
+                            .go();
+                    break;
+                case PREVIOUS:
+                    // ToDo: get Previous episode
+                    break;
+            }
         }
 
         public int getLength() {

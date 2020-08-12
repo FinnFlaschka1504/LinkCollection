@@ -17,8 +17,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -99,8 +99,8 @@
                 android:id="@+id/dialog_editOrAdd_show_language"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@null"
                 android:layout_marginEnd="3dp"
+                android:background="@null"
                 android:entries="@array/languages" />
 
         </LinearLayout>
@@ -118,37 +118,39 @@
                 android:text="Release:"
                 android:textStyle="bold" />
 
-<!--            <FrameLayout-->
-<!--                android:layout_width="0dp"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:layout_weight="1">-->
+            <com.mikhaellopez.lazydatepicker.LazyDatePicker
+                android:id="@+id/dialog_editOrAdd_show_datePicker"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingVertical="8dp"
+                app:ldp_date_format="dd-mm-yyyy"
+                app:ldp_hint_color="@color/colorTileBackground"
+                app:ldp_text_color="@color/colorText" />
 
-<!--                <TextView-->
-<!--                    android:id="@+id/dialog_editOrAdd_show_release"-->
-<!--                    android:layout_width="wrap_content"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:layout_marginEnd="8dp"-->
-<!--                    tools:text="13.11.2019"-->
-<!--                    android:visibility="invisible"/>-->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginVertical="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-                <com.mikhaellopez.lazydatepicker.LazyDatePicker
-                    android:id="@+id/dialog_editOrAdd_show_datePicker"
+                <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:ldp_text_color="@color/colorText"
-                    app:ldp_hint_color="@color/colorTileBackground"
-                    app:ldp_date_format="dd-mm-yyyy"
-                    android:paddingVertical="8dp"/>
-<!--            </FrameLayout>-->
+                    android:layout_marginRight="8dp"
+                    android:text="Details:"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
 
-<!--            <ImageView-->
-<!--                android:id="@+id/dialog_editOrAdd_show_releasePicker"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:clickable="true"-->
-<!--                android:foreground="@drawable/ripple"-->
-<!--                android:padding="5dp"-->
-<!--                app:srcCompat="@drawable/ic_kallendar_grey" />-->
+                <Spinner
+                    android:id="@+id/dialog_editOrAdd_show_requestImdbIdType"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="3dp"
+                    android:entries="@array/requestImdbIdType" />
+
+            </LinearLayout>
+
 
         </LinearLayout>
 

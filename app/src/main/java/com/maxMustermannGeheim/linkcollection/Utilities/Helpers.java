@@ -2,6 +2,7 @@ package com.maxMustermannGeheim.linkcollection.Utilities;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
 import android.graphics.Typeface;
 import android.os.Handler;
 import android.text.Editable;
@@ -20,6 +21,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -39,6 +41,7 @@ import com.maxMustermannGeheim.linkcollection.R;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -1058,6 +1061,7 @@ public class Helpers {
         private List<Pair<String, Utility.GenericInterface<String>>> requestList = new ArrayList<>();
         private ExecuteBeforeJavaScript executeBeforeJavaScript;
         private boolean alreadyLoaded;
+        private boolean isRedirekted;
         private Utility.GenericInterface<WebSettings> setSettings;
         private boolean showToasts = true;
         private int urlsIndex;
@@ -1104,15 +1108,29 @@ public class Helpers {
 
             webView.setWebViewClient(new WebViewClient() {
                 @Override
-                public void onPageFinished(WebView view, String url) {
-                    if (!dialogCanceled && openJs != 0 && !alreadyLoaded) {
+                public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                    isRedirekted = false;
+//                    super.onPageStarted(view, url, favicon);
+                }
+
+                @Override
+                public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                    view.loadUrl(request.getUrl().toString());
+                    isRedirekted = true;
+                    return true;
+//                    return super.shouldOverrideUrlLoading(view, request);
+                }
+
+                @Override
+                public void onPageFinished(WebView view, String url) { // ToDo: https://stackoverflow.com/questions/18282892/android-webview-onpagefinished-called-twice
+                    if (!dialogCanceled && !isRedirekted && !alreadyLoaded) { // && openJs != 0 && ) {
                         alreadyLoaded = true;
                         if (executeBeforeJavaScript == null)
                             onPageLoaded();
                         else
                             executeBeforeJavaScript();
                     }
-                    super.onPageFinished(view, url);
+//                    super.onPageFinished(view, url);
                 }
             });
 
@@ -1134,15 +1152,28 @@ public class Helpers {
             return this;
         }
 
-        private void onPageLoaded() {
-            for (Pair<String, Utility.GenericInterface<String>> pair : requestList) {
-                String script = pair.first;
-                Utility.GenericInterface<String> onResult = pair.second;
-                evaluateJavaScript(script, onResult, 0);
-            }
+        public WebViewHelper addCommand(String javaScript) {
+            requestList.add(Pair.create(javaScript, null));
+            return this;
         }
 
-        private void evaluateJavaScript(String rawScript, Utility.GenericInterface<String> onParseResult, int tryCount) {
+        private void onPageLoaded() {
+            Iterator<Pair<String, Utility.GenericInterface<String>>> iterator = requestList.iterator();
+            new Runnable() {
+                @Override
+                public void run() {
+                    if (iterator.hasNext()) {
+                        Pair<String, Utility.GenericInterface<String>> pair = iterator.next();
+                        WebViewHelper.this.evaluateJavaScript(pair.first, pair.second, this, 0);
+                    }
+                }
+            }.run();
+
+//            for (Pair<String, Utility.GenericInterface<String>> pair : requestList) {
+//            }
+        }
+
+        private void evaluateJavaScript(String rawScript, Utility.GenericInterface<String> onParseResult, Runnable onComplete, int tryCount) {
             String script = rawScript;
             if (script.startsWith("{") && script.endsWith("}")) {
                 script = "(function() " + script + ")();";
@@ -1152,32 +1183,42 @@ public class Helpers {
                     script += ";";
             }
 
-            webView.evaluateJavascript(script, t -> {
-                if (t.startsWith("\"") && t.endsWith("\""))
-                    t = Utility.subString(t, 1, -1);
-
-                if (t.matches("null") && tryCount < 50) {
-                    new Handler().postDelayed(() -> evaluateJavaScript(rawScript, onParseResult, tryCount + 1), 100);
-                } else {
-                    onParseResult.runGenericInterface(t + (tryCount < 50 ? "" : " (" + tryCount + ")"));
-                    if (openJs <= 1) {
-                        openJs--;
-                        if (urlsIndex < urls.length) {
-                            loadNextPage();
-                        } else {
-                            if (onAllComplete != null)
-                                onAllComplete.run();
-                            if (!debug && destroyOnSuccess) {
-                                webView.destroy();
-                                if (customDialog != null) {
-                                    customDialog.dismiss();
-                                    customDialog = null;
-                                }
+            Runnable onSuccess = () -> {
+                if (openJs <= 1) {
+                    openJs--;
+                    if (urlsIndex < urls.length) {
+                        loadNextPage();
+                    } else {
+                        if (onAllComplete != null)
+                            onAllComplete.run();
+                        if (!debug && destroyOnSuccess) {
+                            webView.destroy();
+                            if (customDialog != null) {
+                                customDialog.dismiss();
+                                customDialog = null;
                             }
                         }
-                    } else
-                        openJs--;
+                    }
+                } else {
+                    openJs--;
+                    onComplete.run();
                 }
+            };
+
+
+            webView.evaluateJavascript(script, t -> {
+                if (onParseResult != null) {
+                    if (t.startsWith("\"") && t.endsWith("\""))
+                        t = Utility.subString(t, 1, -1);
+
+                    if (t.matches("null") && tryCount < 50) {
+                        new Handler().postDelayed(() -> evaluateJavaScript(rawScript, onParseResult, onComplete, tryCount + 1), 100);
+                    } else {
+                        onParseResult.runGenericInterface(t + (tryCount < 50 ? "" : " (" + tryCount + ")"));
+                        onSuccess.run();
+                    }
+                } else
+                    onSuccess.run();
             });
 
         }
@@ -1196,7 +1237,10 @@ public class Helpers {
                                     .enableDoubleClickOutsideToDismiss(customDialog -> true, "Daten werden geladen");
                         }
                     })
-                    .setOnDialogDismiss(customDialog -> ((ViewGroup) customDialog.findViewById(R.id.dialog_custom_layout_view_interface)).removeAllViews())
+                    .setOnDialogDismiss(customDialog -> {
+                        dialogCanceled = true;
+                        ((ViewGroup) customDialog.findViewById(R.id.dialog_custom_layout_view_interface)).removeAllViews();
+                    })
                     .disableScroll()
                     .show();
 

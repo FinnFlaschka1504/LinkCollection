@@ -56,6 +56,8 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 // --> \/\/(?!  (-|<))
 public class MainActivity extends AppCompatActivity implements CustomInternetHelper.InternetStateReceiverListener {
@@ -763,6 +765,18 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //
 //                CustomTabsIntent customTabsIntent = builder.build();
 //                customTabsIntent.launchUrl(this, Uri.parse(url));
+
+                new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper(this, "https://www.imdb.com/title/tt12810338/?ref_=tt_ep_nx")
+                        .addRequest("document.getElementsByClassName(\"bp_item np_next\")[0].getAttribute(\"href\")", s -> {
+                            Matcher matcher = Pattern.compile("tt[0-9]{7}").matcher(s);
+                            if (matcher.find())
+                                CustomDialog.Builder(this)
+                                        .setTitle(matcher.group(0))
+                                        .show();
+                        })
+                        .addCommand("document.getElementsByClassName(\"bp_item np_next\")[0].click()")
+                        .setDebug(true)
+                        .go();
 
                 break;
             case R.id.taskBar_main_settings:

@@ -349,6 +349,15 @@ public class Settings extends AppCompatActivity {
                     view.findViewById(R.id.dialogSettingsShow_episodes_update).setOnClickListener(v -> {
                         com.finn.androidUtilities.CustomList<Show.Episode> episodes = new com.finn.androidUtilities.CustomList<>(Utility.concatenateCollections(Utility.concatenateCollections(database.showMap.values(), Show::getSeasonList), season -> season.getEpisodeMap().values())).filter(episode -> !Utility.stringExists(episode.getImdbId()), false);
 
+//                        episodes.forEach(episode -> {
+//                            if (episode.getImdbId() != null && episode.getImdbId().equals("null"))
+//                                episode.setImdbId(null);
+//                        });
+//
+//                        Database.saveAll();
+//                        if (true)
+//                            return;
+
                         int length = episodes.size();
                         final int[] doneCount = {0};
 
@@ -1406,6 +1415,7 @@ public class Settings extends AppCompatActivity {
 
     }
 
+
     //  ------------------------- language ------------------------->
     public static int getIndexByLanguage(Context context, String language){
         String[] array = context.getResources().getStringArray(R.array.languages);
@@ -1425,6 +1435,7 @@ public class Settings extends AppCompatActivity {
         return "de";
     }
     //  <------------------------- language -------------------------
+
 
     //  ------------------------- Encryption ------------------------->
     public static void resetEncryption() {

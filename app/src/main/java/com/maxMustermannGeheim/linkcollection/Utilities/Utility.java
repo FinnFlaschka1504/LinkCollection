@@ -457,6 +457,11 @@ public class Utility {
 
     }
 
+    public static boolean isImdbId(String imdbId){
+        if (imdbId == null) return false;
+        return imdbId.matches("^tt[0-9]{7}$");
+    }
+
     // --------------- Trakt
 
     public static void getImdbIdFromTmdbId(Context context, int tmdbId, String type, CustomUtility.GenericInterface<String> onResult) {
@@ -466,7 +471,8 @@ public class Utility {
 
         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, requestUrl, null, response -> {
             try {
-                onResult.runGenericInterface(response.getJSONObject(0).getJSONObject(type).getJSONObject("ids").getString("imdb"));
+                String string = response.getJSONObject(0).getJSONObject(type).getJSONObject("ids").getString("imdb");
+                onResult.runGenericInterface(Utility.stringExists(string) && !string.equals("null") ? string : null);
             } catch (JSONException ignored) {
                 onResult.runGenericInterface(null);
             }
@@ -518,8 +524,8 @@ public class Utility {
             requestQueue.add(request);
 
     }
-
     //  <------------------------- Api -------------------------
+
 
     //  ------------------------- watchLater ------------------------->
     public static List<String> getWatchLaterList_uuid() {
@@ -2344,6 +2350,14 @@ public class Utility {
         }
         return false;
     }
+
+    public static boolean runRunnable(Runnable runnable) {
+        if (runnable != null) {
+            runnable.run();
+            return true;
+        }
+        return false;
+    }
     //  <------------------------- Interfaces -------------------------
 
 
@@ -2929,4 +2943,19 @@ public class Utility {
         };
     }
     //  <------------------------- ExpendableToolbar -------------------------
+
+    //  ------------------------- StringArrays ------------------------->
+    public static int getIndexByString(Context context, int arrayId, String language){
+        String[] array = context.getResources().getStringArray(arrayId);
+        for (int i = 0; i < array.length; i++) {
+            if (array[i].equals(language))
+                return i;
+        }
+        return 0;
+    }
+
+    public static String getStringByIndex(Context context, int arrayId, int index){
+        return context.getResources().getStringArray(arrayId)[index];
+    }
+    //  <------------------------- StringArrays -------------------------
 }

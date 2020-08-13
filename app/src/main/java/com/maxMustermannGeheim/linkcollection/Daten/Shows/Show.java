@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Show extends ParentClass{
     public static final String EMPTY_SEASON = "EMPTY_SEASON";
@@ -518,17 +520,52 @@ public class Show extends ParentClass{
                                     "    });\n" +
                                     "    return episodeIdList;\n" +
                                     "}", s -> {
-                                CustomDialog.Builder(context)
-                                        .setTitle("Result")
-                                        .setText(s )
-                                        .show();
+//                                CustomDialog.Builder(context)
+//                                        .setTitle("Result")
+//                                        .setText(s)
+//                                        .show();
+                                com.finn.androidUtilities.CustomList<String> imdbIdList = new com.finn.androidUtilities.CustomList<>();
+                                Matcher matcher = Pattern.compile(Utility.imdbPattern).matcher(s);
+                                while (matcher.find()) {
+                                    imdbIdList.add(matcher.group(0));
+                                }
+//                                imdbId = imdbIdList.get(episodeNumber - 1);
+                                Map<String, Episode> episodeMap = show.getSeasonList().get(seasonNumber).getEpisodeMap();
+                                imdbIdList.forEachCount((imdbId, count) -> {
+                                    Episode episode = episodeMap.get("E:" + (count + 1));
+                                    if (episode != null)
+                                        episode.setImdbId(imdbId);
+                                });
                                 Utility.runRunnable(onFinished);
                             })
-                            .setDebug(true)
+                            .setDebug(false)
                             .go();
                     break;
                 case PREVIOUS:
-                    // ToDo: get Previous episode
+                    Episode previousEpisode = null;
+                    if (episodeNumber > 1) {
+                        previousEpisode = show.getSeasonList().get(seasonNumber).getEpisodeMap().get("E:" + (episodeNumber - 1));
+                    } else if (seasonNumber > 1) {
+                        Season season = show.getSeasonList().get(seasonNumber - 1);
+                        previousEpisode = season.getEpisodeMap().get("E:" + season.episodesCount);
+                    }
+                    if (previousEpisode != null && Utility.isImdbId(previousEpisode.getImdbId())) {
+                        new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper(context, "https://www.imdb.com/title/" + previousEpisode.getImdbId())
+                                .addRequest("document.getElementsByClassName(\"bp_item np_next\")[0].getAttribute(\"href\")", s -> {
+                                    Matcher matcher = Pattern.compile(Utility.imdbPattern).matcher(s);
+                                    if (matcher.find()) {
+//                                            CustomDialog.Builder(context)
+//                                                    .setTitle(matcher.group(0))
+//                                                    .show();
+                                        imdbId = matcher.group(0);
+                                        onFinished.run();
+                                    }
+                                })
+                                .setDebug(false)
+                                .go();
+                    } else
+                        onFinished.run();
+
                     break;
             }
         }
@@ -542,6 +579,10 @@ public class Show extends ParentClass{
             return this;
         }
 
+        public boolean hasLength() {
+            return length != -1;
+        }
+
         public String getAgeRating() {
             return ageRating;
         }
@@ -549,6 +590,14 @@ public class Show extends ParentClass{
         public Episode setAgeRating(String ageRating) {
             this.ageRating = ageRating;
             return this;
+        }
+
+        public boolean hasAgeRating() {
+            return Utility.stringExists(ageRating);
+        }
+
+        public boolean hasAnyExtraDetails() {
+            return hasLength() || hasAgeRating();
         }
 
         public Episode createRaw() {

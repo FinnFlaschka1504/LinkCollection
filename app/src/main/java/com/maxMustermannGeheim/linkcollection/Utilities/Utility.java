@@ -459,9 +459,11 @@ public class Utility {
 
     public static boolean isImdbId(String imdbId){
         if (imdbId == null) return false;
-        return imdbId.matches("^tt[0-9]{7}$");
+        return imdbId.matches(imdbPattern_full);
     }
 
+    public static final String imdbPattern_full = "^tt\\d{7,8}$";
+    public static final String imdbPattern = "tt\\d{7,8}";
     // --------------- Trakt
 
     public static void getImdbIdFromTmdbId(Context context, int tmdbId, String type, CustomUtility.GenericInterface<String> onResult) {
@@ -1264,6 +1266,13 @@ public class Utility {
 
     public static void showCenteredToast(Context context, String text) {
         centeredToast(context, text).show();
+    }
+
+    public static void showOnClickToast(Context context, String text, View.OnClickListener onClickListener){
+        Toast toast = centeredToast(context, text);
+        View view = toast.getView().findViewById(android.R.id.message);
+        if (view != null) view.setOnClickListener(onClickListener);
+        toast.show();
     }
     //  <--------------- Toast ---------------
 

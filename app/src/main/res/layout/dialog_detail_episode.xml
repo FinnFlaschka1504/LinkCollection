@@ -79,7 +79,6 @@
                     android:orientation="horizontal">
 
                     <LinearLayout
-                        android:id="@+id/dialog_video_ageRating_layout"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_weight="5"
@@ -103,7 +102,6 @@
                     </LinearLayout>
 
                     <LinearLayout
-                        android:id="@+id/dialog_video_length_layout"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_weight="4"
@@ -130,6 +128,12 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         app:srcCompat="@drawable/ic_sync" />
+                    <ImageView
+                        android:id="@+id/dialog_detailEpisode_internet"
+                        style="@style/ImageButtonStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:srcCompat="@drawable/ic_internet" />
 
                 </LinearLayout>
             </LinearLayout>

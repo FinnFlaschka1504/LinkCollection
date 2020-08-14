@@ -1066,6 +1066,8 @@ public class Helpers {
         private boolean showToasts = true;
         private int urlsIndex;
         private Runnable onAllComplete;
+        private boolean destroyed;
+        private boolean loadImages;
 
         //  ------------------------- Constructor ------------------------->
         public WebViewHelper(Context context, String... urls) {
@@ -1103,6 +1105,11 @@ public class Helpers {
             settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
             settings.setDomStorageEnabled(true);
 
+            if (!loadImages) {
+//                settings.setBlockNetworkLoads(true);
+                settings.setLoadsImagesAutomatically(false);
+                settings.setBlockNetworkImage(true);
+            }
 
             Utility.runGenericInterface(setSettings, settings);
 
@@ -1141,6 +1148,7 @@ public class Helpers {
         }
 
         private void loadNextPage() {
+            if (destroyed) return;
             openJs = requestList.size();
             alreadyLoaded = false;
             webView.loadUrl(urls[urlsIndex]);
@@ -1162,6 +1170,7 @@ public class Helpers {
             new Runnable() {
                 @Override
                 public void run() {
+                    if (destroyed) return;
                     if (iterator.hasNext()) {
                         Pair<String, Utility.GenericInterface<String>> pair = iterator.next();
                         WebViewHelper.this.evaluateJavaScript(pair.first, pair.second, this, 0);
@@ -1174,6 +1183,7 @@ public class Helpers {
         }
 
         private void evaluateJavaScript(String rawScript, Utility.GenericInterface<String> onParseResult, Runnable onComplete, int tryCount) {
+            if (destroyed) return;
             String script = rawScript;
             if (script.startsWith("{") && script.endsWith("}")) {
                 script = "(function() " + script + ")();";
@@ -1207,6 +1217,7 @@ public class Helpers {
 
 
             webView.evaluateJavascript(script, t -> {
+                if (destroyed) return;
                 if (onParseResult != null) {
                     if (t.startsWith("\"") && t.endsWith("\""))
                         t = Utility.subString(t, 1, -1);
@@ -1280,7 +1291,14 @@ public class Helpers {
         }
 
         public void destroy() {
-
+            destroyed = true;
+            if (!debug) {
+                webView.destroy();
+                if (customDialog != null) {
+                    customDialog.dismiss();
+                    customDialog = null;
+                }
+            }
         }
 
 
@@ -1396,6 +1414,10 @@ public class Helpers {
             return this;
         }
 
+        public WebViewHelper enableLoadImages() {
+            this.loadImages = true;
+            return this;
+        }
         //  <------------------------- Getter & Setter -------------------------
 
 

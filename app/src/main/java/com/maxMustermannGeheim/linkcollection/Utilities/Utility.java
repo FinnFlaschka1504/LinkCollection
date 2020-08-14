@@ -123,6 +123,7 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -130,6 +131,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -457,13 +459,6 @@ public class Utility {
 
     }
 
-    public static boolean isImdbId(String imdbId){
-        if (imdbId == null) return false;
-        return imdbId.matches(imdbPattern_full);
-    }
-
-    public static final String imdbPattern_full = "^tt\\d{7,8}$";
-    public static final String imdbPattern = "tt\\d{7,8}";
     // --------------- Trakt
 
     public static void getImdbIdFromTmdbId(Context context, int tmdbId, String type, CustomUtility.GenericInterface<String> onResult) {
@@ -1149,6 +1144,14 @@ public class Utility {
     public static boolean isUrl(String text) {
         return text.matches("(?i)^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?!(?:10|127)(?:\\.\\d{1,3}){3})(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?(?:[/?#]\\S*)?$");
     }
+
+    public static boolean isImdbId(String imdbId){
+        if (imdbId == null) return false;
+        return imdbId.matches(imdbPattern_full);
+    }
+
+    public static final String imdbPattern_full = "^tt\\d{7,8}$";
+    public static final String imdbPattern = "tt\\d{7,8}";
     //  <------------------------- Checks -------------------------
 
 
@@ -1218,6 +1221,42 @@ public class Utility {
 
     public static String stringReplace(String source, int start, int end, String replacement) {
         return source.substring(0, start) + replacement + source.substring(end);
+    }
+
+    public static String formatDuration(Duration duration, @Nullable String format){
+        if (format == null)
+            format = "'%w% Woche§n§, ''%d% Tag§e§, ''%h% Stunde§n§, ''%m% Minute§n§, ''%s% Sekunde§n§'";
+        com.finn.androidUtilities.CustomList<Pair<String, Integer>> patternList = new com.finn.androidUtilities.CustomList<>(Pair.create("%w%", 604800), Pair.create("%d%", 86400), Pair.create("%h%", 3600), Pair.create("%m%", 60), Pair.create("%s%", 1));
+        int seconds = (int) (duration.toMillis() / 1000);
+        while (true) {
+            Matcher segments = Pattern.compile("'.+?'").matcher(format);
+            if (!segments.find())
+                break;
+            String segment = segments.group();
+            Iterator<Pair<String, Integer>> iterator = patternList.iterator();
+            while (iterator.hasNext()) {
+                Pair<String, Integer> pair = iterator.next();
+                if (segment.contains(pair.first)) {
+                    int amount = seconds / pair.second;
+                    if (amount > 0) {
+                        seconds = seconds % pair.second;
+                        Matcher matcher = Pattern.compile(pair.first).matcher(segment);
+                        String replacement = matcher.replaceFirst(String.valueOf(amount));
+                        if (replacement.contains("§")) {
+                            Matcher removePlural = Pattern.compile("§\\w+§").matcher(replacement);
+                            if (removePlural.find())
+                                replacement = removePlural.replaceFirst(amount > 1 ? Utility.subString(removePlural.group(), 1, -1) : "");
+                        }
+                        format = segments.replaceFirst(Utility.subString(replacement, 1, -1));
+                    } else
+                        format = segments.replaceFirst("");
+
+                    patternList.remove(pair);
+                    break;
+                }
+            }
+        }
+        return format;
     }
     //  <------------------------- Text -------------------------
 
@@ -2252,6 +2291,14 @@ public class Utility {
     public static <T extends CharSequence> T stringExistsOrElse(T s, T orElse) {
         return stringExists(s) ? s : orElse;
     }
+
+    public static <T> T isNotNullOrElse(T input, T orElse){
+        return input != null ? input : orElse;
+    }
+
+    public static <T> T isNotNullOrElse(T input, GenericReturnOnlyInterface<T> orElse){
+        return input != null ? input : orElse.runGenericInterface();
+    }
     //  <------------------------- EasyLogic -------------------------
 
 
@@ -2953,7 +3000,7 @@ public class Utility {
     }
     //  <------------------------- ExpendableToolbar -------------------------
 
-    //  ------------------------- StringArrays ------------------------->
+    //  ------------------------- Arrays ------------------------->
     public static int getIndexByString(Context context, int arrayId, String language){
         String[] array = context.getResources().getStringArray(arrayId);
         for (int i = 0; i < array.length; i++) {
@@ -2966,5 +3013,18 @@ public class Utility {
     public static String getStringByIndex(Context context, int arrayId, int index){
         return context.getResources().getStringArray(arrayId)[index];
     }
-    //  <------------------------- StringArrays -------------------------
+
+    // --------------- VarArgs
+
+    public static <T> boolean easyVarArgs(T[] varArg, int index, CustomUtility.GenericInterface<T> ifExists) {
+        if (varArg.length >= (index + 1)) {
+            T t;
+            if ((t = varArg[index]) != null) {
+                ifExists.runGenericInterface(t);
+                return true;
+            }
+        }
+        return false;
+    }
+    //  <------------------------- Arrays -------------------------
 }

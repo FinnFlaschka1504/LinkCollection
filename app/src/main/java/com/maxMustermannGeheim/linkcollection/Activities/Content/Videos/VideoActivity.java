@@ -82,6 +82,7 @@ import org.opengraph.MetaElement;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -636,9 +637,14 @@ public class VideoActivity extends AppCompatActivity {
                     String elementCountText = size > 1 ? size + " Elemente" : (size == 1 ? "Ein" : "Kein") + " Element";
                     SpannableStringBuilder builder = new SpannableStringBuilder().append(elementCountText);
                     if (size > 0) {
+                        int watchedMinutes = filteredList.stream().mapToInt(video -> video.getLength() * video.getDateList().size()).sum();
+                        String timeString = Utility.formatDuration(Duration.ofMinutes(watchedMinutes), null);
+                        if (Utility.stringExists(timeString))
+                            builder.append("\n", new RelativeSizeSpan(0.5f), Spannable.SPAN_EXCLUSIVE_INCLUSIVE).append(Utility.subString(timeString, 0 , -2)).append("\n");
+
                         int viewSum = filteredList.stream().mapToInt(video -> video.getDateList().size()).sum();
                         String viewSumText = viewSum > 1 ? viewSum + " Ansichten" : (viewSum == 1 ? "Eine" : "Keine") + " Ansicht";
-                        builder.append("\n").append(viewSumText, new RelativeSizeSpan(0.5f), Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
+                        builder.append(viewSumText);
 
                         double averageRating = filteredList.stream().filter(video -> video.getRating() > 0).mapToDouble(ParentClass_Ratable::getRating).average().orElse(-1);
                         if (averageRating != -1)

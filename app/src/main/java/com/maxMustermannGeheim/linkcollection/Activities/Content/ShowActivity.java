@@ -1423,7 +1423,7 @@ public class ShowActivity extends AppCompatActivity {
                         return;
                     selectedEpisode[0] = episode;
                     if (!episode.hasAnyExtraDetails())
-                        getImdbIdAndDetails(episode, customRecycler::reload, false);
+                        getImdbIdAndDetails(episode, false, customRecycler::reload);
                     if (!episode.hasRating()) {
                         ParentClass_Ratable.showRatingDialog(this, selectedEpisode[0], itemView, false, () -> {
                             customRecycler.reload();
@@ -1439,7 +1439,7 @@ public class ShowActivity extends AppCompatActivity {
                         return;
                     selectedEpisode[0] = episode;
                     if (!episode.hasAnyExtraDetails())
-                        getImdbIdAndDetails(episode, customRecycler::reload, false);
+                        getImdbIdAndDetails(episode, false, customRecycler::reload);
                     if (!episode.hasRating()) {
                         addView.run();
                         customRecycler.reload();
@@ -1501,7 +1501,7 @@ public class ShowActivity extends AppCompatActivity {
             return;
         }
 //        setResult(RESULT_OK); // vielleich wichtig?
-        boolean hasChanged = false; // ToDo: jedes mal neuladen des recyclers hiermit unterbinden
+        final Runnable[] destroyGetIimdbIdAndDetails = {null};
 
         CustomDialog.Builder(this)
                 .setTitle(episode.getName())
@@ -1543,7 +1543,7 @@ public class ShowActivity extends AppCompatActivity {
                     view.findViewById(R.id.dialog_detailEpisode_sync).setOnClickListener(v -> {
                         Runnable onComplete = customDialog::reloadView;
 
-                        getImdbIdAndDetails(episode, onComplete, true);
+                        getImdbIdAndDetails(episode, true, onComplete);
                     });
                     view.findViewById(R.id.dialog_detailEpisode_internet).setOnClickListener(v -> {
                         String tmdbUrl = String.format(Locale.getDefault(), "https://www.themoviedb.org/tv/%d/season/%d/episode/%d", database.showMap.get(episode.getShowId()).getTmdbId(), episode.getSeasonNumber(), episode.getEpisodeNumber());
@@ -1635,10 +1635,12 @@ public class ShowActivity extends AppCompatActivity {
                     });
                 })
                 .addOnDialogShown(customDialog -> {
-                    if (!episode.hasAnyExtraDetails())
-                        getImdbIdAndDetails(episode, customDialog::reloadView, false);
+                    if (!episode.hasAnyExtraDetails()) {
+                        destroyGetIimdbIdAndDetails[0] = getImdbIdAndDetails(episode, false, customDialog::reloadView);
+                    }
                 })
                 .setOnDialogDismiss(customDialog -> {
+                    Utility.runRunnable(destroyGetIimdbIdAndDetails[0]);
                     if (customRecycler != null)
                         customRecycler.reload();
                     if (startedDirectly)
@@ -1650,8 +1652,16 @@ public class ShowActivity extends AppCompatActivity {
 //        });
     }
 
-    private void getImdbIdAndDetails(Show.Episode episode, Runnable onComplete, boolean showMessages) {
-        Runnable getFromImdb = () -> getDetailsFromImdb(new com.finn.androidUtilities.CustomList<>(new Show.Episode[]{episode}), false, () -> {
+    private Runnable getImdbIdAndDetails(Show.Episode episode, boolean showMessages, Runnable onComplete) {
+        final Runnable[] destroyGetDetailsFromImdb = {null};
+        final Runnable[] destroyRequestImdbId = {null};
+
+        Runnable destroy = () -> {
+            Utility.runRunnable(destroyGetDetailsFromImdb[0]);
+            Utility.runRunnable(destroyRequestImdbId[0]);
+        };
+
+        Runnable getFromImdb = () -> destroyGetDetailsFromImdb[0] = getDetailsFromImdb(new com.finn.androidUtilities.CustomList<>(new Show.Episode[]{episode}), false, () -> {
             onComplete.run();
             Database.saveAll();
         });
@@ -1659,7 +1669,7 @@ public class ShowActivity extends AppCompatActivity {
         if (Utility.isImdbId(episode.getImdbId()))
             getFromImdb.run();
         else
-            episode.requestImdbId(this, new Runnable() {
+            destroyRequestImdbId[0] = episode.requestImdbId(this, new Runnable() {
                 @Override
                 public void run() {
                     if (Utility.isImdbId(episode.getImdbId())) {
@@ -1682,6 +1692,8 @@ public class ShowActivity extends AppCompatActivity {
                     }
                 }
             }, null);
+
+        return destroy;
     }
 
     private CustomDialog showResetDialog(List<Show.Episode> episodeList_all, Show show, Show.Season season, CustomDialog customDialog, CustomRecycler customRecycler, int type) {
@@ -2076,9 +2088,9 @@ public class ShowActivity extends AppCompatActivity {
 
     // --------------- imdb
 
-    private void getDetailsFromImdb(com.finn.androidUtilities.CustomList<Show.Episode> episodeList, boolean showDialog, Runnable onComplete) {
+    private Runnable getDetailsFromImdb(com.finn.androidUtilities.CustomList<Show.Episode> episodeList, boolean showDialog, Runnable onComplete) {
         if (episodeList.isEmpty())
-            return;
+            return () -> {};
         episodeList.sort((e1, e2) -> {
             int compare;
             if ((compare = Integer.compare(e1.getSeasonNumber(), e2.getSeasonNumber())) != 0)
@@ -2091,7 +2103,7 @@ public class ShowActivity extends AppCompatActivity {
         final int[] counter = {0};
         List<Integer> lengthList = new ArrayList<>();
         CustomDialog resultDialog = CustomDialog.Builder(this);
-        new Helpers.WebViewHelper(this, urls)
+        Helpers.WebViewHelper helper = new Helpers.WebViewHelper(this, urls)
                 .addRequest("document.getElementsByClassName(\"subtext\")[0].innerText", s -> {
                     if (showDialog) {
                         resultDialog
@@ -2126,7 +2138,7 @@ public class ShowActivity extends AppCompatActivity {
                     Utility.runRunnable(onComplete);
                 })
                 .go();
-
+        return helper::destroy;
     }
     //  <--------------- Api ---------------
 

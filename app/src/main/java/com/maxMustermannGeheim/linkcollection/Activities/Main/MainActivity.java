@@ -765,7 +765,6 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //
 //                CustomTabsIntent customTabsIntent = builder.build();
 //                customTabsIntent.launchUrl(this, Uri.parse(url));
-
                 new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper(this, "https://www.imdb.com/title/tt12810338/?ref_=tt_ep_nx")
                         .addRequest("document.getElementsByClassName(\"bp_item np_next\")[0].getAttribute(\"href\")", s -> {
                             Matcher matcher = Pattern.compile("tt[0-9]{7}").matcher(s);

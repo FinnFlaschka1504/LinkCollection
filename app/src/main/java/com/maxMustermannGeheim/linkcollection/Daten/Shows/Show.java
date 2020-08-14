@@ -501,7 +501,9 @@ public class Show extends ParentClass{
             return this;
         }
 
-        public void requestImdbId(Context context, Runnable onFinished, REQUEST_IMDB_ID_TYPE differentRequestType) {
+        public Runnable requestImdbId(Context context, Runnable onFinished, REQUEST_IMDB_ID_TYPE differentRequestType) {
+            final Runnable[] destroy = {null};
+
             Show show = Database.getInstance().showMap.get(showId);
             REQUEST_IMDB_ID_TYPE requestImdbIdType = differentRequestType != null ? differentRequestType : show.requestImdbIdType;
             switch (requestImdbIdType) {
@@ -529,16 +531,21 @@ public class Show extends ParentClass{
                                 while (matcher.find()) {
                                     imdbIdList.add(matcher.group(0));
                                 }
-//                                imdbId = imdbIdList.get(episodeNumber - 1);
-                                Map<String, Episode> episodeMap = show.getSeasonList().get(seasonNumber).getEpisodeMap();
+                                Map<String, Episode> episodeMap;
+                                Map<Integer, Map<String, Episode>> map;
+                                if ((map = Database.getInstance().tempShowSeasonEpisodeMap.get(show)) == null || (episodeMap = map.get(seasonNumber)) == null) {
+                                    episodeMap = show.getSeasonList().get(seasonNumber).getEpisodeMap();
+                                }
+                                Map<String, Episode> finalEpisodeMap = episodeMap;
                                 imdbIdList.forEachCount((imdbId, count) -> {
-                                    Episode episode = episodeMap.get("E:" + (count + 1));
+                                    Episode episode = finalEpisodeMap.get("E:" + (count + 1));
                                     if (episode != null)
                                         episode.setImdbId(imdbId);
                                 });
                                 Utility.runRunnable(onFinished);
                             })
-                            .setDebug(false)
+                            .addOptional(webViewHelper -> destroy[0] = webViewHelper::destroy)
+//                            .setDebug(true)
                             .go();
                     break;
                 case PREVIOUS:
@@ -554,20 +561,19 @@ public class Show extends ParentClass{
                                 .addRequest("document.getElementsByClassName(\"bp_item np_next\")[0].getAttribute(\"href\")", s -> {
                                     Matcher matcher = Pattern.compile(Utility.imdbPattern).matcher(s);
                                     if (matcher.find()) {
-//                                            CustomDialog.Builder(context)
-//                                                    .setTitle(matcher.group(0))
-//                                                    .show();
                                         imdbId = matcher.group(0);
                                         onFinished.run();
                                     }
                                 })
-                                .setDebug(false)
+//                                .setDebug(true)
+                                .addOptional(webViewHelper -> destroy[0] = webViewHelper::destroy)
                                 .go();
                     } else
                         onFinished.run();
 
                     break;
             }
+            return destroy[0];
         }
 
         public int getLength() {

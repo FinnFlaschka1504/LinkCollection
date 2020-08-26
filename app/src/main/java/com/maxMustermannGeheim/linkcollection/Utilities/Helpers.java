@@ -1114,24 +1114,24 @@ public class Helpers {
             Utility.runGenericInterface(setSettings, settings);
 
             webView.setWebViewClient(new WebViewClient() {
-                @Override
-                public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                    isRedirekted = false;
-//                    super.onPageStarted(view, url, favicon);
-                }
-
-                @Override
-                public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                    view.loadUrl(request.getUrl().toString());
-                    isRedirekted = true;
-                    return true;
-//                    return super.shouldOverrideUrlLoading(view, request);
-                }
+//                @Override
+//                public void onPageStarted(WebView view, String url, Bitmap favicon) {
+//                    isRedirekted = false;
+////                    super.onPageStarted(view, url, favicon);
+//                }
+//
+//                @Override
+//                public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+//                    isRedirekted = true;
+//                    view.loadUrl(request.getUrl().toString());
+//                    return true;
+////                    return super.shouldOverrideUrlLoading(view, request);
+//                }
 
                 @Override
                 public void onPageFinished(WebView view, String url) { // ToDo: https://stackoverflow.com/questions/18282892/android-webview-onpagefinished-called-twice
-                    if (!dialogCanceled && !isRedirekted && !alreadyLoaded) { // && openJs != 0 && ) {
-                        alreadyLoaded = true;
+                    if (!dialogCanceled /*&& !isRedirekted && !alreadyLoaded*/ && view.getProgress() == 100) { // && openJs != 0 && ) {
+//                        alreadyLoaded = true;
                         if (executeBeforeJavaScript == null)
                             onPageLoaded();
                         else

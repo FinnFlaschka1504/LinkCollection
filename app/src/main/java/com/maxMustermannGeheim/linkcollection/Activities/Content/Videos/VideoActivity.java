@@ -157,7 +157,7 @@ public class VideoActivity extends AppCompatActivity {
     private WebView webView;
     private boolean isShared;
     private boolean isDialog;
-    public static Pattern pattern = Pattern.compile("\\*(([0-4]([,.]\\d{1,2})?)|5(,0)?)(-(([0-4]([,.]\\d{1,2})?)|5([,.]00?)?))?\\*");
+    public static Pattern ratingPattern = Pattern.compile("\\*(([0-4]((.|,)\\d{1,2})?)|5((.|,)00?)?)(-(([0-4]((\\4|\\6)(?<=[,.])\\d{1,2})?)|5((\\4|\\6)(?<=[,.])00?)?))?\\*");
     private Runnable setToolbarTitle;
 
     List<Video> allVideoList = new ArrayList<>();
@@ -358,33 +358,7 @@ public class VideoActivity extends AppCompatActivity {
 //                                }
 //                            };
 
-                            Utility.GenericInterface<String> applyName = name -> {
-                                String resultLow = name.toLowerCase();
-                                List<String> actorIdList = database.darstellerMap.values().stream().filter(darsteller -> resultLow.contains(darsteller.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
-                                List<String> studioIdList = database.studioMap.values().stream().filter(studio -> resultLow.contains(studio.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
-                                List<String> genreIdList = database.genreMap.values().stream().filter(genre -> resultLow.contains(genre.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
-
-                                if (addOrEditDialog != null) {
-                                    ((EditText) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_Title)).setText(name);
-                                    if (editVideo[0] != null) {
-                                        editVideo[0].setDarstellerList(actorIdList);
-                                        editVideo[0].setStudioList(studioIdList);
-                                        editVideo[0].setGenreList(genreIdList);
-                                        ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_actor)).setText(
-                                                editVideo[0].getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
-                                        ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_studio)).setText(
-                                                editVideo[0].getStudioList().stream().map(uuid -> database.studioMap.get(uuid).getName()).collect(Collectors.joining(", ")));
-                                        ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_Genre)).setText(
-                                                editVideo[0].getGenreList().stream().map(uuid -> database.genreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
-
-                                    }
-                                } else {
-                                    video.setName(name);
-                                    video.setDarstellerList(actorIdList);
-                                    video.setStudioList(studioIdList);
-                                    video.setGenreList(genreIdList);
-                                }
-                            };
+                            Utility.GenericInterface<String> applyName = name -> parseTitleToDetails(video, editVideo, name);
 
                             Utility.getOpenGraphFromWebsite(url, openGraph -> {
                                 String path;
@@ -553,7 +527,7 @@ public class VideoActivity extends AppCompatActivity {
             String subQuery = searchQuery;
             if (searchQuery.contains("*")) {
 
-                Matcher matcher = pattern.matcher(searchQuery);
+                Matcher matcher = ratingPattern.matcher(searchQuery);
                 if (matcher.find()) {
                     String[] range = matcher.group(0).replaceAll("\\*", "").replaceAll(",", ".").split("-");
                     float min = Float.parseFloat(range[0]);
@@ -637,10 +611,11 @@ public class VideoActivity extends AppCompatActivity {
                     String elementCountText = size > 1 ? size + " Elemente" : (size == 1 ? "Ein" : "Kein") + " Element";
                     SpannableStringBuilder builder = new SpannableStringBuilder().append(elementCountText);
                     if (size > 0) {
+                        builder.append("\n", new RelativeSizeSpan(0.5f), Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
                         int watchedMinutes = filteredList.stream().mapToInt(video -> video.getLength() * video.getDateList().size()).sum();
                         String timeString = Utility.formatDuration(Duration.ofMinutes(watchedMinutes), null);
                         if (Utility.stringExists(timeString))
-                            builder.append("\n", new RelativeSizeSpan(0.5f), Spannable.SPAN_EXCLUSIVE_INCLUSIVE).append(Utility.subString(timeString, 0 , -2)).append("\n");
+                            builder.append(timeString).append("\n");
 
                         int viewSum = filteredList.stream().mapToInt(video -> video.getDateList().size()).sum();
                         String viewSumText = viewSum > 1 ? viewSum + " Ansichten" : (viewSum == 1 ? "Eine" : "Keine") + " Ansicht";
@@ -1135,6 +1110,7 @@ public class VideoActivity extends AppCompatActivity {
                                                     if (Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_AUTO_SEARCH))
                                                         dialog_editOrAddVideo_Title_layout.getEditText().onEditorAction(Helpers.TextInputHelper.IME_ACTION.SEARCH.getCode());
                                                     customDialog1.dismiss();
+                                                    parseTitleToDetails(video, editVideo, value);
                                                 }
                                             });
 //                                            webSettings.setJavaScriptEnabled(false);
@@ -1601,6 +1577,34 @@ public class VideoActivity extends AppCompatActivity {
         });
 
 
+    }
+
+    private void parseTitleToDetails(Video video, Video[] editVideo, String name) {
+        String resultLow = name.toLowerCase();
+        List<String> actorIdList = database.darstellerMap.values().stream().filter(darsteller -> resultLow.contains(darsteller.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
+        List<String> studioIdList = database.studioMap.values().stream().filter(studio -> resultLow.contains(studio.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
+        List<String> genreIdList = database.genreMap.values().stream().filter(genre -> resultLow.contains(genre.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
+
+        if (addOrEditDialog != null) {
+            ((EditText) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_Title)).setText(name);
+            if (editVideo[0] != null) {
+                editVideo[0].setDarstellerList(actorIdList);
+                editVideo[0].setStudioList(studioIdList);
+                editVideo[0].setGenreList(genreIdList);
+                ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_actor)).setText(
+                        editVideo[0].getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_studio)).setText(
+                        editVideo[0].getStudioList().stream().map(uuid -> database.studioMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_Genre)).setText(
+                        editVideo[0].getGenreList().stream().map(uuid -> database.genreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+
+            }
+        } else {
+            video.setName(name);
+            video.setDarstellerList(actorIdList);
+            video.setStudioList(studioIdList);
+            video.setGenreList(genreIdList);
+        }
     }
     //  <------------------------- EditVideo -------------------------
 
@@ -2420,6 +2424,11 @@ public class VideoActivity extends AppCompatActivity {
             videos_confirmDelete.setVisibility(View.GONE);
             reLoadVideoRecycler();
             delete = false;
+            return;
+        }
+
+        if (Utility.stringExists(videos_search.getQuery().toString()) && !Objects.equals(videos_search.getQuery().toString(), getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH))) {//&& !videos_search.getQuery().toString().matches(CategoriesActivity.uuidRegex) && Utility.isNullReturnOrElse(getCallingActivity(), true, componentName -> !componentName.getClassName().equals(CategoriesActivity.class.getName()))) {
+            videos_search.setQuery("", false);
             return;
         }
 

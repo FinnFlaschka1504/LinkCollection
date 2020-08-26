@@ -505,7 +505,7 @@ public class Show extends ParentClass{
             final Runnable[] destroy = {null};
 
             Show show = Database.getInstance().showMap.get(showId);
-            REQUEST_IMDB_ID_TYPE requestImdbIdType = differentRequestType != null ? differentRequestType : show.requestImdbIdType;
+            REQUEST_IMDB_ID_TYPE requestImdbIdType = Utility.isNotNullOrElse(differentRequestType, show.requestImdbIdType);
             switch (requestImdbIdType) {
                 case TRAKT:
                     Utility.getImdbIdFromTmdbId(context, tmdbId, "episode", s -> {
@@ -522,10 +522,6 @@ public class Show extends ParentClass{
                                     "    });\n" +
                                     "    return episodeIdList;\n" +
                                     "}", s -> {
-//                                CustomDialog.Builder(context)
-//                                        .setTitle("Result")
-//                                        .setText(s)
-//                                        .show();
                                 com.finn.androidUtilities.CustomList<String> imdbIdList = new com.finn.androidUtilities.CustomList<>();
                                 Matcher matcher = Pattern.compile(Utility.imdbPattern).matcher(s);
                                 while (matcher.find()) {
@@ -562,14 +558,15 @@ public class Show extends ParentClass{
                                     Matcher matcher = Pattern.compile(Utility.imdbPattern).matcher(s);
                                     if (matcher.find()) {
                                         imdbId = matcher.group(0);
-                                        onFinished.run();
-                                    }
+                                        Utility.runRunnable(onFinished);
+                                    } else
+                                        Utility.runRunnable(onFinished);
                                 })
 //                                .setDebug(true)
                                 .addOptional(webViewHelper -> destroy[0] = webViewHelper::destroy)
                                 .go();
                     } else
-                        onFinished.run();
+                        Utility.runRunnable(onFinished);
 
                     break;
             }

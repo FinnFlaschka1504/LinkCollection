@@ -1208,4 +1208,15 @@ public class CollectionActivity extends AppCompatActivity {
         return true;
     }
     //  <------------------------- ToolBar -------------------------
+
+    @Override
+    public void onBackPressed() {
+        if (Utility.stringExists(searchView.getQuery().toString())) {
+            searchView.setQuery("", false);
+            return;
+        }
+
+        super.onBackPressed();
+    }
+
 }

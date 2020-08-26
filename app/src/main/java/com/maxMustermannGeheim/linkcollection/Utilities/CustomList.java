@@ -28,7 +28,7 @@ public class CustomList<E> extends ArrayList<E> {
         super(initialCapacity);
     }
 
-    public CustomList(E[] objects) {
+    public CustomList(E... objects) {
         if (objects != null)
             addAll(Arrays.asList(objects));
     }

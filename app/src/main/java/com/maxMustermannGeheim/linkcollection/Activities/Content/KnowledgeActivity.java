@@ -1501,4 +1501,13 @@ public class KnowledgeActivity extends AppCompatActivity {
         Utility.applyToAllViews(knowledge_search, View.class, view -> view.setEnabled(!join.isEmpty()));
     }
 
+    @Override
+    public void onBackPressed() {
+        if (Utility.stringExists(knowledge_search.getQuery().toString()) && !Objects.equals(knowledge_search.getQuery().toString(), getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH))) {
+            knowledge_search.setQuery("", false);
+            return;
+        }
+
+        super.onBackPressed();
+    }
 }

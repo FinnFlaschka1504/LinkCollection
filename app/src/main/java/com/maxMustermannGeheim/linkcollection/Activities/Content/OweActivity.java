@@ -116,7 +116,11 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_owe);
+        database = Database.getInstance();
+        if (database == null)
+            setContentView(R.layout.loading_screen);
+        else
+            setContentView(R.layout.activity_owe);
 
         Settings.startSettings_ifNeeded(this);
         mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
@@ -1139,5 +1143,15 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
         String join = filterTypeSet.stream().filter(FILTER_TYPE::hasName).sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).map(FILTER_TYPE::getName).collect(Collectors.joining(", "));
         owe_search.setQueryHint(join.isEmpty() ? "Kein Filter ausgewählt!" : join + " ('&' als 'und'; '|' als 'oder')");
         Utility.applyToAllViews(owe_search, View.class, view -> view.setEnabled(!join.isEmpty()));
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (Utility.stringExists(owe_search.getQuery().toString()) && !Objects.equals(owe_search.getQuery().toString(), getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH))) {
+            owe_search.setQuery("", false);
+            return;
+        }
+
+        super.onBackPressed();
     }
 }

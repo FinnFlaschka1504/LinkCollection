@@ -62,6 +62,7 @@ public class CategoriesActivity extends AppCompatActivity {
     public static String pictureRegex = "((https:)|\\/)([^\\s\\\\]|(?<=\\S) (?=\\S))+?\\.(?:jpe?g|png|svg)";//"((https:)|/)[^\\n]+?\\.(?:jpe?g|png|svg)";
 //    public static String pictureRegex = "((https:)|/)([,+%&?=()/|.|\\w|\\s|-])+\\.(?:jpe?g|png|svg)";
     public static String pictureRegexAll = pictureRegex.split("\\\\\\.")[0];
+    public static final String uuidRegex = "\\b([a-zA-Z]+_)?[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b";
     private Helpers.SortHelper<Pair<ParentClass, Integer>> sortHelper;
 
     enum SORT_TYPE {
@@ -640,5 +641,15 @@ public class CategoriesActivity extends AppCompatActivity {
 
     private void removeFocusFromSearch() {
         catigorys_search.clearFocus();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (Utility.stringExists(catigorys_search.getQuery().toString())) {
+            catigorys_search.setQuery("", false);
+            return;
+        }
+
+        super.onBackPressed();
     }
 }

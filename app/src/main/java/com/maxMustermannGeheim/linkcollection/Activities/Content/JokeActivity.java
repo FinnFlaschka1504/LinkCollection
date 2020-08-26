@@ -616,4 +616,14 @@ public class JokeActivity extends AppCompatActivity {
         joke_search.setQueryHint(join.isEmpty() ? "Kein Filter ausgewählt!" : join + " ('&' als 'und'; '|' als 'oder')");
         Utility.applyToAllViews(joke_search, View.class, view -> view.setEnabled(!join.isEmpty()));
     }
+
+    @Override
+    public void onBackPressed() {
+        if (Utility.stringExists(joke_search.getQuery().toString()) && !Objects.equals(joke_search.getQuery().toString(), getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH))) {
+            joke_search.setQuery("", false);
+            return;
+        }
+
+        super.onBackPressed();
+    }
 }

@@ -18,7 +18,6 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.service.autofill.Dataset;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -39,7 +38,6 @@ import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.SearchView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -55,7 +53,6 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonArrayRequest;
@@ -69,13 +66,10 @@ import com.bumptech.glide.request.target.DrawableImageViewTarget;
 import com.bumptech.glide.request.target.Target;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
-import com.github.mikephil.charting.animation.Easing;
 import com.github.mikephil.charting.charts.PieChart;
-import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
-import com.github.mikephil.charting.formatter.PercentFormatter;
 import com.github.mikephil.charting.utils.ColorTemplate;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
@@ -84,7 +78,6 @@ import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
 import com.innovattic.rangeseekbar.RangeSeekBar;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
@@ -474,7 +467,9 @@ public class Utility {
                 onResult.runGenericInterface(null);
             }
 
-        }, error -> Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show()) {
+        }, error -> {
+            Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show();
+        }) {
             @Override
             public Map<String, String> getHeaders() {
                 Map<String, String> headers = new HashMap<>();
@@ -1225,7 +1220,7 @@ public class Utility {
 
     public static String formatDuration(Duration duration, @Nullable String format){
         if (format == null)
-            format = "'%w% Woche§n§, ''%d% Tag§e§, ''%h% Stunde§n§, ''%m% Minute§n§, ''%s% Sekunde§n§'";
+            format = "'%w% Woche§n§~, ~''%d% Tag§e§~, ~''%h% Stunde§n§~, ~''%m% Minute§n§~, ~''%s% Sekunde§n§~, ~'";
         com.finn.androidUtilities.CustomList<Pair<String, Integer>> patternList = new com.finn.androidUtilities.CustomList<>(Pair.create("%w%", 604800), Pair.create("%d%", 86400), Pair.create("%h%", 3600), Pair.create("%m%", 60), Pair.create("%s%", 1));
         int seconds = (int) (duration.toMillis() / 1000);
         while (true) {
@@ -1243,7 +1238,7 @@ public class Utility {
                         Matcher matcher = Pattern.compile(pair.first).matcher(segment);
                         String replacement = matcher.replaceFirst(String.valueOf(amount));
                         if (replacement.contains("§")) {
-                            Matcher removePlural = Pattern.compile("§\\w+§").matcher(replacement);
+                            Matcher removePlural = Pattern.compile("§\\w+?§").matcher(replacement);
                             if (removePlural.find())
                                 replacement = removePlural.replaceFirst(amount > 1 ? Utility.subString(removePlural.group(), 1, -1) : "");
                         }
@@ -1256,6 +1251,21 @@ public class Utility {
                 }
             }
         }
+
+        if (format.contains("~")) {
+            while (true) {
+                Matcher segments = Pattern.compile("~.+?~").matcher(format);
+                if (!segments.find())
+                    break;
+
+                int start = segments.start();
+                int end = segments.end();
+                String replacement = Utility.subString(segments.group(), 1, -1);
+
+                format = Utility.stringReplace(format, start, end, segments.find() ? replacement : "");
+            }
+        }
+
         return format;
     }
     //  <------------------------- Text -------------------------
@@ -1690,7 +1700,7 @@ public class Utility {
         final int[] min = {0};
         final int[] max = {20};
         boolean preSelected = false;
-        Matcher matcher = VideoActivity.pattern.matcher(searchView.getQuery());
+        Matcher matcher = VideoActivity.ratingPattern.matcher(searchView.getQuery());
         if (matcher.find()) {
             String[] range = matcher.group(0).replaceAll("\\*", "").replaceAll(",", ".").split("-");
             min[0] = Math.round(Float.parseFloat(range[0]) * 4);
@@ -1886,7 +1896,7 @@ public class Utility {
                     if (finalPreSelected) {
                         customDialog
                                 .addButton("Reset", customDialog1 -> {
-                                    String removedQuery = searchView.getQuery().toString().replaceAll(VideoActivity.pattern.pattern(), "").trim();
+                                    String removedQuery = searchView.getQuery().toString().replaceAll(VideoActivity.ratingPattern.pattern(), "").trim();
                                     searchView.setQuery(removedQuery, true);
                                 })
                                 .alignPreviousButtonsLeft();
@@ -1899,7 +1909,7 @@ public class Utility {
                     min[0] = rangeBar.getMinThumbValue();
                     max[0] = rangeBar.getMaxThumbValue();
 
-                    String removedQuery = searchView.getQuery().toString().replaceAll(VideoActivity.pattern.pattern(), "").trim();
+                    String removedQuery = searchView.getQuery().toString().replaceAll(VideoActivity.ratingPattern.pattern(), "").trim();
                     if (min[0] == 0 && max[0] == 20) {
                         if (finalPreSelected)
                             searchView.setQuery(removedQuery, true);
@@ -2299,6 +2309,28 @@ public class Utility {
     public static <T> T isNotNullOrElse(T input, GenericReturnOnlyInterface<T> orElse){
         return input != null ? input : orElse.runGenericInterface();
     }
+
+    public static <T> T isNotValueOrElse(T input, T value, T orElse){
+        return !Objects.equals(input, value) ? input : orElse;
+    }
+
+    public static <T> T isNotValueOrElse(T input, T value, GenericReturnOnlyInterface<T> orElse){
+        return !Objects.equals(input, value) ? input : orElse.runGenericInterface();
+    }
+
+    public static <T> T isValueOrElse(T input, T value, T orElse){
+        return Objects.equals(input, value) ? input : orElse;
+    }
+
+    public static <T> T isValueOrElse(T input, T value, GenericReturnOnlyInterface<T> orElse){
+        return Objects.equals(input, value) ? input : orElse.runGenericInterface();
+    }
+
+    public static <T, R> R isNullReturnOrElse(T input, R returnValue, GenericReturnInterface<T, R> orElse){
+        return Objects.equals(input, null) ? returnValue : orElse.runGenericInterface(input);
+    }
+
+
     //  <------------------------- EasyLogic -------------------------
 
 

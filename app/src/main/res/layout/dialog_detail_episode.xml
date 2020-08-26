@@ -85,10 +85,12 @@
                         android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/dialog_detailEpisode_ageRating_label"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginRight="8dp"
                             android:text="FSK:"
+                            android:textColor="@color/clickable_text_color_normal"
                             android:textStyle="bold" />
 
                         <TextView
@@ -108,10 +110,12 @@
                         android:orientation="horizontal">
 
                         <TextView
+                            android:id="@+id/dialog_detailEpisode_length_label"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginRight="8dp"
                             android:text="Länge:"
+                            android:textColor="@color/clickable_text_color_normal"
                             android:textStyle="bold" />
 
                         <TextView

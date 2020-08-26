@@ -135,8 +135,6 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //        List<String> imageUrlsFromHtml = Utility.getImageUrlsFromText(WebisteHtml.websiteHtml);
         String BREAKPOINT = null;
 
-
-
 //        Test test = Test.create();
 //        Test test2 = Test.create();
 //
@@ -765,18 +763,18 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //
 //                CustomTabsIntent customTabsIntent = builder.build();
 //                customTabsIntent.launchUrl(this, Uri.parse(url));
-                new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper(this, "https://www.imdb.com/title/tt12810338/?ref_=tt_ep_nx")
-                        .addRequest("document.getElementsByClassName(\"bp_item np_next\")[0].getAttribute(\"href\")", s -> {
-                            Matcher matcher = Pattern.compile("tt[0-9]{7}").matcher(s);
-                            if (matcher.find())
-                                CustomDialog.Builder(this)
-                                        .setTitle(matcher.group(0))
-                                        .show();
-                        })
-                        .addCommand("document.getElementsByClassName(\"bp_item np_next\")[0].click()")
-                        .setDebug(true)
-                        .go();
+                // ToDo: https://stackoverflow.com/questions/23426113/how-to-select-multiple-images-from-gallery-in-android/23426985#:~:text=setAction(Intent.-,ACTION_GET_CONTENT)%3B%20startActivityForResult(Intent.,Android%20API%2018%20and%20higher.&text=Here%20is%20the%20code%20for,and%20video%20from%20Default%20Gallery.
+                Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+                i.setType("image/*");
+                //i.setType("video/*");
+                i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                Intent pickIntent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                pickIntent.setType("image/*");
 
+                Intent chooserIntent = Intent.createChooser(i, "Select Image");
+                chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[] {pickIntent});
+
+                startActivityForResult(chooserIntent, 1);
                 break;
             case R.id.taskBar_main_settings:
                 startActivityForResult(new Intent(this, Settings.class), START_SETTINGS);
@@ -801,6 +799,10 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 setCounts(this);
             }
         }
+//        if (requestCode == 1) {
+//            data.getExtras();
+//            String BREAKPOINT = null;
+//        }
         super.onActivityResult(requestCode, resultCode, data);
     }
 

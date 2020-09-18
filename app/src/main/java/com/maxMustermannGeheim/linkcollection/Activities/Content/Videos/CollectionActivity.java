@@ -1211,7 +1211,7 @@ public class CollectionActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (Utility.stringExists(searchView.getQuery().toString())) {
+        if (Utility.stringExists(searchView.getQuery().toString()) && !Objects.equals(searchView.getQuery().toString(), getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH))) {
             searchView.setQuery("", false);
             return;
         }

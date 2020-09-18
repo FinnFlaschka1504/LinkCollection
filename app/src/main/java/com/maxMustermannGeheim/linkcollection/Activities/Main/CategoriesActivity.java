@@ -51,6 +51,7 @@ import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
@@ -645,7 +646,7 @@ public class CategoriesActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (Utility.stringExists(catigorys_search.getQuery().toString())) {
+        if (Utility.stringExists(catigorys_search.getQuery().toString()) && !Objects.equals(catigorys_search.getQuery().toString(), getIntent().getStringExtra(EXTRA_SEARCH))) {
             catigorys_search.setQuery("", false);
             return;
         }

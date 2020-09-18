@@ -90,7 +90,7 @@ public class Database {
     public Map<String, Studio> studioMap = new HashMap<>();
     public Map<String, Genre> genreMap = new HashMap<>();
     public Map<String, UrlParser> urlParserMap = new HashMap<>();
-//    public List<String> watchLaterList = new ArrayList<>();
+    //    public List<String> watchLaterList = new ArrayList<>();
     public Map<String, Collection> collectionMap = new HashMap<>();
 
     public static final String KNOWLEDGE = "KNOWLEDGE";
@@ -374,7 +374,7 @@ public class Database {
 
         @NonNull
         @Override
-        protected Content clone(){
+        protected Content clone() {
             try {
                 return (Content) super.clone();
             } catch (CloneNotSupportedException e) {
@@ -436,7 +436,7 @@ public class Database {
     public Map<String, Object> deepCopySimpleContentMap(boolean includeOnline, boolean includeOffline) {
         Map<String, Object> deepCopy = new HashMap<>();
         Map<String, Object> simpleContentMap = database.getSimpleContentMap(includeOnline, includeOffline);
-        HashMap<String, Object> hashMap = gson.fromJson(gson.toJson(simpleContentMap), HashMap.class);
+        HashMap<String, Object> hashMap = gson.fromJson(gson.toJson(simpleContentMap, HashMap.class), HashMap.class);
         for (Map.Entry<String, Object> entry : hashMap.entrySet()) {
             if (!(entry.getValue() instanceof LinkedTreeMap)) {
                 deepCopy.put(entry.getKey(), entry.getValue());
@@ -451,16 +451,17 @@ public class Database {
     }
 
 
-
     public static Boolean saveAll_simple() { // ToDo: alle if abfragen für null rückgabe verbessern
         Boolean aBoolean = saveAll(false);
         if (aBoolean == null)
             return false;
         return aBoolean;
     }
+
     public static Boolean saveAll() { // ToDo: alle if abfragen für null rückgabe verbessern
         return saveAll(false);
     }
+
     public static Boolean saveAll(boolean forceAll) {
         Log.d(TAG, "saveAll: ");
 
@@ -485,6 +486,7 @@ public class Database {
 
         return true;
     }
+
     public static Boolean saveAll(@Nullable Runnable onSaved, @Nullable Runnable onNothing, @Nullable Runnable onFailed) {
         Boolean result = saveAll();
         if (result != null && result && onSaved != null)
@@ -633,8 +635,7 @@ public class Database {
                 });
             });
 
-        }
-        else
+        } else
             contentMap = getContentMap(true);
 
         for (Content content : contentMap.values()) {
@@ -663,7 +664,7 @@ public class Database {
         return exists() && database.isLoaded();
     }
 
-    public static void destroy(){
+    public static void destroy() {
         database = null;
     }
 //  <----- checks -----

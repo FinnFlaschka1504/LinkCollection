@@ -1413,7 +1413,7 @@ public class ShowActivity extends AppCompatActivity {
                     ((TextView) itemView.findViewById(R.id.listItem_episode_viewCount)).setText(
                             episode.getDateList().size() >= 2 || (!episode.getDateList().isEmpty() && !episode.isWatched()) ? "| " + episode.getDateList().size() : "");
 
-                    Utility.applyToAllViews(itemView.findViewById(R.id.listItem_episode_detailLayout), View.class, view -> view.setAlpha(episode.isUpcomming() ? 0.6f : 1f));
+                    Utility.applyToAllViews(itemView.findViewById(R.id.listItem_episode_detailLayout), View.class, view -> view.setAlpha(Utility.isNullReturnOrElse(episode.getAirDate(), true, date -> episode.isUpcomming()) ? 0.6f : 1f));
 
                     ImageView listItem_episode_seen = itemView.findViewById(R.id.listItem_episode_seen);
                     if (episode.isWatched()) {

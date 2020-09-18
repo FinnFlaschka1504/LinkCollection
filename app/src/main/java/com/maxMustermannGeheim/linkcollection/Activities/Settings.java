@@ -727,16 +727,16 @@ public class Settings extends AppCompatActivity {
                     .setSetViewContent((customDialog, view, reload) -> {
                         TextInputLayout dialog_databaseLogin_name_layout = customDialog.findViewById(R.id.dialog_databaseLogin_name_layout);
                         TextInputLayout dialog_databaseLogin_passwordFirst_layout = customDialog.findViewById(R.id.dialog_databaseLogin_passwordFirst_layout);
-                        TextInputLayout dialog_databaseLogin_passwordSecond_layout = customDialog.findViewById(R.id.dialog_databaseLogin_passwordSecond_layout);
+                        customDialog.findViewById(R.id.dialog_databaseLogin_passwordSecond_layout).setVisibility(View.GONE);
 
                         Helpers.TextInputHelper helper = new Helpers.TextInputHelper();
-                        helper.addValidator(dialog_databaseLogin_name_layout, dialog_databaseLogin_passwordFirst_layout, dialog_databaseLogin_passwordSecond_layout)
+                        helper.addValidator(dialog_databaseLogin_name_layout, dialog_databaseLogin_passwordFirst_layout)
                                 .defaultDialogValidation(customDialog)
-                                .setValidation(dialog_databaseLogin_passwordSecond_layout, (validator, text) -> {
-                                    if (Utility.stringExists(text) && !text.equals(dialog_databaseLogin_passwordFirst_layout.getEditText().getText().toString().trim()))
-                                        validator.setInvalid("Die Passwörter müssen gleich sein");
-                                })
-                                .addActionListener(dialog_databaseLogin_passwordSecond_layout, (textInputHelper, textInputLayout, actionId, text) -> {
+//                                .setValidation(dialog_databaseLogin_passwordSecond_layout, (validator, text) -> {
+//                                    if (Utility.stringExists(text) && !text.equals(dialog_databaseLogin_passwordFirst_layout.getEditText().getText().toString().trim()))
+//                                        validator.setInvalid("Die Passwörter müssen gleich sein");
+//                                })
+                                .addActionListener(dialog_databaseLogin_passwordFirst_layout, (textInputHelper, textInputLayout, actionId, text) -> {
                                     View button = customDialog.getActionButton().getButton();
                                     if (button.isEnabled())
                                         button.callOnClick();
@@ -802,7 +802,7 @@ public class Settings extends AppCompatActivity {
                                     } else {
                                         CustomDialog.Builder(this)
                                                 .setTitle("Passwort Eingeben")
-                                                .setText("Die Datenbank enthält verschlüsselte Bereiche und das hinterlegte Passwort sitmmt nicht.\nBitte das richtige Passwort eingeben.")
+                                                .setText("Die Datenbank enthält verschlüsselte Bereiche und das hinterlegte Passwort sitmmt nicht mit dem der Datenbank überein.\nBitte das richtige Passwort eingeben.")
                                                 .setEdit(new CustomDialog.EditBuilder().setInputType(Helpers.TextInputHelper.INPUT_TYPE.PASSWORD))
                                                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                                                 .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {

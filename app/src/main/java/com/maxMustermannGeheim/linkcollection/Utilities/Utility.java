@@ -18,6 +18,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -155,6 +156,8 @@ public class Utility {
     }
 
     static public boolean isOnline() {
+        if (Build.MODEL.equals("Android SDK built for x86"))
+            return true;
         Runtime runtime = Runtime.getRuntime();
         try {
             Process ipProcess = runtime.exec("/system/bin/ping -c 1 8.8.8.8");
@@ -469,6 +472,7 @@ public class Utility {
 
         }, error -> {
             Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show();
+            onResult.runGenericInterface(null);
         }) {
             @Override
             public Map<String, String> getHeaders() {

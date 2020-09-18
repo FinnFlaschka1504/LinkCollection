@@ -1413,7 +1413,7 @@ public class ShowActivity extends AppCompatActivity {
                     ((TextView) itemView.findViewById(R.id.listItem_episode_viewCount)).setText(
                             episode.getDateList().size() >= 2 || (!episode.getDateList().isEmpty() && !episode.isWatched()) ? "| " + episode.getDateList().size() : "");
 
-                    Utility.applyToAllViews(itemView.findViewById(R.id.listItem_episode_detailLayout), View.class, view -> view.setAlpha(Utility.isNullReturnOrElse(episode.getAirDate(), true, date -> episode.isUpcomming()) ? 0.6f : 1f));
+                    Utility.applyToAllViews(itemView.findViewById(R.id.listItem_episode_detailLayout), View.class, view -> view.setAlpha(Utility.isNullReturnOrElse(episode.getAirDate(), true, date -> episode.isUpcomming()) && !episode.isWatched() ? 0.6f : 1f));
 
                     ImageView listItem_episode_seen = itemView.findViewById(R.id.listItem_episode_seen);
                     if (episode.isWatched()) {
@@ -1421,11 +1421,13 @@ public class ShowActivity extends AppCompatActivity {
                         listItem_episode_seen.setAlpha(1f);
                         listItem_episode_seen.setClickable(false);
                         listItem_episode_seen.setForeground(null);
+                        listItem_episode_seen.setOnTouchListener((view, motionEvent) -> itemView.onTouchEvent(motionEvent));
                     } else {
                         listItem_episode_seen.setColorFilter(getColor(R.color.colorDrawable), PorterDuff.Mode.SRC_IN);
                         listItem_episode_seen.setAlpha(0.2f);
                         listItem_episode_seen.setClickable(true);
                         listItem_episode_seen.setForeground(ResourcesCompat.getDrawable(getResources(), R.drawable.ripple, null));
+                        listItem_episode_seen.setOnTouchListener(null);
                     }
                 })
                 .addSubOnClickListener(R.id.listItem_episode_seen, (customRecycler, itemView, episode, index) -> {
@@ -1515,6 +1517,7 @@ public class ShowActivity extends AppCompatActivity {
         }
 //        setResult(RESULT_OK); // vielleich wichtig?
         final Runnable[] destroyGetIimdbIdAndDetails = {null};
+        final float[] currentRating = {-1};
 
         CustomDialog.Builder(this)
                 .setTitle(episode.getName())
@@ -1695,13 +1698,15 @@ public class ShowActivity extends AppCompatActivity {
                     }
                     ((TextView) view.findViewById(R.id.dialog_detailEpisode_views)).setText(viewsText);
 
-                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode.getAirDate()));
+                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_release)).setText(Utility.isNullReturnOrElse(episode.getAirDate(), "", date -> new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(date)));
 
-                    RatingBar dialog_detailEpisode_rating = new Helpers.RatingHelper(view.findViewById(R.id.customRating_layout)).setRating(episode.getRating()).getRatingBar();
+
+                    RatingBar dialog_detailEpisode_rating = new Helpers.RatingHelper(view.findViewById(R.id.customRating_layout)).setRating(Utility.isNotValueOrElse(currentRating[0], -1f, episode.getRating())).getRatingBar();
 //                    dialog_detailEpisode_rating.setRating(episode.getRating());
                     CustomDialog.ButtonHelper actionButton = customDialog.getActionButton();
                     dialog_detailEpisode_rating.setOnRatingBarChangeListener((ratingBar, rating, fromUser) -> {
                         actionButton.setEnabled(rating != episode.getRating());
+                        currentRating[0] = rating;
                     });
                     view.findViewById(R.id.dialog_detailEpisode_editViews).setOnClickListener(v -> showEpisodeCalenderDialog(episode, customDialog));
                     view.findViewById(R.id.dialog_detailEpisode_editViews).setOnLongClickListener(v -> {

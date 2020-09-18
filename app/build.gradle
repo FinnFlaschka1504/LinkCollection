@@ -7,7 +7,7 @@ android {
     buildToolsVersion "29.0.2"
     defaultConfig {
         applicationId "com.maxMustermannGeheim.linkcollection"
-        minSdkVersion 25
+        minSdkVersion 27
         targetSdkVersion 29
         versionCode 7
         versionName "2.5"

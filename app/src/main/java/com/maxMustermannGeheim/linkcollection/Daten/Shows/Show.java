@@ -3,6 +3,7 @@ package com.maxMustermannGeheim.linkcollection.Daten.Shows;
 import android.content.Context;
 
 import com.finn.androidUtilities.CustomDialog;
+import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
@@ -23,7 +24,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Show extends ParentClass{
+public class Show extends ParentClass {
     public static final String EMPTY_SEASON = "EMPTY_SEASON";
 
     public enum REQUEST_IMDB_ID_TYPE {
@@ -261,13 +262,15 @@ public class Show extends ParentClass{
 
 
     //  ----- Classes ----->
-    public static class Season extends ParentClass{
+    public static class Season extends ParentClass {
         private int episodesCount;
         private int tmdbId;
         private Date airDate;
         private int seasonNumber;
-        private Map<String,Episode> episodeMap = new HashMap<>();
+        private Map<String, Episode> episodeMap = new HashMap<>();
         private String showId;
+        private String imdbIdBuffer;
+//        public int test;
 
         public Season(String name) {
             uuid = "season_" + UUID.randomUUID().toString();
@@ -313,11 +316,11 @@ public class Show extends ParentClass{
             return this;
         }
 
-        public Map<String,Episode> getEpisodeMap() {
+        public Map<String, Episode> getEpisodeMap() {
             return episodeMap;
         }
 
-        public Season setEpisodeMap(Map<String,Episode> episodeMap) {
+        public Season setEpisodeMap(Map<String, Episode> episodeMap) {
             this.episodeMap = episodeMap;
             return this;
         }
@@ -331,12 +334,31 @@ public class Show extends ParentClass{
             return this;
         }
 
+        public String getImdbIdBuffer() {
+            return imdbIdBuffer;
+        }
+
+        public Season setImdbIdBuffer(String imdbIdBuffer) {
+            this.imdbIdBuffer = imdbIdBuffer;
+            return this;
+        }
+
+        public com.finn.androidUtilities.CustomList<String> _getImdbIdBuffer_List() {
+            return new com.finn.androidUtilities.CustomList<>(new Gson().fromJson(imdbIdBuffer, String[].class));
+        }
+
+        public static com.finn.androidUtilities.CustomList<String> _getImdbIdBuffer_List(String imdbIdBuffer) {
+            return new com.finn.androidUtilities.CustomList<>(new Gson().fromJson(imdbIdBuffer, String[].class));
+        }
+
+
         //  ------------------------- Encryption ------------------------->
         @Override
         public boolean encrypt(String key) {
             try {
                 if (Utility.stringExists(name)) name = AESCrypt.encrypt(key, name);
-                if (!episodeMap.isEmpty()) episodeMap.values().forEach(episode -> episode.encrypt(key));
+                if (!episodeMap.isEmpty())
+                    episodeMap.values().forEach(episode -> episode.encrypt(key));
                 return true;
             } catch (GeneralSecurityException e) {
                 return false;
@@ -347,7 +369,8 @@ public class Show extends ParentClass{
         public boolean decrypt(String key) {
             try {
                 if (Utility.stringExists(name)) name = AESCrypt.decrypt(key, name);
-                if (!episodeMap.isEmpty()) episodeMap.values().forEach(episode -> episode.decrypt(key));
+                if (!episodeMap.isEmpty())
+                    episodeMap.values().forEach(episode -> episode.decrypt(key));
                 return true;
             } catch (GeneralSecurityException e) {
                 return false;
@@ -504,7 +527,9 @@ public class Show extends ParentClass{
         public Runnable requestImdbId(Context context, Runnable onFinished, REQUEST_IMDB_ID_TYPE differentRequestType) {
             final Runnable[] destroy = {null};
 
-            Show show = Database.getInstance().showMap.get(showId);
+            Database database = Database.getInstance();
+            Show show = database.showMap.get(showId);
+            Season season = show.getSeasonList().get(seasonNumber);
             REQUEST_IMDB_ID_TYPE requestImdbIdType = Utility.isNotNullOrElse(differentRequestType, show.requestImdbIdType);
             switch (requestImdbIdType) {
                 case TRAKT:
@@ -515,31 +540,33 @@ public class Show extends ParentClass{
                     break;
                 case SEASON:
                     new Helpers.WebViewHelper(context, "https://www.imdb.com/title/" + show.getImdbId() + "/episodes?season=" + seasonNumber)
-                            .addRequest("{\n" +
-                                    "    var episodeIdList = new Array();\n" +
-                                    "    document.getElementsByClassName(\"list detail eplist\")[0].children.forEach(function test(value) {\n" +
-                                    "        episodeIdList.push(value.getElementsByClassName(\"image\")[0].children[0].getAttribute(\"href\").split(\"/\")[2]);\n" +
-                                    "    });\n" +
-                                    "    return episodeIdList;\n" +
-                                    "}", s -> {
-                                com.finn.androidUtilities.CustomList<String> imdbIdList = new com.finn.androidUtilities.CustomList<>();
-                                Matcher matcher = Pattern.compile(Utility.imdbPattern).matcher(s);
-                                while (matcher.find()) {
-                                    imdbIdList.add(matcher.group(0));
-                                }
-                                Map<String, Episode> episodeMap;
-                                Map<Integer, Map<String, Episode>> map;
-                                if ((map = Database.getInstance().tempShowSeasonEpisodeMap.get(show)) == null || (episodeMap = map.get(seasonNumber)) == null) {
-                                    episodeMap = show.getSeasonList().get(seasonNumber).getEpisodeMap();
-                                }
-                                Map<String, Episode> finalEpisodeMap = episodeMap;
-                                imdbIdList.forEachCount((imdbId, count) -> {
-                                    Episode episode = finalEpisodeMap.get("E:" + (count + 1));
-                                    if (episode != null)
-                                        episode.setImdbId(imdbId);
-                                });
-                                Utility.runRunnable(onFinished);
-                            })
+                            .addRequest(
+                                    "{\n" +
+                                            "    var episodeIdList = new Array();\n" +
+                                            "    document.getElementsByClassName(\"list detail eplist\")[0].children.forEach(function test(value) {\n" +
+                                            "        episodeIdList.push(value.getElementsByClassName(\"image\")[0].children[0].getAttribute(\"href\").split(\"/\")[2]);\n" +
+                                            "    });\n" +
+                                            "    return episodeIdList;\n" +
+                                            "}", s -> {
+                                        com.finn.androidUtilities.CustomList<String> imdbIdList = Season._getImdbIdBuffer_List(s);
+                                        season.setImdbIdBuffer(s);
+                                        Map<String, Episode> episodeMap;
+                                        Map<Integer, Map<String, Episode>> map = null;
+                                        for (Map.Entry<Show, Map<Integer, Map<String, Episode>>> entry : database.tempShowSeasonEpisodeMap.entrySet()) {
+                                            if (entry.getKey().equals(show))
+                                                map = entry.getValue();
+                                        }
+                                        if (map == null || (episodeMap = map.get(seasonNumber)) == null) {
+                                            episodeMap = season.getEpisodeMap();
+                                        }
+                                        Map<String, Episode> finalEpisodeMap = episodeMap;
+                                        imdbIdList.forEachCount((imdbId, count) -> {
+                                            Episode episode = finalEpisodeMap.get("E:" + (count + 1));
+                                            if (episode != null && !Utility.stringExists(episode.getImdbId()))
+                                                episode.setImdbId(imdbId);
+                                        });
+                                        Utility.runRunnable(onFinished);
+                                    })
                             .addOptional(webViewHelper -> destroy[0] = webViewHelper::destroy)
 //                            .setDebug(true)
                             .go();
@@ -547,10 +574,10 @@ public class Show extends ParentClass{
                 case PREVIOUS:
                     Episode previousEpisode = null;
                     if (episodeNumber > 1) {
-                        previousEpisode = show.getSeasonList().get(seasonNumber).getEpisodeMap().get("E:" + (episodeNumber - 1));
+                        previousEpisode = season.getEpisodeMap().get("E:" + (episodeNumber - 1));
                     } else if (seasonNumber > 1) {
-                        Season season = show.getSeasonList().get(seasonNumber - 1);
-                        previousEpisode = season.getEpisodeMap().get("E:" + season.episodesCount);
+                        Season previousSeason = show.getSeasonList().get(seasonNumber - 1);
+                        previousEpisode = previousSeason.getEpisodeMap().get("E:" + previousSeason.episodesCount);
                     }
                     if (previousEpisode != null && Utility.isImdbId(previousEpisode.getImdbId())) {
                         new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper(context, "https://www.imdb.com/title/" + previousEpisode.getImdbId())

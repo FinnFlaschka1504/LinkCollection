@@ -43,6 +43,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.Collecti
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomInternetHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;

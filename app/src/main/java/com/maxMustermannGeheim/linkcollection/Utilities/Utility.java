@@ -67,6 +67,7 @@ import com.bumptech.glide.request.target.DrawableImageViewTarget;
 import com.bumptech.glide.request.target.Target;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
+import com.github.chrisbanes.photoview.PhotoView;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
@@ -2498,7 +2499,8 @@ public class Utility {
             CustomDialog.Builder(context)
                     .setView(R.layout.dialog_poster)
                     .setSetViewContent((customDialog1, view1, reload1) -> {
-                        ImageView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
+                        PhotoView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
+                        dialog_poster_poster.setMaximumScale(10f);
                         if (fullScreenPath.endsWith(".png") || fullScreenPath.endsWith(".svg"))
                             dialog_poster_poster.setPadding(0, 0, 0, 0);
 
@@ -2512,17 +2514,19 @@ public class Utility {
                                     .placeholder(R.drawable.ic_download)
                                     .into(dialog_poster_poster);
                         }
+
                         dialog_poster_poster.setOnContextClickListener(v1 -> {
                             customDialog1.dismiss();
                             return true;
                         });
-
+                        dialog_poster_poster.setOnOutsidePhotoTapListener(imageView1 -> customDialog1.dismiss());
                     })
                     .addOptionalModifications(customDialog -> {
                         if (!(fullScreenPath.endsWith(".png") || fullScreenPath.endsWith(".svg")))
                             customDialog.removeBackground_and_margin();
                     })
                     .disableScroll()
+                    .setDimensionsFullscreen()
                     .show();
         });
     }

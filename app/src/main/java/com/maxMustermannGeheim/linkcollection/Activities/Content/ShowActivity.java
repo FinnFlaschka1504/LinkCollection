@@ -2161,7 +2161,13 @@ public class ShowActivity extends AppCompatActivity {
                     jsonToEpisode(show, episodeMap, episode_json);
                 }
 
-                applyEpisodeMap(show.getSeasonList().get(seasonNumber).getEpisodeMap(), episodeMap);
+                Show.Season season = show.getSeasonList().get(seasonNumber);
+                applyEpisodeMap(season.getEpisodeMap(), episodeMap);
+                season._getImdbIdBuffer_List().forEachCount((s, count) -> {
+                    Show.Episode episode = episodeMap.get("E:" + (count + 1));
+                    if (!Utility.stringExists(episode.getImdbId()))
+                        episode.setImdbId(s);
+                });
 
                 Map<Integer, Map<String, Show.Episode>> map;
                 if (database.tempShowSeasonEpisodeMap.containsKey(show))

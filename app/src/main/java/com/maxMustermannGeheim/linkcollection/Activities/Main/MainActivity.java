@@ -259,7 +259,6 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //                .show();
     }
 
-
     void loadDatabase(boolean createNew) {
 
         Database.OnInstanceFinishedLoading onInstanceFinishedLoading = database_neu -> {
@@ -393,7 +392,6 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //        }
 //        return super.dispatchTouchEvent(ev);
 //    }
-
 
     interface OnDatabaseCodeFinish {
         void runOndatabaseCodeFinish(String databaseCode);

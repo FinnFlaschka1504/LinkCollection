@@ -1,6 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Content;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -19,6 +20,7 @@ import android.text.style.StyleSpan;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
@@ -1416,18 +1418,21 @@ public class ShowActivity extends AppCompatActivity {
                     Utility.applyToAllViews(itemView.findViewById(R.id.listItem_episode_detailLayout), View.class, view -> view.setAlpha(Utility.isNullReturnOrElse(episode.getAirDate(), true, date -> episode.isUpcomming()) && !episode.isWatched() ? 0.6f : 1f));
 
                     ImageView listItem_episode_seen = itemView.findViewById(R.id.listItem_episode_seen);
+                    FrameLayout listItem_episode_seen_touchZone = itemView.findViewById(R.id.listItem_episode_seen_touchZone);
                     if (episode.isWatched()) {
                         listItem_episode_seen.setColorFilter(getColor(R.color.colorGreen), PorterDuff.Mode.SRC_IN);
                         listItem_episode_seen.setAlpha(1f);
                         listItem_episode_seen.setClickable(false);
                         listItem_episode_seen.setForeground(null);
                         listItem_episode_seen.setOnTouchListener((view, motionEvent) -> itemView.onTouchEvent(motionEvent));
+                        listItem_episode_seen_touchZone.setOnTouchListener(null);
                     } else {
                         listItem_episode_seen.setColorFilter(getColor(R.color.colorDrawable), PorterDuff.Mode.SRC_IN);
                         listItem_episode_seen.setAlpha(0.2f);
                         listItem_episode_seen.setClickable(true);
                         listItem_episode_seen.setForeground(ResourcesCompat.getDrawable(getResources(), R.drawable.ripple, null));
                         listItem_episode_seen.setOnTouchListener(null);
+                        listItem_episode_seen_touchZone.setOnTouchListener((v, event) -> listItem_episode_seen.onTouchEvent(event));
                     }
                 })
                 .addSubOnClickListener(R.id.listItem_episode_seen, (customRecycler, itemView, episode, index) -> {

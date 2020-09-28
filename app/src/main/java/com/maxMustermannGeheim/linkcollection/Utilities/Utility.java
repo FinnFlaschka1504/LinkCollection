@@ -95,6 +95,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
@@ -1500,7 +1501,7 @@ public class Utility {
                         allObjectsList.sort((o1, o2) -> o1.getName().compareTo(o2.getName()));
                         return allObjectsList;
                     }
-                    return getMapFromDatabase(category).values().stream().filter(parentClass -> parentClass.getName().toLowerCase().contains(searchQuery[0].toLowerCase()))
+                    return getMapFromDatabase(category).values().stream().filter(parentClass -> ParentClass_Alias.containsQuery(parentClass,searchQuery[0]))
                             .sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList());
                 })
                 .setSetItemContent((customRecycler, itemView, parentClass) -> {
@@ -2010,6 +2011,18 @@ public class Utility {
             transferState.runTransferState(oldView, newView);
     }
 
+    public static <S extends View, T extends View> void replaceView_children(S oldView, T newView, @Nullable TransferState<S, T> transferState) {
+        replaceView(oldView, newView, transferState);
+        if (oldView instanceof ViewGroup && newView instanceof ViewGroup) {
+            ViewGroup viewGroup = (ViewGroup) oldView;
+            for (int i = 0; i < viewGroup.getChildCount(); i++) {
+                View child = viewGroup.getChildAt(i);
+                viewGroup.removeView(child);
+                ((ViewGroup) newView).addView(child);
+            }
+        }
+    }
+
     public interface TransferState<S, T> {
         void runTransferState(S source, T target);
     }
@@ -2334,8 +2347,6 @@ public class Utility {
     public static <T, R> R isNullReturnOrElse(T input, R returnValue, GenericReturnInterface<T, R> orElse){
         return Objects.equals(input, null) ? returnValue : orElse.runGenericInterface(input);
     }
-
-
     //  <------------------------- EasyLogic -------------------------
 
 
@@ -2501,6 +2512,7 @@ public class Utility {
                     .setSetViewContent((customDialog1, view1, reload1) -> {
                         PhotoView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
                         dialog_poster_poster.setMaximumScale(10f);
+                        dialog_poster_poster.setMediumScale(3f);
                         if (fullScreenPath.endsWith(".png") || fullScreenPath.endsWith(".svg"))
                             dialog_poster_poster.setPadding(0, 0, 0, 0);
 

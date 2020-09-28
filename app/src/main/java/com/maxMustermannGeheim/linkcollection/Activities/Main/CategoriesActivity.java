@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.InputType;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
@@ -13,6 +14,7 @@ import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -39,6 +41,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
@@ -204,12 +207,7 @@ public class CategoriesActivity extends AppCompatActivity {
 
     private List<Pair<ParentClass, Integer>> filterList(List<Pair<ParentClass, Integer>> datenObjektPairList) {
         if (!searchQuerry.equals("")) {
-//            for (Pair<ParentClass, Integer> datenObjektIntegerPair : allDatenObjektPairList) {
-//                ParentClass parentClass = datenObjektIntegerPair.first;
-//                if (!parentClass.getName().toLowerCase().contains(searchQuerry.toLowerCase()))
-//                    filterdDatenObjektPairList.remove(datenObjektIntegerPair);
-//            }
-            return datenObjektPairList.stream().filter(datenObjektIntegerPair -> datenObjektIntegerPair.first.getName().toLowerCase().contains(searchQuerry.toLowerCase())).collect(Collectors.toList());
+            return datenObjektPairList.stream().filter(datenObjektIntegerPair -> ParentClass_Alias.containsQuery(datenObjektIntegerPair.first, searchQuerry.toLowerCase())).collect(Collectors.toList());
         } else
             return new ArrayList<>(datenObjektPairList);
     }
@@ -397,7 +395,7 @@ public class CategoriesActivity extends AppCompatActivity {
 
                     CustomDialog.Builder(this)
                             .setTitle(catigory.getSingular() + " Umbenennen, oder Löschen")
-                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                             .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
                                 CustomDialog.Builder(this)
                                         .setTitle("Löschen")
@@ -411,24 +409,30 @@ public class CategoriesActivity extends AppCompatActivity {
                             }, false)
                             .transformPreviousButtonToImageButton()
                             .alignPreviousButtonsLeft()
-                            .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
+                            .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                                 if (!Utility.isOnline(this))
                                     return;
-                                item.first.setName(((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim());
+                                ParentClass_Alias.applyNameAndAlias(item.first, ((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim());
                                 if (parentClass instanceof ParentClass_Tmdb) {
                                     String url = ((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
                                     ((ParentClass_Tmdb) parentClass).setImagePath(url);
                                 }
                                 reLoadRecycler();
-                                Database.saveAll();
+                                Toast.makeText(this, (Database.saveAll_simple() ? "" : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
+
                             })
                             .setView(R.layout.dialog_edit_tmdb_category)
                             .setSetViewContent((customDialog, view1, reload) -> {
                                 TextInputLayout dialog_editTmdbCategory_name_layout = view1.findViewById(R.id.dialog_editTmdbCategory_name_layout);
-                                dialog_editTmdbCategory_name_layout.getEditText().setText(parentClass.getName());
+                                dialog_editTmdbCategory_name_layout.getEditText().setText(ParentClass_Alias.combineNameAndAlias(parentClass));
 
                                 com.finn.androidUtilities.Helpers.TextInputHelper helper =
-                                        new com.finn.androidUtilities.Helpers.TextInputHelper(result -> customDialog.getActionButton().setEnabled(result), dialog_editTmdbCategory_name_layout);
+                                        new com.finn.androidUtilities.Helpers.TextInputHelper((Button) customDialog.getActionButton().getButton(), dialog_editTmdbCategory_name_layout);
+
+                                if (parentClass instanceof ParentClass_Alias) {
+//                                    helper.setInputType(dialog_editTmdbCategory_name_layout, com.finn.androidUtilities.Helpers.TextInputHelper.INPUT_TYPE.MULTI_LINE);
+                                    dialog_editTmdbCategory_name_layout.getEditText().setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_CLASS_TEXT);
+                                }
 
                                 if (parentClass instanceof ParentClass_Tmdb) {
                                     ImageView dialog_editTmdbCategory_internet = view1.findViewById(R.id.dialog_editTmdbCategory_internet);
@@ -452,7 +456,7 @@ public class CategoriesActivity extends AppCompatActivity {
                                 }
                             })
                             .enableDoubleClickOutsideToDismiss(customDialog -> {
-                                boolean result = !((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim().equals(parentClass.getName());
+                                boolean result = !((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim().equals(ParentClass_Alias.combineNameAndAlias(parentClass));
                                 return result || (parentClass instanceof ParentClass_Tmdb && !Utility.boolOr(((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim(), ((ParentClass_Tmdb) parentClass).getImagePath(), ""));
                             })
                             .show();

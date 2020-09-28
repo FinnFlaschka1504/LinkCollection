@@ -55,6 +55,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
@@ -328,7 +329,7 @@ public class VideoActivity extends AppCompatActivity {
                     isShared = true;
                     String trim = text.toString().trim();
                     if (Utility.isUrl(trim)) {
-                        String url = /*trim.contains("http") && !trim.contains("https") ? trim.replace("http", "https") : */trim;
+                        String url = trim;
                         Runnable openEdit = () -> {
                             Video video = new Video("").setUrl(url);
                             Video[] editVideo = {null};
@@ -1580,10 +1581,9 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     private void parseTitleToDetails(Video video, Video[] editVideo, String name) {
-        String resultLow = name.toLowerCase();
-        List<String> actorIdList = database.darstellerMap.values().stream().filter(darsteller -> resultLow.contains(darsteller.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
-        List<String> studioIdList = database.studioMap.values().stream().filter(studio -> resultLow.contains(studio.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
-        List<String> genreIdList = database.genreMap.values().stream().filter(genre -> resultLow.contains(genre.getName().toLowerCase())).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
+        List<String> actorIdList = database.darstellerMap.values().stream().filter(darsteller -> ParentClass_Alias.containedInQuery(darsteller, name)).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
+        List<String> studioIdList = database.studioMap.values().stream().filter(studio -> ParentClass_Alias.containedInQuery(studio, name)).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
+        List<String> genreIdList = database.genreMap.values().stream().filter(genre -> ParentClass_Alias.containedInQuery(genre, name)).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
 
         if (addOrEditDialog != null) {
             ((EditText) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_Title)).setText(name);

@@ -34,6 +34,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.finn.androidUtilities.CustomUtility;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.textfield.TextInputLayout;
@@ -723,7 +724,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                         String amount_string = dialog_items_amount.getEditText().getText().toString();
                         CalcDialog calcDialog = new CalcDialog();
                         calcDialog.getSettings()
-                                .setInitialValue(BigDecimal.valueOf(amount_string.equals("") ? 0 : Double.valueOf(amount_string)))
+                                .setInitialValue(BigDecimal.valueOf(CustomUtility.boolOr(amount_string,"", ".") ? 0 : Double.parseDouble(amount_string)))
                                 .setRequestCode(CALCULATOR_REQUESTCODE_AMOUNT)
                                 .setExpressionShown(true)
                                 .setExpressionEditable(true);

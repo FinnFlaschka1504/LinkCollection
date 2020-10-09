@@ -290,7 +290,7 @@ public class Utility {
 
     public static String formatToEuro(double amount) {
         if (amount == 0)
-            return "N/S";
+            return "N/A";
         if (amount % 1 == 0)
             return String.format(Locale.GERMANY, "%.0f €", amount);
         else
@@ -2511,8 +2511,8 @@ public class Utility {
                     .setView(R.layout.dialog_poster)
                     .setSetViewContent((customDialog1, view1, reload1) -> {
                         PhotoView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
-                        dialog_poster_poster.setMaximumScale(10f);
-                        dialog_poster_poster.setMediumScale(3f);
+                        dialog_poster_poster.setMaximumScale(6f);
+                        dialog_poster_poster.setMediumScale(2.5f);
                         if (fullScreenPath.endsWith(".png") || fullScreenPath.endsWith(".svg"))
                             dialog_poster_poster.setPadding(0, 0, 0, 0);
 

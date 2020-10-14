@@ -307,7 +307,7 @@ public class VideoActivity extends AppCompatActivity {
                         })
                         .alignPreviousButtonsLeft()
                         .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog -> {
-                            Utility.importTmdbGenre(this, true);
+                            Utility.importTmdbGenre(this, true, true);
                             setResult(RESULT_OK);
                         })
                         .show();

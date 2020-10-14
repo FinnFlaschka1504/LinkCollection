@@ -7,6 +7,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -116,6 +117,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -244,8 +246,8 @@ public class Utility {
     }
     //  <--------------- isOnline ---------------
 
-    public static void restartApp(Context context) {
-        Intent mStartActivity = new Intent(context, MainActivity.class);
+    public static void restartApp(AppCompatActivity context) {
+        Intent mStartActivity = new Intent(context, context.getClass());
         int mPendingIntentId = 123456;
         PendingIntent mPendingIntent = PendingIntent.getActivity(context, mPendingIntentId, mStartActivity, PendingIntent.FLAG_CANCEL_CURRENT);
         AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -379,82 +381,95 @@ public class Utility {
 
 
     //  ------------------------- Api ------------------------->
-    public static void importTmdbGenre(Context context, boolean isVideo) {
-        String requestUrl = "https://api.themoviedb.org/3/genre/" +
-                (isVideo ? "movie" : "tv") +
-                "/list?api_key=09e015a2106437cbc33bf79eb512b32d&language=de";
-        RequestQueue requestQueue = Volley.newRequestQueue(context);
+    public static void importTmdbGenre(Context context, boolean direct, boolean isVideo) {
+        Runnable executeImport = () -> {
+            String requestUrl = "https://api.themoviedb.org/3/genre/" +
+                    (isVideo ? "movie" : "tv") +
+                    "/list?api_key=09e015a2106437cbc33bf79eb512b32d&language=de";
+            RequestQueue requestQueue = Volley.newRequestQueue(context);
 
-        Toast.makeText(context, "Einen Moment bitte..", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Einen Moment bitte..", Toast.LENGTH_SHORT).show();
 
 
-        JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {
-            JSONArray results;
-            try {
-                results = response.getJSONArray("genres");
+            JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {
+                JSONArray results;
+                try {
+                    results = response.getJSONArray("genres");
 
-                if (results.length() == 0) {
-                    Toast.makeText(context, "Keine Ergebnisse gefunden", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+                    if (results.length() == 0) {
+                        Toast.makeText(context, "Keine Ergebnisse gefunden", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
 
-                if (isVideo) {
-                    Map<String, Genre> genreMap = Database.getInstance().genreMap;
-                    CustomList<Genre> list = new CustomList<>(genreMap.values());
+                    if (isVideo) {
+                        Map<String, Genre> genreMap = Database.getInstance().genreMap;
+                        CustomList<Genre> list = new CustomList<>(genreMap.values());
 
-                    for (int i = 0; i < results.length(); i++) {
-                        JSONObject object = results.getJSONObject(i);
+                        for (int i = 0; i < results.length(); i++) {
+                            JSONObject object = results.getJSONObject(i);
 
-                        int id = object.getInt("id");
-                        String name = object.getString("name");
+                            int id = object.getInt("id");
+                            String name = object.getString("name");
 
-                        Optional<Genre> optional = list.stream().filter(genre -> genre.getName().toLowerCase().equals(name.toLowerCase())).findFirst();
-                        if (optional.isPresent()) {
-                            optional.get().setTmdbGenreId(id);
-                        } else {
-                            optional = list.stream().filter(genre -> genre.getTmdbGenreId() == id).findFirst();
+                            Optional<Genre> optional = list.stream().filter(genre -> genre.getName().toLowerCase().equals(name.toLowerCase())).findFirst();
                             if (optional.isPresent()) {
-                                optional.get().setName(name);
+                                optional.get().setTmdbGenreId(id);
                             } else {
-                                Genre genre = new Genre(name).setTmdbGenreId(id);
-                                genreMap.put(genre.getUuid(), genre);
+                                optional = list.stream().filter(genre -> genre.getTmdbGenreId() == id).findFirst();
+                                if (optional.isPresent()) {
+                                    optional.get().setName(name);
+                                } else {
+                                    Genre genre = new Genre(name).setTmdbGenreId(id);
+                                    genreMap.put(genre.getUuid(), genre);
+                                }
+                            }
+                        }
+                    } else {
+                        Map<String, ShowGenre> genreMap = Database.getInstance().showGenreMap;
+                        CustomList<ShowGenre> list = new CustomList<>(genreMap.values());
+
+                        for (int i = 0; i < results.length(); i++) {
+                            JSONObject object = results.getJSONObject(i);
+
+                            int id = object.getInt("id");
+                            String name = object.getString("name");
+
+                            Optional<ShowGenre> optional = list.stream().filter(genre -> genre.getName().toLowerCase().equals(name.toLowerCase())).findFirst();
+                            if (optional.isPresent()) {
+                                optional.get().setTmdbGenreId(id);
+                            } else {
+                                optional = list.stream().filter(genre -> genre.getTmdbGenreId() == id).findFirst();
+                                if (optional.isPresent()) {
+                                    optional.get().setName(name);
+                                } else {
+                                    ShowGenre genre = new ShowGenre(name).setTmdbGenreId(id);
+                                    genreMap.put(genre.getUuid(), genre);
+                                }
                             }
                         }
                     }
-                } else {
-                    Map<String, ShowGenre> genreMap = Database.getInstance().showGenreMap;
-                    CustomList<ShowGenre> list = new CustomList<>(genreMap.values());
 
-                    for (int i = 0; i < results.length(); i++) {
-                        JSONObject object = results.getJSONObject(i);
-
-                        int id = object.getInt("id");
-                        String name = object.getString("name");
-
-                        Optional<ShowGenre> optional = list.stream().filter(genre -> genre.getName().toLowerCase().equals(name.toLowerCase())).findFirst();
-                        if (optional.isPresent()) {
-                            optional.get().setTmdbGenreId(id);
-                        } else {
-                            optional = list.stream().filter(genre -> genre.getTmdbGenreId() == id).findFirst();
-                            if (optional.isPresent()) {
-                                optional.get().setName(name);
-                            } else {
-                                ShowGenre genre = new ShowGenre(name).setTmdbGenreId(id);
-                                genreMap.put(genre.getUuid(), genre);
-                            }
-                        }
-                    }
+                    Toast.makeText(context, "Genre Importiert", Toast.LENGTH_SHORT).show();
+                    Database.saveAll();
+                } catch (JSONException ignored) {
                 }
 
-                Toast.makeText(context, "Genre Importiert", Toast.LENGTH_SHORT).show();
-                Database.saveAll();
-            } catch (JSONException ignored) {
-            }
+            }, error -> Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show());
 
-        }, error -> Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show());
+            requestQueue.add(jsonArrayRequest);
+        };
 
-        requestQueue.add(jsonArrayRequest);
-
+        if (direct)
+            executeImport.run();
+        else
+            com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog.Builder(context)
+                    .setTitle("Genre Importieren")
+                    .setText("Willst du wirklich alle THDb Genres importieren?")
+                    .setButtonConfiguration(com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                    .addButton(com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog -> {
+                        executeImport.run();
+                    })
+                    .show();
     }
 
     // --------------- Trakt
@@ -631,7 +646,7 @@ public class Utility {
                 if (database.darstellerMap.get(actorUUid).getName().equals(query))
                     return true;
             } else {
-                if (database.darstellerMap.get(actorUUid).getName().toLowerCase().contains(query.toLowerCase()))
+                if (ParentClass_Alias.containsQuery(database.darstellerMap.get(actorUUid), query))
                     return true;
             }
 
@@ -646,7 +661,7 @@ public class Utility {
                 if (database.genreMap.get(genreUUid).getName().equals(query))
                     return true;
             } else {
-                if (database.genreMap.get(genreUUid).getName().toLowerCase().contains(query.toLowerCase()))
+                if (ParentClass_Alias.containsQuery(database.genreMap.get(genreUUid), query))
                     return true;
             }
         }
@@ -660,7 +675,7 @@ public class Utility {
                 if (database.studioMap.get(studioUUid).getName().equals(query))
                     return true;
             } else {
-                if (database.studioMap.get(studioUUid).getName().toLowerCase().contains(query.toLowerCase()))
+                if (ParentClass_Alias.containsQuery(database.studioMap.get(studioUUid), query))
                     return true;
             }
         }
@@ -1146,7 +1161,7 @@ public class Utility {
         return text.matches("(?i)^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?!(?:10|127)(?:\\.\\d{1,3}){3})(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?(?:[/?#]\\S*)?$");
     }
 
-    public static boolean isImdbId(String imdbId){
+    public static boolean isImdbId(String imdbId) {
         if (imdbId == null) return false;
         return imdbId.matches(imdbPattern_full);
     }
@@ -1224,7 +1239,7 @@ public class Utility {
         return source.substring(0, start) + replacement + source.substring(end);
     }
 
-    public static String formatDuration(Duration duration, @Nullable String format){
+    public static String formatDuration(Duration duration, @Nullable String format) {
         if (format == null)
             format = "'%w% Woche§n§~, ~''%d% Tag§e§~, ~''%h% Stunde§n§~, ~''%m% Minute§n§~, ~''%s% Sekunde§n§~, ~'";
         com.finn.androidUtilities.CustomList<Pair<String, Integer>> patternList = new com.finn.androidUtilities.CustomList<>(Pair.create("%w%", 604800), Pair.create("%d%", 86400), Pair.create("%h%", 3600), Pair.create("%m%", 60), Pair.create("%s%", 1));
@@ -1323,7 +1338,7 @@ public class Utility {
         centeredToast(context, text).show();
     }
 
-    public static void showOnClickToast(Context context, String text, View.OnClickListener onClickListener){
+    public static void showOnClickToast(Context context, String text, View.OnClickListener onClickListener) {
         Toast toast = centeredToast(context, text);
         View view = toast.getView().findViewById(android.R.id.message);
         if (view != null) view.setOnClickListener(onClickListener);
@@ -1501,7 +1516,7 @@ public class Utility {
                         allObjectsList.sort((o1, o2) -> o1.getName().compareTo(o2.getName()));
                         return allObjectsList;
                     }
-                    return getMapFromDatabase(category).values().stream().filter(parentClass -> ParentClass_Alias.containsQuery(parentClass,searchQuery[0]))
+                    return getMapFromDatabase(category).values().stream().filter(parentClass -> ParentClass_Alias.containsQuery(parentClass, searchQuery[0]))
                             .sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList());
                 })
                 .setSetItemContent((customRecycler, itemView, parentClass) -> {
@@ -1589,7 +1604,6 @@ public class Utility {
         }
         return null;
     }
-
 
     public static class Triple<A, B, C> {
         public A first;
@@ -1950,6 +1964,7 @@ public class Utility {
 
     }
 
+    //  ------------------------- Date & String ------------------------->
     public static Date getDateFromJsonString(String key, JSONObject jsonObject) {
         try {
             return new SimpleDateFormat("yyyy-MM-dd", Locale.GERMANY).parse(jsonObject.getString(key));
@@ -1957,6 +1972,11 @@ public class Utility {
             return null;
         }
     }
+
+    public static String formatDate(String format, Date date) {
+        return new SimpleDateFormat(format, Locale.getDefault()).format(date);
+    }
+    //  <------------------------- Date & String -------------------------
 
 
     //  ------------------------- SetDimensions ------------------------->
@@ -2320,31 +2340,31 @@ public class Utility {
         return stringExists(s) ? s : orElse;
     }
 
-    public static <T> T isNotNullOrElse(T input, T orElse){
+    public static <T> T isNotNullOrElse(T input, T orElse) {
         return input != null ? input : orElse;
     }
 
-    public static <T> T isNotNullOrElse(T input, GenericReturnOnlyInterface<T> orElse){
+    public static <T> T isNotNullOrElse(T input, GenericReturnOnlyInterface<T> orElse) {
         return input != null ? input : orElse.runGenericInterface();
     }
 
-    public static <T> T isNotValueOrElse(T input, T value, T orElse){
+    public static <T> T isNotValueOrElse(T input, T value, T orElse) {
         return !Objects.equals(input, value) ? input : orElse;
     }
 
-    public static <T> T isNotValueOrElse(T input, T value, GenericReturnOnlyInterface<T> orElse){
+    public static <T> T isNotValueOrElse(T input, T value, GenericReturnOnlyInterface<T> orElse) {
         return !Objects.equals(input, value) ? input : orElse.runGenericInterface();
     }
 
-    public static <T> T isValueOrElse(T input, T value, T orElse){
+    public static <T> T isValueOrElse(T input, T value, T orElse) {
         return Objects.equals(input, value) ? input : orElse;
     }
 
-    public static <T> T isValueOrElse(T input, T value, GenericReturnOnlyInterface<T> orElse){
+    public static <T> T isValueOrElse(T input, T value, GenericReturnOnlyInterface<T> orElse) {
         return Objects.equals(input, value) ? input : orElse.runGenericInterface();
     }
 
-    public static <T, R> R isNullReturnOrElse(T input, R returnValue, GenericReturnInterface<T, R> orElse){
+    public static <T, R> R isNullReturnOrElse(T input, R returnValue, GenericReturnInterface<T, R> orElse) {
         return Objects.equals(input, null) ? returnValue : orElse.runGenericInterface(input);
     }
     //  <------------------------- EasyLogic -------------------------
@@ -2722,7 +2742,8 @@ public class Utility {
                 }, closeButtonId)
                 .hideLastAddedButton()
                 .enableDoubleClickOutsideToDismiss(customDialog2 -> doubleClick[0])
-                .setOnDialogDismiss(customDialog3 -> loadDetails[0] = () -> {})
+                .setOnDialogDismiss(customDialog3 -> loadDetails[0] = () -> {
+                })
                 .show();
 
 
@@ -2757,7 +2778,8 @@ public class Utility {
                         currentVideo[0].setLength(response.getInt("runtime"));
                     if (response.has("imdb_id"))
                         currentVideo[0].setImdbId(response.getString("imdb_id"));
-                } catch (JSONException ignored) { isFailed = true;
+                } catch (JSONException ignored) {
+                    isFailed = true;
                 }
 
                 try {
@@ -3053,7 +3075,7 @@ public class Utility {
     //  <------------------------- ExpendableToolbar -------------------------
 
     //  ------------------------- Arrays ------------------------->
-    public static int getIndexByString(Context context, int arrayId, String language){
+    public static int getIndexByString(Context context, int arrayId, String language) {
         String[] array = context.getResources().getStringArray(arrayId);
         for (int i = 0; i < array.length; i++) {
             if (array[i].equals(language))
@@ -3062,7 +3084,7 @@ public class Utility {
         return 0;
     }
 
-    public static String getStringByIndex(Context context, int arrayId, int index){
+    public static String getStringByIndex(Context context, int arrayId, int index) {
         return context.getResources().getStringArray(arrayId)[index];
     }
 

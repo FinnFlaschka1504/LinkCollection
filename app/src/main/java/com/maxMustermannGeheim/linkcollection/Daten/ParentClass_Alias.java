@@ -59,6 +59,8 @@ public interface ParentClass_Alias {
     }
 
     static boolean containsQuery(ParentClass parentClass, String query) {
+        if (parentClass == null || query == null)
+            return false;
         query = query.toLowerCase().replaceAll("[-_ ]", "");
         String name = parentClass.getName().toLowerCase().replaceAll("[-_ ]", "");
         if (name.contains(query))

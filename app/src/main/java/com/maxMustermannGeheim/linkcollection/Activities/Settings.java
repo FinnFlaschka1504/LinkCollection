@@ -1,16 +1,26 @@
 package com.maxMustermannGeheim.linkcollection.Activities;
 
+import android.content.ActivityNotFoundException;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.drawable.Icon;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.util.Pair;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -26,6 +36,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -36,6 +47,8 @@ import com.finn.androidUtilities.Helpers;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.common.hash.Hashing;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -44,6 +57,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoAct
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.DialogActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
+import com.maxMustermannGeheim.linkcollection.BuildConfig;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
@@ -65,6 +79,14 @@ import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.maxMustermannGeheim.linkcollection.Utilities.VersionControl;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -198,7 +220,7 @@ public class Settings extends AppCompatActivity {
             editor.putString(entry.getKey(), entry.getValue());
         }
 
-        editor.apply();
+        editor.commit();
     }
 
     public static void applySpacesList(AppCompatActivity context) {
@@ -237,7 +259,7 @@ public class Settings extends AppCompatActivity {
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_more_showCollections)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_COLLECTIONS));
 
                     view.findViewById(R.id.dialogSettingsVideo_edit_importGenres).setOnClickListener(v -> {
-                        Utility.importTmdbGenre(context, true);
+                        Utility.importTmdbGenre(settingsContext, false, true);
                         context.setResult(RESULT_OK);
                     });
 
@@ -402,7 +424,7 @@ public class Settings extends AppCompatActivity {
 
                     });
                     view.findViewById(R.id.dialogSettingsShow_edit_importGenres).setOnClickListener(v -> {
-                        Utility.importTmdbGenre(context, false);
+                        Utility.importTmdbGenre(customDialog.getDialog().getContext(), false, false);
                         context.setResult(RESULT_OK);
                     });
                 }, new Space.OnClick() {
@@ -1437,6 +1459,160 @@ public class Settings extends AppCompatActivity {
     //  <------------------------- language -------------------------
 
 
+    //  ------------------------- Export and Import Settings ------------------------->
+    private String saveSharedPreferences(SharedPreferences sharedPreferences) {
+        // create some junk data to populate the shared preferences
+//        SharedPreferences prefs = getSharedPreferences("MyPrefs", MODE_PRIVATE);
+//        SharedPreferences.Editor prefEdit = prefs.edit();
+//        prefEdit.putBoolean("SomeBooleanValue_True", true);
+//        prefEdit.putInt("SomeIntValue_100", 100);
+//        prefEdit.putFloat("SomeFloatValue_1.11", 1.11f);
+//        prefEdit.putString("SomeStringValue_Unicorns", "Unicorns");
+//        prefEdit.commit();
+
+        // BEGIN EXAMPLE
+        File myPath = new File(Environment.getExternalStorageDirectory().toString());
+        File myFile = new File(myPath, String.format("SecondMind Settings Export %s.txt", Utility.formatDate("yyyy-MM-dd-HH-mm-ss", new Date())));
+
+        try
+        {
+            FileWriter fw = new FileWriter(myFile);
+            PrintWriter pw = new PrintWriter(fw);
+
+            Map<String,?> prefsMap = sharedPreferences.getAll();
+
+            for(Map.Entry<String,?> entry : prefsMap.entrySet())
+            {
+                pw.println(entry.getKey() + ":" + entry.getValue().toString());
+            }
+
+            pw.close();
+            fw.close();
+            
+            return myFile.getAbsolutePath();
+        }
+        catch (Exception e)
+        {
+            // what a terrible failure...
+            Log.wtf(getClass().getName(), e.toString());
+            return null;
+        }
+    }
+
+    private void exportSettings() {
+        String settingsString = new Gson().toJson(settingsMap); //mySPR_settings.getAll().entrySet().stream().map(entry -> entry.getKey() + ":" + entry.getValue()).collect(Collectors.joining("\n"));
+        CustomDialog.Builder(this)
+                .setTitle("Einstellungen Als Text")
+                .setEdit(new CustomDialog.EditBuilder().setText(settingsString)) //.setInputType(Helpers.TextInputHelper.INPUT_TYPE.MULTI_LINE))
+//                .setSetViewContent((customDialog, view, reload) -> {
+//                    ((EditText) customDialog.findViewById(R.id.dialog_custom_edit)).setMaxLines(15);
+//                })
+                .addButton("OK")
+                .addButton("Kopieren", customDialog -> {
+                    ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                    ClipData clip = ClipData.newPlainText("label", customDialog.getEditText());
+                    clipboard.setPrimaryClip(clip);
+                    Toast.makeText(this, "Text Kopiert", Toast.LENGTH_SHORT).show();
+                })
+                .colorLastAddedButton()
+                .show();
+
+        if (true)
+            return;
+        String exportPath = saveSharedPreferences(mySPR_settings);
+        if (CustomUtility.stringExists(exportPath))
+            CustomDialog.Builder(this)
+                    .setTitle("Export Erfolgreich")
+                    .setText("Die Date wurde in: '" + exportPath + "' gespeichert")
+                    .addButton("OK")
+                    .addButton("Öffnen", customDialog1 -> {
+                        try {
+                            Intent intent = new Intent(Intent.ACTION_VIEW);
+                            Uri uri = FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID + ".provider", new File(exportPath));
+                            intent.setDataAndType(uri, "text/plain");
+                            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            startActivity(intent);
+                        } catch (ActivityNotFoundException e) {
+                            Toast.makeText(this, "Datei konnte nicht geöffnet werden", Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .markLastAddedButtonAsActionButton()
+                    .show();
+        else
+            Toast.makeText(this, "Fehler beim Exportieren", Toast.LENGTH_SHORT).show();
+    }
+
+    private static final int FILE_SELECT_CODE = 1;
+
+    private void importSettings() {
+        CustomDialog.Builder(this)
+                .setTitle("Einstellungen Als Text Einfügen")
+                .setEdit(new CustomDialog.EditBuilder().setHint("Einstellungs-Text einfügen")) //.setInputType(Helpers.TextInputHelper.INPUT_TYPE.MULTI_LINE))
+//                .setSetViewContent((customDialog, view, reload) -> {
+//                    ((EditText) customDialog.findViewById(R.id.dialog_custom_edit)).setMaxLines(15);
+//                })
+                .addButton("OK")
+                .addButton("Importieren", customDialog -> {
+                    String text = customDialog.getEditText();
+//                    for (String line : text.split("\n")) {
+//                        String[] split = line.split(":", 2);
+//                        if (settingsMap.containsKey(split[0]))
+//                            settingsMap.put(split[0], split[1]);
+//                    }
+                    settingsMap = new Gson().fromJson(text, TypeToken.getParameterized(HashMap.class, String.class, String.class).getType());
+                    saveSettings();
+
+                    Toast.makeText(this, "Einstellungen erfolgreich importiert", Toast.LENGTH_SHORT).show();
+
+                    Utility.restartApp(this);
+                })
+                .colorLastAddedButton()
+                .show();
+
+        if (true)
+            return;
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("text/plain");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+        try {
+            startActivityForResult(Intent.createChooser(intent, "Export-Datei Auswählen"), FILE_SELECT_CODE);
+        } catch (ActivityNotFoundException ex) {
+            // Potentially direct the user to the Market with a Dialog
+            Toast.makeText(this, "Please install a File Manager.",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void importSettings(Intent data) {
+        Uri uri = data.getData();
+        File file = new File(Environment.getExternalStorageDirectory().toString(), uri.getPath().split(":")[1]);
+
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            String line;
+
+            while ((line = br.readLine()) != null) {
+                String[] split = line.split(":", 2);
+                if (settingsMap.containsKey(split[0]))
+                    settingsMap.put(split[0], split[1]);
+            }
+            br.close();
+            saveSettings();
+
+            Toast.makeText(this, "Einstellungen erfolgreich importiert\nApp wird neugestartet", Toast.LENGTH_SHORT).show();
+
+            new Handler().postDelayed(() -> Utility.restartApp(this), 500)
+
+            ;
+        }
+        catch (IOException e) {
+            Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
+        }
+    }
+    //  <------------------------- Export and Import Settings -------------------------
+
+
     //  ------------------------- Encryption ------------------------->
     public static void resetEncryption() {
         for (Space space : allSpaces) {
@@ -1471,6 +1647,53 @@ public class Settings extends AppCompatActivity {
     public boolean onSupportNavigateUp() {
         finish();
         return true;
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.task_bar_settings, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        switch (id) {
+            case R.id.taskBar_settings_exportImport:
+                CustomDialog.Builder(this)
+                        .setTitle("Einstellungen Exportieren/ Importieren")
+                        .setText("Möchtest du die Einstellungen Exportieren, oder Importieren?")
+                        .addButton("Exportieren", customDialog -> {
+                            exportSettings();
+                        })
+                        .addButton("Importieren", customDialog -> {
+                            importSettings();
+                        })
+                        .enableExpandButtons()
+                        .show();
+
+                break;
+
+            case android.R.id.home:
+                if (getCallingActivity() == null)
+                    startActivity(new Intent(this, MainActivity.class));
+                finish();
+                break;
+
+        }
+        return true;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case FILE_SELECT_CODE:
+                if (resultCode == RESULT_OK) {
+                    importSettings(data);
+                }
+                break;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override

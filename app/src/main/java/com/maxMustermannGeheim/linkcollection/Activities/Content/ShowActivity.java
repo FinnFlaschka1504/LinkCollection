@@ -269,7 +269,7 @@ public class ShowActivity extends AppCompatActivity {
                         })
                         .alignPreviousButtonsLeft()
                         .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog -> {
-                            Utility.importTmdbGenre(this, false);
+                            Utility.importTmdbGenre(this, true, false);
                             setResult(RESULT_OK);
                         })
                         .show();
@@ -1409,8 +1409,7 @@ public class ShowActivity extends AppCompatActivity {
                     } else
                         itemView.findViewById(R.id.listItem_episode_extraInformation_layout).setVisibility(View.GONE);
 
-                    if (episode.getAirDate() != null)
-                        ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode.getAirDate()));
+                    ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(Utility.isNullReturnOrElse(episode.getAirDate(), "", date -> new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(date)));
                     ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode.getRating() != -1 ? episode.getRating() + " ☆" : "");
                     ((TextView) itemView.findViewById(R.id.listItem_episode_viewCount)).setText(
                             episode.getDateList().size() >= 2 || (!episode.getDateList().isEmpty() && !episode.isWatched()) ? "| " + episode.getDateList().size() : "");

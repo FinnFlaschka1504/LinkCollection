@@ -58,25 +58,42 @@
             android:layout_marginVertical="8dp"
             android:background="?android:attr/listDivider" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/dialog_editTmdbCategory_url_layout"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
             android:layout_marginHorizontal="12dp"
-            android:layout_marginVertical="8dp"
-            android:hint="Bild-Url (.jpg / .png / .svg / ...)"
-            app:errorEnabled="true">
+            android:orientation="horizontal">
 
-            <EditText
-                android:id="@+id/dialog_editTmdbCategory_url"
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/dialog_editTmdbCategory_url_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:completionThreshold="0"
-                android:inputType="textUri|textCapSentences"
-                android:selectAllOnFocus="true"
-                android:singleLine="true" />
+                android:layout_marginVertical="8dp"
+                android:hint="Bild-Url (.jpg / .png / .svg / ...)"
+                android:layout_weight="1"
+                app:errorEnabled="true">
 
-        </com.google.android.material.textfield.TextInputLayout>
+                <EditText
+                    android:id="@+id/dialog_editTmdbCategory_url"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:completionThreshold="0"
+                    android:inputType="textUri|textCapSentences"
+                    android:selectAllOnFocus="true"
+                    android:singleLine="true" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <ImageView
+                android:id="@+id/dialog_editTmdbCategory_localStorage"
+                style="@style/ImageButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:srcCompat="@drawable/ic_local_storage" />
+
+        </LinearLayout>
+
     </LinearLayout>
 
 </LinearLayout>

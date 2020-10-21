@@ -139,8 +139,9 @@ public class Helpers {
             return this;
         }
 
-        public void setValidation(TextInputLayout textInputLayout, String regEx) {
+        public TextInputHelper setValidation(TextInputLayout textInputLayout, String regEx) {
             inputValidationMap.get(textInputLayout).setRegEx(regEx);
+            return this;
         }
 
         public TextInputHelper addValidator(@NonNull TextInputLayout... textInputLayouts) {

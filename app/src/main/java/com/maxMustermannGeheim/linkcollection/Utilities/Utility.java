@@ -4,11 +4,12 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
-import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -20,6 +21,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.ParcelFileDescriptor;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -113,11 +115,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.opengraph.OpenGraph;
 
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -245,6 +249,19 @@ public class Utility {
         }
     }
     //  <--------------- isOnline ---------------
+
+
+    public static void openFileChooser(AppCompatActivity activity, String imeType, int... requestCode) {
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType(imeType);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+        try {
+            activity.startActivity(new Intent(activity, ActivityResultListener.class)); //.
+        } catch (ActivityNotFoundException ex) {
+            Toast.makeText(activity, "Bitte einen Dateimanager installieren", Toast.LENGTH_SHORT).show();
+        }
+    }
 
     public static void restartApp(AppCompatActivity context) {
         Intent mStartActivity = new Intent(context, context.getClass());
@@ -2486,7 +2503,27 @@ public class Utility {
 
 
     //  ------------------------- ImageView ------------------------->
+    private static Bitmap getBitmapFromUri(Uri uri, Context context) {
+        ParcelFileDescriptor parcelFileDescriptor = null;
+        try {
+            parcelFileDescriptor = context.getContentResolver().openFileDescriptor(uri, "r");
+            FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
+            Bitmap image = BitmapFactory.decodeFileDescriptor(fileDescriptor);
+            parcelFileDescriptor.close();
+            return image;
+        } catch (IOException e) {
+            Toast.makeText(context, "Fehler beim Bild", Toast.LENGTH_SHORT).show();
+            return null;
+        }
+    }
+
     public static void loadUrlIntoImageView(Context context, ImageView imageView, String imagePath, @Nullable String fullScreenPath, Runnable... onFail_onSuccess_onFullscreen) {
+//        if (imagePath.matches(ActivityResultListener.uriRegex)) {
+////            CustomUtility.ifNotNull(getBitmapFromUri(Uri.parse(imagePath), context), imageView::setImageBitmap);
+//            Uri uri = Uri.parse(imagePath);
+////            context.getContentResolver().takePersistableUriPermission(uri, (Intent.FLAG_GRANT_READ_URI_PERMISSION| Intent.FLAG_GRANT_WRITE_URI_PERMISSION));
+//            imageView.setImageURI(uri);
+//        } else {
         if (imagePath.endsWith(".svg")) {
             Utility.fetchSvg(context, imagePath, imageView, onFail_onSuccess_onFullscreen);
         } else {
@@ -2522,6 +2559,7 @@ public class Utility {
                     });
 //                    .into(imageView);
         }
+//        }
         if (fullScreenPath == null)
             return;
         imageView.setOnClickListener(v -> {
@@ -2667,6 +2705,8 @@ public class Utility {
     // ---------------
 
     public static String getTmdbImagePath_ifNecessary(String imagePath, boolean original) {
+        if (imagePath.matches(ActivityResultListener.uriRegex))
+            return imagePath;
         return (imagePath.contains("http") ? "" : "https://image.tmdb.org/t/p/" + (original ? "original" : "w92") + "/") + imagePath;
     }
 
@@ -3090,15 +3130,28 @@ public class Utility {
 
     // --------------- VarArgs
 
-    public static <T> boolean easyVarArgs(T[] varArg, int index, CustomUtility.GenericInterface<T> ifExists) {
-        if (varArg.length >= (index + 1)) {
-            T t;
-            if ((t = varArg[index]) != null) {
-                ifExists.runGenericInterface(t);
-                return true;
-            }
-        }
-        return false;
-    }
+//    private static <T> T get0(Class<T> t,T[] test) {
+//        return (T) test[0];
+//    }
+//
+//    public static <T> boolean easyVarArgs(T[] varArg, int index, CustomUtility.GenericInterface<T> ifExists) {
+//        if (varArg.length >= (index + 1)) {
+//            T t;
+//            if ((t = varArg[index]) != null) {
+//                ifExists.runGenericInterface(t);
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
+//
+//    public static <T> T easyVarArgsOrElse(int index, CustomUtility.GenericReturnOnlyInterface<T> orElse, T... varArg) {
+//        if (varArg.length >= (index + 1)) {
+//            T t;
+//            if ((t = varArg[index]) != null)
+//                return t;
+//        }
+//        return orElse.runGenericInterface();
+//    }
     //  <------------------------- Arrays -------------------------
 }

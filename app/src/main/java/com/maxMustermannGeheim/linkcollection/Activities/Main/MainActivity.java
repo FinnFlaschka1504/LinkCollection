@@ -16,6 +16,7 @@ import android.view.ViewGroup;
 import android.view.ViewStub;
 import android.webkit.WebSettings;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.ScrollView;
 import android.widget.Toast;
 
@@ -45,6 +46,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
+import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultListener;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomInternetHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
@@ -135,6 +137,28 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
 //        List<String> imageUrlsFromHtml = Utility.getImageUrlsFromText(WebisteHtml.websiteHtml);
         String BREAKPOINT = null;
+
+//        ImageView imageView = new ImageView(this);
+//        CustomDialog.Builder(this)
+//                .setTitle("Local Image Test")
+//                .setView(imageView)
+//                .setDimensionsFullscreen()
+//                .setSetViewContent((customDialog, view, reload) -> {
+//                    ActivityResultListener.addFileChooserRequest(this, "image/*", o -> {
+//                        Intent data = (Intent) o;
+//                        Uri uri = data.getData();
+////                        int flags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+////                        try {
+////                            getContentResolver().takePersistableUriPermission(uri, flags);
+////                        }
+////                        catch (SecurityException e){
+////                            e.printStackTrace();
+////                        }
+//                        imageView.setImageURI(Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload%2FIMG_9739.JPG"));
+//                    });
+//
+//                })
+//                .show();
 
 //        Test test = Test.create();
 //        Test test2 = Test.create();

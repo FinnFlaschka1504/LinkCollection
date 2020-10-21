@@ -64,6 +64,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
+import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultListener;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAutoCompleteAdapter;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.ImageAdapterItem;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
@@ -100,6 +101,8 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import okhttp3.Headers;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
@@ -1028,23 +1031,37 @@ public class VideoActivity extends AppCompatActivity {
                     ImageView thumbnailButton = view.findViewById(R.id.dialog_editOrAddVideo_thumbnail);
                     thumbnailButton.setOnClickListener(v -> {
                         int showButtonId = View.generateViewId();
-                        ImageView imageView = new ImageView(this);
-                        Utility.setDimensions(imageView, true, false);
-                        imageView.setAdjustViewBounds(true);
-                        imageView.setPadding(Utility.dpToPx(16), Utility.dpToPx(16), Utility.dpToPx(16), Utility.dpToPx(16));
+//                        ImageView imageView = new ImageView(this);
+//                        Utility.setDimensions(imageView, true, false);
+//                        imageView.setAdjustViewBounds(true);
+//                        imageView.setPadding(Utility.dpToPx(16), Utility.dpToPx(16), Utility.dpToPx(16), Utility.dpToPx(16));
 
                         CustomDialog.Builder(this)
                                 .setTitle("Thumbnail-URL Bearbeiten")
-                                .setEdit(new CustomDialog.EditBuilder()
-                                        .setShowKeyboard(false)
-                                        .setRegEx(CategoriesActivity.pictureRegexAll + "|")
-                                        .setText(Utility.stringExistsOrElse(editVideo[0].getImagePath(), "").toString())
-                                        .setHint("TMDb-Pfad, oder Bild-Url (https:...(.jpg / .png / .svg / ...))"))
+//                                .setEdit(new CustomDialog.EditBuilder()
+//                                        .setShowKeyboard(false)
+//                                        .setRegEx(CategoriesActivity.pictureRegexAll + "|")
+//                                        .setText(Utility.stringExistsOrElse(editVideo[0].getImagePath(), "").toString())
+//                                        .setHint("TMDb-Pfad, oder Bild-Url (https:...(.jpg / .png / .svg / ...))"))
                                 .addButton("Testen", CustomDialog::reloadView, showButtonId, false)
                                 .alignPreviousButtonsLeft()
-                                .setView(imageView)
+                                .setView(R.layout.dialog_edit_thumbnail)
                                 .setSetViewContent((customDialog1, view1, reload1) -> {
-                                    String url = customDialog1.getEditText();
+                                    TextInputLayout inputLayout = view1.findViewById(R.id.dialog_editThumbnail_url_layout);
+                                    EditText editText = inputLayout.getEditText();
+
+                                    new Helpers.TextInputHelper().addValidator(inputLayout).setValidation(inputLayout, String.format("(%s)|(%s)|", CategoriesActivity.pictureRegexAll, ActivityResultListener.uriRegex)).defaultDialogValidation(customDialog1).allowEmpty();
+                                    if (!reload1)
+                                        editText.setText(Utility.stringExistsOrElse(editVideo[0].getImagePath(), ""));
+
+                                    view1.findViewById(R.id.dialog_editThumbnail_localStorage).setOnClickListener(v1 -> {
+                                        ActivityResultListener.addFileChooserRequest(this, "image/*", o -> {
+                                            editText.setText(((Intent) o).getData().toString());
+                                        });
+                                    });
+
+                                    ImageView imageView = view1.findViewById(R.id.dialog_editThumbnail_image);
+                                    String url = editText.getText().toString();
 
                                     if (!customDialog1.getActionButton().getButton().isEnabled()) {
                                         if (!url.isEmpty())
@@ -1061,7 +1078,7 @@ public class VideoActivity extends AppCompatActivity {
                                 })
                                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog1 -> {
-                                    String url = customDialog1.getEditText();
+                                    String url = ((TextInputLayout) customDialog1.findViewById(R.id.dialog_editThumbnail_url_layout)).getEditText().getText().toString();
                                     if (url.isEmpty())
                                         url = null;
 

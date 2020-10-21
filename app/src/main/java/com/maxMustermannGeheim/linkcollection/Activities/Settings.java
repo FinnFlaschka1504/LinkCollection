@@ -9,14 +9,12 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
-import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Menu;
@@ -48,7 +46,6 @@ import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -75,6 +72,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultListener;
 import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.maxMustermannGeheim.linkcollection.Utilities.VersionControl;
@@ -84,9 +82,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1542,50 +1540,62 @@ public class Settings extends AppCompatActivity {
             Toast.makeText(this, "Fehler beim Exportieren", Toast.LENGTH_SHORT).show();
     }
 
-    private static final int FILE_SELECT_CODE = 1;
 
     private void importSettings() {
-        CustomDialog.Builder(this)
-                .setTitle("Einstellungen Als Text Einfügen")
-                .setEdit(new CustomDialog.EditBuilder().setHint("Einstellungs-Text einfügen")) //.setInputType(Helpers.TextInputHelper.INPUT_TYPE.MULTI_LINE))
-//                .setSetViewContent((customDialog, view, reload) -> {
-//                    ((EditText) customDialog.findViewById(R.id.dialog_custom_edit)).setMaxLines(15);
+//        CustomDialog.Builder(this)
+//                .setTitle("Einstellungen Als Text Einfügen")
+//                .setEdit(new CustomDialog.EditBuilder().setHint("Einstellungs-Text einfügen")) //.setInputType(Helpers.TextInputHelper.INPUT_TYPE.MULTI_LINE))
+////                .setSetViewContent((customDialog, view, reload) -> {
+////                    ((EditText) customDialog.findViewById(R.id.dialog_custom_edit)).setMaxLines(15);
+////                })
+//                .addButton("OK")
+//                .addButton("Importieren", customDialog -> {
+//                    String text = customDialog.getEditText();
+////                    for (String line : text.split("\n")) {
+////                        String[] split = line.split(":", 2);
+////                        if (settingsMap.containsKey(split[0]))
+////                            settingsMap.put(split[0], split[1]);
+////                    }
+//                    settingsMap = new Gson().fromJson(text, TypeToken.getParameterized(HashMap.class, String.class, String.class).getType());
+//                    saveSettings();
+//
+//                    Toast.makeText(this, "Einstellungen erfolgreich importiert", Toast.LENGTH_SHORT).show();
+//
+//                    Utility.restartApp(this);
 //                })
-                .addButton("OK")
-                .addButton("Importieren", customDialog -> {
-                    String text = customDialog.getEditText();
-//                    for (String line : text.split("\n")) {
-//                        String[] split = line.split(":", 2);
-//                        if (settingsMap.containsKey(split[0]))
-//                            settingsMap.put(split[0], split[1]);
-//                    }
-                    settingsMap = new Gson().fromJson(text, TypeToken.getParameterized(HashMap.class, String.class, String.class).getType());
-                    saveSettings();
-
-                    Toast.makeText(this, "Einstellungen erfolgreich importiert", Toast.LENGTH_SHORT).show();
-
-                    Utility.restartApp(this);
-                })
-                .colorLastAddedButton()
-                .show();
-
-        if (true)
-            return;
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("text/plain");
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-
-        try {
-            startActivityForResult(Intent.createChooser(intent, "Export-Datei Auswählen"), FILE_SELECT_CODE);
-        } catch (ActivityNotFoundException ex) {
-            // Potentially direct the user to the Market with a Dialog
-            Toast.makeText(this, "Please install a File Manager.",
-                    Toast.LENGTH_SHORT).show();
-        }
+//                .colorLastAddedButton()
+//                .show();
+//
+//        if (true)
+//            return;
+        ActivityResultListener.addFileChooserRequest(this, "text/plain", o -> importSettings(((Intent) o).getData()), o -> Toast.makeText(this, "Abgebrochen", Toast.LENGTH_SHORT).show());
     }
 
-    private void importSettings(Intent data) {
-        Uri uri = data.getData();
+
+    private void importSettings(Uri uri) {
+
+//        getRealPathFromURI(uri);
+
+        StringBuffer buf = new StringBuffer();
+        try {
+            String str = "";
+            InputStream inputStream = getContentResolver().openInputStream(uri);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            if (inputStream != null) {
+                while ((str = reader.readLine()) != null) {
+                    buf.append(str + "\n" );
+                }
+            }
+        } catch (IOException e) {
+            String BREAKPOINT = null;
+        }
+
+        CustomDialog.Builder(this)
+                .setTitle("Result")
+                .setText(buf)
+                .show();
+        if (true)
+            return;
         File file = new File(Environment.getExternalStorageDirectory().toString(), uri.getPath().split(":")[1]);
 
         try {
@@ -1602,7 +1612,7 @@ public class Settings extends AppCompatActivity {
 
             Toast.makeText(this, "Einstellungen erfolgreich importiert\nApp wird neugestartet", Toast.LENGTH_SHORT).show();
 
-            new Handler().postDelayed(() -> Utility.restartApp(this), 500)
+            new Handler().postDelayed(() -> Utility.restartApp(this), 1500)
 
             ;
         }
@@ -1610,6 +1620,15 @@ public class Settings extends AppCompatActivity {
             Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
         }
     }
+
+//    public String getRealPathFromURI(Uri contentUri) {
+//        String [] proj      = {MediaStore.Images.Media.DATA};
+//        Cursor cursor       = getContentResolver().query( contentUri, proj, null, null,null);
+//        if (cursor == null) return null;
+//        int column_index    = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+//        cursor.moveToFirst();
+//        return cursor.getString(column_index);
+//    }
     //  <------------------------- Export and Import Settings -------------------------
 
 
@@ -1687,9 +1706,9 @@ public class Settings extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
-            case FILE_SELECT_CODE:
+            case ActivityResultListener.FILE_SELECT_CODE:
                 if (resultCode == RESULT_OK) {
-                    importSettings(data);
+                    importSettings(data.getData());
                 }
                 break;
         }

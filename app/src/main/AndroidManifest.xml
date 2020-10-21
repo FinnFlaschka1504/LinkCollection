@@ -92,6 +92,10 @@
             android:label="Einstellungen"
             android:parentActivityName=".Activities.Main.MainActivity"
             android:theme="@style/AppTheme.NoTitle" />
+        <activity
+            android:name=".Utilities.ActivityResultListener"
+            android:label="Dubby"
+            android:theme="@style/DialogActivityTheme.NoTitle" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

@@ -46,6 +46,8 @@ import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
@@ -122,6 +124,8 @@ public class Settings extends AppCompatActivity {
     public static final String SETTING_VIDEO_TMDB_SHORTCUT = "SETTING_VIDEO_TMDB_SHORTCUT";
     public static final String SETTING_VIDEO_SHOW_SEARCH = "SETTING_VIDEO_SHOW_SEARCH";
     public static final String SETTING_VIDEO_SHOW_COLLECTIONS = "SETTING_VIDEO_SHOW_COLLECTIONS";
+    public static final String SETTING_VIDEO_SHOW_IMAGES = "SETTING_VIDEO_SHOW_IMAGES";
+    public static final String SETTING_VIDEO_SCROLL = "SETTING_VIDEO_SCROLL";
 
     public static final String SETTING_SHOW_EPISODE_PREVIEW = "SETTING_SHOW_EPISODE_PREVIEW";
 
@@ -187,6 +191,8 @@ public class Settings extends AppCompatActivity {
         settingsMap.put(SETTING_VIDEO_LOAD_CAST_AND_STUDIOS, "true");
         settingsMap.put(SETTING_VIDEO_SHOW_SEARCH, "0");
         settingsMap.put(SETTING_VIDEO_SHOW_COLLECTIONS, "true");
+        settingsMap.put(SETTING_VIDEO_SHOW_IMAGES, "false");
+        settingsMap.put(SETTING_VIDEO_SCROLL, "true");
         settingsMap.put(SETTING_SHOW_EPISODE_PREVIEW, "1");
     }
 
@@ -247,6 +253,8 @@ public class Settings extends AppCompatActivity {
                 .setSettingsDialog(new Utility.Triple<>(R.layout.dialog_settings_video, (customDialog, view, space) -> {
                     Context settingsContext = customDialog.getDialog().getContext();
 
+                    ((Switch) view.findViewById(R.id.dialogSettingsVideo_overview_images)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_IMAGES));
+                    ((Switch) view.findViewById(R.id.dialogSettingsVideo_overview_scroll)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SCROLL));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showRelease)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_RELEASE));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showAgeRating)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_AGE_RATING));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showLength)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_LENGTH));
@@ -324,6 +332,8 @@ public class Settings extends AppCompatActivity {
                 }, new Space.OnClick() {
                     @Override
                     public void runOnClick(CustomDialog customDialog, Space space) {
+                        changeSetting(SETTING_VIDEO_SHOW_IMAGES, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_overview_images)).isChecked()));
+                        changeSetting(SETTING_VIDEO_SCROLL, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_overview_scroll)).isChecked()));
                         changeSetting(SETTING_VIDEO_SHOW_RELEASE, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_showRelease)).isChecked()));
                         changeSetting(SETTING_VIDEO_SHOW_AGE_RATING, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_showAgeRating)).isChecked()));
                         changeSetting(SETTING_VIDEO_SHOW_LENGTH, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_showLength)).isChecked()));
@@ -1459,16 +1469,6 @@ public class Settings extends AppCompatActivity {
 
     //  ------------------------- Export and Import Settings ------------------------->
     private String saveSharedPreferences(SharedPreferences sharedPreferences) {
-        // create some junk data to populate the shared preferences
-//        SharedPreferences prefs = getSharedPreferences("MyPrefs", MODE_PRIVATE);
-//        SharedPreferences.Editor prefEdit = prefs.edit();
-//        prefEdit.putBoolean("SomeBooleanValue_True", true);
-//        prefEdit.putInt("SomeIntValue_100", 100);
-//        prefEdit.putFloat("SomeFloatValue_1.11", 1.11f);
-//        prefEdit.putString("SomeStringValue_Unicorns", "Unicorns");
-//        prefEdit.commit();
-
-        // BEGIN EXAMPLE
         File myPath = new File(Environment.getExternalStorageDirectory().toString());
         File myFile = new File(myPath, String.format("SecondMind Settings Export %s.txt", Utility.formatDate("yyyy-MM-dd-HH-mm-ss", new Date())));
 
@@ -1477,12 +1477,7 @@ public class Settings extends AppCompatActivity {
             FileWriter fw = new FileWriter(myFile);
             PrintWriter pw = new PrintWriter(fw);
 
-            Map<String,?> prefsMap = sharedPreferences.getAll();
-
-            for(Map.Entry<String,?> entry : prefsMap.entrySet())
-            {
-                pw.println(entry.getKey() + ":" + entry.getValue().toString());
-            }
+            pw.println(new GsonBuilder().setPrettyPrinting().create().toJson(settingsMap));
 
             pw.close();
             fw.close();
@@ -1491,32 +1486,12 @@ public class Settings extends AppCompatActivity {
         }
         catch (Exception e)
         {
-            // what a terrible failure...
             Log.wtf(getClass().getName(), e.toString());
             return null;
         }
     }
 
     private void exportSettings() {
-        String settingsString = new Gson().toJson(settingsMap); //mySPR_settings.getAll().entrySet().stream().map(entry -> entry.getKey() + ":" + entry.getValue()).collect(Collectors.joining("\n"));
-        CustomDialog.Builder(this)
-                .setTitle("Einstellungen Als Text")
-                .setEdit(new CustomDialog.EditBuilder().setText(settingsString)) //.setInputType(Helpers.TextInputHelper.INPUT_TYPE.MULTI_LINE))
-//                .setSetViewContent((customDialog, view, reload) -> {
-//                    ((EditText) customDialog.findViewById(R.id.dialog_custom_edit)).setMaxLines(15);
-//                })
-                .addButton("OK")
-                .addButton("Kopieren", customDialog -> {
-                    ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-                    ClipData clip = ClipData.newPlainText("label", customDialog.getEditText());
-                    clipboard.setPrimaryClip(clip);
-                    Toast.makeText(this, "Text Kopiert", Toast.LENGTH_SHORT).show();
-                })
-                .colorLastAddedButton()
-                .show();
-
-        if (true)
-            return;
         String exportPath = saveSharedPreferences(mySPR_settings);
         if (CustomUtility.stringExists(exportPath))
             CustomDialog.Builder(this)
@@ -1541,40 +1516,42 @@ public class Settings extends AppCompatActivity {
     }
 
 
-    private void importSettings() {
-//        CustomDialog.Builder(this)
-//                .setTitle("Einstellungen Als Text Einfügen")
-//                .setEdit(new CustomDialog.EditBuilder().setHint("Einstellungs-Text einfügen")) //.setInputType(Helpers.TextInputHelper.INPUT_TYPE.MULTI_LINE))
-////                .setSetViewContent((customDialog, view, reload) -> {
-////                    ((EditText) customDialog.findViewById(R.id.dialog_custom_edit)).setMaxLines(15);
+//    private void importSettings() {
+////        CustomDialog.Builder(this)
+////                .setTitle("Einstellungen Als Text Einfügen")
+////                .setEdit(new CustomDialog.EditBuilder().setHint("Einstellungs-Text einfügen")) //.setInputType(Helpers.TextInputHelper.INPUT_TYPE.MULTI_LINE))
+//////                .setSetViewContent((customDialog, view, reload) -> {
+//////                    ((EditText) customDialog.findViewById(R.id.dialog_custom_edit)).setMaxLines(15);
+//////                })
+////                .addButton("OK")
+////                .addButton("Importieren", customDialog -> {
+////                    String text = customDialog.getEditText();
+//////                    for (String line : text.split("\n")) {
+//////                        String[] split = line.split(":", 2);
+//////                        if (settingsMap.containsKey(split[0]))
+//////                            settingsMap.put(split[0], split[1]);
+//////                    }
+////                    settingsMap = new Gson().fromJson(text, TypeToken.getParameterized(HashMap.class, String.class, String.class).getType());
+////                    saveSettings();
+////
+////                    Toast.makeText(this, "Einstellungen erfolgreich importiert", Toast.LENGTH_SHORT).show();
+////
+////                    Utility.restartApp(this);
 ////                })
-//                .addButton("OK")
-//                .addButton("Importieren", customDialog -> {
-//                    String text = customDialog.getEditText();
-////                    for (String line : text.split("\n")) {
-////                        String[] split = line.split(":", 2);
-////                        if (settingsMap.containsKey(split[0]))
-////                            settingsMap.put(split[0], split[1]);
-////                    }
-//                    settingsMap = new Gson().fromJson(text, TypeToken.getParameterized(HashMap.class, String.class, String.class).getType());
-//                    saveSettings();
-//
-//                    Toast.makeText(this, "Einstellungen erfolgreich importiert", Toast.LENGTH_SHORT).show();
-//
-//                    Utility.restartApp(this);
-//                })
-//                .colorLastAddedButton()
-//                .show();
-//
-//        if (true)
-//            return;
-        ActivityResultListener.addFileChooserRequest(this, "text/plain", o -> importSettings(((Intent) o).getData()), o -> Toast.makeText(this, "Abgebrochen", Toast.LENGTH_SHORT).show());
-    }
+////                .colorLastAddedButton()
+////                .show();
+////
+////        if (true)
+////            return;
+//        ActivityResultListener.addFileChooserRequest(this, "text/plain", o -> importSettings(((Intent) o).getData()), o -> Toast.makeText(this, "Abgebrochen", Toast.LENGTH_SHORT).show());
+//    }
 
 
     private void importSettings(Uri uri) {
-
-//        getRealPathFromURI(uri);
+        if (uri == null) {
+            ActivityResultListener.addFileChooserRequest(this, "text/plain", o -> importSettings(((Intent) o).getData()), o -> Toast.makeText(this, "Abgebrochen", Toast.LENGTH_SHORT).show());
+            return;
+        }
 
         StringBuffer buf = new StringBuffer();
         try {
@@ -1587,48 +1564,48 @@ public class Settings extends AppCompatActivity {
                 }
             }
         } catch (IOException e) {
-            String BREAKPOINT = null;
-        }
-
-        CustomDialog.Builder(this)
-                .setTitle("Result")
-                .setText(buf)
-                .show();
-        if (true)
-            return;
-        File file = new File(Environment.getExternalStorageDirectory().toString(), uri.getPath().split(":")[1]);
-
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(file));
-            String line;
-
-            while ((line = br.readLine()) != null) {
-                String[] split = line.split(":", 2);
-                if (settingsMap.containsKey(split[0]))
-                    settingsMap.put(split[0], split[1]);
-            }
-            br.close();
-            saveSettings();
-
-            Toast.makeText(this, "Einstellungen erfolgreich importiert\nApp wird neugestartet", Toast.LENGTH_SHORT).show();
-
-            new Handler().postDelayed(() -> Utility.restartApp(this), 1500)
-
-            ;
-        }
-        catch (IOException e) {
             Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
         }
-    }
 
-//    public String getRealPathFromURI(Uri contentUri) {
-//        String [] proj      = {MediaStore.Images.Media.DATA};
-//        Cursor cursor       = getContentResolver().query( contentUri, proj, null, null,null);
-//        if (cursor == null) return null;
-//        int column_index    = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-//        cursor.moveToFirst();
-//        return cursor.getString(column_index);
-//    }
+        HashMap<String, String> importedMap = new Gson().fromJson(buf.toString(), TypeToken.getParameterized(HashMap.class, String.class, String.class).getType());
+        for (String key : settingsMap.keySet()) {
+            if (importedMap.containsKey(key))
+                settingsMap.put(key, importedMap.get(key));
+        }
+        saveSettings();
+        Utility.showCenteredToast(this, "Einstellungen erfolgreich importiert\nApp wird neugestartet");
+        new Handler().postDelayed(() -> Utility.restartApp(this), 1500);
+
+////        CustomDialog.Builder(this)
+////                .setTitle("Result")
+////                .setText(buf)
+////                .show();
+//        if (true)
+//            return;
+//        File file = new File(Environment.getExternalStorageDirectory().toString(), uri.getPath().split(":")[1]);
+//
+//        try {
+//            BufferedReader br = new BufferedReader(new FileReader(file));
+//            String line;
+//
+//            while ((line = br.readLine()) != null) {
+//                String[] split = line.split(":", 2);
+//                if (settingsMap.containsKey(split[0]))
+//                    settingsMap.put(split[0], split[1]);
+//            }
+//            br.close();
+//            saveSettings();
+//
+//            Toast.makeText(this, "Einstellungen erfolgreich importiert\nApp wird neugestartet", Toast.LENGTH_SHORT).show();
+//
+//            new Handler().postDelayed(() -> Utility.restartApp(this), 1500)
+//
+//            ;
+//        }
+//        catch (IOException e) {
+//            Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
+//        }
+    }
     //  <------------------------- Export and Import Settings -------------------------
 
 
@@ -1686,7 +1663,7 @@ public class Settings extends AppCompatActivity {
                             exportSettings();
                         })
                         .addButton("Importieren", customDialog -> {
-                            importSettings();
+                            importSettings(null);
                         })
                         .enableExpandButtons()
                         .show();
@@ -1703,17 +1680,17 @@ public class Settings extends AppCompatActivity {
         return true;
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        switch (requestCode) {
-            case ActivityResultListener.FILE_SELECT_CODE:
-                if (resultCode == RESULT_OK) {
-                    importSettings(data.getData());
-                }
-                break;
-        }
-        super.onActivityResult(requestCode, resultCode, data);
-    }
+//    @Override
+//    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+//        switch (requestCode) {
+//            case ActivityResultListener.FILE_SELECT_CODE:
+//                if (resultCode == RESULT_OK) {
+//                    importSettings(data.getData());
+//                }
+//                break;
+//        }
+//        super.onActivityResult(requestCode, resultCode, data);
+//    }
 
     @Override
     protected void onPause() {

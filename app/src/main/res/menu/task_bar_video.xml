@@ -96,6 +96,10 @@
         android:checked="true"
         android:title="Scrollen" />
     <item
+        android:id="@+id/taskBar_video_image"
+        android:checkable="true"
+        android:title="Bilder Anzeigen" />
+    <item
         android:id="@+id/taskBar_video_delete"
         android:icon="@drawable/ic_delete"
         android:title="Löschen"

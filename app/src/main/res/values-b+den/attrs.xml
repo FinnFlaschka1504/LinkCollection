@@ -8,6 +8,13 @@
             <enum name="matchMin" value="3"/>
         </attr>
     </declare-styleable>
+    <declare-styleable name="MinDimensionLayout">
+        <attr name="minMode" format="enum">
+            <enum name="matchMax" value="0"/>
+            <enum name="matchMin" value="1"/>
+        </attr>
+        <attr name="minDimension" format="dimension"/>
+    </declare-styleable>
     <declare-styleable name="AspectRatioLayout">
         <attr name="targetMode" format="enum">
             <enum name="width" value="0"/>

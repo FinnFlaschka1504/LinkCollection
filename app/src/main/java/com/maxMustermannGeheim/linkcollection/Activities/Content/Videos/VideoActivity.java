@@ -72,6 +72,7 @@ import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
+import com.maxMustermannGeheim.linkcollection.Utilities.MinDimensionLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.mikhaellopez.lazydatepicker.LazyDatePicker;
 
@@ -148,6 +149,7 @@ public class VideoActivity extends AppCompatActivity {
     private List<String> toDelete = new ArrayList<>();
     private Video randomVideo;
     private boolean scrolling = true;
+    private boolean showImages;
     private SORT_TYPE sort_type = SORT_TYPE.LATEST;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.ACTOR, FILTER_TYPE.GENRE, FILTER_TYPE.STUDIO, FILTER_TYPE.COLLECTION));
     private MODE mode = MODE.ALL;
@@ -191,7 +193,8 @@ public class VideoActivity extends AppCompatActivity {
             plural = singPlur[1];
             setTitle(plural);
         }
-
+        showImages = Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_SHOW_IMAGES);
+        scrolling = Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_SCROLL);
 //        Database.destroy();
 
         database = Database.getInstance();
@@ -635,6 +638,13 @@ public class VideoActivity extends AppCompatActivity {
                 })
                 .setSetItemContent((customRecycler, itemView, video) -> {
                     itemView.findViewById(R.id.listItem_video_deleteCheck).setVisibility(delete ? View.VISIBLE : View.GONE);
+
+                    MinDimensionLayout listItem_video_image_layout = itemView.findViewById(R.id.listItem_video_image_layout);
+                    if (showImages && CustomUtility.stringExists(video.getImagePath())) {
+                        listItem_video_image_layout.setVisibility(View.VISIBLE);
+                        Utility.loadUrlIntoImageView(this, itemView.findViewById(R.id.listItem_video_image), Utility.getTmdbImagePath_ifNecessary(video.getImagePath(), false), Utility.getTmdbImagePath_ifNecessary(video.getImagePath(), true));
+                    } else
+                        listItem_video_image_layout.setVisibility(View.GONE);
                     ((TextView) itemView.findViewById(R.id.listItem_video_Titel)).setText(/*(Utility.stringExists(video.getImagePath()) ? "" : "• ") + */video.getName());
                     if (!video.getDateList().isEmpty()) {
                         itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.VISIBLE);
@@ -2098,6 +2108,8 @@ public class VideoActivity extends AppCompatActivity {
         else if (mode.equals(MODE.UPCOMING))
             menu.findItem(R.id.taskBar_video_modeUpcoming).setChecked(true);
 
+        menu.findItem(R.id.taskBar_video_image).setChecked(showImages);
+        menu.findItem(R.id.taskBar_video_scroll).setChecked(scrolling);
 
         if (setToolbarTitle != null) setToolbarTitle.run();
         return true;
@@ -2124,6 +2136,16 @@ public class VideoActivity extends AppCompatActivity {
                 } else {
                     item.setChecked(true);
                     scrolling = true;
+                }
+                customRecycler_VideoList.reload();
+                break;
+            case R.id.taskBar_video_image:
+                if (item.isChecked()) {
+                    item.setChecked(false);
+                    showImages = false;
+                } else {
+                    item.setChecked(true);
+                    showImages = true;
                 }
                 customRecycler_VideoList.reload();
                 break;

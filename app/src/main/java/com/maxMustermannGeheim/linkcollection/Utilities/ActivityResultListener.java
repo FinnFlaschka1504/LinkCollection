@@ -25,7 +25,6 @@ public class ActivityResultListener extends AppCompatActivity {
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
-        String imeType = "text/plain";
         super.onCreate(savedInstanceState);
 
         uuid = getIntent().getStringExtra(EXTRA_UUID);
@@ -36,6 +35,7 @@ public class ActivityResultListener extends AppCompatActivity {
         if (requestMap.containsKey(uuid))
             requestMap.get(uuid).first.runGenericInterface(this);
     }
+
 
     //  ------------------------- Generic ------------------------->
     @SafeVarargs
@@ -70,6 +70,7 @@ public class ActivityResultListener extends AppCompatActivity {
         activity.startActivity(new Intent(activity, ActivityResultListener.class).putExtra(EXTRA_UUID, uuid));
     }
     //  <------------------------- FileChooser -------------------------
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {

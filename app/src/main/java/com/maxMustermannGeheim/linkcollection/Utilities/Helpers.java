@@ -741,6 +741,7 @@ public class Helpers {
             private boolean reverseParentClass;
             private boolean nullToBottom = true;
             private List<Comparator<E>> comparatorList = new ArrayList<>();
+            private List<Comparator<T>> comparatorUnchangedList = new ArrayList<>();
             private Object type;
             private ChangeType<T, E> changeType1 = t -> (E) t;
             private ChangeType<T, E> changeType2 = t -> (E) t;
@@ -761,31 +762,36 @@ public class Helpers {
                 list.sort((o1, o2) -> {
                     int result = 0;
 
+                    for (Comparator<T> comparator : comparatorUnchangedList) {
+                        result = comparator.compare(o1, o2);
+
+                        if (result != 0)
+                            return result;
+                    }
+
                     E newO1 = changeType1.runChangeType(o1);
                     E newO2 = changeType2.runChangeType(o2);
 
                     for (Comparator<E> comparator : comparatorList) {
-                        if (newO1 == null && newO2 == null && o1 instanceof ParentClass && o2 instanceof ParentClass)
-                            result = ((ParentClass) o1).getName().compareTo(((ParentClass) o2).getName());
-                        else if (newO1 == null)
-                            result = reversed ^ !nullToBottom ? -1 : 1;
-                        else if (newO2 == null)
-                            result = reversed ^ !nullToBottom ? 1 : -1;
-                        else
-                            result = comparator.compare(newO1, newO2);
+//                        if (newO1 == null && newO2 == null && o1 instanceof ParentClass && o2 instanceof ParentClass)
+//                            result = ((ParentClass) o1).getName().compareTo(((ParentClass) o2).getName());
+//                        else if (newO1 == null)
+//                            result = reversed ^ !nullToBottom ? -1 : 1;
+//                        else if (newO2 == null)
+//                            result = reversed ^ !nullToBottom ? 1 : -1;
+//                        else
+                        result = comparator.compare(newO1, newO2);
 
                         if (result != 0)
-                            break;
+                            return result;
                     }
 
-                    if (result == 0) {
-                        if (newO1 == null && newO2 == null && o1 instanceof ParentClass && o2 instanceof ParentClass)
-                            result = ((ParentClass) o1).getName().compareTo(((ParentClass) o2).getName());
-                        else if (newO1 == null)
-                            result = reversed ^ !nullToBottom ? -1 : 1;
-                        else if (newO2 == null)
-                            result = reversed ^ !nullToBottom ? 1 : -1;
-                    }
+                    if (newO1 == null && newO2 == null && o1 instanceof ParentClass && o2 instanceof ParentClass)
+                        result = ((ParentClass) o1).getName().compareTo(((ParentClass) o2).getName());
+                    else if (newO1 == null)
+                        result = reversed ^ !nullToBottom ? -1 : 1;
+                    else if (newO2 == null)
+                        result = reversed ^ !nullToBottom ? 1 : -1;
 
                     if (result == 0 && newO1 instanceof Comparable && newO2 instanceof Comparable) {
                         result = ((Comparable<E>) newO1).compareTo(newO2) * (reversed ^ reverseDefaultComparable ? -1 : 1);
@@ -809,6 +815,11 @@ public class Helpers {
 
             public Sorter<E> addCondition(Comparator<E> comparator) {
                 comparatorList.add(comparator);
+                return this;
+            }
+
+            public Sorter<E> addUnchangedCondition(Comparator<T> comparator) {
+                comparatorUnchangedList.add(comparator);
                 return this;
             }
 

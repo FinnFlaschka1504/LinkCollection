@@ -93,6 +93,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.Collecti
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
@@ -480,11 +481,11 @@ public class Utility {
         if (direct)
             executeImport.run();
         else
-            com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog.Builder(context)
+            CustomDialog.Builder(context)
                     .setTitle("Genre Importieren")
                     .setText("Willst du wirklich alle THDb Genres importieren?")
-                    .setButtonConfiguration(com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog.BUTTON_CONFIGURATION.YES_NO)
-                    .addButton(com.maxMustermannGeheim.linkcollection.Utilities.CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog -> {
+                    .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                    .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog -> {
                         executeImport.run();
                     })
                     .show();
@@ -822,6 +823,8 @@ public class Utility {
         calender_previousMonth.setOnClickListener(view -> calendarView.scrollLeft());
         calender_nextMonth.setOnClickListener(view -> calendarView.scrollRight());
 
+        Boolean showImages = Settings.getSingleSetting_boolean(context, Settings.SETTING_VIDEO_SHOW_IMAGES);
+
         Database database = Database.getInstance();
         CustomRecycler customRecycler = new CustomRecycler<>(context, layout.findViewById(R.id.fragmentCalender_videoList))
                 .setItemLayout(R.layout.list_item_video)
@@ -829,8 +832,15 @@ public class Utility {
                     itemView.findViewById(R.id.listItem_video_details).setVisibility(View.GONE);
                     itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.GONE);
 
-
                     Video video = ((Video) ((Event) object).getData());
+
+                    MinDimensionLayout listItem_video_image_layout = itemView.findViewById(R.id.listItem_video_image_layout);
+                    if (showImages && CustomUtility.stringExists(video.getImagePath())) {
+                        listItem_video_image_layout.setVisibility(View.VISIBLE);
+                        Utility.loadUrlIntoImageView(context, itemView.findViewById(R.id.listItem_video_image), Utility.getTmdbImagePath_ifNecessary(video.getImagePath(), false), Utility.getTmdbImagePath_ifNecessary(video.getImagePath(), true));
+                    } else
+                        listItem_video_image_layout.setVisibility(View.GONE);
+
                     ((TextView) itemView.findViewById(R.id.listItem_video_Titel)).setText(video.getName());
 
                     List<String> darstellerNames = new ArrayList<>();

@@ -1,15 +1,10 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Main;
 
-import android.app.Activity;
-import android.app.Application;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
 import android.text.InputType;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -59,6 +54,7 @@ import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -74,9 +70,10 @@ public class CategoriesActivity extends AppCompatActivity {
     public static String pictureRegexAll = pictureRegex.split("\\\\\\.")[0];
     public static final String uuidRegex = "\\b([a-zA-Z]+_)?[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b";
     private Helpers.SortHelper<Pair<ParentClass, Integer>> sortHelper;
+    private boolean reverse = false;
 
     enum SORT_TYPE {
-        NAME, COUNT
+        NAME, COUNT, TIME
     }
 
     public enum CATEGORIES {
@@ -143,6 +140,46 @@ public class CategoriesActivity extends AppCompatActivity {
 
                 .addSorter(SORT_TYPE.COUNT)
                 .changeType(parentClassIntegerPair -> parentClassIntegerPair.second)
+                .enableReverseDefaultComparable()
+
+                .addSorter(SORT_TYPE.TIME)
+                .changeType(parentClassIntegerPair -> {
+                    ParentClass parentClass = parentClassIntegerPair.first;
+                    List<Video> allRelatedVideos = new CustomList<>();
+                    switch (catigory) {
+                        case DARSTELLER:
+                            for (Video video : database.videoMap.values()) {
+                                    if (video.getDarstellerList().contains(parentClass.getUuid()))
+                                        allRelatedVideos.add(video);
+                                }
+                            break;
+                        case GENRE:
+                            for (Video video : database.videoMap.values()) {
+                                    if (video.getGenreList().contains(parentClass.getUuid()))
+                                        allRelatedVideos.add(video);
+                                }
+                            break;
+                        case STUDIOS:
+                            for (Video video : database.videoMap.values()) {
+                                    if (video.getStudioList().contains(parentClass.getUuid()))
+                                        allRelatedVideos.add(video);
+                                }
+                            break;
+                    }
+                    Date date = CustomUtility.concatenateCollections(allRelatedVideos, Video::getDateList).stream().max(Date::compareTo).orElse(null);
+                    return date != null ? date : parentClass.getName();
+
+                })
+                .addCondition((o1, o2) -> {
+                    int result = 0;
+                    if (o1 instanceof Date && o2 instanceof Date)
+                        result = ((Date) o1).compareTo((Date) o2) * -1;
+                    else if (o1 instanceof String && o2 instanceof String)
+                        result = ((String) o1).compareTo((String) o2);
+                    else
+                        result = o1 instanceof Date ? -1 : 1;
+                    return result * (reverse ? -1 : 1);
+                })
                 .enableReverseDefaultComparable()
                 .finish();
 
@@ -220,9 +257,9 @@ public class CategoriesActivity extends AppCompatActivity {
 
     private List<Pair<ParentClass, Integer>> sortList(List<Pair<ParentClass, Integer>> datenObjektPairList) {
         sortHelper
+                .setAllReversed(reverse)
                 .setList(datenObjektPairList)
                 .sort(sort_type);
-
 //        switch (sort_type) {
 //            case NAME:
 //                datenObjektPairList.sort((objekt1, objekt2) -> objekt1.first.getName().compareTo(objekt2.first.getName()));
@@ -568,6 +605,7 @@ public class CategoriesActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.task_bar_catigory, menu);
 
         if (setToolbarTitle != null) setToolbarTitle.run();
+        menu.findItem(R.id.taskBar_category_sortByTime).setVisible(catigory.getSearchIn().equals(VideoActivity.class));
 
         return true;
     }
@@ -576,7 +614,7 @@ public class CategoriesActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         switch (id) {
-            case R.id.taskBar_catigory_multiSelect:
+            case R.id.taskBar_category_multiSelect:
                 if (selectedList.isEmpty()) {
                     multiSelectMode = !multiSelectMode;
                     reLoadRecycler();
@@ -614,20 +652,32 @@ public class CategoriesActivity extends AppCompatActivity {
                             .show();
                 }
                 break;
-            case R.id.taskBar_catigory_random:
+            case R.id.taskBar_category_random:
                 showRandomDialog();
                 break;
-            case R.id.taskBar_catigory__sortByName:
+            case R.id.taskBar_category_sortByName:
                 sort_type = SORT_TYPE.NAME;
                 item.setChecked(true);
                 reLoadRecycler();
                 break;
-            case R.id.taskBar_catigory__sortByViews:
+            case R.id.taskBar_category_sortByViews:
                 sort_type = SORT_TYPE.COUNT;
                 item.setChecked(true);
                 reLoadRecycler();
                 break;
-            case R.id.taskBar_catigory__showAs:
+            case R.id.taskBar_category_sortByTime:
+                sort_type = SORT_TYPE.TIME;
+                item.setChecked(true);
+                reLoadRecycler();
+                break;
+            case R.id.taskBar_category_sortReverse:
+                boolean checked = !item.isChecked();
+                item.setChecked(checked);
+                reverse = checked;
+                reLoadRecycler();
+                break;
+
+            case R.id.taskBar_category_showAs:
                 if (columnCount == 2) {
                     columnCount = 1;
                     item.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_show_as_grid));

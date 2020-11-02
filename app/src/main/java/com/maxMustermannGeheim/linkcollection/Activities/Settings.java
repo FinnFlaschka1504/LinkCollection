@@ -342,6 +342,7 @@ public class Settings extends AppCompatActivity {
                         changeSetting(SETTING_VIDEO_LOAD_CAST_AND_STUDIOS, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_loadCastAndStudios)).isChecked()));
                         changeSetting(SETTING_VIDEO_SHOW_SEARCH, String.valueOf(((Spinner) customDialog.findViewById(R.id.dialogSettingsVideo_more_showSearch)).getSelectedItemPosition()));
                         changeSetting(SETTING_VIDEO_SHOW_COLLECTIONS, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_more_showCollections)).isChecked()));
+                        Toast.makeText(context, space.getName() + " Einstellungen gespeichert", Toast.LENGTH_SHORT).show();
                     }
                 })));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_show), context.getString(R.string.bottomMenu_shows)).setActivity(ShowActivity.class).setItemId(Space.SPACE_SHOW).setIconId(R.drawable.ic_shows).setFragmentLayoutId(R.layout.main_fragment_shows)
@@ -439,6 +440,7 @@ public class Settings extends AppCompatActivity {
                     @Override
                     public void runOnClick(CustomDialog customDialog, Space space) {
                         changeSetting(SETTING_SHOW_EPISODE_PREVIEW, String.valueOf(((Spinner) customDialog.findViewById(R.id.dialogSettingsShow_episodes_preview)).getSelectedItemPosition()));
+                        Toast.makeText(context, space.getName() + " Einstellungen gespeichert", Toast.LENGTH_SHORT).show();
                     }
                 })));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_knowledge), context.getString(R.string.bottomMenu_knowledge)).setActivity(KnowledgeActivity.class).setItemId(Space.SPACE_KNOWLEDGE).setIconId(R.drawable.ic_knowledge).setFragmentLayoutId(R.layout.main_fragment_knowledge)

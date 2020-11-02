@@ -578,7 +578,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
                 })
                 .disableScroll()
-                .setDimensions(true, true)
+                .setDimensionsFullscreen()
                 .enableTitleBackButton()
                 .show();
     }

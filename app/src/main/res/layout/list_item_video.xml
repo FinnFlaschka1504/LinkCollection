@@ -42,9 +42,10 @@
                 android:id="@+id/listItem_video_image"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:adjustViewBounds="true"
                 android:maxWidth="60dp"
                 android:maxHeight="60dp"
-                android:adjustViewBounds="true"
+                app:srcCompat="@drawable/ic_download"
                 tools:srcCompat="@drawable/simpsons_movie_poster" />
         </com.maxMustermannGeheim.linkcollection.Utilities.MinDimensionLayout>
 

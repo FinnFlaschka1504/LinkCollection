@@ -3,34 +3,41 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-        android:id="@+id/taskBar_catigory_multiSelect"
+        android:id="@+id/taskBar_category_multiSelect"
         android:icon="@drawable/ic_multi_select"
         android:title="Mehrere Auswählen"
         app:showAsAction="always" />
     <item
-        android:id="@+id/taskBar_catigory_random"
+        android:id="@+id/taskBar_category_random"
         android:icon="@drawable/ic_random"
         android:title="Zufall"
         app:showAsAction="always" />
     <item
-        android:id="@+id/taskBar_catigory__sort"
+        android:id="@+id/taskBar_category_sort"
         android:icon="@drawable/ic_sort"
         android:title="Sortieren"
         app:showAsAction="always">
         <menu>
             <group android:checkableBehavior="single">
                 <item
-                    android:id="@+id/taskBar_catigory__sortByName"
+                    android:id="@+id/taskBar_category_sortByName"
                     android:checked="true"
                     android:title="Nach Name" />
                 <item
-                    android:id="@+id/taskBar_catigory__sortByViews"
+                    android:id="@+id/taskBar_category_sortByViews"
                     android:title="Nach Counts" />
+                <item
+                    android:id="@+id/taskBar_category_sortByTime"
+                    android:title="Nach Zeit" />
             </group>
+            <item
+                android:id="@+id/taskBar_category_sortReverse"
+                android:checkable="true"
+                android:title="Umkehren" />
         </menu>
     </item>
     <item
-        android:id="@+id/taskBar_catigory__showAs"
+        android:id="@+id/taskBar_category_showAs"
         android:icon="@drawable/ic_show_as_list"
         android:title="Anzeigen Als"
         app:showAsAction="always" />

@@ -756,8 +756,8 @@ public class Helpers {
             }
 
             private List<T> sort_private(List<T> list) {
-                if (allReversed)
-                    sorterList.forEach(sorter -> sorter.reversed = true);
+//                if (allReversed)
+                sorterList.forEach(sorter -> sorter.reversed = allReversed);
 
                 list.sort((o1, o2) -> {
                     int result = 0;

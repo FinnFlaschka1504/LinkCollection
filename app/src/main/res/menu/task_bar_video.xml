@@ -86,8 +86,8 @@
                 </menu>
             </item>
             <item
-                android:id="@+id/taskBar_video_filterByRating"
-                android:title="Nach Bewertung" />
+                android:id="@+id/taskBar_video_advancedSearch"
+                android:title="Erweiterte Suche" />
         </menu>
     </item>
     <item

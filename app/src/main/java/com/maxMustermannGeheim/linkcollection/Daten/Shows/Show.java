@@ -1,9 +1,15 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Shows;
 
 import android.content.Context;
+import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.finn.androidUtilities.CustomDialog;
 import com.google.gson.Gson;
+import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
@@ -11,6 +17,10 @@ import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.scottyab.aescrypt.AESCrypt;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.lang.reflect.Field;
 import java.security.GeneralSecurityException;
@@ -28,7 +38,7 @@ public class Show extends ParentClass {
     public static final String EMPTY_SEASON = "EMPTY_SEASON";
 
     public enum REQUEST_IMDB_ID_TYPE {
-        TRAKT, SEASON, PREVIOUS;
+        TMDB, TRAKT, SEASON, PREVIOUS;
 
         public static int indexOf(REQUEST_IMDB_ID_TYPE type) {
             return new com.finn.androidUtilities.CustomList<>(values()).indexOf(type);
@@ -55,7 +65,7 @@ public class Show extends ParentClass {
     private String imagePath;
     private String language;
     private String imdbId;
-    private REQUEST_IMDB_ID_TYPE requestImdbIdType = REQUEST_IMDB_ID_TYPE.TRAKT;
+    private REQUEST_IMDB_ID_TYPE requestImdbIdType = REQUEST_IMDB_ID_TYPE.TMDB;
 
     public Show(String name) {
         uuid = "show_" + UUID.randomUUID().toString();
@@ -443,11 +453,11 @@ public class Show extends ParentClass {
             return this;
         }
 
-        public String _getStillPath() { // ToDo: evl. zu Encryption hinzufügen
+        public String getStillPath() { // ToDo: evl. zu Encryption hinzufügen
             return stillPath;
         }
 
-        public Episode _setStillPath(String stillPath) {
+        public Episode setStillPath(String stillPath) {
             this.stillPath = stillPath;
             return this;
         }
@@ -532,6 +542,27 @@ public class Show extends ParentClass {
             Season season = show.getSeasonList().get(seasonNumber);
             REQUEST_IMDB_ID_TYPE requestImdbIdType = Utility.isNotNullOrElse(differentRequestType, show.requestImdbIdType);
             switch (requestImdbIdType) {
+                case TMDB:
+                    String requestUrl = "https://api.themoviedb.org/3/tv/" + show.getTmdbId() + "/season/" + seasonNumber + "/episode/" + episodeNumber + "/external_ids?api_key=09e015a2106437cbc33bf79eb512b32d";
+                    RequestQueue requestQueue = Volley.newRequestQueue(context);
+
+                    JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {
+                        try {
+                            if (response.has("imdb_id"))
+                                imdbId = response.getString("imdb_id");
+                            Utility.runRunnable(onFinished);
+
+                        } catch (JSONException e) {
+                            Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+
+                    }, error -> {
+                        Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show();
+                    });
+
+                    requestQueue.add(jsonObjectRequest);
+
+                    break;
                 case TRAKT:
                     Utility.getImdbIdFromTmdbId(context, tmdbId, "episode", s -> {
                         imdbId = s;
@@ -638,6 +669,30 @@ public class Show extends ParentClass {
         public Episode clone() {
             return (Episode) super.clone();
         }
+
+
+        //  ------------------------- Encryption ------------------------->
+        @Override
+        public boolean encrypt(String key) {
+            try {
+                if (Utility.stringExists(stillPath)) stillPath = AESCrypt.encrypt(key, stillPath);
+            } catch (GeneralSecurityException e) {
+                return false;
+            }
+            return super.encrypt(key);
+        }
+
+        @Override
+        public boolean decrypt(String key) {
+            try {
+                if (Utility.stringExists(stillPath)) stillPath = AESCrypt.decrypt(key, stillPath);
+            } catch (GeneralSecurityException e) {
+                return false;
+            }
+            return super.decrypt(key);
+        }
+        //  <------------------------- Encryption -------------------------
+
     }
     //  <----- Classes -----
 

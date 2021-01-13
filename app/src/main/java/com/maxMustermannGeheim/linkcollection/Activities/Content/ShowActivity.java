@@ -1,7 +1,6 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Content;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -20,7 +19,6 @@ import android.text.style.StyleSpan;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
@@ -92,7 +90,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -616,6 +613,7 @@ public class ShowActivity extends AppCompatActivity {
                             .setTitle("Gehe Zu")
                             .addButton("Ansichten-Historie", customDialog -> showViewHistoryDialog(list))
                             .addButton("Ansichten-Kalender", customDialog -> showCalenderDialog(show))
+                            .addButton("Gesehene Episoden", customDialog -> showSeenEpisodesDialog(show))
                             .addButton("Zuletzt gesehen", customDialog -> onDecided.run())
                             .addButton("Nächste Episode", customDialog -> {
                                 getNextEpisode(episode[0], episode1 -> {
@@ -688,6 +686,61 @@ public class ShowActivity extends AppCompatActivity {
                 .show();
     }
 
+    private void showSeenEpisodesDialog(Show show) {
+        CustomList<Show.Episode> episodeList = new CustomList<>(CustomUtility.concatenateCollections(show.getSeasonList(), season -> season.getEpisodeMap().values()));
+
+
+        Helpers.SortHelper<Show.Episode>.Sorter<Float> sorter = new Helpers.SortHelper<Show.Episode>()
+                .setList(episodeList)
+                .addSorter()
+                .changeType(Show.Episode::getRating)
+                .enableReverseDefaultComparable();
+
+
+        CustomDialog.Builder(this)
+                .setTitle("Gesehene Episoden")
+                .setView(new CustomRecycler<Show.Episode>(this)
+                        .setGetActiveObjectList(customRecycler -> sorter.sort())
+                        .setItemLayout(R.layout.list_item_episode)
+                        .setSetItemContent((customRecycler, itemView, episode) -> {
+//                            Utility.setMargins(itemView, 8, 5, 8, 5);
+                            itemView.findViewById(R.id.listItem_episode_seen).setVisibility(View.GONE);
+
+                            itemView.findViewById(R.id.listItem_episode_extraInfo).setVisibility(View.VISIBLE);
+                            itemView.findViewById(R.id.listItem_episode_showName_layout).setVisibility(View.GONE);
+                            ((TextView) itemView.findViewById(R.id.listItem_episode_seasonNumber)).setText(String.valueOf(episode.getSeasonNumber()));
+
+                            ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(episode.getEpisodeNumber()));
+
+                            ImageView listItem_episode_image = itemView.findViewById(R.id.listItem_episode_image);
+//                            if (customRecycler.isReloading() && imageDimensions.containsKey(episode)) {
+//                                CustomUtility.Triple<ImageView, Integer, Integer> triple = imageDimensions.get(episode);
+//                                ViewGroup.LayoutParams layoutParams = listItem_episode_image.getLayoutParams();
+//                                layoutParams.width = triple.second;
+//                                layoutParams.height = triple.third;
+//                                listItem_episode_image.setLayoutParams(layoutParams);
+//                            }
+//                            imageDimensions.put(episode, CustomUtility.Triple.create(listItem_episode_image, listItem_episode_image.getWidth(), listItem_episode_image.getHeight()));
+                            int showPreviewSetting = Integer.parseInt(Settings.getSingleSetting(this, Settings.SETTING_SHOW_EPISODE_PREVIEW));
+                            if (Utility.stringExists(episode.getStillPath()) && (showPreviewSetting == 0 || showPreviewSetting == 1 && episode.isWatched())) {
+                                listItem_episode_image.setVisibility(View.VISIBLE);
+                                Utility.loadUrlIntoImageView(this, listItem_episode_image, Utility.getTmdbImagePath_ifNecessary(episode.getStillPath(), false), Utility.getTmdbImagePath_ifNecessary(episode.getStillPath(), true));
+                            } else
+                                listItem_episode_image.setVisibility(View.GONE);
+
+
+                            ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode.getName());
+                            if (episode.getAirDate() != null)
+                                ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode.getAirDate()));
+                            ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode.getRating() != -1 ? episode.getRating() + " ☆" : "");
+
+                        })
+                        .generateRecyclerView())
+                .setDimensionsFullscreen()
+                .enableTitleBackButton()
+                .disableScroll()
+                .show();
+    }
 
     //  ------------------------- ShowInfo ------------------------->
     private List<Show.Episode> getEpisodeList(Show show) {
@@ -932,6 +985,10 @@ public class ShowActivity extends AppCompatActivity {
                         reLoadRecycler();
                     });
                     view.findViewById(R.id.dialog_detailShow_list).setOnClickListener(view1 -> showSeasonDialog(show));
+                    view.findViewById(R.id.dialog_detailShow_list).setOnLongClickListener(view1 -> {
+                        showSeenEpisodesDialog(show);
+                        return true;
+                    });
                     view.findViewById(R.id.dialog_detailShow_internet).setOnClickListener(v -> {
                         if (!Utility.stringExists(show.getImdbId()))
                             Utility.openUrl(this, "https://www.themoviedb.org/tv/" + show.getTmdbId(), true);
@@ -1386,9 +1443,9 @@ public class ShowActivity extends AppCompatActivity {
                     }
                     imageDimensions.put(episode, CustomUtility.Triple.create(listItem_episode_image, listItem_episode_image.getWidth(), listItem_episode_image.getHeight()));
                     int showPreviewSetting = Integer.parseInt(Settings.getSingleSetting(this, Settings.SETTING_SHOW_EPISODE_PREVIEW));
-                    if (Utility.stringExists(episode._getStillPath()) && (showPreviewSetting == 0 || showPreviewSetting == 1 && episode.isWatched())) {
+                    if (Utility.stringExists(episode.getStillPath()) && (showPreviewSetting == 0 || showPreviewSetting == 1 && episode.isWatched())) {
                         listItem_episode_image.setVisibility(View.VISIBLE);
-                        Utility.loadUrlIntoImageView(this, listItem_episode_image, Utility.getTmdbImagePath_ifNecessary(episode._getStillPath(), false), Utility.getTmdbImagePath_ifNecessary(episode._getStillPath(), true));
+                        Utility.loadUrlIntoImageView(this, listItem_episode_image, Utility.getTmdbImagePath_ifNecessary(episode.getStillPath(), false), Utility.getTmdbImagePath_ifNecessary(episode.getStillPath(), true));
                     } else
                         listItem_episode_image.setVisibility(View.GONE);
                     ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode.getName());
@@ -1506,7 +1563,7 @@ public class ShowActivity extends AppCompatActivity {
 //                newEpisode.setDateList(oldEpisode.getDateList());
 //                newEpisode.setWatched(oldEpisode.isWatched());
 //                newEpisode.setRating(oldEpisode.getRating());
-                oldEpisode._setStillPath(newEpisode._getStillPath());
+                oldEpisode.setStillPath(newEpisode.getStillPath());
                 oldEpisode.setAirDate(newEpisode.getAirDate());
                 oldEpisode.setName(newEpisode.getName());
             });
@@ -1552,9 +1609,9 @@ public class ShowActivity extends AppCompatActivity {
 
                     ImageView listItem_episode_image = view.findViewById(R.id.dialog_detailEpisode_preview);
                     int showPreviewSetting = Integer.parseInt(Settings.getSingleSetting(this, Settings.SETTING_SHOW_EPISODE_PREVIEW));
-                    if (Utility.stringExists(episode._getStillPath())) { // && (showPreviewSetting == 0 || showPreviewSetting == 1 && episode.isWatched())) {
+                    if (Utility.stringExists(episode.getStillPath())) { // && (showPreviewSetting == 0 || showPreviewSetting == 1 && episode.isWatched())) {
                         listItem_episode_image.setVisibility(View.VISIBLE);
-                        Utility.loadUrlIntoImageView(this, listItem_episode_image, Utility.getTmdbImagePath_ifNecessary(episode._getStillPath(), false), Utility.getTmdbImagePath_ifNecessary(episode._getStillPath(), true));
+                        Utility.loadUrlIntoImageView(this, listItem_episode_image, Utility.getTmdbImagePath_ifNecessary(episode.getStillPath(), false), Utility.getTmdbImagePath_ifNecessary(episode.getStillPath(), true));
                     } else
                         listItem_episode_image.setVisibility(View.GONE);
 
@@ -1785,6 +1842,7 @@ public class ShowActivity extends AppCompatActivity {
                                     CustomDialog.Builder(ShowActivity.this)
                                             .setTitle("Die IMDb-ID konnte nicht ermittelt werden")
                                             .setText(currentEpisode[0].getName())
+                                            .addButton("TMDB", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.TMDB))
                                             .addButton("TRAKT", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.TRAKT))
                                             .addButton("Staffel", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.SEASON))
                                             .addButton("Vorheriger", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.PREVIOUS))
@@ -2202,7 +2260,7 @@ public class ShowActivity extends AppCompatActivity {
             if (episode_json.has("still_path")) {
                 String stillPath;
                 if (!(stillPath = episode_json.getString("still_path")).equals("null"))
-                    episode._setStillPath(stillPath);
+                    episode.setStillPath(stillPath);
             }
             if (episodeMap != null)
                 episodeMap.put("E:" + episodeNumber, episode);

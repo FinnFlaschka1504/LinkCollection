@@ -3,13 +3,16 @@ package com.maxMustermannGeheim.linkcollection.Utilities;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Handler;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.Spannable;
+import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.TextWatcher;
+import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
@@ -34,10 +37,12 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
+import com.finn.androidUtilities.CustomUtility;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -663,6 +668,27 @@ public class Helpers {
             return spannableStringBuilder;
         }
         //  <--------------- Quick... ---------------
+
+        public static CharSequence highlightText(String search, String originalText) {
+            if (CustomUtility.stringExists(search) && CustomUtility.stringExists(originalText)) {
+                search = search.toLowerCase();
+                String normalizedText = Normalizer.normalize(originalText, Normalizer.Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", "").toLowerCase();
+                int start = normalizedText.indexOf(search);
+                if (start < 0) {
+                    return originalText;
+                } else {
+                    Spannable highlighted = new SpannableString(originalText);
+                    while (start >= 0) {
+                        int spanStart = Math.min(start, originalText.length());
+                        int spanEnd = Math.min(start + search.length(), originalText.length());
+                        highlighted.setSpan(new BackgroundColorSpan(0x40FFD03F), spanStart, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        start = normalizedText.indexOf(search, spanEnd);
+                    }
+                    return highlighted;
+                }
+            }
+            return originalText;
+        }
     }
     //  <--------------- SpannableString ---------------
 
@@ -671,7 +697,7 @@ public class Helpers {
     public static class SortHelper<T> {
         private List<T> list;
         private List<Sorter> sorterList = new ArrayList<>();
-        private boolean allReversed;
+        private Boolean allReversed;
 
         public SortHelper() {
         }
@@ -757,7 +783,8 @@ public class Helpers {
 
             private List<T> sort_private(List<T> list) {
 //                if (allReversed)
-                sorterList.forEach(sorter -> sorter.reversed = allReversed);
+                if (allReversed != null)
+                    sorterList.forEach(sorter -> sorter.reversed = allReversed);
 
                 list.sort((o1, o2) -> {
                     int result = 0;

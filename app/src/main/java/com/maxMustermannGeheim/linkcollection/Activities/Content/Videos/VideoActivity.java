@@ -29,6 +29,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.SeekBar;
@@ -91,6 +92,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -99,11 +101,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import okhttp3.Headers;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
@@ -163,7 +162,6 @@ public class VideoActivity extends AppCompatActivity {
     private WebView webView;
     private boolean isShared;
     private boolean isDialog;
-    public static Pattern ratingPattern = Pattern.compile("\\*(([0-4]((.|,)\\d{1,2})?)|5((.|,)00?)?)(-(([0-4]((\\4|\\6)(?<=[,.])\\d{1,2})?)|5((\\4|\\6)(?<=[,.])00?)?))?\\*");
     private Runnable setToolbarTitle;
 
     List<Video> allVideoList = new ArrayList<>();
@@ -283,18 +281,24 @@ public class VideoActivity extends AppCompatActivity {
             setToolbarTitle = Utility.applyExpendableToolbar_recycler(this, findViewById(R.id.recycler), toolbar, appBarLayout, collapsingToolbarLayout, noItem, plural);
 
             videos_search = findViewById(R.id.search);
+//            videos_search.setQuery("{}", false);
 
             loadVideoRecycler();
 
+//            int searchTextViewId = videos_search.getContext().getResources().getIdentifier("android:id/search_src_text", null, null);
+//            TextView mSearchTextView = (TextView) videos_search.findViewById(searchTextViewId);
             textListener = new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String s) {
-                    this.onQueryTextChange(s);
+//                    this.onQueryTextChange(s);
                     return true;
                 }
 
                 @Override
                 public boolean onQueryTextChange(String query) {
+//                    videos_search.setOnQueryTextListener(null);
+//                    mSearchTextView.setText(new Helpers.SpannableStringHelper().appendColor(query, Color.RED).get());
+//                    videos_search.setOnQueryTextListener(this);
                     searchQuery = query;
                     reLoadVideoRecycler();
                     return true;
@@ -523,6 +527,8 @@ public class VideoActivity extends AppCompatActivity {
 
     private List<Video> filterList() {
         filterdVideoList = new CustomList<>(allVideoList);
+//        if (true)
+//            return filterdVideoList;
         if (mode.equals(MODE.SEEN)) {
             filterdVideoList = allVideoList.stream().filter(video -> !video.getDateList().isEmpty()).collect(Collectors.toCollection(CustomList::new));
         } else if (mode.equals(MODE.LATER)) {
@@ -531,24 +537,54 @@ public class VideoActivity extends AppCompatActivity {
             filterdVideoList = allVideoList.stream().filter(Video::isUpcoming).collect(Collectors.toCollection(CustomList::new));
         }
         if (!searchQuery.trim().equals("")) {
-            String subQuery = searchQuery;
-            if (searchQuery.contains("*")) {
 
-                Matcher matcher = ratingPattern.matcher(searchQuery);
-                if (matcher.find()) {
-                    String[] range = matcher.group(0).replaceAll("\\*", "").replaceAll(",", ".").split("-");
-                    float min = Float.parseFloat(range[0]);
-                    float max = Float.parseFloat(range.length < 2 ? range[0] : range[1]);
-                    filterdVideoList.filter(video -> video.getRating() >= min && video.getRating() <= max, true);
-                    subQuery = matcher.replaceFirst("");
+            Utility.AdvancedQueryHelper advancedQueryHelper = Utility.AdvancedQueryHelper.getAdvancedQuery(searchQuery);
+            String subQuery = advancedQueryHelper.restQuery;
+
+            if (advancedQueryHelper.hasAnyAdvancedQuery()) {
+                Predicate<Video> ratingVideoCheck = null;
+                Predicate<Video> dateVideoCheck = null;
+
+                if (advancedQueryHelper.hasAnyAdvancedQuery()) {
+                    if (advancedQueryHelper.hasRatingSub()) {
+                        Pair<Float, Float> ratingMinMax = advancedQueryHelper.getRatingMinMax();
+                        ratingVideoCheck = video -> video.getRating() >= ratingMinMax.first && video.getRating() <= ratingMinMax.second;
+                    }
+
+                    if (advancedQueryHelper.hasDateSub()) {
+                        Pair<Date, Date> dateMinMax = advancedQueryHelper.getDateMinMax();
+                        Pair<Long, Long> dateMinMaxTime = Pair.create(dateMinMax.first.getTime(), Utility.isNullReturnOrElse(dateMinMax.second, dateMinMax.first.getTime(), Date::getTime));
+
+                        dateVideoCheck = video -> (
+                                video.getDateList().stream().anyMatch(date -> {
+                                            long time = CustomUtility.removeTime(date).getTime();
+                                            return time >= dateMinMaxTime.first && time <= dateMinMaxTime.second;
+                                        }
+                                )
+                        );
+                    }
+
+                    Predicate<Video> finalRatingVideoCheck = ratingVideoCheck;
+                    Predicate<Video> finalDateVideoCheck = dateVideoCheck;
+                    filterdVideoList.filter(video -> {
+                        if (finalRatingVideoCheck != null && !finalRatingVideoCheck.test(video))
+                            return false;
+                        if (finalDateVideoCheck != null && !finalDateVideoCheck.test(video))
+                            return false;
+                        return true;
+                    }, true);
                 }
             }
 
-            if (subQuery.contains("|")) {
-                filterdVideoList = filterdVideoList.filterOr(subQuery.split("\\|"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), true);
-            } else {
-                filterdVideoList.filterAnd(subQuery.split("&"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), true);
+            if (CustomUtility.stringExists(subQuery)) {
+                if (subQuery.contains("|")) {
+                    filterdVideoList = filterdVideoList.filterOr(subQuery.split("\\|"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), true);
+                } else {
+                    filterdVideoList.filterAnd(subQuery.split("&"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), true);
+                }
             }
+
+//            ((EditText) ((LinearLayout) ((LinearLayout) ((LinearLayout) videos_search.getChildAt(0)).getChildAt(2)).getChildAt(1)).getChildAt(0)).setText(new Helpers.SpannableStringHelper().appendColor(searchQuery, Color.RED).get());
         }
         return filterdVideoList;
     }
@@ -642,10 +678,13 @@ public class VideoActivity extends AppCompatActivity {
                     MinDimensionLayout listItem_video_image_layout = itemView.findViewById(R.id.listItem_video_image_layout);
                     if (showImages && CustomUtility.stringExists(video.getImagePath())) {
                         listItem_video_image_layout.setVisibility(View.VISIBLE);
-                        Utility.loadUrlIntoImageView(this, itemView.findViewById(R.id.listItem_video_image), Utility.getTmdbImagePath_ifNecessary(video.getImagePath(), false), Utility.getTmdbImagePath_ifNecessary(video.getImagePath(), true));
+                        Utility.loadUrlIntoImageView(this, itemView.findViewById(R.id.listItem_video_image), Utility.getTmdbImagePath_ifNecessary(video.getImagePath(), false), Utility.getTmdbImagePath_ifNecessary(video.getImagePath(), true), null, null, this::removeFocusFromSearch);
                     } else
                         listItem_video_image_layout.setVisibility(View.GONE);
-                    ((TextView) itemView.findViewById(R.id.listItem_video_Titel)).setText(/*(Utility.stringExists(video.getImagePath()) ? "" : "• ") + */video.getName());
+
+
+                    String searchQuery = Utility.AdvancedQueryHelper.removeAdvancedSearch(this.searchQuery).toLowerCase();
+                    ((TextView) itemView.findViewById(R.id.listItem_video_Titel)).setText(Helpers.SpannableStringHelper.highlightText(searchQuery, video.getName()));
                     if (!video.getDateList().isEmpty()) {
                         itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.VISIBLE);
                         ((TextView) itemView.findViewById(R.id.listItem_video_Views)).setText(String.valueOf(video.getDateList().size()));
@@ -655,9 +694,15 @@ public class VideoActivity extends AppCompatActivity {
                     itemView.findViewById(R.id.listItem_video_later).setVisibility(Utility.getWatchLaterList().contains(video) ? View.VISIBLE : View.GONE);
                     itemView.findViewById(R.id.listItem_video_upcoming).setVisibility(video.isUpcoming() ? View.VISIBLE : View.GONE);
 
-                    List<String> darstellerNames = new ArrayList<>();
-                    video.getDarstellerList().forEach(uuid -> darstellerNames.add(database.darstellerMap.get(uuid).getName()));
-                    ((TextView) itemView.findViewById(R.id.listItem_video_Darsteller)).setText(String.join(", ", darstellerNames));
+                    Comparator<String> containsComparator = (name1, name2) -> {
+                        boolean contains1 = name1.toLowerCase().contains(searchQuery);
+                        boolean contains2 = name2.toLowerCase().contains(searchQuery);
+
+                        return Boolean.compare(contains1, contains2) * -1;
+                    };
+
+                    String darstellerNames = video.getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).sorted(containsComparator).collect(Collectors.joining(", "));
+                    ((TextView) itemView.findViewById(R.id.listItem_video_Darsteller)).setText(Helpers.SpannableStringHelper.highlightText(searchQuery, darstellerNames));
                     itemView.findViewById(R.id.listItem_video_Darsteller).setSelected(scrolling);
 
                     if (video.getRating() > 0) {
@@ -666,14 +711,12 @@ public class VideoActivity extends AppCompatActivity {
                     } else
                         itemView.findViewById(R.id.listItem_video_rating_layout).setVisibility(View.GONE);
 
-                    List<String> studioNames = new ArrayList<>();
-                    video.getStudioList().forEach(uuid -> studioNames.add(database.studioMap.get(uuid).getName()));
-                    ((TextView) itemView.findViewById(R.id.listItem_video_Studio)).setText(String.join(", ", studioNames));
+                    String studioNames = video.getStudioList().stream().map(uuid -> database.studioMap.get(uuid).getName()).sorted(containsComparator).collect(Collectors.joining(", "));
+                    ((TextView) itemView.findViewById(R.id.listItem_video_Studio)).setText(Helpers.SpannableStringHelper.highlightText(searchQuery, studioNames));
                     itemView.findViewById(R.id.listItem_video_Studio).setSelected(scrolling);
 
-                    List<String> genreNames = new ArrayList<>();
-                    video.getGenreList().forEach(uuid -> genreNames.add(database.genreMap.get(uuid).getName()));
-                    ((TextView) itemView.findViewById(R.id.listItem_video_Genre)).setText(String.join(", ", genreNames));
+                    String genreNames = video.getGenreList().stream().map(uuid -> database.genreMap.get(uuid).getName()).sorted(containsComparator).collect(Collectors.joining(", "));
+                    ((TextView) itemView.findViewById(R.id.listItem_video_Genre)).setText(Helpers.SpannableStringHelper.highlightText(searchQuery, genreNames));
                     itemView.findViewById(R.id.listItem_video_Genre).setSelected(scrolling);
                 })
                 .setOnClickListener((customRecycler, view, object, index) -> {
@@ -791,8 +834,11 @@ public class VideoActivity extends AppCompatActivity {
                     else
                         view.findViewById(R.id.dialog_video_release_layout).setVisibility(View.GONE);
 
-                    if (video.getAgeRating() != -1)
-                        ((TextView) view.findViewById(R.id.dialog_video_ageRating)).setText(String.valueOf(video.getAgeRating()));
+                    if (Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_SHOW_AGE_RATING)) {
+                        if (video.getAgeRating() != -1)
+                            ((TextView) view.findViewById(R.id.dialog_video_ageRating)).setText(String.valueOf(video.getAgeRating()));
+                    } else
+                        view.findViewById(R.id.dialog_video_ageRating_layout).setVisibility(View.GONE);
 
                     if (Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_SHOW_LENGTH)) {
                         int length = video.getLength();
@@ -1761,7 +1807,8 @@ public class VideoActivity extends AppCompatActivity {
                     video.setLength(response.getInt("runtime"));
                 if (response.has("imdb_id"))
                     video.setImdbId(response.getString("imdb_id"));
-            } catch (JSONException ignored) {}
+            } catch (JSONException ignored) {
+            }
 
             try {
                 if (response.has("release_dates")) {
@@ -1777,7 +1824,8 @@ public class VideoActivity extends AppCompatActivity {
                         }
                     }
                 }
-            } catch (JSONException ignored) {}
+            } catch (JSONException ignored) {
+            }
 
             try {
                 results = response.getJSONArray("production_companies");
@@ -1803,7 +1851,8 @@ public class VideoActivity extends AppCompatActivity {
 
                     video._setTempStudioList(tempStudioList);
                 }
-            } catch (JSONException ignored) {}
+            } catch (JSONException ignored) {
+            }
 
             try {
                 results = response.getJSONObject("credits").getJSONArray("cast");
@@ -1829,7 +1878,8 @@ public class VideoActivity extends AppCompatActivity {
 
                     video._setTempCastList(tempCastList);
                 }
-            } catch (JSONException ignored) {}
+            } catch (JSONException ignored) {
+            }
 
             customDialog.reloadView();
         }, error -> {
@@ -2245,8 +2295,9 @@ public class VideoActivity extends AppCompatActivity {
                 commitSearch();
                 setSearchHint();
                 break;
-            case R.id.taskBar_video_filterByRating:
-                Utility.showRangeSelectDialog(this, videos_search, database.videoMap.values());
+            case R.id.taskBar_video_advancedSearch:
+                removeFocusFromSearch();
+                Utility.showAdvancedSearchDialog(this, videos_search, database.videoMap.values());
                 break;
 
             case R.id.taskBar_video_modeAll:

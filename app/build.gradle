@@ -28,11 +28,11 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.1'
-    implementation 'com.google.firebase:firebase-database:19.4.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+    implementation 'com.google.firebase:firebase-database:19.6.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    implementation 'androidx.navigation:navigation-fragment:2.3.0'
-    implementation 'androidx.navigation:navigation-ui:2.3.0'
+    implementation 'androidx.navigation:navigation-fragment:2.3.2'
+    implementation 'androidx.navigation:navigation-ui:2.3.2'
     implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
     testImplementation 'junit:junit:4.12'
     implementation 'androidx.recyclerview:recyclerview:1.1.0'
@@ -41,7 +41,7 @@ dependencies {
     implementation 'org.apmem.tools:layouts:1.10@aar'
     implementation 'com.github.sundeepk:compact-calendar-view:3.0.0'
     implementation 'com.akexorcist:RoundCornerProgressBar:2.0.3'
-    implementation 'com.google.android.material:material:1.2.0'
+    implementation 'com.google.android.material:material:1.2.1'
     implementation 'com.github.psinetron:slycalendarview:0.0.9'
     implementation 'com.mikhaellopez:lazydatepicker:1.0.5'
     implementation 'com.android.volley:volley:1.1.1'
@@ -49,14 +49,14 @@ dependencies {
 
     // Crash
     implementation 'com.google.firebase:firebase-crash:16.2.1'
-    implementation 'com.google.firebase:firebase-analytics:17.5.0'
+    implementation 'com.google.firebase:firebase-analytics:18.0.0'
     implementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
 
     // Eigene
     implementation 'com.github.FinnFlaschka1504:AndroidUtilities:3.5.10'
 
     implementation 'com.github.duanhong169:drawabletoolbox:1.0.7'
-    implementation "androidx.browser:browser:1.2.0"
+    implementation "androidx.browser:browser:1.3.0"
 
     implementation 'com.github.bumptech.glide:glide:4.11.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
@@ -71,6 +71,7 @@ dependencies {
     implementation 'com.github.johndeverall:opengraph-java:2d69b89c1a'
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
+    implementation 'com.google.android.material:material:1.3.0-beta01'
 
     implementation group: 'org.apache-extras.beanshell', name: 'bsh', version: '2.0b6'
     implementation group: 'com.google.guava', name: 'guava', version: '28.2-android'

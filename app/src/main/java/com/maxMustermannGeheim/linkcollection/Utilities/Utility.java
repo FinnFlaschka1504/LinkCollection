@@ -72,15 +72,11 @@ import com.bumptech.glide.request.target.Target;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
 import com.github.chrisbanes.photoview.PhotoView;
-import com.github.mikephil.charting.charts.PieChart;
-import com.github.mikephil.charting.data.PieData;
-import com.github.mikephil.charting.data.PieDataSet;
-import com.github.mikephil.charting.data.PieEntry;
-import com.github.mikephil.charting.utils.ColorTemplate;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
+import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -117,9 +113,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.opengraph.OpenGraph;
 
-import java.io.File;
 import java.io.FileDescriptor;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
@@ -1164,8 +1158,8 @@ public class Utility {
                 } catch (Exception exception) {
                     exception.printStackTrace();
                 }
-                if (!result && cancelTouch != null)
-                    cancelTouch.run();
+//                if (!result && cancelTouch != null)
+//                    cancelTouch.run();
                 return result;
             }
         }
@@ -1742,36 +1736,63 @@ public class Utility {
     //  <----- Pixels -----
 
 
-    //  ------------------------- FilterStars ------------------------->
-    public static CustomDialog showRangeSelectDialog(Context context, SearchView searchView, Collection<? extends ParentClass_Ratable> ratables) {
+    //  ------------------------- Advanced Search ------------------------->
+    public static CustomDialog showAdvancedSearchDialog(Context context, SearchView searchView, Collection<? extends ParentClass_Ratable> ratables) {
+        //  ------------------------- Rating ------------------------->
         boolean[] singleMode = {false};
         final int[] min = {0};
         final int[] max = {20};
         boolean preSelected = false;
-        Matcher matcher = VideoActivity.ratingPattern.matcher(searchView.getQuery());
-        if (matcher.find()) {
-            String[] range = matcher.group(0).replaceAll("\\*", "").replaceAll(",", ".").split("-");
-            min[0] = Math.round(Float.parseFloat(range[0]) * 4);
-            max[0] = Math.round(Float.parseFloat(range.length < 2 ? range[0] : range[1]) * 4);
+        //  <------------------------- Rating -------------------------
+
+
+        //  ------------------------- Watched ------------------------->
+        final Date[] from = {null};
+        final Date[] to = {null};
+        //  <------------------------- Watched -------------------------
+
+
+        AdvancedQueryHelper advancedQueryHelper = AdvancedQueryHelper.getAdvancedQuery(searchView.getQuery().toString());
+        if (advancedQueryHelper.hasAdvancedSearch()) {
             preSelected = true;
-            singleMode[0] = range.length < 2;
+
+            if (advancedQueryHelper.hasRatingSub()) {
+                Pair<Float, Float> ratingMinMax = advancedQueryHelper.getRatingMinMax();
+                min[0] = Math.round(ratingMinMax.first * 4);
+                max[0] = Math.round(ratingMinMax.second * 4);
+                singleMode[0] = ratingMinMax.first.equals(ratingMinMax.second);
+            }
+
+            // ---------------
+
+            if (advancedQueryHelper.hasDateSub()) {
+                Pair<Date, Date> dateMinMax = advancedQueryHelper.getDateMinMax();
+                from[0] = dateMinMax.first;
+                to[0] = dateMinMax.second;
+            }
+
         }
 
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.ENGLISH);
         boolean finalPreSelected = preSelected;
+        int timezoneOffset = new Date().getTimezoneOffset() * 60 * 1000;
+
         return CustomDialog.Builder(context)
-                .setTitle("Nach Bewertung Filtern")
+                .setTitle("Erweiterte Suche")
                 .setView(R.layout.dialog_filter_by_rating)
                 .setSetViewContent((customDialog, view, reload) -> {
-                    TextView rangeText = customDialog.findViewById(R.id.dialog_filterByRating_range);
+
+                    //  ------------------------- Rating ------------------------->
+                    TextView rangeText = customDialog.findViewById(R.id.dialog_advancedSearch_range);
                     CustomUtility.GenericInterface<Pair<Integer, Integer>> setText = pair -> {
                         if (singleMode[0])
                             rangeText.setText(String.format(Locale.getDefault(), "%.2f ☆", pair.first / 4d));
                         else
                             rangeText.setText(String.format(Locale.getDefault(), "%.2f ☆ – %.2f ☆", pair.first / 4d, pair.second / 4d));
                     };
-                    RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_filterByRating_rangeBar);
+                    RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_advancedSearch_rangeBar);
                     rangeBar.setVisibility(singleMode[0] ? View.INVISIBLE : View.VISIBLE);
-                    SeekBar singleBar = customDialog.findViewById(R.id.dialog_filterByRating_singleBar);
+                    SeekBar singleBar = customDialog.findViewById(R.id.dialog_advancedSearch_singleBar);
                     singleBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                         @Override
                         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -1822,6 +1843,50 @@ public class Utility {
                             singleBar.setProgress(min);
                         }
                     });
+                    //  <------------------------- Rating -------------------------
+
+
+                    //  ------------------------- Watched ------------------------->
+                    TextView dialog_advancedSearch_viewed_text = (TextView) customDialog.findViewById(R.id.dialog_advancedSearch_viewed_text);
+
+                    Runnable setDateRangeTextView = () -> {
+                        if (from[0] != null && to[0] != null) {
+                            dialog_advancedSearch_viewed_text.setText(String.format("%s - %s", dateFormat.format(from[0]), dateFormat.format(to[0])));
+                        } else if (from[0] != null) {
+                            dialog_advancedSearch_viewed_text.setText(dateFormat.format(from[0]));
+                        } else {
+                            dialog_advancedSearch_viewed_text.setText("Nicht ausgewählt");
+                        }
+                    };
+                    setDateRangeTextView.run();
+
+                    MaterialDatePicker.Builder<androidx.core.util.Pair<Long, Long>> builder = MaterialDatePicker.Builder.dateRangePicker();
+                    builder.setTitleText("Zeitraum Auswählen");
+                    if (from[0] != null && to[0] != null) {
+                        builder.setSelection(androidx.core.util.Pair.create(from[0].getTime() - timezoneOffset, to[0].getTime() - timezoneOffset));
+                    } else if (from[0] != null) {
+                        builder.setSelection(androidx.core.util.Pair.create(from[0].getTime() - timezoneOffset, from[0].getTime() - timezoneOffset));
+                    }
+                    MaterialDatePicker<androidx.core.util.Pair<Long, Long>> picker = builder.build();
+
+
+                    picker.addOnPositiveButtonClickListener(selection -> {
+                        from[0] = new Date(selection.first + timezoneOffset);
+                        if (!Objects.equals(selection.first, selection.second))
+                            to[0] = new Date(selection.second + timezoneOffset);
+                        else
+                            to[0] = null;
+                        setDateRangeTextView.run();
+                    });
+
+                    customDialog.findViewById(R.id.dialog_advancedSearch_viewed_change).setOnClickListener(v -> picker.show(((AppCompatActivity) context).getSupportFragmentManager(), picker.toString()));
+                    customDialog.findViewById(R.id.dialog_advancedSearch_viewed_change).setOnLongClickListener(v -> {
+                        from[0] = null;
+                        to[0] = null;
+                        setDateRangeTextView.run();
+                        return true;
+                    });
+                    //  <------------------------- Watched -------------------------
 
                     // --------------- Chart
 
@@ -1896,80 +1961,92 @@ public class Utility {
 
                     // --------------- Chart 2
 
-                    PieChart pieChart = customDialog.findViewById(R.id.dialog_filterByRating_chart);
-                    pieChart.setUsePercentValues(true);
-                    pieChart.getDescription().setEnabled(false);
-
-//                    pieChart.setCenterTextTypeface(tfLight);
-//                    pieChart.setCenterText(generateCenterSpannableText());
-
-                    pieChart.setDrawHoleEnabled(true);
-                    pieChart.setHoleColor(Color.TRANSPARENT);
-
-                    pieChart.setTransparentCircleColor(Color.WHITE);
-                    pieChart.setTransparentCircleAlpha(110);
-
-                    pieChart.setHoleRadius(58f);
-                    pieChart.setTransparentCircleRadius(61f);
-
-                    pieChart.setDrawCenterText(true);
-
-//                    pieChart.setRotationEnabled(false);
-                    pieChart.setHighlightPerTapEnabled(true);
-
-//                    pieChart.setMaxAngle(180f); // HALF CHART
-//                    pieChart.setRotationAngle(180f);
-//                    pieChart.setCenterTextOffset(0, -20);
-
-
-                    List<PieEntry> pieEntryList = new ArrayList<>();
-
-                    Map<Float, ? extends List<? extends ParentClass_Ratable>> map = ratables.stream().collect(Collectors.groupingBy(ParentClass_Ratable::getRating));
-
-                    for (int i = 1; i < 20; i++) {
-                        float rating = i / 4f;
-                        pieEntryList.add(new PieEntry(Utility.returnIfNull(map.get(rating), new ArrayList<ParentClass_Ratable>()).size(), Utility.removeTrailingZeros(i / 4d) + " ☆"));
-                    }
-
-                    PieDataSet dataSet = new PieDataSet(pieEntryList, "Filme Verteilung");
-                    dataSet.setColors(ColorTemplate.COLORFUL_COLORS);
-                    PieData pieData = new PieData(dataSet);
-
-                    pieChart.setData(pieData);
-                    pieChart.invalidate();
+//                    PieChart pieChart = customDialog.findViewById(R.id.dialog_filterByRating_chart);
+//                    pieChart.setUsePercentValues(true);
+//                    pieChart.getDescription().setEnabled(false);
+//
+////                    pieChart.setCenterTextTypeface(tfLight);
+////                    pieChart.setCenterText(generateCenterSpannableText());
+//
+//                    pieChart.setDrawHoleEnabled(true);
+//                    pieChart.setHoleColor(Color.TRANSPARENT);
+//
+//                    pieChart.setTransparentCircleColor(Color.WHITE);
+//                    pieChart.setTransparentCircleAlpha(110);
+//
+//                    pieChart.setHoleRadius(58f);
+//                    pieChart.setTransparentCircleRadius(61f);
+//
+//                    pieChart.setDrawCenterText(true);
+//
+////                    pieChart.setRotationEnabled(false);
+//                    pieChart.setHighlightPerTapEnabled(true);
+//
+////                    pieChart.setMaxAngle(180f); // HALF CHART
+////                    pieChart.setRotationAngle(180f);
+////                    pieChart.setCenterTextOffset(0, -20);
+//
+//
+//                    List<PieEntry> pieEntryList = new ArrayList<>();
+//
+//                    Map<Float, ? extends List<? extends ParentClass_Ratable>> map = ratables.stream().collect(Collectors.groupingBy(ParentClass_Ratable::getRating));
+//
+//                    for (int i = 1; i < 20; i++) {
+//                        float rating = i / 4f;
+//                        pieEntryList.add(new PieEntry(Utility.returnIfNull(map.get(rating), new ArrayList<ParentClass_Ratable>()).size(), Utility.removeTrailingZeros(i / 4d) + " ☆"));
+//                    }
+//
+//                    PieDataSet dataSet = new PieDataSet(pieEntryList, "Filme Verteilung");
+//                    dataSet.setColors(ColorTemplate.COLORFUL_COLORS);
+//                    PieData pieData = new PieData(dataSet);
+//
+//                    pieChart.setData(pieData);
+//                    pieChart.invalidate();
 
                 })
-                .setDimensionsFullscreen()
                 .addOptionalModifications(customDialog -> {
                     if (finalPreSelected) {
                         customDialog
-                                .addButton("Reset", customDialog1 -> {
-                                    String removedQuery = searchView.getQuery().toString().replaceAll(VideoActivity.ratingPattern.pattern(), "").trim();
-                                    searchView.setQuery(removedQuery, true);
+                                .addButton(R.drawable.ic_reset, customDialog1 -> {
+                                    String removedQuery = AdvancedQueryHelper.removeAdvancedSearch(searchView.getQuery());
+                                    searchView.setQuery(removedQuery, false);
+                                    Toast.makeText(context, "Erweiterte Suche zurückgesetzt", Toast.LENGTH_SHORT).show();
                                 })
                                 .alignPreviousButtonsLeft();
                     }
                 })
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                 .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
-                    RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_filterByRating_rangeBar);
+                    List<String> filter = new ArrayList<>();
+                    String removedQuery = AdvancedQueryHelper.removeAdvancedSearch(searchView.getQuery());
 
+                    RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_advancedSearch_rangeBar);
                     min[0] = rangeBar.getMinThumbValue();
                     max[0] = rangeBar.getMaxThumbValue();
 
-                    String removedQuery = searchView.getQuery().toString().replaceAll(VideoActivity.ratingPattern.pattern(), "").trim();
-                    if (min[0] == 0 && max[0] == 20) {
-                        if (finalPreSelected)
-                            searchView.setQuery(removedQuery, true);
-                        return;
+                    if (min[0] != 0 || max[0] != 20) {
+                        String ratingFilter;
+                        if (singleMode[0])
+                            ratingFilter = String.format(Locale.getDefault(), "r:%.2f", min[0] / 4d);
+                        else
+                            ratingFilter = String.format(Locale.getDefault(), "r:%.2f-%.2f", min[0] / 4d, max[0] / 4d);
+
+                        filter.add(ratingFilter);
                     }
 
-                    String filter;
-                    if (singleMode[0])
-                        filter = String.format(Locale.getDefault(), "*%.2f*", min[0] / 4d);
-                    else
-                        filter = String.format(Locale.getDefault(), "*%.2f-%.2f*", min[0] / 4d, max[0] / 4d);
-                    searchView.setQuery(removedQuery + (removedQuery.isEmpty() ? "" : " ") + filter, true);
+                    if (from[0] != null) {
+                        String dateFilter;
+                        if (to[0] != null)
+                            dateFilter = String.format(Locale.getDefault(), "d:%s-%s", dateFormat.format(from[0]), dateFormat.format(to[0]));
+                        else
+                            dateFilter = String.format(Locale.getDefault(), "d:%s", dateFormat.format(from[0]));
+
+                        filter.add(dateFilter);
+                    }
+
+                    String newQuery = Utility.isNotValueReturnOrElse(removedQuery, "", s -> s + " ", null);
+                    newQuery += filter.isEmpty() ? "" : String.format("{%s}", String.join(" ", filter));
+                    searchView.setQuery(newQuery, false);
 
                 })
                 .setOnTouchOutside(CustomDialog::dismiss)
@@ -1977,7 +2054,113 @@ public class Utility {
                 .show();
 
     }
-    //  <------------------------- FilterStars -------------------------
+
+    public static class AdvancedQueryHelper {
+        private static final Pattern advancedSearchPattern = Pattern.compile("\\{.*\\}");
+        public static final Pattern ratingPattern = Pattern.compile("(?<=r: ?)(([0-4]((.|,)\\d{1,2})?)|5((.|,)00?)?)(-(([0-4]((\\4|\\6)(?<=[,.])\\d{1,2})?)|5((\\4|\\6)(?<=[,.])00?)?))?(?=\\s*(\\}|\\w:))");
+        public static final Pattern datePattern = Pattern.compile("(?<=d: ?)(\\d{1,2}\\.\\d{1,2}\\.(\\d{4}|\\d{2}))(-\\d{1,2}\\.\\d{1,2}\\.(\\d{4}|\\d{2}))?(?=\\s*(\\}|\\w:))");
+
+        public String advancedQuery, restQuery, fullQuery, ratingSub, dateSub;
+
+        public static AdvancedQueryHelper getAdvancedQuery(String fullQuery) {
+            AdvancedQueryHelper advancedQueryHelper = new AdvancedQueryHelper();
+            advancedQueryHelper.fullQuery = fullQuery;
+
+            if (!fullQuery.contains("{")) {
+                advancedQueryHelper.restQuery = fullQuery;
+                return advancedQueryHelper;
+            }
+
+            Matcher advancedQueryMatcher = advancedSearchPattern.matcher(fullQuery);
+
+            if (advancedQueryMatcher.find())
+                advancedQueryHelper.advancedQuery =  advancedQueryMatcher.group(0);
+
+            if (advancedQueryHelper.hasAdvancedSearch()) {
+                if (advancedQueryHelper.advancedQuery.contains("r:")) {
+                    Matcher ratingMatcher = ratingPattern.matcher(advancedQueryHelper.advancedQuery);
+                    if (ratingMatcher.find()) {
+                        advancedQueryHelper.ratingSub = ratingMatcher.group(0);
+                    }
+                }
+                if (advancedQueryHelper.advancedQuery.contains("d:")) {
+                    Matcher dateMatcher = datePattern.matcher(advancedQueryHelper.advancedQuery);
+                    if (dateMatcher.find()) {
+                        advancedQueryHelper.dateSub = dateMatcher.group(0);
+                    }
+                }
+            }
+
+
+            advancedQueryHelper.restQuery = advancedQueryMatcher.replaceAll("");
+
+            return advancedQueryHelper;
+        }
+
+
+        //  ------------------------- Checks ------------------------->
+        public boolean hasAdvancedSearch() {
+            return advancedQuery != null;
+        }
+
+        public boolean hasAnyAdvancedQuery() {
+            return hasDateSub() || hasRatingSub();
+        }
+
+        public boolean hasRatingSub() {
+            return ratingSub != null;
+        }
+
+        public boolean hasDateSub() {
+            return dateSub != null;
+        }
+        //  <------------------------- Checks -------------------------
+
+
+        //  ------------------------- Convenience ------------------------->
+        public Pair<Float, Float> getRatingMinMax() {
+            if (ratingSub == null)
+                return null;
+
+            String[] range = ratingSub.replaceAll(",", ".").split("-");
+            float min = Float.parseFloat(range[0]);
+            float max = Float.parseFloat(range.length < 2 ? range[0] : range[1]);
+
+            return Pair.create(min, max);
+        }
+
+        public Pair<Date, Date> getDateMinMax() {
+            if (dateSub == null)
+                return null;
+
+            String[] range = dateSub.split("-");
+            Date min = null;
+            Date max = null;
+            try {
+                GenericReturnInterface<String, String> expandYear = s -> {
+                    String[] split = s.split("\\.");
+                    if (split[2].length() == 2) {
+                        split[2] = "20" + split[2];
+                        return String.join(".", split);
+                    } else
+                        return s;
+                };
+                SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+                min = dateFormat.parse(expandYear.runGenericInterface(range[0]));
+                if (range.length > 1)
+                    max = dateFormat.parse(expandYear.runGenericInterface(range[1]));
+            } catch (ParseException ignored) {
+            }
+
+            return Pair.create(min, max);
+        }
+
+        public static String removeAdvancedSearch(CharSequence fullQuery) {
+            return fullQuery.toString().replaceAll(AdvancedQueryHelper.advancedSearchPattern.pattern(), "").trim();
+        }
+        //  <------------------------- Convenience -------------------------
+    }
+    //  <------------------------- Advanced Search -------------------------
 
 
     public static void sendText(AppCompatActivity activity, String text) {
@@ -2390,6 +2573,14 @@ public class Utility {
 
     public static <T> T isValueOrElse(T input, T value, GenericReturnOnlyInterface<T> orElse) {
         return Objects.equals(input, value) ? input : orElse.runGenericInterface();
+    }
+
+    public static <T,R> R isNotValueReturnOrElse(T input, T value, GenericReturnInterface<T,R> returnValue, @Nullable GenericReturnOnlyInterface<R> orElse) {
+        return !Objects.equals(input, value) ? returnValue.runGenericInterface(input) : orElse != null ? orElse.runGenericInterface() : (R) input;
+    }
+
+    public static <T,R> R isValueReturnOrElse(T input, T value, GenericReturnInterface<T,R> returnValue, GenericReturnOnlyInterface<R> orElse) {
+        return Objects.equals(input, value) ? returnValue.runGenericInterface(input) : orElse.runGenericInterface();
     }
 
     public static <T, R> R isNullReturnOrElse(T input, R returnValue, GenericReturnInterface<T, R> orElse) {

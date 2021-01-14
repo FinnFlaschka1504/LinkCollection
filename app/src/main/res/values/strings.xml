@@ -59,4 +59,10 @@
         <item>Staffel</item>
         <item>Vorheriger</item>
     </string-array>
+
+    <string-array name="dateRangeUnits">
+        <item>Tag</item>
+        <item>Monat</item>
+        <item>Jahr</item>
+    </string-array>
 </resources>

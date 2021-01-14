@@ -173,6 +173,7 @@ public class VideoActivity extends AppCompatActivity {
     private CustomRecycler<Video> customRecycler_VideoList;
     FloatingActionButton videos_confirmDelete;
     private SearchView videos_search;
+    private Utility.AdvancedQueryHelper previousAdvancedQueryHelper;
 
     @SuppressLint("RestrictedApi")
     @Override
@@ -539,41 +540,41 @@ public class VideoActivity extends AppCompatActivity {
         if (!searchQuery.trim().equals("")) {
 
             Utility.AdvancedQueryHelper advancedQueryHelper = Utility.AdvancedQueryHelper.getAdvancedQuery(searchQuery);
+            previousAdvancedQueryHelper = advancedQueryHelper;
             String subQuery = advancedQueryHelper.restQuery;
+
 
             if (advancedQueryHelper.hasAnyAdvancedQuery()) {
                 Predicate<Video> ratingVideoCheck = null;
                 Predicate<Video> dateVideoCheck = null;
 
-                if (advancedQueryHelper.hasAnyAdvancedQuery()) {
-                    if (advancedQueryHelper.hasRatingSub()) {
-                        Pair<Float, Float> ratingMinMax = advancedQueryHelper.getRatingMinMax();
-                        ratingVideoCheck = video -> video.getRating() >= ratingMinMax.first && video.getRating() <= ratingMinMax.second;
-                    }
-
-                    if (advancedQueryHelper.hasDateSub()) {
-                        Pair<Date, Date> dateMinMax = advancedQueryHelper.getDateMinMax();
-                        Pair<Long, Long> dateMinMaxTime = Pair.create(dateMinMax.first.getTime(), Utility.isNullReturnOrElse(dateMinMax.second, dateMinMax.first.getTime(), Date::getTime));
-
-                        dateVideoCheck = video -> (
-                                video.getDateList().stream().anyMatch(date -> {
-                                            long time = CustomUtility.removeTime(date).getTime();
-                                            return time >= dateMinMaxTime.first && time <= dateMinMaxTime.second;
-                                        }
-                                )
-                        );
-                    }
-
-                    Predicate<Video> finalRatingVideoCheck = ratingVideoCheck;
-                    Predicate<Video> finalDateVideoCheck = dateVideoCheck;
-                    filterdVideoList.filter(video -> {
-                        if (finalRatingVideoCheck != null && !finalRatingVideoCheck.test(video))
-                            return false;
-                        if (finalDateVideoCheck != null && !finalDateVideoCheck.test(video))
-                            return false;
-                        return true;
-                    }, true);
+                if (advancedQueryHelper.hasRatingSub()) {
+                    Pair<Float, Float> ratingMinMax = advancedQueryHelper.getRatingMinMax();
+                    ratingVideoCheck = video -> video.getRating() >= ratingMinMax.first && video.getRating() <= ratingMinMax.second;
                 }
+
+                if (advancedQueryHelper.hasDateOrDurationSub()) {
+                    Pair<Date, Date> dateMinMax = advancedQueryHelper.hasDateSub() ? advancedQueryHelper.getDateMinMax() : advancedQueryHelper.getDurationMinMax();
+                    Pair<Long, Long> dateMinMaxTime = Pair.create(dateMinMax.first.getTime(), Utility.isNullReturnOrElse(dateMinMax.second, dateMinMax.first.getTime(), Date::getTime));
+
+                    dateVideoCheck = video -> (
+                            video.getDateList().stream().anyMatch(date -> {
+                                        long time = CustomUtility.removeTime(date).getTime();
+                                        return time >= dateMinMaxTime.first && time <= dateMinMaxTime.second;
+                                    }
+                            )
+                    );
+                }
+
+                Predicate<Video> finalRatingVideoCheck = ratingVideoCheck;
+                Predicate<Video> finalDateVideoCheck = dateVideoCheck;
+                filterdVideoList.filter(video -> {
+                    if (finalRatingVideoCheck != null && !finalRatingVideoCheck.test(video))
+                        return false;
+                    if (finalDateVideoCheck != null && !finalDateVideoCheck.test(video))
+                        return false;
+                    return true;
+                }, true);
             }
 
             if (CustomUtility.stringExists(subQuery)) {
@@ -613,8 +614,19 @@ public class VideoActivity extends AppCompatActivity {
                 });
                 break;
             case LATEST:
+                final Pair<Date, Date>[] datePair = new Pair[]{null};
+                final Pair<Long, Long>[] datePairTime = new Pair[]{null};
+
+                if (CustomUtility.stringExists(searchQuery) && previousAdvancedQueryHelper != null && previousAdvancedQueryHelper.hasDateOrDurationSub()) {
+                    if ((datePair[0] = previousAdvancedQueryHelper.datePair) == null)
+                        datePair[0] = previousAdvancedQueryHelper.getDateOrDurationMinMax();
+
+                    datePairTime[0] = Pair.create(datePair[0].first.getTime(), datePair[0].second.getTime());
+                }
                 videoList.sort((video1, video2) -> {
-                    if (video1.getDateList().isEmpty() && video2.getDateList().isEmpty()) {
+                    List<Date> dateList1 = video1.getDateList();
+                    List<Date> dateList2 = video2.getDateList();
+                    if (dateList1.isEmpty() && dateList2.isEmpty()) {
                         if (video1.isUpcoming() && video2.isUpcoming())
                             return video1.getRelease().compareTo(video2.getRelease());
                         else if (!video1.isUpcoming() && !video2.isUpcoming())
@@ -623,13 +635,24 @@ public class VideoActivity extends AppCompatActivity {
                             return reverse ? -1 : 1;
                         else if (video2.isUpcoming())
                             return reverse ? 1 : -1;
-                    } else if (video1.getDateList().isEmpty())
+                    } else if (dateList1.isEmpty())
                         return reverse ? -1 : 1;
-                    else if (video2.getDateList().isEmpty())
+                    else if (dateList2.isEmpty())
                         return reverse ? 1 : -1;
 
-                    Date new1 = Collections.max(video1.getDateList());
-                    Date new2 = Collections.max(video2.getDateList());
+                    if (datePairTime[0] != null) {
+                        dateList1 = dateList1.parallelStream().filter(date -> {
+                            long time = CustomUtility.removeTime(date).getTime();
+                            return time >= datePairTime[0].first && time <= datePairTime[0].second;
+                        }).collect(Collectors.toList());
+                        dateList2 = dateList2.parallelStream().filter(date -> {
+                            long time = CustomUtility.removeTime(date).getTime();
+                            return time >= datePairTime[0].first && time <= datePairTime[0].second;
+                        }).collect(Collectors.toList());
+                    }
+
+                    Date new1 = Collections.max(dateList1);
+                    Date new2 = Collections.max(dateList2);
                     if (new1.equals(new2))
                         return video1.getName().compareTo(video2.getName());
                     else

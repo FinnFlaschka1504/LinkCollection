@@ -45,6 +45,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SearchView;
 import android.widget.SeekBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -77,6 +78,8 @@ import com.github.sundeepk.compactcalendarview.domain.Event;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -1847,7 +1850,13 @@ public class Utility {
 
 
                     //  ------------------------- Watched ------------------------->
-                    TextView dialog_advancedSearch_viewed_text = (TextView) customDialog.findViewById(R.id.dialog_advancedSearch_viewed_text);
+                    TextView dialog_advancedSearch_viewed_text = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_text);
+                    TextInputLayout since_layout = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_since_edit_layout);
+                    TextInputEditText since = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_since_edit);
+                    Spinner since_unit = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_since_unit);
+                    TextInputLayout duration_layout = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_duration_edit_layout);
+                    TextInputEditText duration = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_duration_edit);
+                    Spinner duration_unit = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_duration_unit);
 
                     Runnable setDateRangeTextView = () -> {
                         if (from[0] != null && to[0] != null) {
@@ -1887,7 +1896,7 @@ public class Utility {
                         return true;
                     });
                     //  <------------------------- Watched -------------------------
-
+                    /**/
                     // --------------- Chart
 
 //                    PieChart pieChart = customDialog.findViewById(R.id.dialog_filterByRating_chart);
@@ -2059,8 +2068,12 @@ public class Utility {
         private static final Pattern advancedSearchPattern = Pattern.compile("\\{.*\\}");
         public static final Pattern ratingPattern = Pattern.compile("(?<=r: ?)(([0-4]((.|,)\\d{1,2})?)|5((.|,)00?)?)(-(([0-4]((\\4|\\6)(?<=[,.])\\d{1,2})?)|5((\\4|\\6)(?<=[,.])00?)?))?(?=\\s*(\\}|\\w:))");
         public static final Pattern datePattern = Pattern.compile("(?<=d: ?)(\\d{1,2}\\.\\d{1,2}\\.(\\d{4}|\\d{2}))(-\\d{1,2}\\.\\d{1,2}\\.(\\d{4}|\\d{2}))?(?=\\s*(\\}|\\w:))");
+        public static final Pattern durationPattern = Pattern.compile("(?<=d: ?)((-?\\d+[dmy])|(-?\\d+[dmy]|_(-?\\d+)?[my])(;-?\\d+[dmy]))(?=\\s*(\\}|\\w:))");
+//        public static final Pattern durationModePattern = Pattern.compile("(?<=\\d[dmy])[ba]");
 
-        public String advancedQuery, restQuery, fullQuery, ratingSub, dateSub;
+        public String advancedQuery, restQuery, fullQuery, ratingSub, dateSub, durationSub;
+
+        public Pair<Date, Date> datePair;
 
         public static AdvancedQueryHelper getAdvancedQuery(String fullQuery) {
             AdvancedQueryHelper advancedQueryHelper = new AdvancedQueryHelper();
@@ -2087,6 +2100,11 @@ public class Utility {
                     Matcher dateMatcher = datePattern.matcher(advancedQueryHelper.advancedQuery);
                     if (dateMatcher.find()) {
                         advancedQueryHelper.dateSub = dateMatcher.group(0);
+                    } else {
+                        Matcher durationMatcher = durationPattern.matcher(advancedQueryHelper.advancedQuery);
+                        if (durationMatcher.find()) {
+                            advancedQueryHelper.durationSub = durationMatcher.group(0);
+                        }
                     }
                 }
             }
@@ -2104,7 +2122,7 @@ public class Utility {
         }
 
         public boolean hasAnyAdvancedQuery() {
-            return hasDateSub() || hasRatingSub();
+            return hasDateSub() || hasRatingSub() || hasDurationSub();
         }
 
         public boolean hasRatingSub() {
@@ -2113,6 +2131,14 @@ public class Utility {
 
         public boolean hasDateSub() {
             return dateSub != null;
+        }
+
+        public boolean hasDurationSub() {
+            return durationSub != null;
+        }
+
+        public boolean hasDateOrDurationSub() {
+            return hasDateSub() || hasDurationSub();
         }
         //  <------------------------- Checks -------------------------
 
@@ -2152,10 +2178,77 @@ public class Utility {
             } catch (ParseException ignored) {
             }
 
-            return Pair.create(min, max);
+            return datePair = Pair.create(min, max);
         }
 
-        public static String removeAdvancedSearch(CharSequence fullQuery) {
+        public Pair<Date, Date> getDurationMinMax() {
+            if (durationSub == null)
+                return null;
+
+            String[] range = durationSub.split(";"); // ToDo: evl. Flags hinzufügen?
+            Date pivot;
+            Calendar cal = Calendar.getInstance();
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+            Map<String, Integer> modeMap = new HashMap<>();
+            modeMap.put("d", Calendar.DAY_OF_MONTH);
+            modeMap.put("m", Calendar.MONTH);
+            modeMap.put("y", Calendar.YEAR);
+
+
+            if (range.length > 1) {
+                String pivotString = range[0];
+                if (pivotString.startsWith("_")) {
+                    if (pivotString.endsWith("m")) {
+                        if (pivotString.length() > 2)
+                            cal.add(Calendar.MONTH, Integer.parseInt(CustomUtility.subString(pivotString, 1, -1)) * -1);
+                        cal.set(Calendar.DAY_OF_MONTH, 1);
+                        pivot = cal.getTime();
+                    } else {
+                        if (pivotString.length() > 2)
+                            cal.add(Calendar.YEAR, Integer.parseInt(CustomUtility.subString(pivotString, 1, -1)) * -1);
+                        cal.set(Calendar.DAY_OF_YEAR, 1);
+                        pivot = cal.getTime();
+                    }
+                } else {
+                    cal.add(modeMap.get(CustomUtility.subString(pivotString, -1)), Integer.parseInt(CustomUtility.subString(pivotString, 0, -1)) * -1);
+                    pivot = cal.getTime();
+                }
+            } else
+                pivot = cal.getTime();
+
+            String durationString = range.length > 1 ? range[1] : range[0];
+            int durationInt = Integer.parseInt(CustomUtility.subString(durationString, 0, -1));
+            String durationMode = CustomUtility.subString(durationString, -1);
+            if (durationMode.equals("d"))
+                durationInt = (Math.abs(durationInt) - 1) * (durationInt < 0 ? -1 : 1);
+            cal.add(modeMap.get(durationMode), durationInt * -1);
+//            cal.add(Calendar.DAY_OF_MONTH, durationInt < 0 ? -1 : 1);
+
+            Date duration = cal.getTime();
+
+            Pair<Date, Date> datePair = pivot.before(duration) ? Pair.create(pivot, duration) : Pair.create(duration, pivot);
+
+            if (!durationMode.equals("d")) {
+                cal.setTime(datePair.second);
+                cal.add(Calendar.DAY_OF_MONTH, -1);
+                datePair = Pair.create(datePair.first, cal.getTime());
+            }
+
+            return this.datePair = datePair;
+        }
+
+        public Pair<Date, Date> getDateOrDurationMinMax() {
+            if (hasDateSub())
+                return getDateMinMax();
+            else
+                return getDurationMinMax();
+        }
+
+
+            public static String removeAdvancedSearch(CharSequence fullQuery) {
             return fullQuery.toString().replaceAll(AdvancedQueryHelper.advancedSearchPattern.pattern(), "").trim();
         }
         //  <------------------------- Convenience -------------------------

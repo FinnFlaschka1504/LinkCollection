@@ -23,6 +23,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
+import android.text.Editable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -39,6 +40,8 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -138,6 +141,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -1752,6 +1756,11 @@ public class Utility {
         //  ------------------------- Watched ------------------------->
         final Date[] from = {null};
         final Date[] to = {null};
+
+        // ---------------
+
+        final String[] pivot = {""};
+        final String[] duration = {""};
         //  <------------------------- Watched -------------------------
 
 
@@ -1774,6 +1783,17 @@ public class Utility {
                 to[0] = dateMinMax.second;
             }
 
+            // ---------------
+
+            if (advancedQueryHelper.hasDurationSub()) {
+                String[] split = advancedQueryHelper.durationSub.split(";");
+                if (split.length == 1) {
+                    duration[0] = split[0];
+                } else {
+                    pivot[0] = split[0];
+                    duration[0] = split[1];
+                }
+            }
         }
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.ENGLISH);
@@ -1784,6 +1804,8 @@ public class Utility {
                 .setTitle("Erweiterte Suche")
                 .setView(R.layout.dialog_filter_by_rating)
                 .setSetViewContent((customDialog, view, reload) -> {
+                    final Runnable[] applyStrings = {() -> {
+                    }};
 
                     //  ------------------------- Rating ------------------------->
                     TextView rangeText = customDialog.findViewById(R.id.dialog_advancedSearch_range);
@@ -1849,15 +1871,8 @@ public class Utility {
                     //  <------------------------- Rating -------------------------
 
 
-                    //  ------------------------- Watched ------------------------->
+                    //  ------------------------- DateRange ------------------------->
                     TextView dialog_advancedSearch_viewed_text = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_text);
-                    TextInputLayout since_layout = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_since_edit_layout);
-                    TextInputEditText since = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_since_edit);
-                    Spinner since_unit = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_since_unit);
-                    TextInputLayout duration_layout = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_duration_edit_layout);
-                    TextInputEditText duration = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_duration_edit);
-                    Spinner duration_unit = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_duration_unit);
-
                     Runnable setDateRangeTextView = () -> {
                         if (from[0] != null && to[0] != null) {
                             dialog_advancedSearch_viewed_text.setText(String.format("%s - %s", dateFormat.format(from[0]), dateFormat.format(to[0])));
@@ -1878,7 +1893,6 @@ public class Utility {
                     }
                     MaterialDatePicker<androidx.core.util.Pair<Long, Long>> picker = builder.build();
 
-
                     picker.addOnPositiveButtonClickListener(selection -> {
                         from[0] = new Date(selection.first + timezoneOffset);
                         if (!Objects.equals(selection.first, selection.second))
@@ -1886,16 +1900,131 @@ public class Utility {
                         else
                             to[0] = null;
                         setDateRangeTextView.run();
+                        pivot[0] = "";
+                        duration[0] = "";
+                        applyStrings[0].run();
                     });
 
                     customDialog.findViewById(R.id.dialog_advancedSearch_viewed_change).setOnClickListener(v -> picker.show(((AppCompatActivity) context).getSupportFragmentManager(), picker.toString()));
+                    Runnable resetDateRange = () -> {
+                        if (from[0] != null || to[0] != null) {
+                            from[0] = null;
+                            to[0] = null;
+                            setDateRangeTextView.run();
+                        }
+                    };
+
                     customDialog.findViewById(R.id.dialog_advancedSearch_viewed_change).setOnLongClickListener(v -> {
-                        from[0] = null;
-                        to[0] = null;
-                        setDateRangeTextView.run();
+                        resetDateRange.run();
                         return true;
                     });
-                    //  <------------------------- Watched -------------------------
+                    //  <------------------------- DateRange -------------------------
+
+
+                    //  ------------------------- Duration ------------------------->
+                    TextInputEditText since_edit = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_since_edit);
+                    Spinner since_unit = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_since_unit);
+                    TextInputEditText duration_edit = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_duration_edit);
+                    Spinner duration_unit = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_duration_unit);
+                    Map<String, Integer> modeMap = new HashMap<>();
+                    modeMap.put("d", 0);
+                    modeMap.put("m", 1);
+                    modeMap.put("y", 2);
+                    modeMap.put("_m", 3);
+                    modeMap.put("_y", 4);
+
+                    applyStrings[0] = () -> {
+                        if (CustomUtility.stringExists(duration[0])) {
+                            duration_edit.setText(CustomUtility.subString(duration[0], 0, -1));
+                            String durationMode = CustomUtility.subString(duration[0], -1);
+                            duration_unit.setSelection(modeMap.get(durationMode));
+                        } else {
+                            if (!duration_edit.getText().toString().equals(""))
+                                duration_edit.setText("");
+                            if (duration_unit.getSelectedItemPosition() != 0)
+                                duration_unit.setSelection(0);
+                        }
+
+                        if (CustomUtility.stringExists(pivot[0])) {
+                            boolean floored = pivot[0].contains("_");
+                            since_edit.setText(CustomUtility.subString(pivot[0], floored ? 1 : 0, -1));
+                            String sinceMode = CustomUtility.subString(pivot[0], -1);
+                            since_unit.setSelection(modeMap.get((floored ? "_" : "") + sinceMode));
+                        } else {
+                            if (!since_edit.getText().toString().equals(""))
+                                since_edit.setText("");
+                            if (since_unit.getSelectedItemPosition() != 0)
+                                since_unit.setSelection(0);
+                        }
+                    };
+                    applyStrings[0].run();
+
+                    Runnable updateStrings = () -> {
+                        Set<String> since_keysByValue = getKeysByValue(modeMap, since_unit.getSelectedItemPosition());
+                        String since_mode = since_keysByValue.toArray(new String[0])[0];
+                        String since_text = since_edit.getText().toString();
+                        if (CustomUtility.stringExists(since_text))
+                            pivot[0] = (since_mode.contains("_") ?  "_" : "") + since_text + since_mode.replaceAll("_", "");
+
+                        Set<String> duration_keysByValue = getKeysByValue(modeMap, duration_unit.getSelectedItemPosition());
+                        String duration_mode = duration_keysByValue.toArray(new String[0])[0];
+                        String duration_text = duration_edit.getText().toString();
+                        if (CustomUtility.stringExists(duration_text))
+                            duration[0] = (duration_mode.contains("_") ?  "_" : "") + duration_text + duration_mode.replaceAll("_", "");
+                    };
+
+
+                    since_edit.addTextChangedListener(new TextWatcher() {
+                        @Override
+                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                        }
+
+                        @Override
+                        public void onTextChanged(CharSequence s, int start, int before, int count) {
+                        }
+
+                        @Override
+                        public void afterTextChanged(Editable s) {
+                            if (CustomUtility.stringExists(s.toString())) {
+                                resetDateRange.run();
+                            } else
+                                pivot[0] = "";
+
+                            updateStrings.run();
+                        }
+                    });
+                    duration_edit.addTextChangedListener(new TextWatcher() {
+                        @Override
+                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                        }
+
+                        @Override
+                        public void onTextChanged(CharSequence s, int start, int before, int count) {
+                        }
+
+                        @Override
+                        public void afterTextChanged(Editable s) {
+                            if (CustomUtility.stringExists(s.toString()))
+                                resetDateRange.run();
+
+                            updateStrings.run();
+                        }
+                    });
+
+                    AdapterView.OnItemSelectedListener spinnerListener = new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                            updateStrings.run();
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> parent) {
+
+                        }
+                    };
+                    since_unit.setOnItemSelectedListener(spinnerListener);
+                    duration_unit.setOnItemSelectedListener(spinnerListener);
+                    //  <------------------------- Duration -------------------------
                     /**/
                     // --------------- Chart
 
@@ -2029,6 +2158,7 @@ public class Utility {
                     List<String> filter = new ArrayList<>();
                     String removedQuery = AdvancedQueryHelper.removeAdvancedSearch(searchView.getQuery());
 
+                    //  ------------------------- Rating ------------------------->
                     RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_advancedSearch_rangeBar);
                     min[0] = rangeBar.getMinThumbValue();
                     max[0] = rangeBar.getMaxThumbValue();
@@ -2042,7 +2172,10 @@ public class Utility {
 
                         filter.add(ratingFilter);
                     }
+                    //  <------------------------- Rating -------------------------
 
+
+                    //  ------------------------- DateRange ------------------------->
                     if (from[0] != null) {
                         String dateFilter;
                         if (to[0] != null)
@@ -2052,6 +2185,18 @@ public class Utility {
 
                         filter.add(dateFilter);
                     }
+
+                    // ---------------
+
+                    if (CustomUtility.stringExists(duration[0])) {
+                        String dateDurationFilter;
+                        if (CustomUtility.stringExists(pivot[0]))
+                            dateDurationFilter = String.format(Locale.getDefault(), "d:%s;%s", pivot[0], duration[0]);
+                        else
+                            dateDurationFilter = String.format(Locale.getDefault(), "d:%s", duration[0]);
+                        filter.add(dateDurationFilter);
+                    }
+                    //  <------------------------- DateRange -------------------------
 
                     String newQuery = Utility.isNotValueReturnOrElse(removedQuery, "", s -> s + " ", null);
                     newQuery += filter.isEmpty() ? "" : String.format("{%s}", String.join(" ", filter));
@@ -3471,4 +3616,14 @@ public class Utility {
 //        return orElse.runGenericInterface();
 //    }
     //  <------------------------- Arrays -------------------------
+
+    //  ------------------------- Maps ------------------------->
+    public static <T, E> Set<T> getKeysByValue(Map<T, E> map, E value) {
+        return map.entrySet()
+                .stream()
+                .filter(entry -> Objects.equals(entry.getValue(), value))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+    }
+    //  <------------------------- Maps -------------------------
 }

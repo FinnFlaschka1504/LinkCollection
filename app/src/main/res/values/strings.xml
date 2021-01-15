@@ -60,9 +60,17 @@
         <item>Vorheriger</item>
     </string-array>
 
-    <string-array name="dateRangeUnits">
-        <item>Tag</item>
-        <item>Monat</item>
-        <item>Jahr</item>
+    <string-array name="dateDurationUnits">
+        <item>Tage</item>
+        <item>Monate</item>
+        <item>Jahre</item>
+    </string-array>
+
+    <string-array name="dateDurationOffsetUnits">
+        <item>Tage</item>
+        <item>Monate</item>
+        <item>Jahre</item>
+        <item>_Monate</item>
+        <item>_Jahre</item>
     </string-array>
 </resources>

@@ -678,18 +678,51 @@ public class VideoActivity extends AppCompatActivity {
                     SpannableStringBuilder builder = new SpannableStringBuilder().append(elementCountText);
                     if (size > 0) {
                         builder.append("\n", new RelativeSizeSpan(0.5f), Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
-                        int watchedMinutes = filteredList.stream().mapToInt(video -> video.getLength() * video.getDateList().size()).sum();
-                        String timeString = Utility.formatDuration(Duration.ofMinutes(watchedMinutes), null);
+
+                        final int[] watchedMinutes = {0};
+                        final int[] viewSum = {0};
+                        final double[] ratingSum = {0};
+                        final double[] ratingCount = {0};
+                        if (CustomUtility.stringExists(searchQuery) && previousAdvancedQueryHelper != null && previousAdvancedQueryHelper.hasDateOrDurationSub()) {
+                            final Pair<Date, Date>[] datePair = new Pair[]{null};
+                            final Pair<Long, Long>[] datePairTime = new Pair[]{null};
+
+                            if ((datePair[0] = previousAdvancedQueryHelper.datePair) == null)
+                                datePair[0] = previousAdvancedQueryHelper.getDateOrDurationMinMax();
+
+                            datePairTime[0] = Pair.create(datePair[0].first.getTime(), datePair[0].second.getTime());
+
+                            filteredList.forEach(video -> {
+                                int videoViews = (int) video.getDateList().stream().filter(date -> {
+                                    long time = CustomUtility.removeTime(date).getTime();
+                                    return time >= datePairTime[0].first && time <= datePairTime[0].second;
+                                }).count();
+                                viewSum[0] += videoViews;
+                                watchedMinutes[0] += video.getLength() * videoViews;
+
+                                Float rating = video.getRating();
+                                if (rating > 0) {
+                                    ratingSum[0] += rating;
+                                    ratingCount[0]++;
+                                }
+                            });
+                        } else {
+                            filteredList.forEach(video -> {
+                                int videoViews = video.getDateList().size();
+                                viewSum[0] += videoViews;
+                                watchedMinutes[0] += video.getLength() * videoViews;
+                            });
+                        }
+
+                        String timeString = Utility.formatDuration(Duration.ofMinutes(watchedMinutes[0]), null);
                         if (Utility.stringExists(timeString))
                             builder.append(timeString).append("\n");
 
-                        int viewSum = filteredList.stream().mapToInt(video -> video.getDateList().size()).sum();
-                        String viewSumText = viewSum > 1 ? viewSum + " Ansichten" : (viewSum == 1 ? "Eine" : "Keine") + " Ansicht";
+                        String viewSumText = viewSum[0] > 1 ? viewSum[0] + " Ansichten" : (viewSum[0] == 1 ? "Eine" : "Keine") + " Ansicht";
                         builder.append(viewSumText);
 
-                        double averageRating = filteredList.stream().filter(video -> video.getRating() > 0).mapToDouble(ParentClass_Ratable::getRating).average().orElse(-1);
-                        if (averageRating != -1)
-                            builder.append("  |  ").append(String.format(Locale.getDefault(), "Ø %.2f ☆", averageRating).replaceAll("([.,]?0*)(?= ☆)", ""));
+                        if (ratingCount[0] > 0)
+                            builder.append("  |  ").append(String.format(Locale.getDefault(), "Ø %.2f ☆", ratingSum[0] / ratingCount[0]).replaceAll("([.,]?0*)(?= ☆)", ""));
                     }
                     elementCount.setText(builder);
                     return filteredList;
@@ -988,11 +1021,11 @@ public class VideoActivity extends AppCompatActivity {
                     editTitle.setText(name);
                     editTitle_check.setChecked(Utility.stringExists(name));
                     editActor.setText(actors);
-                    editActor_check.setChecked(Utility.stringExists(actors));
+//                    editActor_check.setChecked(Utility.stringExists(actors));
                     editStudio.setText(studios);
-                    editStudio_check.setChecked(Utility.stringExists(studios));
+//                    editStudio_check.setChecked(Utility.stringExists(studios));
                     editGenre.setText(genre);
-                    editGenre_check.setChecked(Utility.stringExists(genre));
+//                    editGenre_check.setChecked(Utility.stringExists(genre));
                 })
                 .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
                 .addButton("Suchen", customDialog -> {

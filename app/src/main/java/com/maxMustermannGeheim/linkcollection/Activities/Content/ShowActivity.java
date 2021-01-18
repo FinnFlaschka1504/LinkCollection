@@ -2292,11 +2292,6 @@ public class ShowActivity extends AppCompatActivity {
         CustomDialog resultDialog = CustomDialog.Builder(this);
         Helpers.WebViewHelper helper = new Helpers.WebViewHelper(this, urls)
                 .addRequest("document.getElementsByClassName(\"subtext\")[0].innerText", s -> {
-                    if (showDialog) {
-                        resultDialog
-                                .setTitle(s)
-                                .show();
-                    }
                     for (String sub : s.split(" \\| ")) {
                         if (sub.matches("^\\d{1,2}$")) {
                             episodeList.get(counter[0]).setAgeRating(sub);

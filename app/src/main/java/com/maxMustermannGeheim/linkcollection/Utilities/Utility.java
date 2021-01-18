@@ -1809,15 +1809,16 @@ public class Utility {
 
                     //  ------------------------- Rating ------------------------->
                     TextView rangeText = customDialog.findViewById(R.id.dialog_advancedSearch_range);
+                    RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_advancedSearch_rangeBar);
+                    SeekBar singleBar = customDialog.findViewById(R.id.dialog_advancedSearch_singleBar);
                     CustomUtility.GenericInterface<Pair<Integer, Integer>> setText = pair -> {
+                        singleBar.setEnabled(singleMode[0]);
                         if (singleMode[0])
                             rangeText.setText(String.format(Locale.getDefault(), "%.2f ☆", pair.first / 4d));
                         else
                             rangeText.setText(String.format(Locale.getDefault(), "%.2f ☆ – %.2f ☆", pair.first / 4d, pair.second / 4d));
                     };
-                    RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_advancedSearch_rangeBar);
                     rangeBar.setVisibility(singleMode[0] ? View.INVISIBLE : View.VISIBLE);
-                    SeekBar singleBar = customDialog.findViewById(R.id.dialog_advancedSearch_singleBar);
                     singleBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                         @Override
                         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -1844,7 +1845,6 @@ public class Utility {
                         }
                         singleMode[0] = !singleMode[0];
                         rangeBar.setVisibility(singleMode[0] ? View.INVISIBLE : View.VISIBLE);
-                        singleBar.setClickable(singleMode[0]);
                         setText.runGenericInterface(Pair.create(rangeBar.getMinThumbValue(), rangeBar.getMaxThumbValue()));
                     });
                     singleBar.setProgress(min[0]);
@@ -1963,14 +1963,24 @@ public class Utility {
                         Set<String> since_keysByValue = getKeysByValue(modeMap, since_unit.getSelectedItemPosition());
                         String since_mode = since_keysByValue.toArray(new String[0])[0];
                         String since_text = since_edit.getText().toString();
-                        if (CustomUtility.stringExists(since_text))
-                            pivot[0] = (since_mode.contains("_") ?  "_" : "") + since_text + since_mode.replaceAll("_", "");
 
                         Set<String> duration_keysByValue = getKeysByValue(modeMap, duration_unit.getSelectedItemPosition());
                         String duration_mode = duration_keysByValue.toArray(new String[0])[0];
                         String duration_text = duration_edit.getText().toString();
-                        if (CustomUtility.stringExists(duration_text))
+
+                        boolean sinceExists = CustomUtility.stringExists(since_text) || since_mode.contains("_");
+                        boolean durationExists = CustomUtility.stringExists(duration_text);
+
+                        if (durationExists) {
                             duration[0] = (duration_mode.contains("_") ?  "_" : "") + duration_text + duration_mode.replaceAll("_", "");
+                            if (sinceExists)
+                                pivot[0] = (since_mode.contains("_") ?  "_" : "") + since_text + since_mode.replaceAll("_", "");
+                            else
+                                pivot[0] = "";
+                        } else {
+                            pivot[0] = "";
+                            duration[0] = "";
+                        }
                     };
 
 
@@ -2140,7 +2150,6 @@ public class Utility {
 //
 //                    pieChart.setData(pieData);
 //                    pieChart.invalidate();
-
                 })
                 .addOptionalModifications(customDialog -> {
                     if (finalPreSelected) {

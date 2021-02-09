@@ -66,6 +66,7 @@ import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.finn.androidUtilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
+import com.maxMustermannGeheim.linkcollection.Utilities.MinDimensionLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.mikhaellopez.lazydatepicker.LazyDatePicker;
 
@@ -552,6 +553,15 @@ public class ShowActivity extends AppCompatActivity {
                     return filteredList;
                 })
                 .setSetItemContent((customRecycler, itemView, show) -> {
+                    MinDimensionLayout listItem_show_image_layout = itemView.findViewById(R.id.listItem_show_image_layout);
+                    if (CustomUtility.stringExists(show.getImagePath())) {
+                        listItem_show_image_layout.setVisibility(View.VISIBLE);
+                        ImageView image = itemView.findViewById(R.id.listItem_show_image);
+                        Utility.loadUrlIntoImageView(this, image, Utility.getTmdbImagePath_ifNecessary(show.getImagePath(), false), Utility.getTmdbImagePath_ifNecessary(show.getImagePath(), true), null, () -> Utility.roundImageView(image, 4), this::removeFocusFromSearch);
+                    } else
+                        listItem_show_image_layout.setVisibility(View.GONE);
+
+
                     ((TextView) itemView.findViewById(R.id.listItem_show_Titel)).setText(show.getName());
                     List<Show.Episode> episodeList = getEpisodeList(show);
                     int watchedEpisodes = (int) episodeList.stream().filter(episode -> episode.getSeasonNumber() != 0).count();

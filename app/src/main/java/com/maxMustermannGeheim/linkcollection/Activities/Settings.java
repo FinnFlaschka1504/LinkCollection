@@ -191,7 +191,7 @@ public class Settings extends AppCompatActivity {
         settingsMap.put(SETTING_VIDEO_LOAD_CAST_AND_STUDIOS, "true");
         settingsMap.put(SETTING_VIDEO_SHOW_SEARCH, "0");
         settingsMap.put(SETTING_VIDEO_SHOW_COLLECTIONS, "true");
-        settingsMap.put(SETTING_VIDEO_SHOW_IMAGES, "false");
+        settingsMap.put(SETTING_VIDEO_SHOW_IMAGES, "true");
         settingsMap.put(SETTING_VIDEO_SCROLL, "true");
         settingsMap.put(SETTING_SHOW_EPISODE_PREVIEW, "1");
     }

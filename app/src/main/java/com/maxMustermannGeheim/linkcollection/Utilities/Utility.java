@@ -24,6 +24,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
@@ -42,7 +43,9 @@ import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -75,6 +78,7 @@ import com.bumptech.glide.request.target.DrawableImageViewTarget;
 import com.bumptech.glide.request.target.Target;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
+import com.finn.androidUtilities.Helpers;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
@@ -1410,6 +1414,7 @@ public class Utility {
         }
 
         int saveButtonId = View.generateViewId();
+        ParentClass newParentClass = ParentClass.newCategory(category, "");
 
         CustomDialog dialog_AddActorOrGenre = CustomDialog.Builder(context)
                 .setTitle(editType_string + " Bearbeiten")
@@ -1421,41 +1426,102 @@ public class Utility {
                     if (category.equals(CategoriesActivity.CATEGORIES.COLLECTION))
                         return;
                     customDialog0
-                            .addButton("Hinzufügen", customDialog -> {
+                            .addButton(R.drawable.ic_add, customDialog -> {
                                 CustomDialog.Builder(context)
                                         .setTitle(editType_string + " Hinzufügen")
+                                        .addOptionalModifications(customDialog1 -> {
+                                            if (newParentClass instanceof ParentClass_Tmdb) {
+                                                customDialog1
+                                                        .addButton("Testen", customDialog2 -> {
+                                                            String url = ((EditText) customDialog2.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
+                                                            ImageView preview = customDialog2.findViewById(R.id.dialog_editTmdbCategory_preview);
+                                                            if (CustomUtility.stringExists(url)) {
+                                                                Utility.loadUrlIntoImageView(context, preview, Utility.getTmdbImagePath_ifNecessary(url, true), null);
+                                                                preview.setVisibility(View.VISIBLE);
+                                                            } else {
+                                                                Toast.makeText(context, "Nichts eingegeben", Toast.LENGTH_SHORT).show();
+                                                                preview.setVisibility(View.GONE);
+                                                            }
+                                                        }, false)
+                                                        .alignPreviousButtonsLeft();
+                                            }
+                                        })
                                         .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                                         .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
-                                            ParentClass parentClass = ParentClass.newCategory(category, customDialog1.getEditText());
+//                                            ParentClass newParentClass = ParentClass.newCategory(category, "");
+                                            ParentClass_Alias.applyNameAndAlias(newParentClass, ((EditText) customDialog1.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim());
+                                            if (newParentClass instanceof ParentClass_Tmdb) {
+                                                String url = ((EditText) customDialog1.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
+                                                ((ParentClass_Tmdb) newParentClass).setImagePath(CustomUtility.stringExists(url) ? url : null);
+                                            }
+
                                             switch (category) {
                                                 case DARSTELLER:
-                                                    database.darstellerMap.put(parentClass.getUuid(), (Darsteller) parentClass);
+                                                    database.darstellerMap.put(newParentClass.getUuid(), (Darsteller) newParentClass);
                                                     break;
                                                 case STUDIOS:
-                                                    database.studioMap.put(parentClass.getUuid(), (Studio) parentClass);
+                                                    database.studioMap.put(newParentClass.getUuid(), (Studio) newParentClass);
                                                     break;
                                                 case GENRE:
-                                                    database.genreMap.put(parentClass.getUuid(), (Genre) parentClass);
+                                                    database.genreMap.put(newParentClass.getUuid(), (Genre) newParentClass);
                                                     break;
                                                 case KNOWLEDGE_CATEGORIES:
-                                                    database.knowledgeCategoryMap.put(parentClass.getUuid(), (KnowledgeCategory) parentClass);
+                                                    database.knowledgeCategoryMap.put(newParentClass.getUuid(), (KnowledgeCategory) newParentClass);
                                                     break;
                                                 case JOKE_CATEGORIES:
-                                                    database.jokeCategoryMap.put(parentClass.getUuid(), (JokeCategory) parentClass);
+                                                    database.jokeCategoryMap.put(newParentClass.getUuid(), (JokeCategory) newParentClass);
                                                     break;
                                                 case SHOW_GENRES:
-                                                    database.showGenreMap.put(parentClass.getUuid(), (ShowGenre) parentClass);
+                                                    database.showGenreMap.put(newParentClass.getUuid(), (ShowGenre) newParentClass);
                                                     break;
                                             }
-                                            selectedUuidList.add(parentClass.getUuid());
+                                            selectedUuidList.add(newParentClass.getUuid());
                                             customDialog1.dismiss();
                                             customDialog.dismiss();
                                             showEditItemDialog(context, addOrEditDialog, selectedUuidList, o, category);
                                             Database.saveAll();
                                         })
-                                        .setEdit(new CustomDialog.EditBuilder()
-                                                .setHint(editType_string + "-Name")
-                                                .setText(((SearchView) customDialog.findViewById(R.id.dialogEditCategory_search)).getQuery().toString()))
+//                                        .setEdit(new CustomDialog.EditBuilder()
+//                                                .setHint(editType_string + "-Name")
+//                                                .setText(((SearchView) customDialog.findViewById(R.id.dialogEditCategory_search)).getQuery().toString()))
+                                        .setView(R.layout.dialog_edit_tmdb_category)
+                                        .setSetViewContent((customDialog1, view1, reload) -> {
+
+                                            TextInputLayout dialog_editTmdbCategory_name_layout = view1.findViewById(R.id.dialog_editTmdbCategory_name_layout);
+                                            dialog_editTmdbCategory_name_layout.setHint(editType_string + "-Name");
+                                            String searchText = ((SearchView) customDialog.findViewById(R.id.dialogEditCategory_search)).getQuery().toString();
+                                            EditText dialog_editTmdbCategory_name = dialog_editTmdbCategory_name_layout.getEditText();
+                                            dialog_editTmdbCategory_name.requestFocus();
+                                            if (CustomUtility.stringExists(searchText))
+                                                dialog_editTmdbCategory_name.setText(searchText);
+
+                                            Helpers.TextInputHelper helper = new Helpers.TextInputHelper((Button) customDialog1.getActionButton().getButton(), dialog_editTmdbCategory_name_layout);
+
+                                            if (newParentClass instanceof ParentClass_Alias)
+                                                dialog_editTmdbCategory_name.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_CLASS_TEXT);
+
+                                            if (newParentClass instanceof ParentClass_Tmdb) {
+                                                CustomUtility.setMargins(view1.findViewById(R.id.dialog_editTmdbCategory_nameLayout), -1, -1, -1, 0);
+                                                view1.findViewById(R.id.dialog_editTmdbCategory_urlLayout).setVisibility(View.VISIBLE);
+                                                TextInputLayout dialog_editTmdbCategory_url_layout = view1.findViewById(R.id.dialog_editTmdbCategory_url_layout);
+//                                                dialog_editTmdbCategory_url_layout.getEditText().setText(((ParentClass_Tmdb) newParentClass).getImagePath());
+                                                helper.addValidator(dialog_editTmdbCategory_url_layout).setValidation(dialog_editTmdbCategory_url_layout, (validator, text) -> {
+                                                    validator.asWhiteList();
+                                                    if (text.isEmpty() || text.matches(CategoriesActivity.pictureRegexAll) || text.matches(ActivityResultListener.uriRegex))
+                                                        validator.setValid();
+                                                    if (text.toLowerCase().contains("http") && !text.toLowerCase().contains("https"))
+                                                        validator.setInvalid("Die URL muss 'https' sein!");
+                                                });
+
+                                                view1.findViewById(R.id.dialog_editTmdbCategory_localStorage).setOnClickListener(v -> {
+                                                    ActivityResultListener.addFileChooserRequest((AppCompatActivity) context, "image/*", o1 -> {
+                                                        dialog_editTmdbCategory_url_layout.getEditText().setText(((Intent) o1).getData().toString());
+                                                    });
+                                                });
+
+                                            }
+                                        })
+                                        .enableDynamicWrapHeight(((AppCompatActivity) context).findViewById(android.R.id.content).getRootView())
                                         .show();
 
                             }, false)
@@ -1972,9 +2038,9 @@ public class Utility {
                         boolean durationExists = CustomUtility.stringExists(duration_text);
 
                         if (durationExists) {
-                            duration[0] = (duration_mode.contains("_") ?  "_" : "") + duration_text + duration_mode.replaceAll("_", "");
+                            duration[0] = (duration_mode.contains("_") ? "_" : "") + duration_text + duration_mode.replaceAll("_", "");
                             if (sinceExists)
-                                pivot[0] = (since_mode.contains("_") ?  "_" : "") + since_text + since_mode.replaceAll("_", "");
+                                pivot[0] = (since_mode.contains("_") ? "_" : "") + since_text + since_mode.replaceAll("_", "");
                             else
                                 pivot[0] = "";
                         } else {
@@ -2241,7 +2307,7 @@ public class Utility {
             Matcher advancedQueryMatcher = advancedSearchPattern.matcher(fullQuery);
 
             if (advancedQueryMatcher.find())
-                advancedQueryHelper.advancedQuery =  advancedQueryMatcher.group(0);
+                advancedQueryHelper.advancedQuery = advancedQueryMatcher.group(0);
 
             if (advancedQueryHelper.hasAdvancedSearch()) {
                 if (advancedQueryHelper.advancedQuery.contains("r:")) {
@@ -2402,7 +2468,7 @@ public class Utility {
         }
 
 
-            public static String removeAdvancedSearch(CharSequence fullQuery) {
+        public static String removeAdvancedSearch(CharSequence fullQuery) {
             return fullQuery.toString().replaceAll(AdvancedQueryHelper.advancedSearchPattern.pattern(), "").trim();
         }
         //  <------------------------- Convenience -------------------------
@@ -2822,11 +2888,11 @@ public class Utility {
         return Objects.equals(input, value) ? input : orElse.runGenericInterface();
     }
 
-    public static <T,R> R isNotValueReturnOrElse(T input, T value, GenericReturnInterface<T,R> returnValue, @Nullable GenericReturnOnlyInterface<R> orElse) {
+    public static <T, R> R isNotValueReturnOrElse(T input, T value, GenericReturnInterface<T, R> returnValue, @Nullable GenericReturnOnlyInterface<R> orElse) {
         return !Objects.equals(input, value) ? returnValue.runGenericInterface(input) : orElse != null ? orElse.runGenericInterface() : (R) input;
     }
 
-    public static <T,R> R isValueReturnOrElse(T input, T value, GenericReturnInterface<T,R> returnValue, GenericReturnOnlyInterface<R> orElse) {
+    public static <T, R> R isValueReturnOrElse(T input, T value, GenericReturnInterface<T, R> returnValue, GenericReturnOnlyInterface<R> orElse) {
         return Objects.equals(input, value) ? returnValue.runGenericInterface(input) : orElse.runGenericInterface();
     }
 
@@ -2966,17 +3032,17 @@ public class Utility {
         }
     }
 
-    public static Bitmap drawableToBitmap (Drawable drawable) {
+    public static Bitmap drawableToBitmap(Drawable drawable) {
         Bitmap bitmap = null;
 
         if (drawable instanceof BitmapDrawable) {
             BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
-            if(bitmapDrawable.getBitmap() != null) {
+            if (bitmapDrawable.getBitmap() != null) {
                 return bitmapDrawable.getBitmap();
             }
         }
 
-        if(drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
+        if (drawable.getIntrinsicWidth() <= 0 || drawable.getIntrinsicHeight() <= 0) {
             bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888); // Single color bitmap will be created of 1x1 pixel
         } else {
             bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);

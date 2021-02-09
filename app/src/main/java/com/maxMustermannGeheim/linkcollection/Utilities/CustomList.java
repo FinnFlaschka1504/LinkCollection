@@ -104,6 +104,11 @@ public class CustomList<E> extends ArrayList<E> {
         return this;
     }
 
+//    public CustomList<E> addAll(@NonNull Collection<? extends E> c) {
+//        super.addAll(c);
+//        return this;
+//    }
+
     public boolean isFirst(E e) {
         if (e == null || isEmpty())
             return false;

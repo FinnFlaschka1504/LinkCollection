@@ -29,7 +29,6 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.SeekBar;
@@ -57,7 +56,6 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
-import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
@@ -711,6 +709,12 @@ public class VideoActivity extends AppCompatActivity {
                                 int videoViews = video.getDateList().size();
                                 viewSum[0] += videoViews;
                                 watchedMinutes[0] += video.getLength() * videoViews;
+
+                                Float rating = video.getRating();
+                                if (rating > 0) {
+                                    ratingSum[0] += rating;
+                                    ratingCount[0]++;
+                                }
                             });
                         }
 
@@ -734,7 +738,8 @@ public class VideoActivity extends AppCompatActivity {
                     MinDimensionLayout listItem_video_image_layout = itemView.findViewById(R.id.listItem_video_image_layout);
                     if (showImages && CustomUtility.stringExists(video.getImagePath())) {
                         listItem_video_image_layout.setVisibility(View.VISIBLE);
-                        Utility.loadUrlIntoImageView(this, itemView.findViewById(R.id.listItem_video_image), Utility.getTmdbImagePath_ifNecessary(video.getImagePath(), false), Utility.getTmdbImagePath_ifNecessary(video.getImagePath(), true), null, null, this::removeFocusFromSearch);
+                        ImageView image = itemView.findViewById(R.id.listItem_video_image);
+                        Utility.loadUrlIntoImageView(this, image, Utility.getTmdbImagePath_ifNecessary(video.getImagePath(), false), Utility.getTmdbImagePath_ifNecessary(video.getImagePath(), true), null, () -> Utility.roundImageView(image, 4), this::removeFocusFromSearch);
                     } else
                         listItem_video_image_layout.setVisibility(View.GONE);
 
@@ -1710,16 +1715,16 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     private void parseTitleToDetails(Video video, Video[] editVideo, String name) {
-        List<String> actorIdList = database.darstellerMap.values().stream().filter(darsteller -> ParentClass_Alias.containedInQuery(darsteller, name)).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
-        List<String> studioIdList = database.studioMap.values().stream().filter(studio -> ParentClass_Alias.containedInQuery(studio, name)).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
-        List<String> genreIdList = database.genreMap.values().stream().filter(genre -> ParentClass_Alias.containedInQuery(genre, name)).map(ParentClass::getUuid).collect(Collectors.toCollection(ArrayList::new));
+        CustomList<String> actorIdList = database.darstellerMap.values().stream().filter(darsteller -> ParentClass_Alias.containedInQuery(darsteller, name)).map(ParentClass::getUuid).collect(Collectors.toCollection(CustomList::new));
+        CustomList<String> studioIdList = database.studioMap.values().stream().filter(studio -> ParentClass_Alias.containedInQuery(studio, name)).map(ParentClass::getUuid).collect(Collectors.toCollection(CustomList::new));
+        CustomList<String> genreIdList = database.genreMap.values().stream().filter(genre -> ParentClass_Alias.containedInQuery(genre, name)).map(ParentClass::getUuid).collect(Collectors.toCollection(CustomList::new));
 
         if (addOrEditDialog != null) {
             ((EditText) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_Title)).setText(name);
             if (editVideo[0] != null) {
-                editVideo[0].setDarstellerList(actorIdList);
-                editVideo[0].setStudioList(studioIdList);
-                editVideo[0].setGenreList(genreIdList);
+                editVideo[0].setDarstellerList(actorIdList.add(editVideo[0].getDarstellerList().toArray(new String[0])).distinct());
+                editVideo[0].setStudioList(studioIdList.add(editVideo[0].getStudioList().toArray(new String[0])).distinct());
+                editVideo[0].setGenreList(genreIdList.add(editVideo[0].getGenreList().toArray(new String[0])).distinct());
                 ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_actor)).setText(
                         editVideo[0].getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                 ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_studio)).setText(
@@ -2436,7 +2441,7 @@ public class VideoActivity extends AppCompatActivity {
                                             startActivityForResult(new Intent(this, VideoActivity.class)
                                                             .putExtra(CategoriesActivity.EXTRA_SEARCH, video.getUuid())
                                                             .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO),
-                                                    CategoriesActivity.START_CATIGORY_SEARCH);
+                                                    CategoriesActivity.START_CATEGORY_SEARCH);
 
                                             return true;
                                         });

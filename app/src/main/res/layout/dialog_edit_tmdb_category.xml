@@ -94,6 +94,16 @@
 
         </LinearLayout>
 
+        <ImageView
+            android:id="@+id/dialog_editTmdbCategory_preview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            tools:srcCompat="@drawable/ic_app_logo"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="16dp"
+            tools:visibility="visible" />
+
     </LinearLayout>
 
 </LinearLayout>

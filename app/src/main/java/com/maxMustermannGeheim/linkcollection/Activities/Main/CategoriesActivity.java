@@ -62,8 +62,8 @@ import java.util.stream.Collectors;
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
 public class CategoriesActivity extends AppCompatActivity {
-    public static final int START_CATIGORY_SEARCH = 001;
-    public static final String EXTRA_SEARCH_CATEGORY = "EXTRA_SEARCH_CATOGORY";
+    public static final int START_CATEGORY_SEARCH = 001;
+    public static final String EXTRA_SEARCH_CATEGORY = "EXTRA_SEARCH_CATEGORY";
     public static final String EXTRA_SEARCH = "EXTRA_SEARCH";
     public static String pictureRegex = "((https:)|\\/)([^\\s\\\\]|(?<=\\S) (?=\\S))+?\\.(?:jpe?g|png|svg)";//"((https:)|/)[^\\n]+?\\.(?:jpe?g|png|svg)";
 //    public static String pictureRegex = "((https:)|/)([,+%&?=()/|.|\\w|\\s|-])+\\.(?:jpe?g|png|svg)";
@@ -108,17 +108,17 @@ public class CategoriesActivity extends AppCompatActivity {
 
 
     private int columnCount = 2;
-    private CATEGORIES catigory;
+    private CATEGORIES category;
     private SORT_TYPE sort_type = SORT_TYPE.NAME;
     private Database database = Database.getInstance();
     SharedPreferences mySPR_daten;
-    private String searchQuerry = "";
+    private String searchQuery = "";
     private boolean multiSelectMode;
     private List<ParentClass> selectedList = new ArrayList<>();
     private Runnable setToolbarTitle;
 
     private CustomRecycler customRecycler;
-    private SearchView catigorys_search;
+    private SearchView categories_search;
     private SearchView.OnQueryTextListener textListener;
     private TextView elementCount;
 
@@ -146,7 +146,7 @@ public class CategoriesActivity extends AppCompatActivity {
                 .changeType(parentClassIntegerPair -> {
                     ParentClass parentClass = parentClassIntegerPair.first;
                     List<Video> allRelatedVideos = new CustomList<>();
-                    switch (catigory) {
+                    switch (category) {
                         case DARSTELLER:
                             for (Video video : database.videoMap.values()) {
                                     if (video.getDarstellerList().contains(parentClass.getUuid()))
@@ -183,7 +183,7 @@ public class CategoriesActivity extends AppCompatActivity {
                 .enableReverseDefaultComparable()
                 .finish();
 
-        catigory = (CATEGORIES) getIntent().getSerializableExtra(MainActivity.EXTRA_CATEGORY);
+        category = (CATEGORIES) getIntent().getSerializableExtra(MainActivity.EXTRA_CATEGORY);
 
 
         loadDatabase();
@@ -193,7 +193,7 @@ public class CategoriesActivity extends AppCompatActivity {
         Runnable whenLoaded = () -> {
             setContentView(R.layout.activity_catigorys);
 
-            setDatenObjektIntegerPairLiist();
+            setDatenObjektIntegerPairList();
             sortList(allDatenObjektPairList);
 
 
@@ -212,7 +212,7 @@ public class CategoriesActivity extends AppCompatActivity {
 
     private void setLayout() {
         Toolbar toolbar = findViewById(R.id.toolbar);
-        toolbar.setTitle(catigory.getPlural());
+        toolbar.setTitle(category.getPlural());
         setSupportActionBar(toolbar);
         elementCount = findViewById(R.id.elementCount);
 
@@ -221,7 +221,7 @@ public class CategoriesActivity extends AppCompatActivity {
         CollapsingToolbarLayout collapsingToolbarLayout = findViewById(R.id.collapsingToolbarLayout);
         setToolbarTitle = Utility.applyExpendableToolbar_recycler(this, findViewById(R.id.recycler), toolbar, appBarLayout, collapsingToolbarLayout, noItem, toolbar.getTitle().toString());
 
-        catigorys_search = findViewById(R.id.search);
+        categories_search = findViewById(R.id.search);
 
         loadRecycler();
 
@@ -234,23 +234,23 @@ public class CategoriesActivity extends AppCompatActivity {
 
             @Override
             public boolean onQueryTextChange(String s) {
-                searchQuerry = s.trim();
+                searchQuery = s.trim();
 
                 reLoadRecycler();
                 return true;
             }
         };
-        catigorys_search.setOnQueryTextListener(textListener);
-        catigorys_search.setQueryHint(catigory.getPlural() + " filtern");
+        categories_search.setOnQueryTextListener(textListener);
+        categories_search.setQueryHint(category.getPlural() + " filtern");
 
         if (getIntent().hasExtra(EXTRA_SEARCH)) {
-            catigorys_search.setQuery(getIntent().getStringExtra(EXTRA_SEARCH), false);
+            categories_search.setQuery(getIntent().getStringExtra(EXTRA_SEARCH), false);
         }
     }
 
     private List<Pair<ParentClass, Integer>> filterList(List<Pair<ParentClass, Integer>> datenObjektPairList) {
-        if (!searchQuerry.equals("")) {
-            return datenObjektPairList.stream().filter(datenObjektIntegerPair -> ParentClass_Alias.containsQuery(datenObjektIntegerPair.first, searchQuerry.toLowerCase())).collect(Collectors.toList());
+        if (!searchQuery.equals("")) {
+            return datenObjektPairList.stream().filter(datenObjektIntegerPair -> ParentClass_Alias.containsQuery(datenObjektIntegerPair.first, searchQuery.toLowerCase())).collect(Collectors.toList());
         } else
             return new ArrayList<>(datenObjektPairList);
     }
@@ -272,10 +272,10 @@ public class CategoriesActivity extends AppCompatActivity {
         return datenObjektPairList;
     }
 
-    private void setDatenObjektIntegerPairLiist() {
+    private void setDatenObjektIntegerPairList() {
         List<Pair<ParentClass, Integer>> pairList = new ArrayList<>();
 
-        switch (catigory) {
+        switch (category) {
             case DARSTELLER:
                 for (ParentClass parentClass : database.darstellerMap.values()) {
                     int count = 0;
@@ -357,7 +357,7 @@ public class CategoriesActivity extends AppCompatActivity {
                     List<Pair<ParentClass, Integer>> filteredList = sortList(filterList(allDatenObjektPairList));
 
                     TextView noItem = findViewById(R.id.no_item);
-                    String text = catigorys_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche";
+                    String text = categories_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche";
                     int size = filteredList.size();
 
                     noItem.setText(size == 0 ? text : "");
@@ -369,7 +369,7 @@ public class CategoriesActivity extends AppCompatActivity {
                 .setSetItemContent((customRecycler, itemView, parentClassIntegerPair) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_catigoryItem_name)).setText(parentClassIntegerPair.first.getName());
 
-                    if (catigory == CATEGORIES.PERSON) {
+                    if (category == CATEGORIES.PERSON) {
                         final double[] allOwn = {0};
                         final double[] allOther = {0};
                         database.oweMap.values().forEach(owe -> owe.getItemList().forEach(item -> {
@@ -417,10 +417,10 @@ public class CategoriesActivity extends AppCompatActivity {
                 .hideDivider()
                 .setOnClickListener((customRecycler, view, parentClassIntegerPair, index) -> {
                     if (!multiSelectMode) {
-                        startActivityForResult(new Intent(this, catigory.getSearchIn())
+                        startActivityForResult(new Intent(this, category.getSearchIn())
                                         .putExtra(EXTRA_SEARCH, parentClassIntegerPair.first.getName())
-                                        .putExtra(EXTRA_SEARCH_CATEGORY, catigory),
-                                START_CATIGORY_SEARCH);
+                                        .putExtra(EXTRA_SEARCH_CATEGORY, category),
+                                START_CATEGORY_SEARCH);
                     } else {
                         if (selectedList.contains(parentClassIntegerPair.first))
                             selectedList.remove(parentClassIntegerPair.first);
@@ -437,7 +437,7 @@ public class CategoriesActivity extends AppCompatActivity {
                     ParentClass parentClass = item.first;
 
                     CustomDialog.Builder(this)
-                            .setTitle(catigory.getSingular() + " Umbenennen, oder Löschen")
+                            .setTitle(category.getSingular() + " Umbenennen, oder Löschen")
                             .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                             .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
                                 CustomDialog.Builder(this)
@@ -451,6 +451,22 @@ public class CategoriesActivity extends AppCompatActivity {
                                         .show();
                             }, false)
                             .transformPreviousButtonToImageButton()
+                            .addOptionalModifications(customDialog1 -> {
+                                if (parentClass instanceof ParentClass_Tmdb) {
+                                    customDialog1
+                                            .addButton("Testen", customDialog2 -> {
+                                                String url = ((EditText) customDialog2.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
+                                                ImageView preview = customDialog2.findViewById(R.id.dialog_editTmdbCategory_preview);
+                                                if (CustomUtility.stringExists(url)) {
+                                                    Utility.loadUrlIntoImageView(this, preview, Utility.getTmdbImagePath_ifNecessary(url, true), null);
+                                                    preview.setVisibility(View.VISIBLE);
+                                                } else {
+                                                    Toast.makeText(this, "Nichts eingegeben", Toast.LENGTH_SHORT).show();
+                                                    preview.setVisibility(View.GONE);
+                                                }
+                                            }, false);
+                                }
+                            })
                             .alignPreviousButtonsLeft()
                             .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                                 if (!Utility.isOnline(this))
@@ -458,7 +474,7 @@ public class CategoriesActivity extends AppCompatActivity {
                                 ParentClass_Alias.applyNameAndAlias(item.first, ((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim());
                                 if (parentClass instanceof ParentClass_Tmdb) {
                                     String url = ((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
-                                    ((ParentClass_Tmdb) parentClass).setImagePath(url);
+                                    ((ParentClass_Tmdb) parentClass).setImagePath(CustomUtility.stringExists(url) ? url : null);
                                 }
                                 reLoadRecycler();
                                 Toast.makeText(this, (Database.saveAll_simple() ? "" : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
@@ -487,7 +503,13 @@ public class CategoriesActivity extends AppCompatActivity {
                                     CustomUtility.setMargins(view1.findViewById(R.id.dialog_editTmdbCategory_nameLayout), -1, -1, -1, 0);
                                     view1.findViewById(R.id.dialog_editTmdbCategory_urlLayout).setVisibility(View.VISIBLE);
                                     TextInputLayout dialog_editTmdbCategory_url_layout = view1.findViewById(R.id.dialog_editTmdbCategory_url_layout);
-                                    dialog_editTmdbCategory_url_layout.getEditText().setText(((ParentClass_Tmdb) parentClass).getImagePath());
+                                    String url = ((ParentClass_Tmdb) parentClass).getImagePath();
+                                    dialog_editTmdbCategory_url_layout.getEditText().setText(url);
+                                    ImageView preview = customDialog.findViewById(R.id.dialog_editTmdbCategory_preview);
+                                    if (CustomUtility.stringExists(url)) {
+                                        Utility.loadUrlIntoImageView(this, preview, Utility.getTmdbImagePath_ifNecessary(url, true), null);
+                                        preview.setVisibility(View.VISIBLE);
+                                    }
                                     helper.addValidator(dialog_editTmdbCategory_url_layout).setValidation(dialog_editTmdbCategory_url_layout, (validator, text) -> {
                                         validator.asWhiteList();
                                         if (text.isEmpty() || text.matches(pictureRegexAll) || text.matches(ActivityResultListener.uriRegex))
@@ -517,7 +539,7 @@ public class CategoriesActivity extends AppCompatActivity {
     private void removeCatigory(Pair<ParentClass, Integer> item) {
         ParentClass parentClass = item.first;
         allDatenObjektPairList.remove(item);
-        switch (catigory) {
+        switch (category) {
             case DARSTELLER:
                 database.darstellerMap.remove(parentClass.getUuid());
                 for (Video video : database.videoMap.values()) {
@@ -594,8 +616,8 @@ public class CategoriesActivity extends AppCompatActivity {
                 .addButton("Suchen", customDialog -> {
                     startActivityForResult(new Intent(this, VideoActivity.class)
                                     .putExtra(EXTRA_SEARCH, randomPair[0].first.getName())
-                                    .putExtra(EXTRA_SEARCH_CATEGORY, catigory),
-                            START_CATIGORY_SEARCH);
+                                    .putExtra(EXTRA_SEARCH_CATEGORY, category),
+                            START_CATEGORY_SEARCH);
                 })
                 .show();
     }
@@ -605,7 +627,7 @@ public class CategoriesActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.task_bar_catigory, menu);
 
         if (setToolbarTitle != null) setToolbarTitle.run();
-        menu.findItem(R.id.taskBar_category_sortByTime).setVisible(catigory.getSearchIn().equals(VideoActivity.class));
+        menu.findItem(R.id.taskBar_category_sortByTime).setVisible(category.getSearchIn().equals(VideoActivity.class));
 
         return true;
     }
@@ -620,10 +642,10 @@ public class CategoriesActivity extends AppCompatActivity {
                     reLoadRecycler();
                 } else {
                     if (selectedList.size() == 1) {
-                        startActivityForResult(new Intent(this, catigory.getSearchIn())
+                        startActivityForResult(new Intent(this, category.getSearchIn())
                                         .putExtra(EXTRA_SEARCH, selectedList.get(0).getName())
-                                        .putExtra(EXTRA_SEARCH_CATEGORY, catigory),
-                                START_CATIGORY_SEARCH);
+                                        .putExtra(EXTRA_SEARCH_CATEGORY, category),
+                                START_CATEGORY_SEARCH);
                         break;
                     }
                     CustomDialog.Builder(this)
@@ -636,17 +658,17 @@ public class CategoriesActivity extends AppCompatActivity {
                             })
                             .alignPreviousButtonsLeft()
                             .addButton("&", customDialog -> {
-                                startActivityForResult(new Intent(this, catigory.getSearchIn())
+                                startActivityForResult(new Intent(this, category.getSearchIn())
                                                 .putExtra(EXTRA_SEARCH, selectedList.stream().map(ParentClass::getName).collect(Collectors.joining(" & ")))
-                                                .putExtra(EXTRA_SEARCH_CATEGORY, catigory),
-                                        START_CATIGORY_SEARCH);
+                                                .putExtra(EXTRA_SEARCH_CATEGORY, category),
+                                        START_CATEGORY_SEARCH);
                             })
                             .colorLastAddedButton()
                             .addButton("|", customDialog -> {
-                                startActivityForResult(new Intent(this, catigory.getSearchIn())
+                                startActivityForResult(new Intent(this, category.getSearchIn())
                                                 .putExtra(EXTRA_SEARCH, selectedList.stream().map(ParentClass::getName).collect(Collectors.joining(" | ")))
-                                                .putExtra(EXTRA_SEARCH_CATEGORY, catigory),
-                                        START_CATIGORY_SEARCH);
+                                                .putExtra(EXTRA_SEARCH_CATEGORY, category),
+                                        START_CATEGORY_SEARCH);
                             })
                             .colorLastAddedButton()
                             .show();
@@ -699,21 +721,26 @@ public class CategoriesActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (resultCode == RESULT_OK /*&& requestCode == START_VIDEOS*/) {
-            setDatenObjektIntegerPairLiist();
-            textListener.onQueryTextChange(catigorys_search.getQuery().toString());
+            setDatenObjektIntegerPairList();
+            textListener.onQueryTextChange(categories_search.getQuery().toString());
             reLoadRecycler();
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
 
     private void removeFocusFromSearch() {
-        catigorys_search.clearFocus();
+        categories_search.clearFocus();
     }
 
     @Override
     public void onBackPressed() {
-        if (Utility.stringExists(catigorys_search.getQuery().toString()) && !Objects.equals(catigorys_search.getQuery().toString(), getIntent().getStringExtra(EXTRA_SEARCH))) {
-            catigorys_search.setQuery("", false);
+        if (Utility.stringExists(categories_search.getQuery().toString()) && !Objects.equals(categories_search.getQuery().toString(), getIntent().getStringExtra(EXTRA_SEARCH))) {
+            categories_search.setQuery("", false);
+            return;
+        } else if (multiSelectMode) {
+            multiSelectMode = false;
+            selectedList.clear();
+            reLoadRecycler();
             return;
         }
 

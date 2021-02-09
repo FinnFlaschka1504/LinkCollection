@@ -358,7 +358,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="5"
-                                android:textColor="#3C3C3C"
+                                android:textColor="#535353"
                                 android:textSize="12sp" />
                         </com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout>
 

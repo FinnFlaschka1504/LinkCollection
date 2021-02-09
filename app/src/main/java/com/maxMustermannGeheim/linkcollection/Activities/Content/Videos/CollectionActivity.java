@@ -423,7 +423,7 @@ public class CollectionActivity extends AppCompatActivity {
                     startActivityForResult(new Intent(this, VideoActivity.class)
                                     .putExtra(CategoriesActivity.EXTRA_SEARCH, collection.getName())
                                     .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.COLLECTION),
-                            CategoriesActivity.START_CATIGORY_SEARCH);
+                            CategoriesActivity.START_CATEGORY_SEARCH);
 
                 }, false)
                 .setOnLongClickListener((customRecycler, view, collection, index) -> {
@@ -465,7 +465,7 @@ public class CollectionActivity extends AppCompatActivity {
                                         startActivityForResult(new Intent(this, VideoActivity.class)
                                                         .putExtra(CategoriesActivity.EXTRA_SEARCH, video.getUuid())
                                                         .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO),
-                                                CategoriesActivity.START_CATIGORY_SEARCH);
+                                                CategoriesActivity.START_CATEGORY_SEARCH);
 
                                         return true;
                                     });

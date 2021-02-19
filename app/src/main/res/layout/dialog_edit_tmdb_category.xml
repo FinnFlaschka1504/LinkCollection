@@ -79,7 +79,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:completionThreshold="0"
-                    android:inputType="textUri|textCapSentences"
+                    android:inputType="textUri"
                     android:selectAllOnFocus="true"
                     android:singleLine="true" />
 

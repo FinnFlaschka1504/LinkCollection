@@ -12,6 +12,7 @@ import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
@@ -272,9 +273,8 @@ public class Show extends ParentClass {
 
 
     //  ----- Classes ----->
-    public static class Season extends ParentClass {
+    public static class Season extends ParentClass_Tmdb {
         private int episodesCount;
-        private int tmdbId;
         private Date airDate;
         private int seasonNumber;
         private Map<String, Episode> episodeMap = new HashMap<>();
@@ -299,13 +299,9 @@ public class Show extends ParentClass {
             return this;
         }
 
-        public int getTmdbId() {
-            return tmdbId;
-        }
-
+        @Override
         public Season setTmdbId(int tmdbId) {
-            this.tmdbId = tmdbId;
-            return this;
+            return (Season) super.setTmdbId(tmdbId);
         }
 
         public Date getAirDate() {

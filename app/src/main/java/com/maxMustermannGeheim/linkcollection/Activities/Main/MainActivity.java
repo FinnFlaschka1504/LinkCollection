@@ -109,9 +109,9 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        isLoadingLayout = savedInstanceState == null;
+//        isLoadingLayout = savedInstanceState == null;
 
-        if (!Database.isReady()) //(isLoadingLayout || !Database.isReady()) && !Database.isReady())
+        if (isLoadingLayout = !Database.isReady()) //(isLoadingLayout || !Database.isReady()) && !Database.isReady())
             setContentView(R.layout.loading_screen);
         else
             setContentView(R.layout.activity_main);

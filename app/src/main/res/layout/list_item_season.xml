@@ -22,6 +22,25 @@
         android:layout_marginRight="12dp"
         tools:text="1" />
 
+    <com.maxMustermannGeheim.linkcollection.Utilities.MinDimensionLayout
+        android:id="@+id/listItem_season_image_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="10dp"
+        app:minMode="matchMax"
+        app:minDimension="30dp">
+
+        <ImageView
+            android:id="@+id/listItem_season_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:adjustViewBounds="true"
+            android:maxHeight="40dp"
+            android:maxWidth="40dp"
+            app:srcCompat="@drawable/ic_download"
+            tools:srcCompat="@drawable/simpsons_movie_poster"/>
+    </com.maxMustermannGeheim.linkcollection.Utilities.MinDimensionLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

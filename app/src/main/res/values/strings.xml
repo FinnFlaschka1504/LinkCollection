@@ -73,4 +73,9 @@
         <item>_Monate</item>
         <item>_Jahre</item>
     </string-array>
+
+    <string-array name="videoClickMode">
+        <item>Details</item>
+        <item>Internet</item>
+    </string-array>
 </resources>

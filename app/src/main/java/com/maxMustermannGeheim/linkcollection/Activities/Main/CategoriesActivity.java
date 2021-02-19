@@ -451,6 +451,8 @@ public class CategoriesActivity extends AppCompatActivity {
                                         .show();
                             }, false)
                             .transformPreviousButtonToImageButton()
+                            .enableDynamicWrapHeight(this)
+                            .enableAutoUpdateDynamicWrapHeight()
                             .addOptionalModifications(customDialog1 -> {
                                 if (parentClass instanceof ParentClass_Tmdb) {
                                     customDialog1

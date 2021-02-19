@@ -126,6 +126,7 @@ public class Settings extends AppCompatActivity {
     public static final String SETTING_VIDEO_SHOW_COLLECTIONS = "SETTING_VIDEO_SHOW_COLLECTIONS";
     public static final String SETTING_VIDEO_SHOW_IMAGES = "SETTING_VIDEO_SHOW_IMAGES";
     public static final String SETTING_VIDEO_SCROLL = "SETTING_VIDEO_SCROLL";
+    public static final String SETTING_VIDEO_CLICK_MODE = "SETTING_VIDEO_CLICK_MODE";
 
     public static final String SETTING_SHOW_EPISODE_PREVIEW = "SETTING_SHOW_EPISODE_PREVIEW";
 
@@ -193,6 +194,7 @@ public class Settings extends AppCompatActivity {
         settingsMap.put(SETTING_VIDEO_SHOW_COLLECTIONS, "true");
         settingsMap.put(SETTING_VIDEO_SHOW_IMAGES, "true");
         settingsMap.put(SETTING_VIDEO_SCROLL, "true");
+        settingsMap.put(SETTING_VIDEO_CLICK_MODE, "0");
         settingsMap.put(SETTING_SHOW_EPISODE_PREVIEW, "1");
     }
 
@@ -215,6 +217,10 @@ public class Settings extends AppCompatActivity {
 
     public static Boolean getSingleSetting_boolean(Context context, String key) {
         return Boolean.parseBoolean(getSingleSetting(context, key));
+    }
+
+    public static int getSingleSetting_int(Context context, String key) {
+        return Integer.parseInt(getSingleSetting(context, key));
     }
 
     private static void saveSettings() {
@@ -255,6 +261,7 @@ public class Settings extends AppCompatActivity {
 
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_overview_images)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_IMAGES));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_overview_scroll)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SCROLL));
+                    ((Spinner) view.findViewById(R.id.dialogSettingsVideo_clickMode)).setSelection(getSingleSetting_int(context, SETTING_VIDEO_CLICK_MODE));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showRelease)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_RELEASE));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showAgeRating)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_AGE_RATING));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showLength)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_LENGTH));
@@ -334,6 +341,7 @@ public class Settings extends AppCompatActivity {
                     public void runOnClick(CustomDialog customDialog, Space space) {
                         changeSetting(SETTING_VIDEO_SHOW_IMAGES, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_overview_images)).isChecked()));
                         changeSetting(SETTING_VIDEO_SCROLL, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_overview_scroll)).isChecked()));
+                        changeSetting(SETTING_VIDEO_CLICK_MODE, String.valueOf(((Spinner) customDialog.findViewById(R.id.dialogSettingsVideo_clickMode)).getSelectedItemPosition()));
                         changeSetting(SETTING_VIDEO_SHOW_RELEASE, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_showRelease)).isChecked()));
                         changeSetting(SETTING_VIDEO_SHOW_AGE_RATING, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_showAgeRating)).isChecked()));
                         changeSetting(SETTING_VIDEO_SHOW_LENGTH, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_showLength)).isChecked()));

@@ -252,7 +252,7 @@
         </LinearLayout>
 
         <ImageView
-            android:id="@+id/listItem_video_details"
+            android:id="@+id/listItem_video_internetOrDetails"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
@@ -260,7 +260,7 @@
             android:clickable="true"
             android:foreground="@drawable/ripple"
             android:padding="5dp"
-            app:srcCompat="@drawable/ic_info" />
+            app:srcCompat="@drawable/ic_internet" />
 
     </LinearLayout>
 </LinearLayout>

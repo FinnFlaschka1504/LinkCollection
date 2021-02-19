@@ -42,7 +42,6 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -300,7 +299,7 @@ public class Utility {
 
     public static void openUrl(Context context, String url, boolean select) {
         if (!url.contains("http://") && !url.contains("https://"))
-            url = "http://".concat(url);
+            url = "https://".concat(url);
         if (!select) {
             Intent i = new Intent(Intent.ACTION_VIEW);
             i.setData(Uri.parse(url));
@@ -834,7 +833,7 @@ public class Utility {
         CustomRecycler customRecycler = new CustomRecycler<>(context, layout.findViewById(R.id.fragmentCalender_videoList))
                 .setItemLayout(R.layout.list_item_video)
                 .setSetItemContent((customRecycler1, itemView, object) -> {
-                    itemView.findViewById(R.id.listItem_video_details).setVisibility(View.GONE);
+                    itemView.findViewById(R.id.listItem_video_internetOrDetails).setVisibility(View.GONE);
                     itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.GONE);
 
                     Video video = ((Video) ((Event) object).getData());
@@ -1429,6 +1428,8 @@ public class Utility {
                             .addButton(R.drawable.ic_add, customDialog -> {
                                 CustomDialog.Builder(context)
                                         .setTitle(editType_string + " Hinzufügen")
+                                        .enableDynamicWrapHeight((AppCompatActivity) context)
+                                        .enableAutoUpdateDynamicWrapHeight()
                                         .addOptionalModifications(customDialog1 -> {
                                             if (newParentClass instanceof ParentClass_Tmdb) {
                                                 customDialog1
@@ -1481,9 +1482,6 @@ public class Utility {
                                             showEditItemDialog(context, addOrEditDialog, selectedUuidList, o, category);
                                             Database.saveAll();
                                         })
-//                                        .setEdit(new CustomDialog.EditBuilder()
-//                                                .setHint(editType_string + "-Name")
-//                                                .setText(((SearchView) customDialog.findViewById(R.id.dialogEditCategory_search)).getQuery().toString()))
                                         .setView(R.layout.dialog_edit_tmdb_category)
                                         .setSetViewContent((customDialog1, view1, reload) -> {
 

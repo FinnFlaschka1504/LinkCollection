@@ -31,6 +31,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.SeekBar;
@@ -53,6 +54,7 @@ import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
@@ -1168,13 +1170,15 @@ public class VideoActivity extends AppCompatActivity {
                     TextInputLayout dialog_editOrAddVideo_Url_layout = view.findViewById(R.id.dialog_editOrAddVideo_url_layout);
 
 
-                    ImageView thumbnailButton = view.findViewById(R.id.dialog_editOrAddVideo_thumbnail);
+                    ImageView thumbnailButton = view.findViewById(R.id.dialog_editOrAddVideo_thumbnail_button);
                     thumbnailButton.setOnClickListener(v -> {
                         int showButtonId = View.generateViewId();
 //                        ImageView imageView = new ImageView(this);
 //                        Utility.setDimensions(imageView, true, false);
 //                        imageView.setAdjustViewBounds(true);
 //                        imageView.setPadding(Utility.dpToPx(16), Utility.dpToPx(16), Utility.dpToPx(16), Utility.dpToPx(16));
+                        CustomList<String> resultList = new CustomList<>();
+                        String[] currentResult = {null};
 
                         CustomDialog.Builder(this)
                                 .setTitle("Thumbnail-URL Bearbeiten")
@@ -1186,6 +1190,23 @@ public class VideoActivity extends AppCompatActivity {
                                 .setSetViewContent((customDialog1, view1, reload1) -> {
                                     TextInputLayout inputLayout = view1.findViewById(R.id.dialog_editThumbnail_url_layout);
                                     EditText editText = inputLayout.getEditText();
+                                    Utility.removeTextListeners(editText);
+
+                                    LinearLayout selectLayout = view1.findViewById(R.id.dialog_editThumbnail_select_layout);
+                                    selectLayout.setVisibility(resultList.size() < 2 ? View.GONE : View.VISIBLE);
+                                    ImageView selectPrevious = view1.findViewById(R.id.dialog_editThumbnail_select_previous);
+                                    ImageView selectNext = view1.findViewById(R.id.dialog_editThumbnail_select_next);
+                                    selectPrevious.setOnClickListener(v1 -> {
+                                        currentResult[0] = resultList.previous(currentResult[0]);
+                                        customDialog1.reloadView();
+                                    });
+                                    selectNext.setOnClickListener(v1 -> {
+                                        currentResult[0] = resultList.next(currentResult[0]);
+                                        customDialog1.reloadView();
+                                    });
+
+                                    if (CustomUtility.stringExists(currentResult[0]))
+                                        editText.setText(currentResult[0]);
 
                                     editText.addTextChangedListener(new TextWatcher() {
                                         String previous;
@@ -1197,31 +1218,38 @@ public class VideoActivity extends AppCompatActivity {
 
                                         @Override
                                         public void onTextChanged(CharSequence s, int start, int before, int count) {
-                                            String BREAKPOINT = null;
-
                                         }
 
                                         @Override
                                         public void afterTextChanged(Editable s) {
                                             String now = s.toString();
-                                            if (!previous.contains("google") && now.contains("google") && CustomUtility.isUrl(now)) {
+                                            if (!previous.contains(".google.") && now.contains(".google.") && CustomUtility.isUrl(now)) {
                                                 new Helpers.WebViewHelper(VideoActivity.this, now)
 //                                                        .setDebug(true)
                                                         .enableLoadImages()
+                                                        .setMobileVersion(true)
+                                                        .setUserAgent("Mozilla/5.0 (Linux; Android 11; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.181 Mobile Safari/537.36")
                                                         .addRequest("{\n" +
                                                                 "    let images = document.getElementsByClassName(\"n3VNCb\")\n" +
-                                                                "   \n" +
+                                                                "    let results = []\n" +
                                                                 "    for (let image of images) {\n" +
                                                                 "        let result = image.getAttribute(\"src\")\n" +
-                                                                "        if (!result.includes(\"data\"))\n" +
-                                                                "            return result\n" +
-                                                                "    }\n" +
+                                                                "        if (result && !result.includes(\"data\"))\n" +
+                                                                "            results.push(result);\n" +
+                                                                "    };\n" +
+                                                                "    if (results.length)\n" +
+                                                                "        return results\n" +
+                                                                "    else\n" +
+                                                                "        return undefined\n" +
                                                                 "}", result -> {
-                                                            if (result.startsWith("null")) {
+                                                            resultList.clear();
+                                                            if (!result.startsWith("null"))
+                                                                resultList.addAll(new Gson().fromJson(result, CustomList.class));
+                                                            if (resultList.isEmpty()) {
                                                                 Utility.openUrl(VideoActivity.this, now, true);
                                                             } else {
-                                                                editText.setText(result);
-                                                                customDialog1.getButton(showButtonId).getButton().callOnClick();
+                                                                editText.setText(currentResult[0] = resultList.get(0));
+                                                                customDialog1.getButton(showButtonId).click();
                                                             }
                                                         })
                                                         .go();
@@ -1258,6 +1286,7 @@ public class VideoActivity extends AppCompatActivity {
 
                                     if (Utility.stringExists(url)) {
                                         imageView.setVisibility(View.VISIBLE);
+                                        Utility.setMargins(imageView, 16, resultList.size() < 2 ? 16 : 8, 16, 16);
                                         Utility.loadUrlIntoImageView(this, imageView, Utility.getTmdbImagePath_ifNecessary(url, true), null);
                                     } else
                                         imageView.setVisibility(View.GONE);
@@ -1730,7 +1759,7 @@ public class VideoActivity extends AppCompatActivity {
             view.setAlpha(stringExists ? 1f : 0.4f);
         });
         if (stringExists)
-            Utility.loadUrlIntoImageView(this, thumbnail, Utility.getTmdbImagePath_ifNecessary(path, false), null);
+            Utility.loadUrlIntoImageView(this, thumbnail, Utility.getTmdbImagePath_ifNecessary(path, false), null, null, () -> Utility.roundImageView(thumbnail, 3));
     }
 
     private void saveVideo(CustomDialog dialog, Video video, String titel, String url, boolean checked, Video editVideo) {

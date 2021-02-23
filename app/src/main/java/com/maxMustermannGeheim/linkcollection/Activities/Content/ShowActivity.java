@@ -1708,11 +1708,12 @@ public class ShowActivity extends AppCompatActivity {
                                 .addOptionalModifications(customDialog1 -> {
                                     if (Utility.stringExists(episode.getImdbId()))
                                         customDialog1
-                                                .addButton("Löschen", customDialog2 -> {
+                                                .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog2 -> {
                                                     episode.setImdbId(null);
                                                     Toast.makeText(this, "IMDB-ID gelöscht", Toast.LENGTH_SHORT).show();
                                                     Database.saveAll();
                                                 })
+                                                .transformPreviousButtonToImageButton()
                                                 .alignPreviousButtonsLeft();
 
                                 })

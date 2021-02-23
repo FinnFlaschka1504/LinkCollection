@@ -1132,10 +1132,13 @@ public class Helpers {
             WebSettings settings = webView.getSettings();
             settings.setJavaScriptEnabled(true);
             if (!mobileVersion) {
-                settings.setUserAgentString(userAgent);
+//                settings.setUserAgentString(userAgent);
                 settings.setUseWideViewPort(true);
                 settings.setLoadWithOverviewMode(true);
             }
+//            if (!userAgent.equals(USER_AGENT))
+                settings.setUserAgentString(userAgent);
+
             settings.setSupportZoom(true);
             settings.setBuiltInZoomControls(true);
             settings.setDisplayZoomControls(false);
@@ -1145,7 +1148,6 @@ public class Helpers {
             settings.setDomStorageEnabled(true);
 
             if (!loadImages) {
-//                settings.setBlockNetworkLoads(true);
                 settings.setLoadsImagesAutomatically(false);
                 settings.setBlockNetworkImage(true);
             }
@@ -1223,7 +1225,7 @@ public class Helpers {
 
         private void evaluateJavaScript(String rawScript, Utility.GenericInterface<String> onParseResult, Runnable onComplete, int tryCount) {
             if (destroyed) return;
-            String script = rawScript;
+            String script = rawScript; // ToDo: scriptTag
             if (script.startsWith("{") && script.endsWith("}")) {
                 script = "(function() " + script + ")();";
 

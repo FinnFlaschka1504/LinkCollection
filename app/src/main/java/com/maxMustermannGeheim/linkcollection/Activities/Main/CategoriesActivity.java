@@ -71,6 +71,7 @@ public class CategoriesActivity extends AppCompatActivity {
     public static final String uuidRegex = "\\b([a-zA-Z]+_)?[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b";
     private Helpers.SortHelper<Pair<ParentClass, Integer>> sortHelper;
     private boolean reverse = false;
+    private Menu toolBarMenu;
 
     enum SORT_TYPE {
         NAME, COUNT, TIME
@@ -417,6 +418,7 @@ public class CategoriesActivity extends AppCompatActivity {
                 .hideDivider()
                 .setOnClickListener((customRecycler, view, parentClassIntegerPair, index) -> {
                     if (!multiSelectMode) {
+                        removeFocusFromSearch();
                         startActivityForResult(new Intent(this, category.getSearchIn())
                                         .putExtra(EXTRA_SEARCH, parentClassIntegerPair.first.getName())
                                         .putExtra(EXTRA_SEARCH_CATEGORY, category),
@@ -621,12 +623,14 @@ public class CategoriesActivity extends AppCompatActivity {
                                     .putExtra(EXTRA_SEARCH_CATEGORY, category),
                             START_CATEGORY_SEARCH);
                 })
+                .colorLastAddedButton()
                 .show();
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.task_bar_catigory, menu);
+        toolBarMenu = menu;
+        getMenuInflater().inflate(R.menu.task_bar_catigory, toolBarMenu);
 
         if (setToolbarTitle != null) setToolbarTitle.run();
         menu.findItem(R.id.taskBar_category_sortByTime).setVisible(category.getSearchIn().equals(VideoActivity.class));
@@ -692,6 +696,8 @@ public class CategoriesActivity extends AppCompatActivity {
             case R.id.taskBar_category_sortByTime:
                 sort_type = SORT_TYPE.TIME;
                 item.setChecked(true);
+                reverse = true;
+                toolBarMenu.findItem(R.id.taskBar_category_sortReverse).setChecked(true);
                 reLoadRecycler();
                 break;
             case R.id.taskBar_category_sortReverse:

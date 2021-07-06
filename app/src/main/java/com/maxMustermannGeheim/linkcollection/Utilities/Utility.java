@@ -560,6 +560,153 @@ public class Utility {
             requestQueue.add(request);
 
     }
+
+    // --------------- WerStreamtEs
+
+    public static void doWerStreamtEsRequest(AppCompatActivity context, String query){
+        new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper(context, "https://www.werstreamt.es/filme-serien/?q=" + query.replaceAll(" ", "+"))
+                .enableLoadImages()
+                .addRequest("{\n" +
+                        "    let results = [...document.querySelectorAll(\".content li:not(.ueJf)\")];\n" +
+                        "    resObjList = [];\n" +
+                        "    for (result of results) {\n" +
+                        "        resObj = {};\n" +
+                        "        resObj[\"id\"] = result.getAttribute(\"data-contentid\");\n" +
+                        "        resObj[\"href\"] = result.querySelector(\"a\").href;\n" +
+                        "        resObj[\"img\"] = result.querySelector(\"img\").src;\n" +
+                        "        resObj[\"name\"] = result.querySelector(\"strong\").innerText;\n" +
+                        "        resObj[\"provider\"] = JSON.parse(result.dataset.avastatus);\n" +
+                        "        resObjList.push(resObj);\n" +
+                        "    };\n" +
+                        "    return resObjList\n" +
+                        "}", s -> {
+                    try {
+                        JSONArray resArr = new JSONArray(s);
+                        List<JSONObject> resList = new ArrayList<>();
+                        for (int i=0; i<resArr.length(); i++) {
+                            try {
+                                resList.add(resArr.getJSONObject(i));
+                            } catch (JSONException ignored) {}
+                        }
+
+                        JSONObject[] currentSelected = {resList.stream().filter(jsonObject -> {
+                            try {
+                                return jsonObject.get("provider") instanceof JSONObject;
+                            } catch (JSONException ignored) {
+                                return false;
+                            }
+                        }).findFirst().orElse(resArr.getJSONObject(0))};
+                        CustomDialog dialog = CustomDialog.Builder(context);
+
+                        Runnable showProviders = () -> {
+                            try {
+                                RecyclerView recycler = dialog.findViewById(R.id.dielog_werStreamtEs_providers);
+                                TextView empty = dialog.findViewById(R.id.dielog_werStreamtEs_empty);
+                                if (currentSelected[0].get("provider") instanceof JSONObject) {
+                                    recycler.setVisibility(View.VISIBLE);
+                                    empty.setVisibility(View.GONE);
+                                    JSONObject provider = currentSelected[0].getJSONObject("provider");
+                                    new com.finn.androidUtilities.CustomRecycler<CharSequence>((AppCompatActivity) context, recycler)
+                                            .enableDivider()
+                                            .setGetActiveObjectList((customRecycler) -> {
+                                                CustomList<Pair<String, Boolean>> list = new CustomList<>();
+                                                Iterator<String> keys = provider.keys();
+                                                while (keys.hasNext()) {
+                                                    String key = keys.next();
+                                                    try {
+                                                        list.add(Pair.create(key, provider.getBoolean(key)));
+                                                    } catch (JSONException ignored) {
+                                                    }
+                                                }
+                                                return list.sorted((o1, o2) -> o1.second.compareTo(o2.second) * -1).map(pair -> {
+                                                    return new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.SpannableStringHelper()
+                                                            .appendBold(getStreamingProviderById(Integer.parseInt(pair.first)))
+                                                            .append("   ")
+                                                            .appendColor(pair.second ? "Verfügbar" : "Nicht Verfügbar", pair.second ? context.getColor(R.color.colorGreen) : Color.RED)
+                                                            .get();
+                                                });
+                                            })
+                                            .generate();
+                                } else {
+                                    empty.setVisibility(View.VISIBLE);
+                                    recycler.setVisibility(View.GONE);
+                                }
+                            } catch (JSONException ignored) {
+                            }
+                        };
+
+                        dialog
+                                .setTitle("WerStreamt.es")
+                                .disableScroll()
+                                .setView(R.layout.dialog_wer_streamt_es)
+                                .setSetViewContent((customDialog2, view1, reload1) -> {
+                                    new com.finn.androidUtilities.CustomRecycler<JSONObject>(context, customDialog2.findViewById(R.id.dielog_werStreamtEs_results))
+                                            .setObjectList(resList)
+                                            .setOrientation(com.finn.androidUtilities.CustomRecycler.ORIENTATION.HORIZONTAL)
+                                            .setItemLayout(R.layout.list_item_wer_streamt_es_results)
+                                            .setSetItemContent((customRecycler, itemView, jsonObject) -> {
+                                                try {
+                                                    String img = jsonObject.getString("img");
+                                                    CustomUtility.loadUrlIntoImageView(context, itemView.findViewById(R.id.listItem_werStreamtEs_results_image), img, img);
+                                                    TextView nameTextView = itemView.findViewById(R.id.listItem_werStreamtEs_results_name);
+                                                    if (currentSelected[0] == jsonObject)
+                                                        nameTextView.setText(new com.finn.androidUtilities.Helpers.SpannableStringHelper().appendUnderlined(jsonObject.getString("name")).get());
+                                                    else
+                                                        nameTextView.setText(jsonObject.getString("name"));
+                                                } catch (JSONException ignored) {}
+                                            })
+                                            .setOnClickListener((customRecycler, itemView, jsonObject, index) -> {
+                                                currentSelected[0] = jsonObject;
+                                                customRecycler.reload();
+                                                showProviders.run();
+                                            })
+                                            .generate();
+                                })
+                                .setDimensionsFullscreen()
+                                .addButton(R.drawable.ic_open_in_new, customDialog2 -> {
+                                    try {
+                                        Utility.openUrl(context, "https://www.werstreamt.es/film/details/" + currentSelected[0].getString("id"), true);
+                                    } catch (JSONException e) {
+                                        Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show();
+                                    }
+                                }, false)
+                                .show();
+                        showProviders.run();
+
+                    } catch (JSONException e) {
+                        Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show();
+                    }
+                })
+//                                                .setDebug(true)
+                .go();
+    }
+
+    private static String getStreamingProviderById(int id) {
+        HashMap<Integer, String> map = new HashMap<>();
+        map.put(1, "iTunes");
+        map.put(3, "maxdome");
+        map.put(4, "Google Play");
+        map.put(10, "Amazon");
+        map.put(11, "Netflix");
+        map.put(12, "Sky Go");
+        map.put(13, "Microsoft");
+        map.put(14, "VIDEOBUSTER");
+        map.put(15, "videociety");
+        map.put(16, "Sony");
+        map.put(18, "Sky Ticket");
+        map.put(20, "Rakuten TV");
+        map.put(23, "CHILI");
+        map.put(30, "Sky Store");
+        map.put(31, "Pantaflix");
+        map.put(33, "Anime On Demand");
+        map.put(34, "MagentaTV");
+        map.put(35, "freenet Video");
+        map.put(42, "Disney+");
+        map.put(44, "Cineplex Home");
+        map.put(52, "Animax Plus");
+
+        return CustomUtility.stringExistsOrElse(map.get(id), String.valueOf(id));
+    }
     //  <------------------------- Api -------------------------
 
 
@@ -1572,32 +1719,33 @@ public class Utility {
 
         CustomRecycler<ParentClass> customRecycler_selectList = new CustomRecycler<>(context, dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_selectCategories));
 
-        CustomRecycler customRecycler_selectedList = new CustomRecycler<String>(context, dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_selectedCategories))
+        com.finn.androidUtilities.CustomRecycler<String> customRecycler_selectedList = new com.finn.androidUtilities.CustomRecycler<String>((AppCompatActivity) context, dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_selectedCategories))
                 .setItemLayout(R.layout.list_item_bubble)
                 .setObjectList(selectedUuidList)
-                .hideDivider()
+                .enableDragAndDrop((customRecycler, objectList) -> {})
                 .setSetItemContent((customRecycler, itemView, uuid) -> {
                     ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(getObjectFromDatabase(category, uuid).getName());
                     dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.GONE);
                 })
-                .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
+                .setOrientation(com.finn.androidUtilities.CustomRecycler.ORIENTATION.HORIZONTAL)
                 .setOnClickListener((customRecycler, view, object, index) -> {
                     Toast.makeText(context,
                             "Halten zum abwählen", Toast.LENGTH_SHORT).show();
                 })
-                .setOnLongClickListener((customRecycler, view, object, index) -> {
-                    ((CustomRecycler.MyAdapter) customRecycler.getRecycler().getAdapter()).removeItemAt(index);
-                    selectedUuidList.remove(object);
-
-                    if (selectedUuidList.size() <= 0) {
-                        dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.VISIBLE);
-                    } else {
-                        dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.GONE);
-                    }
-                    dialog_AddActorOrGenre.findViewById(saveButtonId).setEnabled(true);
-
-                    customRecycler_selectList.reload();
-                })
+                .enableSwiping((objectList, direction, s) -> {}, true, true)
+//                .setOnLongClickListener((customRecycler, view, object, index) -> {
+//                    ((CustomRecycler.MyAdapter) customRecycler.getRecycler().getAdapter()).removeItemAt(index);
+//                    selectedUuidList.remove(object);
+//
+//                    if (selectedUuidList.size() <= 0) {
+//                        dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.VISIBLE);
+//                    } else {
+//                        dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.GONE);
+//                    }
+//                    dialog_AddActorOrGenre.findViewById(saveButtonId).setEnabled(true);
+//
+//                    customRecycler_selectList.reload();
+//                })
                 .generate();
 
 
@@ -1827,6 +1975,10 @@ public class Utility {
         final String[] duration = {""};
         //  <------------------------- Watched -------------------------
 
+        //  ------------------------- Length ------------------------->
+        final Integer[] minLength = {null};
+        final Integer[] maxLength = {null};
+        //  <------------------------- Length -------------------------
 
         AdvancedQueryHelper advancedQueryHelper = AdvancedQueryHelper.getAdvancedQuery(searchView.getQuery().toString());
         if (advancedQueryHelper.hasAdvancedSearch()) {
@@ -1857,6 +2009,14 @@ public class Utility {
                     pivot[0] = split[0];
                     duration[0] = split[1];
                 }
+            }
+
+            // ---------------
+
+            if (advancedQueryHelper.hasLengthSub()) {
+                Pair<Integer, Integer> lengthMinMax = advancedQueryHelper.getLengthMinMax();
+                minLength[0] = lengthMinMax.first;
+                maxLength[0] = lengthMinMax.second;
             }
         }
 
@@ -2099,6 +2259,17 @@ public class Utility {
                     since_unit.setOnItemSelectedListener(spinnerListener);
                     duration_unit.setOnItemSelectedListener(spinnerListener);
                     //  <------------------------- Duration -------------------------
+
+                    //  ------------------------- Length ------------------------->
+                    TextInputEditText minLength_edit = customDialog.findViewById(R.id.dialog_advancedSearch_length_min_edit);
+                    TextInputEditText maxLength_edit = customDialog.findViewById(R.id.dialog_advancedSearch_length_max_edit);
+
+                    if (minLength[0] != null) {
+                        minLength_edit.setText(String.valueOf(minLength[0]));
+                        maxLength_edit.setText(String.valueOf(maxLength[0]));
+                    }
+
+                    //  <------------------------- Length -------------------------
                     /**/
                     // --------------- Chart
 
@@ -2271,6 +2442,14 @@ public class Utility {
                     }
                     //  <------------------------- DateRange -------------------------
 
+                    //  ------------------------- Length ------------------------->
+                    String  minLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_length_min_edit)).getText().toString();
+                    String maxLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_length_max_edit)).getText().toString();
+
+                    if (CustomUtility.stringExists(minLength_str))
+                        filter.add(String.format(Locale.getDefault(), "l:%d-%d", Integer.parseInt(minLength_str), Integer.parseInt(CustomUtility.stringExistsOrElse(maxLength_str, minLength_str))));
+                    //  <------------------------- Length -------------------------
+
                     String newQuery = Utility.isNotValueReturnOrElse(removedQuery, "", s -> s + " ", null);
                     newQuery += filter.isEmpty() ? "" : String.format("{%s}", String.join(" ", filter));
                     searchView.setQuery(newQuery, false);
@@ -2287,9 +2466,10 @@ public class Utility {
         public static final Pattern ratingPattern = Pattern.compile("(?<=r: ?)(([0-4]((.|,)\\d{1,2})?)|5((.|,)00?)?)(-(([0-4]((\\4|\\6)(?<=[,.])\\d{1,2})?)|5((\\4|\\6)(?<=[,.])00?)?))?(?=\\s*(\\}|\\w:))");
         public static final Pattern datePattern = Pattern.compile("(?<=d: ?)(\\d{1,2}\\.\\d{1,2}\\.(\\d{4}|\\d{2}))(-\\d{1,2}\\.\\d{1,2}\\.(\\d{4}|\\d{2}))?(?=\\s*(\\}|\\w:))");
         public static final Pattern durationPattern = Pattern.compile("(?<=d: ?)((-?\\d+[dmy])|(-?\\d+[dmy]|_(-?\\d+)?[my])(;-?\\d+[dmy]))(?=\\s*(\\}|\\w:))");
+        public static final Pattern lengthPattern = Pattern.compile("(?<=l: ?)\\d+(-\\d+)?(?=\\s*(\\}|\\w:))");
 //        public static final Pattern durationModePattern = Pattern.compile("(?<=\\d[dmy])[ba]");
 
-        public String advancedQuery, restQuery, fullQuery, ratingSub, dateSub, durationSub;
+        public String advancedQuery, restQuery, fullQuery, ratingSub, dateSub, durationSub, lengthSub;
 
         public Pair<Date, Date> datePair;
 
@@ -2325,6 +2505,12 @@ public class Utility {
                         }
                     }
                 }
+                if (advancedQueryHelper.advancedQuery.contains("l:")) {
+                    Matcher dateMatcher = lengthPattern.matcher(advancedQueryHelper.advancedQuery);
+                    if (dateMatcher.find()) {
+                        advancedQueryHelper.lengthSub = dateMatcher.group(0);
+                    }
+                }
             }
 
 
@@ -2340,7 +2526,7 @@ public class Utility {
         }
 
         public boolean hasAnyAdvancedQuery() {
-            return hasDateSub() || hasRatingSub() || hasDurationSub();
+            return hasDateSub() || hasRatingSub() || hasDurationSub() || hasLengthSub();
         }
 
         public boolean hasRatingSub() {
@@ -2358,7 +2544,11 @@ public class Utility {
         public boolean hasDateOrDurationSub() {
             return hasDateSub() || hasDurationSub();
         }
-        //  <------------------------- Checks -------------------------
+
+        public boolean hasLengthSub() {
+            return lengthSub != null;
+        }
+//  <------------------------- Checks -------------------------
 
 
         //  ------------------------- Convenience ------------------------->
@@ -2396,7 +2586,7 @@ public class Utility {
             } catch (ParseException ignored) {
             }
 
-            return datePair = Pair.create(min, max);
+            return datePair = Pair.create(min, CustomUtility.isNotNullOrElse(max, min));
         }
 
         public Pair<Date, Date> getDurationMinMax() {
@@ -2465,6 +2655,13 @@ public class Utility {
                 return getDurationMinMax();
         }
 
+        public Pair<Integer, Integer> getLengthMinMax() {
+            String[] range = lengthSub.split("-");
+            int min = Integer.parseInt(range[0]);
+            int max = Integer.parseInt(range.length > 1 ? range[1] : range[0]);
+
+            return Pair.create(min,max);
+        }
 
         public static String removeAdvancedSearch(CharSequence fullQuery) {
             return fullQuery.toString().replaceAll(AdvancedQueryHelper.advancedSearchPattern.pattern(), "").trim();
@@ -3059,7 +3256,7 @@ public class Utility {
 ////            context.getContentResolver().takePersistableUriPermission(uri, (Intent.FLAG_GRANT_READ_URI_PERMISSION| Intent.FLAG_GRANT_WRITE_URI_PERMISSION));
 //            imageView.setImageURI(uri);
 //        } else {
-        if (imagePath.endsWith(".svg")) {
+        if (imagePath.endsWith(".svg") && !imagePath.contains("base64")) {
             Utility.fetchSvg(context, imagePath, imageView, onFail_onSuccess_onFullscreen);
         } else {
             Glide

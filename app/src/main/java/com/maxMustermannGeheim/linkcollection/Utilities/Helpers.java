@@ -1084,7 +1084,7 @@ public class Helpers {
 
     //  ------------------------- WebViewHelper ------------------------->
     public static class WebViewHelper {
-        public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36";
+        public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36";
 
         private String userAgent = USER_AGENT;
         private boolean debug;

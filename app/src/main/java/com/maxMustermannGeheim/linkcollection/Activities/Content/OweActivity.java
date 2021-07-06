@@ -308,6 +308,18 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
     private List<Owe> filterList(ArrayList<Owe> allOweList) {
         CustomList<Owe> customList = new CustomList<>(allOweList);
 
+        customList.filter(owe -> {
+            if (owe.isOpen() && !filterTypeSet.contains(FILTER_TYPE.OPEN))
+                return false;
+            else if (!owe.isOpen() && !filterTypeSet.contains(FILTER_TYPE.CLOSED))
+                return false;
+            else if (owe.getOwnOrOther() == Owe.OWN_OR_OTHER.OWN && !filterTypeSet.contains(FILTER_TYPE.OWN))
+                return false;
+            else if (owe.getOwnOrOther() == Owe.OWN_OR_OTHER.OTHER && !filterTypeSet.contains(FILTER_TYPE.OTHER))
+                return false;
+            return true;
+        }, true);
+
         if (!searchQuery.isEmpty()) {
             if (searchQuery.contains("|"))
                 customList.filterOr(searchQuery.split("\\|"), (owe, s) -> Utility.containedInOwe(s.trim(), owe, filterTypeSet), true);

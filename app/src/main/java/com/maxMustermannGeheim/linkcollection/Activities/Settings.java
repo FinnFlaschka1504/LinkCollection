@@ -1,8 +1,6 @@
 package com.maxMustermannGeheim.linkcollection.Activities;
 
 import android.content.ActivityNotFoundException;
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -81,7 +79,6 @@ import com.maxMustermannGeheim.linkcollection.Utilities.VersionControl;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -121,7 +118,7 @@ public class Settings extends AppCompatActivity {
     public static final String SETTING_VIDEO_SHOW_LENGTH = "SETTING_VIDEO_SHOW_LENGTH";
     public static final String SETTING_VIDEO_AUTO_SEARCH = "SETTING_VIDEO_AUTO_SEARCH";
     public static final String SETTING_VIDEO_LOAD_CAST_AND_STUDIOS = "SETTING_VIDEO_LOAD_CAST_AND_STUDIOS";
-    public static final String SETTING_VIDEO_TMDB_SHORTCUT = "SETTING_VIDEO_TMDB_SHORTCUT";
+    public static final String SETTING_VIDEO_WEB_SHORTCUT = "SETTING_VIDEO_WEB_SHORTCUT";
     public static final String SETTING_VIDEO_SHOW_SEARCH = "SETTING_VIDEO_SHOW_SEARCH";
     public static final String SETTING_VIDEO_SHOW_COLLECTIONS = "SETTING_VIDEO_SHOW_COLLECTIONS";
     public static final String SETTING_VIDEO_SHOW_IMAGES = "SETTING_VIDEO_SHOW_IMAGES";
@@ -183,7 +180,7 @@ public class Settings extends AppCompatActivity {
         settingsMap.put(SETTING_VIDEO_SHOW_AGE_RATING, "true");
         settingsMap.put(SETTING_VIDEO_SHOW_LENGTH, "true");
         settingsMap.put(SETTING_VIDEO_AUTO_SEARCH, "true");
-        settingsMap.put(SETTING_VIDEO_TMDB_SHORTCUT, "true");
+        settingsMap.put(SETTING_VIDEO_WEB_SHORTCUT, "true");
         settingsMap.put(SETTING_SPACE_ENCRYPTION_PASSWORD, SETTING_SPACE_ENCRYPTION_DEFAULT_PASSWORD);
         settingsMap.put(LAST_VERSION, "1.0");
         settingsMap.put(UPDATE_FILE_NAME, "");
@@ -266,7 +263,7 @@ public class Settings extends AppCompatActivity {
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showAgeRating)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_AGE_RATING));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_showLength)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_LENGTH));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_autoSearch)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_AUTO_SEARCH));
-                    ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_tmdbShortcut)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_TMDB_SHORTCUT));
+                    ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_tmdbShortcut)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_WEB_SHORTCUT));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_loadCastAndStudios)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_LOAD_CAST_AND_STUDIOS));
                     ((Spinner) view.findViewById(R.id.dialogSettingsVideo_more_showSearch)).setSelection(Integer.parseInt(getSingleSetting(context, SETTING_VIDEO_SHOW_SEARCH)));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_more_showCollections)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_COLLECTIONS));
@@ -346,7 +343,7 @@ public class Settings extends AppCompatActivity {
                         changeSetting(SETTING_VIDEO_SHOW_AGE_RATING, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_showAgeRating)).isChecked()));
                         changeSetting(SETTING_VIDEO_SHOW_LENGTH, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_showLength)).isChecked()));
                         changeSetting(SETTING_VIDEO_AUTO_SEARCH, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_autoSearch)).isChecked()));
-                        changeSetting(SETTING_VIDEO_TMDB_SHORTCUT, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_tmdbShortcut)).isChecked()));
+                        changeSetting(SETTING_VIDEO_WEB_SHORTCUT, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_tmdbShortcut)).isChecked()));
                         changeSetting(SETTING_VIDEO_LOAD_CAST_AND_STUDIOS, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_loadCastAndStudios)).isChecked()));
                         changeSetting(SETTING_VIDEO_SHOW_SEARCH, String.valueOf(((Spinner) customDialog.findViewById(R.id.dialogSettingsVideo_more_showSearch)).getSelectedItemPosition()));
                         changeSetting(SETTING_VIDEO_SHOW_COLLECTIONS, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_more_showCollections)).isChecked()));
@@ -746,11 +743,11 @@ public class Settings extends AppCompatActivity {
 
 
         settings_others_activeSpaces.setText(
-                allSpaces.stream().filter(Space::isShown).map(ParentClass::getName).collect(Collectors.joining(", ")));
+                allSpaces.stream().filter(Space::isShown).map(Space::getPlural).collect(Collectors.joining(", ")));
 
 
         settings_others_encryptedSpaces.setText(
-                allSpaces.stream().filter(Space::isEncrypted).map(ParentClass::getName).collect(Collectors.joining(", ")));
+                allSpaces.stream().filter(Space::isEncrypted).map(Space::getPlural).collect(Collectors.joining(", ")));
 
 
         settings_others_version.setText(VersionControl.getVersion(this));

@@ -40,6 +40,10 @@
         <item name="android:textColor">@color/clickable_text_color</item>
     </style>
 
+    <style name="TextButtonStyle.Normal">
+        <item name="android:textColor">@color/clickable_text_color_normal</item>
+    </style>
+
     <style name="DialogActivityTheme" parent="Theme.AppCompat.DayNight.Dialog.MinWidth">
         <item name="windowNoTitle">true</item>
         <item name="colorAccent">@color/colorAccent</item>

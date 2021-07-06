@@ -22,11 +22,10 @@
 
             <TextView
                 android:id="@+id/dialog_editOrAddVideo_title_label"
-                style="@style/TextButtonStyle"
+                style="@style/TextButtonStyle.Normal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="8dp"
-                android:enabled="false"
                 android:text="Titel:"
                 android:textStyle="bold" />
 
@@ -190,6 +189,8 @@
             android:orientation="horizontal">
 
             <TextView
+                android:id="@+id/dialog_editOrAddVideo_url_label"
+                style="@style/TextButtonStyle.Normal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="8dp"

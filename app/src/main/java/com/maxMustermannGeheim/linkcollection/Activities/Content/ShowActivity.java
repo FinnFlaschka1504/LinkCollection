@@ -1007,7 +1007,9 @@ public class ShowActivity extends AppCompatActivity {
                             CustomDialog.Builder(this)
                                     .setTitle("Öffnen mit...")
                                     .addButton("TMDb", customDialog1 -> Utility.openUrl(this, "https://www.themoviedb.org/tv/" + show.getTmdbId(), true))
+                                    .addButton("WerStreamt.es", customDialog1 -> Utility.doWerStreamtEsRequest(this, show.getName()))
                                     .addButton("IMDB", customDialog1 -> Utility.openUrl(this, "https://www.imdb.com/title/" + show.getImdbId(), true))
+                                    .disableButtonAllCaps()
                                     .enableExpandButtons()
                                     .show();
                     });
@@ -1622,19 +1624,20 @@ public class ShowActivity extends AppCompatActivity {
                         CustomDialog.Builder(this)
                                 .setTitle("Altersfreigabe " + (Utility.stringExists(episode.getAgeRating()) ? "Ändern" : "Hinzufügen"))
                                 .setEdit(new CustomDialog.EditBuilder()
-                                        .setInputType(com.finn.androidUtilities.Helpers.TextInputHelper.INPUT_TYPE.NUMBER)
+                                        .setInputType(com.finn.androidUtilities.Helpers.TextInputHelper.INPUT_TYPE.CAPS_LOCK)
                                         .setHint("Altersfreigabe")
                                         .setText(Utility.stringExistsOrElse(episode.getAgeRating(), ""))
-                                        .setRegEx("\\d{1,2}"))
+                                        .setRegEx("^\\d{1,2}$|^TV-(Y|G|Y7|PG|14|MA)$"))
                                 .addOptionalModifications(customDialog1 -> {
                                     if (Utility.stringExists(episode.getAgeRating()))
                                         customDialog1
-                                                .addButton("Löschen", customDialog2 -> {
+                                                .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog2 -> {
                                                     episode.setAgeRating(null);
                                                     Toast.makeText(this, "Altersfreigabe gelöscht", Toast.LENGTH_SHORT).show();
                                                     Database.saveAll();
                                                     customDialog.reloadView();
                                                 })
+                                                .transformPreviousButtonToImageButton()
                                                 .alignPreviousButtonsLeft();
                                 })
                                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
@@ -1661,12 +1664,13 @@ public class ShowActivity extends AppCompatActivity {
                                 .addOptionalModifications(customDialog1 -> {
                                     if (episode.getLength() != -1)
                                         customDialog1
-                                                .addButton("Löschen", customDialog2 -> {
+                                                .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog2 -> {
                                                     episode.setLength(-1);
                                                     Toast.makeText(this, "Länge gelöscht", Toast.LENGTH_SHORT).show();
                                                     Database.saveAll();
                                                     customDialog.reloadView();
                                                 })
+                                                .transformPreviousButtonToImageButton()
                                                 .alignPreviousButtonsLeft();
                                 })
                                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
@@ -2230,7 +2234,7 @@ public class ShowActivity extends AppCompatActivity {
                 applyEpisodeMap(season.getEpisodeMap(), episodeMap);
                 season._getImdbIdBuffer_List().forEachCount((s, count) -> {
                     Show.Episode episode = episodeMap.get("E:" + (count + 1));
-                    if (!Utility.stringExists(episode.getImdbId()))
+                    if (episode != null && !Utility.stringExists(episode.getImdbId()))
                         episode.setImdbId(s);
                 });
 
@@ -2292,11 +2296,10 @@ public class ShowActivity extends AppCompatActivity {
         String[] urls = episodeList.map(episode -> "https://www.imdb.com/title/" + episode.getImdbId()).toArray(new String[0]);
         final int[] counter = {0};
         List<String> resultList = new ArrayList<>();
-        CustomDialog resultDialog = CustomDialog.Builder(this);
         Helpers.WebViewHelper helper = new Helpers.WebViewHelper(this, urls)
-                .addRequest("document.getElementsByClassName(\"subtext\")[0].innerText", s -> {
-                    for (String sub : s.split(" \\| ")) {
-                        if (sub.matches("^\\d{1,2}$")) {
+                .addRequest("document.querySelector(\"[data-testid='hero-title-block__metadata']\").innerText", s -> {
+                    for (String sub : s.split("\\\\n")) {
+                        if (sub.matches("^\\d{1,2}$|^TV-(Y|G|Y7|PG|14|MA)$")) {
                             episodeList.get(counter[0]).setAgeRating(sub);
                         } else if (sub.matches("(\\d+h ?)?(\\d{1,2}min)?")) {
                             int length = 0;

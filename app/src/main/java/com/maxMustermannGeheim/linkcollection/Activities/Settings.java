@@ -59,6 +59,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaPerson;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Person;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
@@ -69,6 +70,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -456,6 +458,11 @@ public class Settings extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.main_knowledge_categoryCount)).setText(String.valueOf(database.knowledgeCategoryMap.size()));
                 })
                 .setAssociatedClasses(Knowledge.class, KnowledgeCategory.class)
+                .setSettingsDialog(null));
+        allSpaces.add(new Space(context.getString(R.string.bottomMenu_mediaSing), context.getString(R.string.bottomMenu_media)).setActivity(MainActivity.class).setItemId(Space.SPACE_MEDIA).setIconId(R.drawable.ic_media).setFragmentLayoutId(R.layout.main_fragment_media)
+                .setKey(Database.MEDIA)
+                .setSetLayout((space, view) -> {})
+                .setAssociatedClasses(Media.class, MediaPerson.class)
                 .setSettingsDialog(null));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_owe), context.getString(R.string.bottomMenu_owe)).setActivity(OweActivity.class).setItemId(Space.SPACE_OWE).setIconId(R.drawable.ic_euro).setFragmentLayoutId(R.layout.main_fragment_owe)
                 .setKey(Database.OWE)
@@ -1229,11 +1236,13 @@ public class Settings extends AppCompatActivity {
 
     public static class Space extends ParentClass {
         public static CustomList<Space> allSpaces = new CustomList<>();
+        public static final int SPACE_MORE = 0;
         public static final int SPACE_VIDEO = 1;
         public static final int SPACE_KNOWLEDGE = 2;
         public static final int SPACE_OWE = 3;
         public static final int SPACE_JOKE = 4;
         public static final int SPACE_SHOW = 5;
+        public static final int SPACE_MEDIA = 6;
 
         private String plural;
         private int itemId;
@@ -1247,6 +1256,7 @@ public class Settings extends AppCompatActivity {
         BuildSettingsDialog buildSettingsDialog;
         private CustomList<Class> associatedClasses = new CustomList<>();
         private String key;
+        public static Space nextMoreSpace;
 
         public Space(String name, String plural) {
             this.name = name;
@@ -1362,6 +1372,13 @@ public class Settings extends AppCompatActivity {
 
         public static boolean needsToBeEncrypted(Class aClass) {
             return Utility.concatenateCollections(allSpaces.stream().filter(Space::isEncrypted).collect(Collectors.toList()), Space::getAssociatedClasses).contains(aClass);
+        }
+
+        public boolean isInMore() {
+            CustomList<Space> visibleSpaces = allSpaces.filter(Space::isShown, false);
+            if (visibleSpaces.size() <= 5)
+                return false;
+            return visibleSpaces.indexOf(this) >= 4;
         }
 
         //  ----- SettingsDialog ----->

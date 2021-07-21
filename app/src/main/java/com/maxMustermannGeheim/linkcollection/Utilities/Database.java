@@ -120,6 +120,9 @@ public class Database {
     public Map<Show, Map<Integer, Map<String, Show.Episode>>> tempShowSeasonEpisodeMap = new HashMap<>();
     public List<String> showWatchLaterList = new ArrayList<>();
 
+    public static final String MEDIA = "MEDIA";
+    public static final String MEDIA_PERSON_MAP = "MEDIA_PERSON_MAP";
+
     private List<Content> contentList;
 
     {

@@ -5,29 +5,18 @@ import android.content.SharedPreferences;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 import android.graphics.drawable.Icon;
-import android.net.Uri;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
-import android.webkit.WebSettings;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
-import android.widget.ScrollView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.browser.customtabs.CustomTabsIntent;
-import androidx.coordinatorlayout.widget.CoordinatorLayout;
-import androidx.core.widget.NestedScrollView;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.Helpers;
@@ -44,10 +33,11 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.Collecti
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
-import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultListener;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomInternetHelper;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomPopupWindow;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -59,8 +49,6 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 // --> \/\/(?!  (-|<))
 public class MainActivity extends AppCompatActivity implements CustomInternetHelper.InternetStateReceiverListener {
@@ -338,12 +326,14 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         bottomNavigationView.getMenu().clear();
         count = 0;
         for (Settings.Space space : Settings.Space.allSpaces) {
+            count++;
             if (!space.isShown()) continue;
 
-            if (count == 4 && Settings.Space.allSpaces.size() > 5)
+            if (count >= 5 && Settings.Space.allSpaces.filter(Settings.Space::isShown, false).size() > 5) {
+                bottomNavigationView.getMenu().add(Menu.NONE, Settings.Space.SPACE_MORE, Menu.NONE, "Mehr").setIcon(R.drawable.ic_more_horiz);
                 break;
+            }
             bottomNavigationView.getMenu().add(Menu.NONE, space.getItemId(), Menu.NONE, space.getPlural()).setIcon(space.getIconId());
-            count++;
         }
 
         currentSpace = Settings.Space.getSpaceById(mySPR_settings.getInt(SETTING_LAST_OPEN_SPACE, Settings.Space.SPACE_VIDEO));
@@ -357,7 +347,11 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
             currentSpace.setFragment(new SpaceFragment(currentSpace.getFragmentLayoutId()));
         SpaceFragment.currentSpace = currentSpace;
         bottomNavigationView.setOnNavigationItemSelectedListener(onNavigationItemSelectedListener);
-        bottomNavigationView.setSelectedItemId(currentSpace.getItemId());
+        if (currentSpace.isInMore()) {
+            Settings.Space.nextMoreSpace = currentSpace;
+            bottomNavigationView.setSelectedItemId(Settings.Space.SPACE_MORE);
+        } else
+            bottomNavigationView.setSelectedItemId(currentSpace.getItemId());
 
         main_offline = findViewById(R.id.main_offline);
         main_offline.setOnClickListener(v -> CustomInternetHelper.showActivateInternetDialog(this));
@@ -366,15 +360,39 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
     BottomNavigationView.OnNavigationItemSelectedListener onNavigationItemSelectedListener = menuItem -> {
         Settings.Space selectedSpace = Settings.Space.getSpaceById(menuItem.getItemId());
-        if (selectedSpace == null) {
-            Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
-            return false;
+        if (selectedSpace == null && Settings.Space.nextMoreSpace == null) {
+            if (menuItem.getItemId() == Settings.Space.SPACE_MORE) {
+                CustomMenu customMenu = CustomMenu.Builder(this)
+                        .setMenus((customMenu1, items) -> {
+                            Settings.Space.allSpaces.filter(Settings.Space::isInMore, false).forEach(space -> {
+                                items.add(new CustomMenu.MenuItem(space.getPlural(), space, space.getIconId()));
+                            });
+
+                        })
+                        .setOnClickListener((customRecycler, itemView, item, index) -> {
+                            Settings.Space.nextMoreSpace = (Settings.Space) item.getContent();
+                            ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.SPACE_MORE);
+                        })
+                        .dismissOnClick();
+
+                customMenu.setPopupWindow(CustomPopupWindow.Builder(findViewById(R.id.main_bottom_navigation), customMenu.buildRecyclerView().generateRecyclerView())
+                        .setPositionRelativeToAnchor(CustomPopupWindow.POSITION_RELATIVE_TO_ANCHOR.TOP_RIGHT)
+                        .show_popupWindow());
+
+                return false;
+            } else {
+                Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+        } else if (Settings.Space.nextMoreSpace != null) {
+            selectedSpace =  Settings.Space.nextMoreSpace;
+            menuItem.setTitle(selectedSpace.getPlural());
+            Settings.Space.nextMoreSpace = null;
         }
 
         if (!selectedSpace.isShown())
             selectedSpace = Settings.Space.getFirstShown();
 
-//        if (true || !selectedSpace.hasFragment() || selectedSpace != currentSpace || ((FrameLayout) findViewById(R.id.main_frame_container)).getChildCount() == 0) {
         if (!selectedSpace.hasFragment())
             selectedSpace.setFragment(new SpaceFragment(selectedSpace.getFragmentLayoutId()));
         SpaceFragment.currentSpace = selectedSpace;
@@ -387,12 +405,22 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 touchListener = new Utility.OnHorizontalSwipeTouchListener(MainActivity.this) {
                     @Override
                     public void onSwipeRight() {
-                        ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.allSpaces.filter(Settings.Space::isShown, false).previous(currentSpace).getItemId());
+                        Settings.Space previous = Settings.Space.allSpaces.filter(Settings.Space::isShown, false).previous(currentSpace);
+                        if (previous.isInMore()) {
+                            Settings.Space.nextMoreSpace = previous;
+                            ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.SPACE_MORE);
+                        } else
+                            ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(previous.getItemId());
                     }
 
                     @Override
                     public void onSwipeLeft() {
-                        ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.allSpaces.filter(Settings.Space::isShown, false).next(currentSpace).getItemId());
+                        Settings.Space next = Settings.Space.allSpaces.filter(Settings.Space::isShown, false).next(currentSpace);
+                        if (next.isInMore()) {
+                            Settings.Space.nextMoreSpace = next;
+                            ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.SPACE_MORE);
+                        } else
+                            ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(next.getItemId());
                     }
                 };
                 findViewById(R.id.scrollView).setOnTouchListener(touchListener);
@@ -401,10 +429,6 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
             }
         }).commitAllowingStateLoss();
         currentSpace = selectedSpace;
-//        } else {
-//            SpaceFragment.currentSpace = selectedSpace;
-//            setCounts(this);
-//        }
         return true;
     };
 

@@ -1,6 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Utilities;
 
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 
@@ -42,6 +43,15 @@ public class CustomMenu {
 
     public AppCompatActivity getContext() {
         return context;
+    }
+
+    public PopupWindow getPopupWindow() {
+        return popupWindow;
+    }
+
+    public CustomMenu setPopupWindow(PopupWindow popupWindow) {
+        this.popupWindow = popupWindow;
+        return this;
     }
 
     public CustomMenu setAnchor(View anchor) {
@@ -101,13 +111,28 @@ public class CustomMenu {
 
 
     public CustomMenu show() {
-        customRecycler = new CustomRecycler<MenuItem>(context)
+        customRecycler = buildRecyclerView();
+
+        popupWindow = CustomPopupWindow.Builder(anchor, customRecycler.generateRecyclerView()).show_popupWindow();
+        return this;
+    }
+
+    public CustomRecycler<MenuItem> buildRecyclerView() {
+        return new CustomRecycler<MenuItem>(context)
                 .setItemLayout(R.layout.popup_standard_list)
                 .setObjectList(menus)
                 .hideDivider()
                 .hideOverscroll()
                 .setSetItemContent((customRecycler, itemView, item) -> {
                     ((TextView) itemView.findViewById(R.id.popup_standardList_text)).setText(item.getName());
+
+                    ImageView iconView = itemView.findViewById(R.id.popup_standardList_icon);
+                    if (item.icon != -1) {
+                        iconView.setVisibility(View.VISIBLE);
+                        iconView.setImageResource(item.icon);
+                    } else
+                        iconView.setVisibility(View.GONE);
+
                     if (onClickListener == null && item.getChild() != null) {
                         View popup_standardList_sub = itemView.findViewById(R.id.popup_standardList_sub);
                         popup_standardList_sub.setVisibility(View.VISIBLE);
@@ -143,9 +168,6 @@ public class CustomMenu {
                     popup_standardList_sub.setPressed(true);
                     popup_standardList_sub.callOnClick();
                 }, false);
-
-        popupWindow = CustomPopupWindow.Builder(anchor, customRecycler.generateRecyclerView()).show_popupWindow();
-        return this;
     }
 
     private void dismissPopupWindow(CustomMenu customMenu) {
@@ -166,6 +188,7 @@ public class CustomMenu {
         String name;
         CustomMenu parent;
         CustomMenu child;
+        int icon = -1;
 //        OnClickListener<MenuItem> onClickListener;
 //        public interface OnClickListener<T> {
 //            void runOnClickListener(CustomRecycler customRecycler, View itemView, T t, int index);
@@ -179,6 +202,12 @@ public class CustomMenu {
         public MenuItem(String name, Object content) {
             this.name = name;
             this.content = content;
+        }
+
+        public MenuItem(String name, Object content, int icon) {
+            this.name = name;
+            this.content = content;
+            this.icon = icon;
         }
 
         public MenuItem setName(String name) {

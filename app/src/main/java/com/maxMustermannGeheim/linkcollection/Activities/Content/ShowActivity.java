@@ -745,6 +745,7 @@ public class ShowActivity extends AppCompatActivity {
                             ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode.getRating() != -1 ? episode.getRating() + " ☆" : "");
 
                         })
+                        .setOnClickListener((customRecycler, itemView, episode, index) -> showEpisodeDetailDialog(null, episode, true))
                         .generateRecyclerView())
                 .setDimensionsFullscreen()
                 .enableTitleBackButton()
@@ -1569,7 +1570,7 @@ public class ShowActivity extends AppCompatActivity {
         newMap.putAll(oldMap);
     }
 
-    private void showEpisodeDetailDialog(CustomRecycler customRecycler, Show.Episode episode, boolean startedDirectly) {
+    private void showEpisodeDetailDialog(@Nullable CustomRecycler customRecycler , Show.Episode episode, boolean startedDirectly) {
         if (episode == null) {
             Toast.makeText(this, "Es ist ein Fehler aufgetreten", Toast.LENGTH_SHORT).show();
             return;

@@ -758,7 +758,7 @@ public class VideoActivity extends AppCompatActivity {
     private CustomDialog showDetailDialog(@NonNull Video video) {
         removeFocusFromSearch();
         final int[] views = {video.getDateList().size()};
-        int openWithButtonId = View.generateViewId();
+//        int openWithButtonId = View.generateViewId();
         CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle(video.getName())
                 .setView(R.layout.dialog_detail_video)
@@ -770,7 +770,7 @@ public class VideoActivity extends AppCompatActivity {
                 })
                 .addButton("Bearbeiten", customDialog ->
                         addOrEditDialog = showEditOrNewDialog(video).first, false)
-                .addButton("Öffnen mit...", customDialog -> openUrl(video.getUrl(), true), openWithButtonId, false)
+//                .addButton("Öffnen mit...", customDialog -> openUrl(video.getUrl(), true), openWithButtonId, false)
                 .setSetViewContent((customDialog, view, reload) -> {
                     if (reload && views[0] != video.getDateList().size()) {
                         if (views[0] < video.getDateList().size() && Utility.getWatchLaterList().contains(video)) {
@@ -822,7 +822,15 @@ public class VideoActivity extends AppCompatActivity {
                         view.findViewById(R.id.dialog_video_collection_layout).setVisibility(View.VISIBLE); // ToDo: Link to collection
                     }
                     view.findViewById(R.id.dialog_video_details).setVisibility(View.VISIBLE);
-                    ((TextView) view.findViewById(R.id.dialog_video_Url)).setText(video.getUrl());
+
+                    TextView urlTextView = view.findViewById(R.id.dialog_video_Url);
+                    urlTextView.setText(video.getUrl());
+                    if (CustomUtility.stringExists(video.getUrl())) {
+                        urlTextView.setClickable(true);
+                        urlTextView.setOnClickListener(v -> openUrl(video.getUrl(), true));
+                    }
+                    else
+                        urlTextView.setClickable(true);
 
                     Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
                     SpannableStringBuilder viewsText = helper.quickItalic("Keine Ansichten");
@@ -915,7 +923,7 @@ public class VideoActivity extends AppCompatActivity {
                     else
                         dialog_video_internet.setVisibility(View.GONE);
 
-                    customDialog.getButton(openWithButtonId).setEnabled(Utility.stringExists(video.getUrl()));
+//                    customDialog.getButton(openWithButtonId).setEnabled(Utility.stringExists(video.getUrl()));
                 })
                 .setOnDialogDismiss(customDialog -> {
                     detailDialog = null;
@@ -1378,7 +1386,7 @@ public class VideoActivity extends AppCompatActivity {
                     TextView dialog_editOrAddVideo_title_label = editDialog.findViewById(R.id.dialog_editOrAddVideo_title_label);
                     View.OnClickListener switchToSimilarVideo = v -> {
                         String text = dialog_editOrAddVideo_Title_layout.getEditText().getText().toString();
-                        database.videoMap.values().stream().filter(video1 -> video1.getName().toLowerCase().equals(text.toLowerCase())).findAny().ifPresent(oldVideo -> {
+                        database.videoMap.values().stream().filter(video1 -> video1.getName().toLowerCase().equals(text.toLowerCase()) || (editVideo[0].getTmdbId() != 0 && editVideo[0].getTmdbId() == video1.getTmdbId())).findAny().ifPresent(oldVideo -> {
                             Runnable openEdit = () -> {
                                 editDialog.dismiss();
                                 isShared = false;
@@ -1453,7 +1461,7 @@ public class VideoActivity extends AppCompatActivity {
 
                     if (video == null || isShared)
                         helper.setValidation(dialog_editOrAddVideo_Title_layout, (validator, text) -> {
-                            if (database.videoMap.values().stream().anyMatch(video1 -> video1.getName().toLowerCase().equals(text.toLowerCase()))) {
+                            if (database.videoMap.values().stream().anyMatch(video1 -> video1.getName().toLowerCase().equals(text.toLowerCase()) || (editVideo[0].getTmdbId() != 0 && editVideo[0].getTmdbId() == video1.getTmdbId()))) {
                                 dialog_editOrAddVideo_title_label.setOnClickListener(switchToSimilarVideo);
                                 dialog_editOrAddVideo_title_label.setTextColor(getColorStateList(R.color.clickable_text_color));
                                 validator.setInvalid("Schon vorhanden! (Klicke auf das Label)");
@@ -1462,6 +1470,7 @@ public class VideoActivity extends AppCompatActivity {
                                 dialog_editOrAddVideo_title_label.setTextColor(getColorStateList(R.color.clickable_text_color_normal));
                             }
                         });
+
 
                     if (Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_LOAD_CAST_AND_STUDIOS)) {
                         TextView dialog_editOrAddVideo_actor_label = view.findViewById(R.id.dialog_editOrAddVideo_actor_label);

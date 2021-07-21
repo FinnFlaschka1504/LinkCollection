@@ -164,9 +164,12 @@
 
             <TextView
                 android:id="@+id/dialog_video_Url"
+                style="@style/TextButtonStyle.Normal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1" />
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:singleLine="true" />
         </LinearLayout>
 
         <LinearLayout

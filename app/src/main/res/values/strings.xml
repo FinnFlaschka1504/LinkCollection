@@ -18,6 +18,8 @@
     <string name="bottomMenu_jokes">Witze</string>
     <string name="bottomMenu_show">Serie</string>
     <string name="bottomMenu_shows">Serien</string>
+    <string name="bottomMenu_mediaSing">Medium</string>
+    <string name="bottomMenu_media">Medien</string>
 
     <string name="parserType_java">Java</string>
     <string name="parserType_javaScript">JavaScript</string>

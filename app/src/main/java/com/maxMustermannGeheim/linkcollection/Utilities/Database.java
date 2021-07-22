@@ -23,6 +23,8 @@ import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaPerson;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Person;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
@@ -121,7 +123,10 @@ public class Database {
     public List<String> showWatchLaterList = new ArrayList<>();
 
     public static final String MEDIA = "MEDIA";
+    public static final String MEDIA_MAP = "MEDIA_MAP";
     public static final String MEDIA_PERSON_MAP = "MEDIA_PERSON_MAP";
+    public Map<String, Media> mediaMap = new HashMap<>();;
+    public Map<String, MediaPerson> mediaPersonMap = new HashMap<>();;
 
     private List<Content> contentList;
 
@@ -134,7 +139,6 @@ public class Database {
                 new Content<Map, Darsteller>(Darsteller.class, darstellerMap, databaseCode_content, VIDEOS, DARSTELLER_MAP),
                 new Content<Map, Genre>(Genre.class, genreMap, databaseCode_content, VIDEOS, GENRE_MAP),
                 new Content<Map, UrlParser>(UrlParser.class, urlParserMap, databaseCode_content, VIDEOS, URL_PARSER_MAP),
-//                new Content<List,String>(String.class, watchLaterList, databaseCode_content, VIDEOS, WATCH_LATER_LIST),
                 new Content<Map, Collection>(Collection.class, collectionMap, databaseCode_content, VIDEOS, COLLECTION_MAP),
 
                 new Content<Map, Knowledge>(Knowledge.class, knowledgeMap, databaseCode_content, KNOWLEDGE, KNOWLEDGE_MAP),
@@ -148,7 +152,10 @@ public class Database {
 
                 new Content<Map, Show>(Show.class, showMap, databaseCode_content, SHOWS, SHOW_MAP),
                 new Content<Map, ShowGenre>(ShowGenre.class, showGenreMap, databaseCode_content, SHOWS, SHOW_GENRE_MAP),
-                new Content<List, String>(String.class, showWatchLaterList, databaseCode_content, SHOWS, SHOW_WATCH_LATER_LIST)
+                new Content<List, String>(String.class, showWatchLaterList, databaseCode_content, SHOWS, SHOW_WATCH_LATER_LIST),
+
+                new Content<Map, Media>(Media.class, mediaMap, MEDIA, MEDIA_MAP),
+                new Content<Map, MediaPerson>(MediaPerson.class, mediaPersonMap, MEDIA, MEDIA_PERSON_MAP)
         );
     }
     //  <----- Content deklaration -----

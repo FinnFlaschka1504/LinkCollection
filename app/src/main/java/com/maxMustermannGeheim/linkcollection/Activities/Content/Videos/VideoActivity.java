@@ -71,7 +71,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultListener;
+import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAutoCompleteAdapter;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.ImageAdapterItem;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
@@ -1194,7 +1194,7 @@ public class VideoActivity extends AppCompatActivity {
                                         }
                                     });
 
-                                    String regex = String.format("(%s)|(%s)|", CategoriesActivity.pictureRegexAll, ActivityResultListener.uriRegex);
+                                    String regex = String.format("(%s)|(%s)|", CategoriesActivity.pictureRegexAll, ActivityResultHelper.uriRegex);
                                     new Helpers.TextInputHelper().addValidator(inputLayout).setValidation(inputLayout, (validator, text) -> {
                                         validator.asWhiteList();
                                         if (text.contains("http") && !text.contains("https"))
@@ -1206,7 +1206,7 @@ public class VideoActivity extends AppCompatActivity {
                                         editText.setText(Utility.stringExistsOrElse(editVideo[0].getImagePath(), ""));
 
                                     view1.findViewById(R.id.dialog_editThumbnail_localStorage).setOnClickListener(v1 -> {
-                                        ActivityResultListener.addFileChooserRequest(this, "image/*", o -> {
+                                        ActivityResultHelper.addFileChooserRequest(this, "image/*", o -> {
                                             editText.setText(((Intent) o).getData().toString());
                                         });
                                     });

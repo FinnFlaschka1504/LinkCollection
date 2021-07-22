@@ -13,6 +13,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
@@ -33,6 +34,7 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.util.Pair;
+import android.view.Display;
 import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -263,7 +265,7 @@ public class Utility {
         intent.addCategory(Intent.CATEGORY_OPENABLE);
 
         try {
-            activity.startActivity(new Intent(activity, ActivityResultListener.class)); //.
+            activity.startActivity(new Intent(activity, ActivityResultHelper.class)); //.
         } catch (ActivityNotFoundException ex) {
             Toast.makeText(activity, "Bitte einen Dateimanager installieren", Toast.LENGTH_SHORT).show();
         }
@@ -1652,14 +1654,14 @@ public class Utility {
 //                                                dialog_editTmdbCategory_url_layout.getEditText().setText(((ParentClass_Tmdb) newParentClass).getImagePath());
                                                 helper.addValidator(dialog_editTmdbCategory_url_layout).setValidation(dialog_editTmdbCategory_url_layout, (validator, text) -> {
                                                     validator.asWhiteList();
-                                                    if (text.isEmpty() || text.matches(CategoriesActivity.pictureRegexAll) || text.matches(ActivityResultListener.uriRegex))
+                                                    if (text.isEmpty() || text.matches(CategoriesActivity.pictureRegexAll) || text.matches(ActivityResultHelper.uriRegex))
                                                         validator.setValid();
                                                     if (text.toLowerCase().contains("http") && !text.toLowerCase().contains("https"))
                                                         validator.setInvalid("Die URL muss 'https' sein!");
                                                 });
 
                                                 view1.findViewById(R.id.dialog_editTmdbCategory_localStorage).setOnClickListener(v -> {
-                                                    ActivityResultListener.addFileChooserRequest((AppCompatActivity) context, "image/*", o1 -> {
+                                                    ActivityResultHelper.addFileChooserRequest((AppCompatActivity) context, "image/*", o1 -> {
                                                         dialog_editTmdbCategory_url_layout.getEditText().setText(((Intent) o1).getData().toString());
                                                     });
                                                 });
@@ -1951,6 +1953,15 @@ public class Utility {
             p.setMargins(dpToPx(links), dpToPx(oben), dpToPx(rechts), dpToPx(unten));
             v.requestLayout();
         }
+    }
+
+    public static Pair<Integer, Integer> getScreenSize(AppCompatActivity context) {
+        Display display = context.getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+        display.getRealSize(size);
+        int width = size.x;
+        int height = size.y;
+        return Pair.create(width, height);
     }
     //  <----- Pixels -----
 
@@ -3250,7 +3261,7 @@ public class Utility {
     }
 
     public static void loadUrlIntoImageView(Context context, ImageView imageView, String imagePath, @Nullable String fullScreenPath, Runnable... onFail_onSuccess_onFullscreen) {
-//        if (imagePath.matches(ActivityResultListener.uriRegex)) {
+//        if (imagePath.matches(ActivityResultHelper.uriRegex)) {
 ////            CustomUtility.ifNotNull(getBitmapFromUri(Uri.parse(imagePath), context), imageView::setImageBitmap);
 //            Uri uri = Uri.parse(imagePath);
 ////            context.getContentResolver().takePersistableUriPermission(uri, (Intent.FLAG_GRANT_READ_URI_PERMISSION| Intent.FLAG_GRANT_WRITE_URI_PERMISSION));
@@ -3437,7 +3448,7 @@ public class Utility {
     // ---------------
 
     public static String getTmdbImagePath_ifNecessary(String imagePath, boolean original) {
-        if (imagePath.matches(ActivityResultListener.uriRegex))
+        if (imagePath.matches(ActivityResultHelper.uriRegex))
             return imagePath;
         return (imagePath.contains("http") ? "" : "https://image.tmdb.org/t/p/" + (original ? "original" : "w92") + "/") + imagePath;
     }

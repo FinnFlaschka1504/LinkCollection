@@ -46,7 +46,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultListener;
+import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -516,14 +516,14 @@ public class CategoriesActivity extends AppCompatActivity {
                                     }
                                     helper.addValidator(dialog_editTmdbCategory_url_layout).setValidation(dialog_editTmdbCategory_url_layout, (validator, text) -> {
                                         validator.asWhiteList();
-                                        if (text.isEmpty() || text.matches(pictureRegexAll) || text.matches(ActivityResultListener.uriRegex))
+                                        if (text.isEmpty() || text.matches(pictureRegexAll) || text.matches(ActivityResultHelper.uriRegex))
                                             validator.setValid();
                                         if (text.toLowerCase().contains("http") && !text.toLowerCase().contains("https"))
                                             validator.setInvalid("Die URL muss 'https' sein!");
                                     }).validate();
 
                                     view1.findViewById(R.id.dialog_editTmdbCategory_localStorage).setOnClickListener(v -> {
-                                        ActivityResultListener.addFileChooserRequest(this, "image/*", o -> {
+                                        ActivityResultHelper.addFileChooserRequest(this, "image/*", o -> {
                                             dialog_editTmdbCategory_url_layout.getEditText().setText(((Intent) o).getData().toString());
                                         });
                                     });

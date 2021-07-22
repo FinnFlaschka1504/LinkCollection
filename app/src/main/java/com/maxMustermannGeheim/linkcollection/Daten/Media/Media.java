@@ -6,7 +6,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import java.util.UUID;
 
 public class Media extends ParentClass {
-    private String path;
     private CustomList<MediaPerson> personList = new CustomList<>();
 
     public Media() {
@@ -15,6 +14,18 @@ public class Media extends ParentClass {
     public Media(String name) {
         uuid = "media_" + UUID.randomUUID().toString();
         this.name = name;
+    }
+
+    public String getPath() {
+        return name;
+    }
+
+    @Override
+    public Media clone() {
+        Media clone = (Media) super.clone();
+        clone.personList = new CustomList<>(personList);
+        return clone;
+
     }
 
 }

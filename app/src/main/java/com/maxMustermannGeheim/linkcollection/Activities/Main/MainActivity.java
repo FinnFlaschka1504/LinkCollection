@@ -27,6 +27,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.google.common.hash.Hashing;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.MediaActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.CollectionActivity;
@@ -746,6 +747,13 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         ShowActivity.showNewEpisodesDialog(this);
     }
     //  <----- Shows -----
+
+
+    //  ------------------------- Media ------------------------->
+    public void openMediaActivity(View view) {
+        startActivity(new Intent(this, MediaActivity.class));
+    }
+    //  <------------------------- Media -------------------------
 
 
     public static void setCounts(MainActivity activity) {

@@ -74,7 +74,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
-import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultListener;
+import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.maxMustermannGeheim.linkcollection.Utilities.VersionControl;
@@ -461,7 +461,10 @@ public class Settings extends AppCompatActivity {
                 .setSettingsDialog(null));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_mediaSing), context.getString(R.string.bottomMenu_media)).setActivity(MainActivity.class).setItemId(Space.SPACE_MEDIA).setIconId(R.drawable.ic_media).setFragmentLayoutId(R.layout.main_fragment_media)
                 .setKey(Database.MEDIA)
-                .setSetLayout((space, view) -> {})
+                .setSetLayout((space, view) -> {
+                    ((TextView) view.findViewById(R.id.main_media_count)).setText("" + database.mediaMap.size());
+                    ((TextView) view.findViewById(R.id.main_media_personCount)).setText("" + database.mediaPersonMap.size());
+                })
                 .setAssociatedClasses(Media.class, MediaPerson.class)
                 .setSettingsDialog(null));
         allSpaces.add(new Space(context.getString(R.string.bottomMenu_owe), context.getString(R.string.bottomMenu_owe)).setActivity(OweActivity.class).setItemId(Space.SPACE_OWE).setIconId(R.drawable.ic_euro).setFragmentLayoutId(R.layout.main_fragment_owe)
@@ -1567,13 +1570,13 @@ public class Settings extends AppCompatActivity {
 ////
 ////        if (true)
 ////            return;
-//        ActivityResultListener.addFileChooserRequest(this, "text/plain", o -> importSettings(((Intent) o).getData()), o -> Toast.makeText(this, "Abgebrochen", Toast.LENGTH_SHORT).show());
+//        ActivityResultHelper.addFileChooserRequest(this, "text/plain", o -> importSettings(((Intent) o).getData()), o -> Toast.makeText(this, "Abgebrochen", Toast.LENGTH_SHORT).show());
 //    }
 
 
     private void importSettings(Uri uri) {
         if (uri == null) {
-            ActivityResultListener.addFileChooserRequest(this, "text/plain", o -> importSettings(((Intent) o).getData()), o -> Toast.makeText(this, "Abgebrochen", Toast.LENGTH_SHORT).show());
+            ActivityResultHelper.addFileChooserRequest(this, "text/plain", o -> importSettings(((Intent) o).getData()), o -> Toast.makeText(this, "Abgebrochen", Toast.LENGTH_SHORT).show());
             return;
         }
 
@@ -1707,7 +1710,7 @@ public class Settings extends AppCompatActivity {
 //    @Override
 //    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 //        switch (requestCode) {
-//            case ActivityResultListener.FILE_SELECT_CODE:
+//            case ActivityResultHelper.FILE_SELECT_CODE:
 //                if (resultCode == RESULT_OK) {
 //                    importSettings(data.getData());
 //                }

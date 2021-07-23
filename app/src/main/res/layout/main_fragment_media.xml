@@ -95,7 +95,7 @@
                     android:elevation="3dp"
                     android:foreground="@drawable/ripple"
                     android:gravity="center"
-                    android:onClick="openActorActivity"
+                    android:onClick="openMediaPersonActivity"
                     android:orientation="vertical">
 
                     <androidx.constraintlayout.widget.ConstraintLayout

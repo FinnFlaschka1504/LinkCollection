@@ -2,28 +2,41 @@ package com.maxMustermannGeheim.linkcollection.Daten.Media;
 
 import com.finn.androidUtilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image;
 
+import java.util.List;
 import java.util.UUID;
 
-public class Media extends ParentClass {
-    private CustomList<MediaPerson> personList = new CustomList<>();
+public class Media extends ParentClass_Image {
+    private List<String> personIdList = new CustomList<>();
 
+
+    //  ------------------------- Constructor ------------------------->
     public Media() {
     }
 
-    public Media(String name) {
+    public Media(String imagePath) {
         uuid = "media_" + UUID.randomUUID().toString();
-        this.name = name;
+        this.setImagePath(imagePath);
+    }
+    //  <------------------------- Constructor -------------------------
+
+
+    //  ------------------------- Getter & Setter ------------------------->
+    public List<String> getPersonIdList() {
+        return personIdList;
     }
 
-    public String getPath() {
-        return name;
+    public Media setPersonIdList(CustomList<String> personIdList) {
+        this.personIdList = personIdList;
+        return this;
     }
+    //  <------------------------- Getter & Setter -------------------------
 
     @Override
     public Media clone() {
         Media clone = (Media) super.clone();
-        clone.personList = new CustomList<>(personList);
+        clone.personIdList = new CustomList<>(personIdList);
         return clone;
 
     }

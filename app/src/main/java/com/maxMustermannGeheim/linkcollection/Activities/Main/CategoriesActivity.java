@@ -34,11 +34,13 @@ import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.MediaActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
@@ -81,7 +83,7 @@ public class CategoriesActivity extends AppCompatActivity {
         VIDEO("Video", "Videos", VideoActivity.class), DARSTELLER("Darsteller", "Darsteller", VideoActivity.class), STUDIOS("Studio", "Studios", VideoActivity.class),
         GENRE("Genre", "Genres", VideoActivity.class), COLLECTION("Sammlung", "Sammlungen", VideoActivity.class), KNOWLEDGE_CATEGORIES("Kategorie", "Kategorien", KnowledgeActivity.class),
         PERSON("Person", "Personen", OweActivity.class), JOKE_CATEGORIES("Witz", "Witze", JokeActivity.class), SHOW_GENRES("Genre", "Genres", ShowActivity.class),
-        SHOW("Serie", "Serien", ShowActivity.class), EPISODE("Episode", "Episoden", ShowActivity.class);
+        SHOW("Serie", "Serien", ShowActivity.class), EPISODE("Episode", "Episoden", ShowActivity.class), MEDIA("Medium", "Medien", MediaActivity.class), MEDIA_PERSON("Person", "Personen", MediaActivity.class);
 
         private String singular;
         private String plural;
@@ -346,6 +348,16 @@ public class CategoriesActivity extends AppCompatActivity {
                     pairList.add(new Pair<>(parentClass, count));
                 }
                 break;
+            case MEDIA_PERSON:
+                for (ParentClass parentClass : database.mediaPersonMap.values()) {
+                    int count = 0;
+                    for (Media media : database.mediaMap.values()) {
+                        if (media.getPersonIdList().contains(parentClass.getUuid()))
+                            count++;
+                    }
+                    pairList.add(new Pair<>(parentClass, count));
+                }
+                break;
 
         }
         allDatenObjektPairList = pairList;
@@ -584,6 +596,12 @@ public class CategoriesActivity extends AppCompatActivity {
                 database.showGenreMap.remove(parentClass.getUuid());
                 for (Show show : database.showMap.values()) {
                     show.getGenreIdList().remove(parentClass.getUuid());
+                }
+                break;
+            case MEDIA_PERSON:
+                database.mediaPersonMap.remove(parentClass.getUuid());
+                for (Media media : database.mediaMap.values()) {
+                    media.getPersonIdList().remove(parentClass.getUuid());
                 }
                 break;
         }

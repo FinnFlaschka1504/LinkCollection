@@ -154,8 +154,8 @@ public class Database {
                 new Content<Map, ShowGenre>(ShowGenre.class, showGenreMap, databaseCode_content, SHOWS, SHOW_GENRE_MAP),
                 new Content<List, String>(String.class, showWatchLaterList, databaseCode_content, SHOWS, SHOW_WATCH_LATER_LIST),
 
-                new Content<Map, Media>(Media.class, mediaMap, MEDIA, MEDIA_MAP),
-                new Content<Map, MediaPerson>(MediaPerson.class, mediaPersonMap, MEDIA, MEDIA_PERSON_MAP)
+                new Content<Map, Media>(Media.class, mediaMap, databaseCode_content, MEDIA, MEDIA_MAP),
+                new Content<Map, MediaPerson>(MediaPerson.class, mediaPersonMap, databaseCode_content, MEDIA, MEDIA_PERSON_MAP)
         );
     }
     //  <----- Content deklaration -----

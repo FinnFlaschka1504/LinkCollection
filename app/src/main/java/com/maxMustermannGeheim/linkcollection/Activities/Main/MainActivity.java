@@ -10,6 +10,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.ViewStub;
 import android.widget.FrameLayout;
 import android.widget.Toast;
@@ -84,6 +85,8 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     public static final int START_SHOW_GENRE = ++count;
     public static final int START_SHOW_FROM_CALENDER = ++count;
     public static final int START_SHOW_NEXT_EPISODE = ++count;
+    public static final int START_MEDIA = ++count;
+    public static final int START_MEDIA_PERSON = ++count;
 
     private static Database database;
     private static SharedPreferences mySPR_daten;
@@ -424,6 +427,18 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                             ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(next.getItemId());
                     }
                 };
+
+                View test1 = findViewById(R.id.main_media_count);
+                View test2 = view.findViewById(R.id.main_media_count);
+
+                FrameLayout frameLayout = (FrameLayout) findViewById(R.id.main_frame_container);
+                if (frameLayout.getChildCount() == 0 && view != null) {
+                    ViewParent parent = view.getParent();
+                    if (parent != null)
+                        ((FrameLayout) parent).removeAllViews();
+                    frameLayout.addView(view);
+                }
+
                 findViewById(R.id.scrollView).setOnTouchListener(touchListener);
                 view.setOnTouchListener(touchListener);
                 Utility.applyToAllViews(view, SquareLayout.class, squareLayout -> squareLayout.setOnTouchListener(touchListener));
@@ -751,7 +766,17 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
     //  ------------------------- Media ------------------------->
     public void openMediaActivity(View view) {
-        startActivity(new Intent(this, MediaActivity.class));
+        if (!Database.isReady())
+            return;
+        startActivityForResult(new Intent(this, MediaActivity.class), START_MEDIA);
+    }
+
+    public void openMediaPersonActivity(View view) {
+        if (!Database.isReady())
+            return;
+        Intent intent = new Intent(this, CategoriesActivity.class);
+        intent.putExtra(EXTRA_CATEGORY, CategoriesActivity.CATEGORIES.MEDIA_PERSON);
+        startActivityForResult(intent, START_MEDIA_PERSON);
     }
     //  <------------------------- Media -------------------------
 

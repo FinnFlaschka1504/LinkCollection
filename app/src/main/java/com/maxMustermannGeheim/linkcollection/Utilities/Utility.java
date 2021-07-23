@@ -105,9 +105,12 @@ import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaPerson;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
@@ -1559,6 +1562,9 @@ public class Utility {
                 break;
             case COLLECTION:
                 allObjectsList = new ArrayList<>(database.videoMap.values());
+                break;
+            case MEDIA_PERSON:
+                allObjectsList = new ArrayList<>(database.mediaPersonMap.values());
         }
 
         int saveButtonId = View.generateViewId();
@@ -1568,7 +1574,7 @@ public class Utility {
                 .setTitle(editType_string + " Bearbeiten")
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .setView(R.layout.dialog_edit_item)
-                .setDimensions(true, true)
+                .setDimensionsFullscreen()
                 .disableScroll()
                 .addOptionalModifications(customDialog0 -> {
                     if (category.equals(CategoriesActivity.CATEGORIES.COLLECTION))
@@ -1580,7 +1586,7 @@ public class Utility {
                                         .enableDynamicWrapHeight((AppCompatActivity) context)
                                         .enableAutoUpdateDynamicWrapHeight()
                                         .addOptionalModifications(customDialog1 -> {
-                                            if (newParentClass instanceof ParentClass_Tmdb) {
+                                            if (newParentClass instanceof ParentClass_Image) {
                                                 customDialog1
                                                         .addButton("Testen", customDialog2 -> {
                                                             String url = ((EditText) customDialog2.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
@@ -1598,11 +1604,10 @@ public class Utility {
                                         })
                                         .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                                         .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
-//                                            ParentClass newParentClass = ParentClass.newCategory(category, "");
                                             ParentClass_Alias.applyNameAndAlias(newParentClass, ((EditText) customDialog1.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim());
-                                            if (newParentClass instanceof ParentClass_Tmdb) {
+                                            if (newParentClass instanceof ParentClass_Image) {
                                                 String url = ((EditText) customDialog1.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
-                                                ((ParentClass_Tmdb) newParentClass).setImagePath(CustomUtility.stringExists(url) ? url : null);
+                                                ((ParentClass_Image) newParentClass).setImagePath(CustomUtility.stringExists(url) ? url : null);
                                             }
 
                                             switch (category) {
@@ -1623,6 +1628,9 @@ public class Utility {
                                                     break;
                                                 case SHOW_GENRES:
                                                     database.showGenreMap.put(newParentClass.getUuid(), (ShowGenre) newParentClass);
+                                                    break;
+                                                case MEDIA_PERSON:
+                                                    database.mediaPersonMap.put(newParentClass.getUuid(), (MediaPerson) newParentClass);
                                                     break;
                                             }
                                             selectedUuidList.add(newParentClass.getUuid());
@@ -1647,11 +1655,11 @@ public class Utility {
                                             if (newParentClass instanceof ParentClass_Alias)
                                                 dialog_editTmdbCategory_name.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_CLASS_TEXT);
 
-                                            if (newParentClass instanceof ParentClass_Tmdb) {
+                                            if (newParentClass instanceof ParentClass_Image) {
                                                 CustomUtility.setMargins(view1.findViewById(R.id.dialog_editTmdbCategory_nameLayout), -1, -1, -1, 0);
                                                 view1.findViewById(R.id.dialog_editTmdbCategory_urlLayout).setVisibility(View.VISIBLE);
                                                 TextInputLayout dialog_editTmdbCategory_url_layout = view1.findViewById(R.id.dialog_editTmdbCategory_url_layout);
-//                                                dialog_editTmdbCategory_url_layout.getEditText().setText(((ParentClass_Tmdb) newParentClass).getImagePath());
+//                                                dialog_editTmdbCategory_url_layout.getEditText().setText(((ParentClass_Image) newParentClass).getImagePath());
                                                 helper.addValidator(dialog_editTmdbCategory_url_layout).setValidation(dialog_editTmdbCategory_url_layout, (validator, text) -> {
                                                     validator.asWhiteList();
                                                     if (text.isEmpty() || text.matches(CategoriesActivity.pictureRegexAll) || text.matches(ActivityResultHelper.uriRegex))
@@ -1712,6 +1720,12 @@ public class Utility {
                             if (addOrEditDialog != null)
                                 ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddCollection_films)).setText(
                                         selectedUuidList.stream().map(uuid -> database.videoMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+                            break;
+                        case MEDIA_PERSON:
+                            com.finn.androidUtilities.CustomList<String> idList = (com.finn.androidUtilities.CustomList<String>) o;
+                            idList.replaceWith(selectedUuidList);
+                            addOrEditDialog.reloadView();
+                            break;
 
                     }
                 }, saveButtonId)
@@ -1732,9 +1746,9 @@ public class Utility {
                 .setOrientation(com.finn.androidUtilities.CustomRecycler.ORIENTATION.HORIZONTAL)
                 .setOnClickListener((customRecycler, view, object, index) -> {
                     Toast.makeText(context,
-                            "Halten zum abwählen", Toast.LENGTH_SHORT).show();
+                            "Swipe nach Oben zum abwählen", Toast.LENGTH_SHORT).show();
                 })
-                .enableSwiping((objectList, direction, s) -> {}, true, true)
+                .enableSwiping((objectList, direction, s) -> {}, true, false)
 //                .setOnLongClickListener((customRecycler, view, object, index) -> {
 //                    ((CustomRecycler.MyAdapter) customRecycler.getRecycler().getAdapter()).removeItemAt(index);
 //                    selectedUuidList.remove(object);
@@ -1844,6 +1858,8 @@ public class Utility {
                 return database.showGenreMap;
             case COLLECTION:
                 return database.videoMap;
+            case MEDIA_PERSON:
+                return database.mediaPersonMap;
         }
         return null;
     }
@@ -3104,6 +3120,16 @@ public class Utility {
 
     public static <T, R> R isNullReturnOrElse(T input, R returnValue, GenericReturnInterface<T, R> orElse) {
         return Objects.equals(input, null) ? returnValue : orElse.runGenericInterface(input);
+    }
+
+    public static <T, R> R isCheckReturnOrElse(T input, CustomUtility.GenericReturnInterface<T, Boolean> check, @Nullable CustomUtility.GenericReturnInterface<T, R> returnValue, CustomUtility.GenericReturnInterface<T, R> orElse) {
+        if (check.runGenericInterface(input)) {
+            if (returnValue == null)
+                return (R) input;
+            else
+                return returnValue.runGenericInterface(input);
+        } else
+            return orElse.runGenericInterface(input);
     }
     //  <------------------------- EasyLogic -------------------------
 

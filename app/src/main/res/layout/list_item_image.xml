@@ -23,4 +23,16 @@
             app:srcCompat="@drawable/ic_play_arrow"
             android:layout_gravity="bottom|start"
             android:background="@drawable/grey_rounded_corners"/>
+
+    <ImageView
+        android:id="@+id/listItem_image_selected"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_margin="5dp"
+        android:background="@drawable/grey_rounded_corners"
+        android:backgroundTint="#E91E63"
+        android:visibility="gone"
+        app:srcCompat="@drawable/ic_check"
+        tools:visibility="visible" />
 </FrameLayout>

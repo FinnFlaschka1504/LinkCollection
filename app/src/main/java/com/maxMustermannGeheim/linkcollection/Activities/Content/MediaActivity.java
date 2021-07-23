@@ -2,6 +2,7 @@ package com.maxMustermannGeheim.linkcollection.Activities.Content;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
@@ -23,6 +24,8 @@ import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.afollestad.dragselectrecyclerview.DragSelectReceiver;
+import com.afollestad.dragselectrecyclerview.DragSelectTouchListener;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.finn.androidUtilities.CustomDialog;
@@ -32,10 +35,12 @@ import com.finn.androidUtilities.CustomUtility;
 import com.finn.androidUtilities.ParentClass;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
+import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.BuildConfig;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaPerson;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -45,6 +50,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -63,7 +69,8 @@ public class MediaActivity extends AppCompatActivity {
     private Runnable setToolbarTitle;
     private String searchQuery = "";
     private SearchView.OnQueryTextListener textListener;
-    CustomRecycler<Media> mediaRecycler;
+    private CustomRecycler<MultiSelectHelper.Selectable<Media>> mediaRecycler;
+    private MultiSelectHelper<Media> selectHelper;
 
     private TextView elementCount;
     private SearchView media_search;
@@ -251,6 +258,7 @@ public class MediaActivity extends AppCompatActivity {
     }
     //  <------------------------- Start -------------------------
 
+
     //  ------------------------- Recycler ------------------------->
     // ToDo: https://github.com/afollestad/drag-select-recyclerview
     private CustomList<Media> filterList(CustomList<Media> mediaList) {
@@ -318,14 +326,210 @@ public class MediaActivity extends AppCompatActivity {
         return mediaList;
     }
 
+    class MyDragSelectReceiver implements DragSelectReceiver  {
+
+        @Override
+        public int getItemCount() {
+            return mediaRecycler.getObjectList().size();
+        }
+
+        @Override
+        public boolean isIndexSelectable(int i) {
+            return true;
+        }
+
+        @Override
+        public boolean isSelected(int i) {
+            return get(i).selected;
+        }
+
+        @Override
+        public void setSelected(int i, boolean b) {
+            selectHelper.setSelected(i, b);
+        }
+
+        private MultiSelectHelper.Selectable<Media> get(int i) {
+            return mediaRecycler.getObjectList().get(i);
+        }
+    }
+
+
+    static class MultiSelectHelper<T> {
+        CustomRecycler<Selectable<T>> customRecycler;
+        CustomList<Selectable<T>> contentList;
+        boolean activeSelection;
+        DragSelectTouchListener dragSelectTouchListener;
+        MediaActivity context;
+
+        //  ------------------------- Constructor ------------------------->
+        public MultiSelectHelper(MediaActivity context) {
+            this.context = context;
+        }
+        //  <------------------------- Constructor -------------------------
+
+
+        //  ------------------------- Getter & Setter ------------------------->
+        public CustomList<Selectable<T>> getContentList() {
+            return contentList;
+        }
+
+        public MultiSelectHelper<T> setContentList(CustomList<Selectable<T>> contentList) {
+            this.contentList = contentList;
+            return this;
+        }
+
+        public boolean isActiveSelection() {
+            return activeSelection;
+        }
+
+        public MultiSelectHelper<T> setActiveSelection(boolean activeSelection) {
+            this.activeSelection = activeSelection;
+            return this;
+        }
+        //  <------------------------- Getter & Setter -------------------------
+
+
+        //  ------------------------- Convenience ------------------------->
+        public MultiSelectHelper<T> updateFromList(List<T> list, boolean keepSelection) {
+            CustomList<Selectable<T>> customList = list.stream().map(Selectable::new).collect(Collectors.toCollection(CustomList::new));
+
+            if (contentList == null) {
+                contentList = customList;
+                return this;
+            }
+
+            if (keepSelection) {
+                customList.forEach(tSelectable -> {
+                    contentList.stream().filter(tSelectable1 -> Objects.equals(tSelectable.content, tSelectable1.content)).findFirst().ifPresent(tSelectable1 -> tSelectable.selected = tSelectable1.selected);
+                });
+            }
+
+            contentList.replaceWith(customList.toArrayList());
+            return this;
+        }
+
+        public void startSelection(int index) {
+            activeSelection = true;
+            dragSelectTouchListener.setIsActive(true, index);
+
+            ((CollapsingToolbarLayout) context.findViewById(R.id.collapsingToolbarLayout)).setTitleEnabled(false);
+            Toolbar toolbar = context.findViewById(R.id.media_selectionToolbar);
+            context.setSupportActionBar(toolbar);
+            toolbar.setVisibility(View.VISIBLE);
+
+            Toolbar defaultToolbar = (Toolbar) context.findViewById(R.id.toolbar);
+            defaultToolbar.inflateMenu(R.menu.task_bar_joke);
+            defaultToolbar.setVisibility(View.GONE);
+            defaultToolbar.getMenu().findItem(R.id.taskBar_media_add).setVisible(false);
+            defaultToolbar.getMenu().findItem(R.id.taskBar_media_edit).setVisible(true);
+        }
+
+        public CustomList<Selectable<T>> stopSelection() {
+            activeSelection = false;
+            CustomList<Selectable<T>> allSelected = getAllSelected();
+            contentList.forEach(tSelectable -> tSelectable.selected = false);
+            customRecycler.reload();
+
+            ((CollapsingToolbarLayout) context.findViewById(R.id.collapsingToolbarLayout)).setTitleEnabled(true);
+            Toolbar toolbar = context.findViewById(R.id.toolbar);
+            toolbar.setTitle(context.plural);
+            context.setSupportActionBar(toolbar);
+            toolbar.setVisibility(View.VISIBLE);
+            context.findViewById(R.id.media_selectionToolbar).setVisibility(View.GONE);
+
+            return allSelected;
+        }
+
+        public CustomList<Selectable<T>> getAllSelected() {
+            return contentList.filter(Selectable::isSelected, false);
+        }
+
+        public int getAllSelectedCount() {
+            return getAllSelected().size();
+        }
+
+
+
+        public MultiSelectHelper<T> toggleSelection(int index) {
+            contentList.get(index).toggleSelection();
+            if (getAllSelected().isEmpty()) {
+                stopSelection();
+                return this;
+            }
+            customRecycler.update(index);
+            updateToolbarTitle();
+            return this;
+        }
+
+        public void setSelected(int index, boolean selected) {
+            contentList.get(index).selected = selected;
+            customRecycler.update(index);
+            updateToolbarTitle();
+        }
+
+        private void updateToolbarTitle() {
+            ((Toolbar) context.findViewById(R.id.media_selectionToolbar)).setTitle(String.format(Locale.getDefault(), "Auswählen (%d)", getAllSelectedCount()));
+        }
+        //  <------------------------- Convenience -------------------------
+
+        static class Selectable<P> {
+            public boolean selected;
+            public P content;
+
+            //  ------------------------- Constructor ------------------------->
+            public Selectable(P content) {
+                this.content = content;
+            }
+            //  <------------------------- Constructor -------------------------
+
+            //  ------------------------- Getter & Setter ------------------------->
+            public boolean isSelected() {
+                return selected;
+            }
+
+            public Selectable<P> setSelected(boolean selected) {
+                this.selected = selected;
+                return this;
+            }
+
+            public P getContent() {
+                return content;
+            }
+
+            public Selectable<P> setContent(P content) {
+                this.content = content;
+                return this;
+            }
+            //  <------------------------- Getter & Setter -------------------------
+
+
+            //  ------------------------- Convenience ------------------------->
+            public Selectable<P> toggleSelection() {
+                selected = !selected;
+                return this;
+            }
+            //  <------------------------- Convenience -------------------------
+        }
+
+    }
+
+
     private void loadRecycler() {
         int width = Utility.getScreenSize(this).first;
         int columnCount = 3;
 
-        mediaRecycler = new CustomRecycler<Media>(this, findViewById(R.id.recycler))
+        DragSelectTouchListener dragSelectTouchListener = DragSelectTouchListener.Companion.create(this, new MyDragSelectReceiver(), null);
+        selectHelper = new MultiSelectHelper<>(this);
+        selectHelper.dragSelectTouchListener = dragSelectTouchListener;
+
+        RecyclerView recyclerView = findViewById(R.id.recycler);
+        mediaRecycler = new CustomRecycler<MultiSelectHelper.Selectable<Media>>(this, recyclerView)
+                .addOptionalModifications(customRecycler -> selectHelper.customRecycler = customRecycler)
                 .setItemLayout(R.layout.list_item_image)
                 .setGetActiveObjectList(customRecycler -> {
                     CustomList<Media> filteredList = sortList(filterList(new CustomList<>(database.mediaMap.values())));
+                    selectHelper.updateFromList(filteredList, true);
+
                     TextView noItem = findViewById(R.id.no_item);
                     String text = media_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche";
                     int size = filteredList.size();
@@ -335,18 +539,30 @@ public class MediaActivity extends AppCompatActivity {
 //                    String viewsCountText = (views > 1 ? views + " Episoden" : (views == 1 ? "Eine" : "Keine") + " Episode") + " angesehen";
                     SpannableStringBuilder builder = new SpannableStringBuilder().append(elementCountText).append("\n", new RelativeSizeSpan(0.5f), Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
                     elementCount.setText(builder);
-                    return filteredList;
+
+                    return selectHelper.getContentList();
                 })
-                .setSetItemContent((customRecycler, itemView, media) -> {
-                    SelectMediaHelper.loadPathIntoImageView(media.getPath(), itemView, CustomUtility.pxToDp(width / columnCount));
+                .setSetItemContent((customRecycler, itemView, mediaSelectable) -> {
+                    SelectMediaHelper.loadPathIntoImageView(mediaSelectable.content.getImagePath(), itemView, CustomUtility.pxToDp(width / columnCount));
+
+                    if (mediaSelectable.isSelected())
+                        itemView.findViewById(R.id.listItem_image_selected).setVisibility(View.VISIBLE);
+                    else
+                        itemView.findViewById(R.id.listItem_image_selected).setVisibility(View.GONE);
                 })
-                .setOnClickListener((customRecycler, view, media, index) -> {
+                .setOnClickListener((customRecycler, view, mediaSelectable, index) -> {
+                    if (selectHelper.isActiveSelection()) {
+                        selectHelper.toggleSelection(index);
+                    }
                 })
-                .setOnLongClickListener((customRecycler, view, media, index) -> {
-                    showEditMultipleDialog(Arrays.asList(media));
+                .setOnLongClickListener((customRecycler, view, mediaSelectable, index) -> {
+                    selectHelper.startSelection(index);
                 })
                 .setRowOrColumnCount(columnCount)
                 .generate();
+
+
+        recyclerView.addOnItemTouchListener(dragSelectTouchListener);
     }
 
     private void reLoadRecycler() {
@@ -354,16 +570,25 @@ public class MediaActivity extends AppCompatActivity {
     }
     //  <------------------------- Recycler -------------------------
 
+
     //  ------------------------- Edit ------------------------->
     private void showEditMultipleDialog(List<Media> oldMedia) {
         if (!Utility.isOnline(this))
             return;
 
         setResult(RESULT_OK);
-//        removeFocusFromSearch();
+        removeFocusFromSearch();
 
         boolean isAdd = oldMedia == null || oldMedia.isEmpty();
         CustomList<Media> newMedia = isAdd ? new CustomList<>() : oldMedia.stream().map(Media::clone).collect(Collectors.toCollection(CustomList::new));
+        CustomList<String> mediaPersonIdList;
+        if (newMedia.isEmpty()) {
+            mediaPersonIdList = new CustomList<>();
+        } else {
+            mediaPersonIdList = new CustomList<>(newMedia.get(0).getPersonIdList());
+            if (newMedia.size() > 1)
+                newMedia.forEach(media -> mediaPersonIdList.retainAll(media.getPersonIdList()));
+        }
 
         CustomDialog.Builder(this)
                 .setTitle("Mehrere " + plural + (isAdd ? " Hinzufügen" : " Bearbeiten"))
@@ -374,6 +599,12 @@ public class MediaActivity extends AppCompatActivity {
                             .setParentView(selectedMediaParent)
                             .setHideAddButton(!isAdd)
                             .build();
+
+                    view.findViewById(R.id.dialog_editMedia_editPersons).setOnClickListener(v -> {
+                        Utility.showEditItemDialog(this, customDialog, mediaPersonIdList, mediaPersonIdList, CategoriesActivity.CATEGORIES.MEDIA_PERSON);
+                    });
+
+                    ((TextView) view.findViewById(R.id.dialog_editMedia_persons)).setText(String.join(", ", mediaPersonIdList.map(id -> database.mediaPersonMap.get(id).getName())));
                 })
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .addOptionalModifications(customDialog -> {
@@ -386,15 +617,16 @@ public class MediaActivity extends AppCompatActivity {
                         .addConfirmationDialogToLastAddedButton(plural + " Löschen", "Möchstest du wirklich " + oldMedia.size() + (oldMedia.size() > 1 ? plural : singular) + " löschen?");
                 })
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
-                    saveMultipleMedia(customDialog, oldMedia, newMedia);
+                    saveMultipleMedia(customDialog, oldMedia, newMedia, mediaPersonIdList);
                 })
                 .show();
     }
 
-    private void saveMultipleMedia(CustomDialog editDialog, List<Media> oldMedia, List<Media> newMedia) {
+    private void saveMultipleMedia(CustomDialog editDialog, List<Media> oldMedia, List<Media> newMedia, CustomList<String> mediaPersonIdList) {
         boolean isAdd = oldMedia == null || oldMedia.isEmpty();
 
         if (isAdd) {
+            newMedia.forEach(media -> media.getPersonIdList().addAll(mediaPersonIdList));
             database.mediaMap.putAll(newMedia.stream().collect(Collectors.toMap(Media::getUuid, o -> o)));
         }
 
@@ -402,6 +634,7 @@ public class MediaActivity extends AppCompatActivity {
 
         reLoadRecycler();
     }
+
     // --------------- SelectMediaHelper
 
     static class SelectMediaHelper {
@@ -419,6 +652,7 @@ public class MediaActivity extends AppCompatActivity {
             this.selectedMedia = selectedMedia;
         }
         //  <------------------------- Constructor -------------------------
+
 
         //  ------------------------- Getter & Setter ------------------------->
         public SelectMediaHelper setParentView(ViewGroup parentView) {
@@ -442,6 +676,7 @@ public class MediaActivity extends AppCompatActivity {
         }
         //  <------------------------- Getter & Setter -------------------------
 
+
         //  ------------------------- Convenience ------------------------->
         public void showSelectDialog(boolean replace) {
             ActivityResultHelper.addMultiFileChooserRequest(context, "image/* video/*",intent -> {
@@ -454,7 +689,7 @@ public class MediaActivity extends AppCompatActivity {
                         pathList.add(path);
                     }
                 } else if(intent.getData() != null) {
-                    String imagePath = intent.getData().getPath();
+                    String imagePath = ActivityResultHelper.getPath(context, intent.getData());
                     pathList.add(imagePath);
                 }
                 if (replace)
@@ -580,7 +815,7 @@ public class MediaActivity extends AppCompatActivity {
                     .setGetActiveObjectList(customRecycler -> selectedMedia)
                     .setItemLayout(R.layout.list_item_image)
                     .setSetItemContent((customRecycler, itemView, media) -> {
-                        loadPathIntoImageView(media.getPath(), itemView, 120);
+                        loadPathIntoImageView(media.getImagePath(), itemView, 120);
 //                                            imageView.setOnClickListener(v -> {
 //                                                context.startActivity(new Intent(context, MyFragmentGallery.class));
 ////                                        CustomDialog.Builder(this)
@@ -625,9 +860,8 @@ public class MediaActivity extends AppCompatActivity {
         }
         //  <------------------------- Builder -------------------------
     }
-
-
     //  <------------------------- Edit -------------------------
+
 
     //  ------------------------- ToolBar ------------------------->
     @Override
@@ -652,16 +886,33 @@ public class MediaActivity extends AppCompatActivity {
                 showEditMultipleDialog(null);
 //                SelectMediaHelper.Builder(this).showSelection();
                 break;
+
+            case android.R.id.home:
+                if (selectHelper.isActiveSelection()) {
+                    selectHelper.stopSelection();
+                } else {
+                    if (getCallingActivity() == null)
+                        startActivity(new Intent(this, MainActivity.class));
+                    finish();
+                }
+                break;
         }
         return true;
     }
+
+    // --------------- Search
 
     private void setSearchHint() {
 //        String join = filterTypeSet.stream().filter(ShowActivity.FILTER_TYPE::hasName).sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).map(ShowActivity.FILTER_TYPE::getName).collect(Collectors.joining(", "));
 //        shows_search.setQueryHint(join.isEmpty() ? "Kein Filter ausgewählt!" : join + " ('&' als 'und'; '|' als 'oder')");
 //        Utility.applyToAllViews(shows_search, View.class, view -> view.setEnabled(!join.isEmpty()));
     }
+
+    private void removeFocusFromSearch() {
+        media_search.clearFocus();
+    }
     //  <------------------------- ToolBar -------------------------
+
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data)
@@ -677,6 +928,15 @@ public class MediaActivity extends AppCompatActivity {
 //            } else
 //                checkAndRequestStoragePermission();
         }
+    }
+
+
+    @Override
+    public void onBackPressed() {
+        if (selectHelper.isActiveSelection()) {
+            selectHelper.stopSelection();
+        } else
+            super.onBackPressed();
     }
 }
 

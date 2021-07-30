@@ -44,6 +44,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
@@ -83,7 +84,8 @@ public class CategoriesActivity extends AppCompatActivity {
         VIDEO("Video", "Videos", VideoActivity.class), DARSTELLER("Darsteller", "Darsteller", VideoActivity.class), STUDIOS("Studio", "Studios", VideoActivity.class),
         GENRE("Genre", "Genres", VideoActivity.class), COLLECTION("Sammlung", "Sammlungen", VideoActivity.class), KNOWLEDGE_CATEGORIES("Kategorie", "Kategorien", KnowledgeActivity.class),
         PERSON("Person", "Personen", OweActivity.class), JOKE_CATEGORIES("Witz", "Witze", JokeActivity.class), SHOW_GENRES("Genre", "Genres", ShowActivity.class),
-        SHOW("Serie", "Serien", ShowActivity.class), EPISODE("Episode", "Episoden", ShowActivity.class), MEDIA("Medium", "Medien", MediaActivity.class), MEDIA_PERSON("Person", "Personen", MediaActivity.class);
+        SHOW("Serie", "Serien", ShowActivity.class), EPISODE("Episode", "Episoden", ShowActivity.class), MEDIA("Medium", "Medien", MediaActivity.class), MEDIA_PERSON("Person", "Personen", MediaActivity.class),
+        MEDIA_CATEGORY("Kategorie", "Kategorien", MediaActivity.class);
 
         private String singular;
         private String plural;
@@ -411,13 +413,16 @@ public class CategoriesActivity extends AppCompatActivity {
                         ((TextView) itemView.findViewById(R.id.userlistItem_catigoryItem_count)).setText(String.valueOf(parentClassIntegerPair.second));
 
                     ImageView listItem_categoryItem_image = itemView.findViewById(R.id.listItem_categoryItem_image);
-                    if (parentClassIntegerPair.first instanceof ParentClass_Tmdb && Utility.stringExists(((ParentClass_Tmdb) parentClassIntegerPair.first).getImagePath())) {
+                    if (parentClassIntegerPair.first instanceof ParentClass_Image && Utility.stringExists(((ParentClass_Image) parentClassIntegerPair.first).getImagePath())) {
                         listItem_categoryItem_image.setVisibility(View.VISIBLE);
-                        String imagePath = ((ParentClass_Tmdb) parentClassIntegerPair.first).getImagePath();
+                        String imagePath = ((ParentClass_Image) parentClassIntegerPair.first).getImagePath();
                         Utility.loadUrlIntoImageView(this, listItem_categoryItem_image, Utility.getTmdbImagePath_ifNecessary(imagePath, false),
                                 Utility.getTmdbImagePath_ifNecessary(imagePath, true),
-                                () -> ((ParentClass_Tmdb) parentClassIntegerPair.first).tryUpdateData(this, () ->
-                                        customRecycler.update(customRecycler.getRecycler().getChildAdapterPosition(itemView))),
+                                () -> {
+                                    if (parentClassIntegerPair.first instanceof ParentClass_Tmdb)
+                                        ((ParentClass_Tmdb) parentClassIntegerPair.first).tryUpdateData(this, () ->
+                                            customRecycler.update(customRecycler.getRecycler().getChildAdapterPosition(itemView)));
+                                },
                                 () -> Utility.roundImageView(listItem_categoryItem_image, 4), this::removeFocusFromSearch);
                     } else
                         listItem_categoryItem_image.setVisibility(View.GONE);
@@ -468,7 +473,7 @@ public class CategoriesActivity extends AppCompatActivity {
                             .enableDynamicWrapHeight(this)
                             .enableAutoUpdateDynamicWrapHeight()
                             .addOptionalModifications(customDialog1 -> {
-                                if (parentClass instanceof ParentClass_Tmdb) {
+                                if (parentClass instanceof ParentClass_Image) {
                                     customDialog1
                                             .addButton("Testen", customDialog2 -> {
                                                 String url = ((EditText) customDialog2.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
@@ -488,9 +493,9 @@ public class CategoriesActivity extends AppCompatActivity {
                                 if (!Utility.isOnline(this))
                                     return;
                                 ParentClass_Alias.applyNameAndAlias(item.first, ((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim());
-                                if (parentClass instanceof ParentClass_Tmdb) {
+                                if (parentClass instanceof ParentClass_Image) {
                                     String url = ((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
-                                    ((ParentClass_Tmdb) parentClass).setImagePath(CustomUtility.stringExists(url) ? url : null);
+                                    ((ParentClass_Image) parentClass).setImagePath(CustomUtility.stringExists(url) ? url : null);
                                 }
                                 reLoadRecycler();
                                 Toast.makeText(this, (Database.saveAll_simple() ? "" : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
@@ -509,17 +514,19 @@ public class CategoriesActivity extends AppCompatActivity {
                                     dialog_editTmdbCategory_name_layout.getEditText().setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_CLASS_TEXT);
                                 }
 
-                                if (parentClass instanceof ParentClass_Tmdb) {
-                                    ImageView dialog_editTmdbCategory_internet = view1.findViewById(R.id.dialog_editTmdbCategory_internet);
-                                    if (((ParentClass_Tmdb) parentClass).getTmdbId() != 0) {
-                                        dialog_editTmdbCategory_internet.setOnClickListener(v -> Utility.openUrl(this, "https://www.themoviedb.org/person/" + ((ParentClass_Tmdb) parentClass).getTmdbId(), true));
-                                        dialog_editTmdbCategory_internet.setVisibility(View.VISIBLE);
+                                if (parentClass instanceof ParentClass_Image) {
+                                    if (parentClass instanceof ParentClass_Tmdb) {
+                                        ImageView dialog_editTmdbCategory_internet = view1.findViewById(R.id.dialog_editTmdbCategory_internet);
+                                        if (((ParentClass_Tmdb) parentClass).getTmdbId() != 0) {
+                                            dialog_editTmdbCategory_internet.setOnClickListener(v -> Utility.openUrl(this, "https://www.themoviedb.org/person/" + ((ParentClass_Tmdb) parentClass).getTmdbId(), true));
+                                            dialog_editTmdbCategory_internet.setVisibility(View.VISIBLE);
+                                        }
                                     }
 
                                     CustomUtility.setMargins(view1.findViewById(R.id.dialog_editTmdbCategory_nameLayout), -1, -1, -1, 0);
                                     view1.findViewById(R.id.dialog_editTmdbCategory_urlLayout).setVisibility(View.VISIBLE);
                                     TextInputLayout dialog_editTmdbCategory_url_layout = view1.findViewById(R.id.dialog_editTmdbCategory_url_layout);
-                                    String url = ((ParentClass_Tmdb) parentClass).getImagePath();
+                                    String url = ((ParentClass_Image) parentClass).getImagePath();
                                     dialog_editTmdbCategory_url_layout.getEditText().setText(url);
                                     ImageView preview = customDialog.findViewById(R.id.dialog_editTmdbCategory_preview);
                                     if (CustomUtility.stringExists(url)) {
@@ -536,7 +543,8 @@ public class CategoriesActivity extends AppCompatActivity {
 
                                     view1.findViewById(R.id.dialog_editTmdbCategory_localStorage).setOnClickListener(v -> {
                                         ActivityResultHelper.addFileChooserRequest(this, "image/*", o -> {
-                                            dialog_editTmdbCategory_url_layout.getEditText().setText(((Intent) o).getData().toString());
+                                            String path = ActivityResultHelper.getPath(this, ((Intent) o).getData());
+                                            dialog_editTmdbCategory_url_layout.getEditText().setText(path);
                                         });
                                     });
 
@@ -544,7 +552,7 @@ public class CategoriesActivity extends AppCompatActivity {
                             })
                             .enableDoubleClickOutsideToDismiss(customDialog -> {
                                 boolean result = !((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim().equals(ParentClass_Alias.combineNameAndAlias(parentClass));
-                                return result || (parentClass instanceof ParentClass_Tmdb && !Utility.boolOr(((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim(), ((ParentClass_Tmdb) parentClass).getImagePath(), ""));
+                                return result || (parentClass instanceof ParentClass_Image && !Utility.boolOr(((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim(), ((ParentClass_Image) parentClass).getImagePath(), ""));
                             })
                             .show();
                 })
@@ -644,6 +652,27 @@ public class CategoriesActivity extends AppCompatActivity {
                 .colorLastAddedButton()
                 .show();
     }
+
+    public static <T> com.finn.androidUtilities.CustomList<String> getCategoriesIntersection(List<T> list, CategoriesActivity.CATEGORIES category) {
+        com.finn.androidUtilities.CustomList<String> intersectionList;
+        Utility.GenericReturnInterface<T, List<String>> getCategoryList;
+        if (list.isEmpty()) {
+            return new com.finn.androidUtilities.CustomList<>();
+        } else {
+            switch (category) {
+                default:
+                    return new com.finn.androidUtilities.CustomList<>();
+                case MEDIA_PERSON:
+                    getCategoryList = t -> ((Media) t).getPersonIdList();
+                    break;
+            }
+            intersectionList = new com.finn.androidUtilities.CustomList<>(getCategoryList.runGenericInterface(list.get(0)));
+            if (list.size() > 1)
+                list.forEach(media -> intersectionList.retainAll(getCategoryList.runGenericInterface(media)));
+            return intersectionList;
+        }
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

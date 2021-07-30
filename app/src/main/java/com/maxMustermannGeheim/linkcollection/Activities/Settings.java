@@ -1347,6 +1347,7 @@ public class Settings extends AppCompatActivity {
         }
 
         public void setLayout() {
+            // fragment.getView() gibt manchmal null
             setLayout.runSetLayout(this, fragment.getView());
         }
 

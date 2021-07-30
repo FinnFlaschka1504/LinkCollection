@@ -72,6 +72,7 @@ import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.RequestBuilder;
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
@@ -80,6 +81,7 @@ import com.bumptech.glide.request.target.Target;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
 import com.finn.androidUtilities.Helpers;
+import com.finn.androidUtilities.CustomRecycler;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
@@ -94,6 +96,7 @@ import com.google.gson.GsonBuilder;
 import com.innovattic.rangeseekbar.RangeSeekBar;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.MediaActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.CollectionActivity;
@@ -113,6 +116,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tree;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
@@ -127,6 +131,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.opengraph.OpenGraph;
 
+import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
@@ -961,6 +966,18 @@ public class Utility {
         return false;
     }
     //  <----- ... in Show -----
+
+    //  ----- ... in Media ----->
+    public static boolean containedInMedia(String query, Media media, HashSet<MediaActivity.FILTER_TYPE> filterTypeSet) {
+//        if (media.getUuid().equals(query)) return true;
+//        if (filterTypeSet.contains(MediaActivity.FILTER_TYPE.PERSON) && media.getName().toLowerCase().contains(query.toLowerCase()))
+//            return true;
+        Database database = Database.getInstance();
+        if (filterTypeSet.contains(MediaActivity.FILTER_TYPE.PERSON) && media.getPersonIdList().stream().anyMatch(uuid -> database.mediaPersonMap.get(uuid).getName().toLowerCase().contains(query.toLowerCase())))
+            return true;
+        return false;
+    }
+    //  <----- ... in Media -----
 //  <----- Filter -----
 
 
@@ -982,7 +999,7 @@ public class Utility {
         Boolean showImages = Settings.getSingleSetting_boolean(context, Settings.SETTING_VIDEO_SHOW_IMAGES);
 
         Database database = Database.getInstance();
-        CustomRecycler customRecycler = new CustomRecycler<>(context, layout.findViewById(R.id.fragmentCalender_videoList))
+        CustomRecycler customRecycler = new CustomRecycler<>((AppCompatActivity) context, layout.findViewById(R.id.fragmentCalender_videoList))
                 .setItemLayout(R.layout.list_item_video)
                 .setSetItemContent((customRecycler1, itemView, object) -> {
                     itemView.findViewById(R.id.listItem_video_internetOrDetails).setVisibility(View.GONE);
@@ -1020,8 +1037,7 @@ public class Utility {
                     } else
                         itemView.findViewById(R.id.listItem_video_rating_layout).setVisibility(View.GONE);
 
-                })
-                .hideDivider();
+                });
 
         if (openVideo)
             customRecycler.setOnClickListener((customRecycler1, view, object, index) ->
@@ -1097,7 +1113,7 @@ public class Utility {
         calender_nextMonth.setOnClickListener(view -> calendarView.scrollRight());
 
         Database database = Database.getInstance();
-        CustomRecycler<Event> customRecycler = new CustomRecycler<Event>(context, layout.findViewById(R.id.fragmentCalender_videoList))
+        CustomRecycler<Event> customRecycler = new CustomRecycler<Event>((AppCompatActivity) context, layout.findViewById(R.id.fragmentCalender_videoList))
                 .setItemLayout(R.layout.list_item_episode)
                 .setSetItemContent((customRecycler1, itemView, event) -> {
                     itemView.findViewById(R.id.listItem_episode_seen).setVisibility(View.GONE);
@@ -1116,8 +1132,7 @@ public class Utility {
                     ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(Utility.isNullReturnOrElse(episode.getAirDate(), "", date -> new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(date)));
                     ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode.getRating() != -1 ? episode.getRating() + " ☆" : "");
 
-                })
-                .hideDivider();
+                });
 
         if (openEpisode)
             customRecycler.setOnClickListener((customRecycler1, view, event, index) ->
@@ -1530,6 +1545,7 @@ public class Utility {
     }
     //  <--------------- Toast ---------------
 
+    //  ------------------------- EditItem ------------------------->
     public static CustomDialog showEditItemDialog(Context context, CustomDialog addOrEditDialog, List<String> preSelectedUuidList, Object o, CategoriesActivity.CATEGORIES category) {
         Database database = Database.getInstance();
 
@@ -1540,32 +1556,34 @@ public class Utility {
         List<ParentClass> allObjectsList;
         String editType_string = category.getPlural();
         final String[] searchQuery = {""};
-        switch (category) {
-            default:
-            case DARSTELLER:
-                allObjectsList = new ArrayList<>(database.darstellerMap.values());
-                break;
-            case STUDIOS:
-                allObjectsList = new ArrayList<>(database.studioMap.values());
-                break;
-            case GENRE:
-                allObjectsList = new ArrayList<>(database.genreMap.values());
-                break;
-            case KNOWLEDGE_CATEGORIES:
-                allObjectsList = new ArrayList<>(database.knowledgeCategoryMap.values());
-                break;
-            case JOKE_CATEGORIES:
-                allObjectsList = new ArrayList<>(database.jokeCategoryMap.values());
-                break;
-            case SHOW_GENRES:
-                allObjectsList = new ArrayList<>(database.showGenreMap.values());
-                break;
-            case COLLECTION:
-                allObjectsList = new ArrayList<>(database.videoMap.values());
-                break;
-            case MEDIA_PERSON:
-                allObjectsList = new ArrayList<>(database.mediaPersonMap.values());
-        }
+
+        allObjectsList = new ArrayList<>(getMapFromDatabase(category).values());
+//        switch (category) {
+//            default:
+//            case DARSTELLER:
+//                allObjectsList = new ArrayList<>(database.darstellerMap.values());
+//                break;
+//            case STUDIOS:
+//                allObjectsList = new ArrayList<>(database.studioMap.values());
+//                break;
+//            case GENRE:
+//                allObjectsList = new ArrayList<>(database.genreMap.values());
+//                break;
+//            case KNOWLEDGE_CATEGORIES:
+//                allObjectsList = new ArrayList<>(database.knowledgeCategoryMap.values());
+//                break;
+//            case JOKE_CATEGORIES:
+//                allObjectsList = new ArrayList<>(database.jokeCategoryMap.values());
+//                break;
+//            case SHOW_GENRES:
+//                allObjectsList = new ArrayList<>(database.showGenreMap.values());
+//                break;
+//            case COLLECTION:
+//                allObjectsList = new ArrayList<>(database.videoMap.values());
+//                break;
+//            case MEDIA_PERSON:
+//                allObjectsList = new ArrayList<>(database.mediaPersonMap.values());
+//        }
 
         int saveButtonId = View.generateViewId();
         ParentClass newParentClass = ParentClass.newCategory(category, "");
@@ -1670,7 +1688,8 @@ public class Utility {
 
                                                 view1.findViewById(R.id.dialog_editTmdbCategory_localStorage).setOnClickListener(v -> {
                                                     ActivityResultHelper.addFileChooserRequest((AppCompatActivity) context, "image/*", o1 -> {
-                                                        dialog_editTmdbCategory_url_layout.getEditText().setText(((Intent) o1).getData().toString());
+                                                        String path = ActivityResultHelper.getPath(context, ((Intent) o1).getData());
+                                                        dialog_editTmdbCategory_url_layout.getEditText().setText(path);
                                                     });
                                                 });
 
@@ -1733,9 +1752,9 @@ public class Utility {
 
         SearchView searchView = dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_search);
 
-        CustomRecycler<ParentClass> customRecycler_selectList = new CustomRecycler<>(context, dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_selectCategories));
+        CustomRecycler<ParentClass> customRecycler_selectList = new CustomRecycler<>((AppCompatActivity) context, dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_selectCategories));
 
-        com.finn.androidUtilities.CustomRecycler<String> customRecycler_selectedList = new com.finn.androidUtilities.CustomRecycler<String>((AppCompatActivity) context, dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_selectedCategories))
+        CustomRecycler<String> customRecycler_selectedList = new CustomRecycler<String>((AppCompatActivity) context, dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_selectedCategories))
                 .setItemLayout(R.layout.list_item_bubble)
                 .setObjectList(selectedUuidList)
                 .enableDragAndDrop((customRecycler, objectList) -> {})
@@ -1743,12 +1762,14 @@ public class Utility {
                     ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(getObjectFromDatabase(category, uuid).getName());
                     dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.GONE);
                 })
-                .setOrientation(com.finn.androidUtilities.CustomRecycler.ORIENTATION.HORIZONTAL)
+                .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
                 .setOnClickListener((customRecycler, view, object, index) -> {
                     Toast.makeText(context,
                             "Swipe nach Oben zum abwählen", Toast.LENGTH_SHORT).show();
                 })
-                .enableSwiping((objectList, direction, s) -> {}, true, false)
+                .enableSwiping((objectList, direction, s) -> {
+                    customRecycler_selectList.reload();
+                }, true, false)
 //                .setOnLongClickListener((customRecycler, view, object, index) -> {
 //                    ((CustomRecycler.MyAdapter) customRecycler.getRecycler().getAdapter()).removeItemAt(index);
 //                    selectedUuidList.remove(object);
@@ -1767,8 +1788,7 @@ public class Utility {
 
         customRecycler_selectList
                 .setItemLayout(R.layout.list_item_select)
-                .setMultiClickEnabled(true)
-                .setGetActiveObjectList(() -> {
+                .setGetActiveObjectList(customRecycler -> {
                     if (searchQuery[0].equals("")) {
                         allObjectsList.sort((o1, o2) -> o1.getName().compareTo(o2.getName()));
                         return allObjectsList;
@@ -1837,11 +1857,72 @@ public class Utility {
         return dialog_AddActorOrGenre;
     }
 
+    public static CustomDialog showEditTreeItemDialog(Context context, List<String> preSelectedIdList, GenericInterface<List<String>> onSaved, CategoriesActivity.CATEGORIES category) {
+        // ToDo: Vielleicht Durch https://github.com/jakebonk/DraggableTreeView ersetzen
+        Database database = Database.getInstance();
+        CustomList<String> selectedIds = new CustomList<>(preSelectedIdList);
+        String categoryName = category.getPlural();
+        String[] searchQuery = {""};
+
+        return CustomDialog.Builder(context)
+                .setTitle(categoryName + " Bearbeiten")
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                .setView(R.layout.dialog_edit_item)
+                .setDimensionsFullscreen()
+                .setSetViewContent((customDialog, view, reload) -> {
+                    LinearLayout editCategoryLayout = view.findViewById(R.id.dialogEditCategory_selectLayout);
+
+                    // vvvvvvvvvvvvvvv Selected
+                    CustomRecycler<String> selectedRecycler = new CustomRecycler<String>((AppCompatActivity) context, view.findViewById(R.id.dialogEditCategory_selectedCategories));
+                    selectedRecycler
+                            .setItemLayout(R.layout.list_item_bubble)
+                            .setObjectList(selectedIds)
+                            .enableDragAndDrop((customRecycler, objectList) -> {})
+                            .setSetItemContent((customRecycler, itemView, uuid) -> {
+                                ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(ParentClass_Tree.findObjectById(category, uuid).getName());
+                                view.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.GONE);
+                            })
+                            .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
+                            .setOnClickListener((customRecycler, view1, object, index) -> {
+                                Toast.makeText(context,
+                                        "Swipe nach Oben zum abwählen", Toast.LENGTH_SHORT).show();
+                            })
+                            .enableSwiping((objectList, direction, s) -> {
+                                ParentClass_Tree.buildTreeView(editCategoryLayout, selectedIds, searchQuery[0], selectedRecycler::reload);
+                            }, true, false)
+                            .generate();
+
+                    // vvvvvvvvvvvvvvv Tree
+                    ParentClass_Tree.buildTreeView(editCategoryLayout, selectedIds, searchQuery[0], selectedRecycler::reload);
+
+                    // vvvvvvvvvvvvvvv Search
+                    SearchView searchView = view.findViewById(R.id.dialogEditCategory_search);
+                    searchView.setQueryHint(category.getPlural() + " durchsuchen");
+                    searchView.requestFocus();
+                    searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                        @Override
+                        public boolean onQueryTextSubmit(String s) {
+                            return true;
+                        }
+
+                        @Override
+                        public boolean onQueryTextChange(String s) {
+                            searchQuery[0] = s.trim();
+                            ParentClass_Tree.buildTreeView(editCategoryLayout, selectedIds, searchQuery[0], selectedRecycler::reload);
+                            return true;
+                        }
+                    });
+
+                })
+                .show();
+    }
+    //  <------------------------- EditItem -------------------------
+
     public static ParentClass getObjectFromDatabase(CategoriesActivity.CATEGORIES category, String uuid) {
         return getMapFromDatabase(category).get(uuid);
     }
 
-    private static Map<String, ? extends ParentClass> getMapFromDatabase(CategoriesActivity.CATEGORIES category) {
+    public static Map<String, ? extends ParentClass> getMapFromDatabase(CategoriesActivity.CATEGORIES category) {
         Database database = Database.getInstance();
         switch (category) {
             case DARSTELLER:
@@ -1860,6 +1941,8 @@ public class Utility {
                 return database.videoMap;
             case MEDIA_PERSON:
                 return database.mediaPersonMap;
+            case MEDIA_CATEGORY:
+                return database.mediaCategoryMap;
         }
         return null;
     }
@@ -2938,6 +3021,13 @@ public class Utility {
     public static <T> List<T> concatenateCollections(List<T>... collections) {
         return Arrays.stream(collections).flatMap(Collection::stream).collect(Collectors.toList());
     }
+
+    public static <T> List<T> addAllDistinct(List<T> from, List<T> into) {
+        com.finn.androidUtilities.CustomList<T> customList = new com.finn.androidUtilities.CustomList<>(into).addAllDistinct(from);
+        into.clear();
+        into.addAll(customList);
+        return into;
+    }
     //  <--------------- ConcatCollections ---------------
 
 
@@ -3227,6 +3317,14 @@ public class Utility {
         R runGenericInterface(T t);
     }
 
+    public interface DoubleGenericInterface<T, T2> {
+        void run(T t, T2 t2);
+    }
+
+    public interface DoubleGenericReturnInterface<T, T2, R> {
+        R run(T t, T2 t2);
+    }
+
     public interface GenericReturnOnlyInterface<T> {
         T runGenericInterface();
     }
@@ -3296,9 +3394,13 @@ public class Utility {
         if (imagePath.endsWith(".svg") && !imagePath.contains("base64")) {
             Utility.fetchSvg(context, imagePath, imageView, onFail_onSuccess_onFullscreen);
         } else {
-            Glide
-                    .with(context)
-                    .load(imagePath)
+            RequestBuilder<Drawable> requestBuilder;
+            if (imagePath.startsWith(context.getFilesDir().getAbsolutePath())) {
+                Uri imageUri = Uri.fromFile(new File(imagePath));
+                requestBuilder = Glide.with(context).load(imageUri);
+            } else
+                requestBuilder = Glide.with(context).load(imagePath);
+            requestBuilder
                     .addListener(new RequestListener<Drawable>() {
                         @Override
                         public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
@@ -3346,9 +3448,13 @@ public class Utility {
                         if (fullScreenPath.endsWith(".svg")) {
                             Utility.fetchSvg(context, fullScreenPath, dialog_poster_poster, onFail_onSuccess_onFullscreen);
                         } else {
-                            Glide
-                                    .with(context)
-                                    .load(fullScreenPath)
+                            RequestBuilder<Drawable> requestBuilder;
+                            if (fullScreenPath.startsWith(context.getFilesDir().getAbsolutePath())) {
+                                Uri imageUri = Uri.fromFile(new File(fullScreenPath));
+                                requestBuilder = Glide.with(context).load(imageUri);
+                            } else
+                                requestBuilder = Glide.with(context).load(fullScreenPath);
+                            requestBuilder
                                     .error(R.drawable.ic_broken_image)
                                     .placeholder(R.drawable.ic_download)
                                     .into(dialog_poster_poster);
@@ -3476,7 +3582,7 @@ public class Utility {
     public static String getTmdbImagePath_ifNecessary(String imagePath, boolean original) {
         if (imagePath.matches(ActivityResultHelper.uriRegex))
             return imagePath;
-        return (imagePath.contains("http") ? "" : "https://image.tmdb.org/t/p/" + (original ? "original" : "w92") + "/") + imagePath;
+        return (!imagePath.matches("\\/\\w+\\.\\w+") ? "" : "https://image.tmdb.org/t/p/" + (original ? "original" : "w92") + "/") + imagePath;
     }
 
     //  <------------------------- ImageView -------------------------

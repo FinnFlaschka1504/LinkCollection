@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:background="@drawable/header_gradiant"
         app:expanded="false"
-        tools:expanded="true">
+        tools:expanded="false">
 
         <com.google.android.material.appbar.CollapsingToolbarLayout
             android:id="@+id/collapsingToolbarLayout"
@@ -52,19 +52,19 @@
                 app:popupTheme="@style/TitleTextStyle"
                 app:title="Medien" />
 
-            <androidx.appcompat.widget.Toolbar
-                android:id="@+id/media_selectionToolbar"
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                android:layout_gravity="bottom"
-                android:layout_marginBottom="49dp"
-                android:visibility="gone"
-                app:layout_collapseMode="pin"
-                app:menu="@menu/task_bar_joke"
-                app:navigationIcon="@drawable/ic_arrow_back_white"
-                app:popupTheme="@style/TitleTextStyle"
-                app:title="Ausgewählt (5)"
-                tools:visibility="gone" />
+<!--            <androidx.appcompat.widget.Toolbar-->
+<!--                android:id="@+id/media_selectionToolbar"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="?attr/actionBarSize"-->
+<!--                android:layout_gravity="bottom"-->
+<!--                android:layout_marginBottom="49dp"-->
+<!--                android:visibility="gone"-->
+<!--                app:layout_collapseMode="pin"-->
+<!--                app:menu="@menu/task_bar_joke"-->
+<!--                app:navigationIcon="@drawable/ic_arrow_back_white"-->
+<!--                app:popupTheme="@style/TitleTextStyle"-->
+<!--                app:title="Ausgewählt (5)"-->
+<!--                tools:visibility="gone" />-->
 
 
             <LinearLayout
@@ -106,6 +106,14 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+    <com.veinhorn.scrollgalleryview.ScrollGalleryView
+        android:id="@+id/scroll_gallery_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:elevation="100dp"
+        android:visibility="gone"
+        android:background="#000" />
 
 
     <TextView

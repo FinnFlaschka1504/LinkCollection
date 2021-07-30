@@ -24,6 +24,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaPerson;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Person;
@@ -125,8 +126,10 @@ public class Database {
     public static final String MEDIA = "MEDIA";
     public static final String MEDIA_MAP = "MEDIA_MAP";
     public static final String MEDIA_PERSON_MAP = "MEDIA_PERSON_MAP";
+    public static final String MEDIA_CATEGORY_MAP = "MEDIA_CATEGORY_MAP";
     public Map<String, Media> mediaMap = new HashMap<>();;
     public Map<String, MediaPerson> mediaPersonMap = new HashMap<>();;
+    public Map<String, MediaCategory> mediaCategoryMap = new HashMap<>();;
 
     private List<Content> contentList;
 
@@ -155,7 +158,8 @@ public class Database {
                 new Content<List, String>(String.class, showWatchLaterList, databaseCode_content, SHOWS, SHOW_WATCH_LATER_LIST),
 
                 new Content<Map, Media>(Media.class, mediaMap, databaseCode_content, MEDIA, MEDIA_MAP),
-                new Content<Map, MediaPerson>(MediaPerson.class, mediaPersonMap, databaseCode_content, MEDIA, MEDIA_PERSON_MAP)
+                new Content<Map, MediaPerson>(MediaPerson.class, mediaPersonMap, databaseCode_content, MEDIA, MEDIA_PERSON_MAP),
+                new Content<Map, MediaCategory>(MediaCategory.class, mediaCategoryMap, databaseCode_content, MEDIA, MEDIA_CATEGORY_MAP)
         );
     }
     //  <----- Content deklaration -----

@@ -73,6 +73,11 @@ dependencies {
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
     implementation 'com.google.android.material:material:1.4.0'
     implementation 'com.afollestad:drag-select-recyclerview:2.4.0'
+    implementation 'com.veinhorn.scrollgalleryview:library:1.2.8'
+    implementation 'com.veinhorn.scrollgalleryview:picasso-loader:1.2.4'
+    implementation 'com.squareup.picasso:picasso:2.71828'
+    implementation 'com.github.bmelnychuk:atv:1.2.9'
+
 
     implementation group: 'org.apache-extras.beanshell', name: 'bsh', version: '2.0b6'
     implementation group: 'com.google.guava', name: 'guava', version: '28.2-android'

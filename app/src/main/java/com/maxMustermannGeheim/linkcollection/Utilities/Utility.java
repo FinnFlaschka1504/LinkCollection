@@ -1751,6 +1751,7 @@ public class Utility {
                 .show();
 
         SearchView searchView = dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_search);
+        TextView emptyTextView = dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_empty);
 
         CustomRecycler<ParentClass> customRecycler_selectList = new CustomRecycler<>((AppCompatActivity) context, dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_selectCategories));
 
@@ -1789,13 +1790,23 @@ public class Utility {
         customRecycler_selectList
                 .setItemLayout(R.layout.list_item_select)
                 .setGetActiveObjectList(customRecycler -> {
+                    List<ParentClass> resultList;
                     if (searchQuery[0].equals("")) {
                         allObjectsList.sort((o1, o2) -> o1.getName().compareTo(o2.getName()));
-                        return allObjectsList;
-                    }
-                    return getMapFromDatabase(category).values().stream().filter(parentClass -> ParentClass_Alias.containsQuery(parentClass, searchQuery[0]))
+                        resultList = allObjectsList;
+                    } else
+                        resultList = allObjectsList.stream().filter(parentClass -> ParentClass_Alias.containsQuery(parentClass, searchQuery[0]))
                             .sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList());
+
+                    if (resultList.isEmpty()) {
+                        emptyTextView.setVisibility(View.VISIBLE);
+                        emptyTextView.setText(String.format("Keine %s %s", category.getPlural(), allObjectsList.isEmpty() ? "hinzugefügt" : "für diese Suche"));
+                    } else
+                        emptyTextView.setVisibility(View.GONE);
+
+                    return resultList;
                 })
+                .enableDivider()
                 .setSetItemContent((customRecycler, itemView, parentClass) -> {
                     ImageView thumbnail = itemView.findViewById(R.id.selectList_thumbnail);
                     String imagePath;
@@ -1869,11 +1880,16 @@ public class Utility {
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .setView(R.layout.dialog_edit_item)
                 .setDimensionsFullscreen()
+                .disableScroll()
                 .setSetViewContent((customDialog, view, reload) -> {
-                    LinearLayout editCategoryLayout = view.findViewById(R.id.dialogEditCategory_selectLayout);
+                    FrameLayout editCategoryLayout = view.findViewById(R.id.dialogEditCategory_selectLayout);
 
                     // vvvvvvvvvvvvvvv Selected
-                    CustomRecycler<String> selectedRecycler = new CustomRecycler<String>((AppCompatActivity) context, view.findViewById(R.id.dialogEditCategory_selectedCategories));
+                    CustomRecycler<String> selectedRecycler = new CustomRecycler<>((AppCompatActivity) context, view.findViewById(R.id.dialogEditCategory_selectedCategories));
+                    final Runnable updateSelectedRecycler = () -> {
+                        view.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(selectedIds.isEmpty() ? View.VISIBLE : View.GONE);
+                        selectedRecycler.reload();
+                    };
                     selectedRecycler
                             .setItemLayout(R.layout.list_item_bubble)
                             .setObjectList(selectedIds)
@@ -1888,12 +1904,12 @@ public class Utility {
                                         "Swipe nach Oben zum abwählen", Toast.LENGTH_SHORT).show();
                             })
                             .enableSwiping((objectList, direction, s) -> {
-                                ParentClass_Tree.buildTreeView(editCategoryLayout, selectedIds, searchQuery[0], selectedRecycler::reload);
+                                ParentClass_Tree.buildTreeView(editCategoryLayout, category, selectedIds, searchQuery[0], updateSelectedRecycler);
                             }, true, false)
                             .generate();
 
                     // vvvvvvvvvvvvvvv Tree
-                    ParentClass_Tree.buildTreeView(editCategoryLayout, selectedIds, searchQuery[0], selectedRecycler::reload);
+                    ParentClass_Tree.buildTreeView(editCategoryLayout, category, selectedIds, searchQuery[0], updateSelectedRecycler);
 
                     // vvvvvvvvvvvvvvv Search
                     SearchView searchView = view.findViewById(R.id.dialogEditCategory_search);
@@ -1908,11 +1924,26 @@ public class Utility {
                         @Override
                         public boolean onQueryTextChange(String s) {
                             searchQuery[0] = s.trim();
-                            ParentClass_Tree.buildTreeView(editCategoryLayout, selectedIds, searchQuery[0], selectedRecycler::reload);
+                            ParentClass_Tree.buildTreeView(editCategoryLayout, category, selectedIds, searchQuery[0], updateSelectedRecycler);
                             return true;
                         }
                     });
 
+                    // vvvvvvvvvvvvvvv Add
+                    customDialog.getButtonByIcon(R.drawable.ic_add)
+                            .getButton().setOnClickListener(v -> {
+                        ParentClass_Tree.addNew(context, null, searchQuery[0], category, newObject -> {
+                            selectedIds.add(newObject.getUuid());
+                            updateSelectedRecycler.run();
+                            ParentClass_Tree.buildTreeView(editCategoryLayout, category, selectedIds, searchQuery[0], updateSelectedRecycler);
+                        });
+                    });
+                })
+                .addButton(CustomDialog.BUTTON_TYPE.ADD_BUTTON)
+                .transformPreviousButtonToImageButton()
+                .alignPreviousButtonsLeft()
+                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
+                    onSaved.runGenericInterface(selectedIds);
                 })
                 .show();
     }

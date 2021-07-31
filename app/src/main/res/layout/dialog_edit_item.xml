@@ -62,17 +62,31 @@
             android:layout_height="1dp"
             android:background="@color/colorDivider" />
 
-        <LinearLayout
-            android:id="@+id/dialogEditCategory_selectLayout"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/dialogEditCategory_selectCategories"
+            <FrameLayout
+                android:id="@+id/dialogEditCategory_selectLayout"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
-        </LinearLayout>
+                android:layout_height="match_parent">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/dialogEditCategory_selectCategories"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/dialogEditCategory_empty"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="23dp"
+                android:text="Keine * für diese Suche"
+                android:textAlignment="center"
+                android:textStyle="italic" />
+        </FrameLayout>
     </LinearLayout>
 
 </LinearLayout>

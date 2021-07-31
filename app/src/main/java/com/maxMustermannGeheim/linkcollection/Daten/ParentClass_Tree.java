@@ -1,11 +1,18 @@
 package com.maxMustermannGeheim.linkcollection.Daten;
 
 import android.content.Context;
+import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.annotation.Nullable;
+
+import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaCategory;
+import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomTreeNodeHolder;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -18,7 +25,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class ParentClass_Tree extends ParentClass {
@@ -39,12 +45,11 @@ public class ParentClass_Tree extends ParentClass {
         return this;
     }
     
-    public static TreeNode getFilteredCompleteTree(Context context, String searchQuery, CustomList<String> selectedIds){
-        Database database = Database.getInstance();
+    public static TreeNode getFilteredCompleteTree(Context context, CategoriesActivity.CATEGORIES category, String searchQuery, CustomList<String> selectedIds){
         TreeNode root = TreeNode.root();
 
-        for (MediaCategory mediaCategory : database.mediaCategoryMap.values()) {
-            TreeNode childNode = mediaCategory._getRecursiveTree(context, searchQuery, selectedIds);
+        for (ParentClass parentClass : Utility.getMapFromDatabase(category).values()) {
+            TreeNode childNode = ((ParentClass_Tree) parentClass)._getRecursiveTree(context, searchQuery, selectedIds);
             if (childNode != null)
                 root.addChild(childNode);
         }
@@ -86,30 +91,116 @@ public class ParentClass_Tree extends ParentClass {
         return treeNode;
     }
 
-    public static void buildTreeView(ViewGroup container, CustomList<String> selectedIds, String searchQuery, Runnable onSelectionChange) {
+    public static void buildTreeView(ViewGroup container, CategoriesActivity.CATEGORIES category, CustomList<String> selectedIds, String searchQuery, Runnable updateSelectedRecycler) {
         Context context = container.getContext();
         container.removeAllViews();
 
-        TreeNode completeTree = MediaCategory.getFilteredCompleteTree(context, searchQuery, selectedIds);
+        TreeNode completeTree = MediaCategory.getFilteredCompleteTree(context, category, searchQuery, selectedIds);
+
+        TextView emptyTextView = ((ViewGroup) container.getParent()).findViewById(R.id.dialogEditCategory_empty);
+        if (completeTree.getChildren().isEmpty()) {
+            emptyTextView.setVisibility(View.VISIBLE);
+            emptyTextView.setText(String.format("Keine %s %s", category.getPlural(), Utility.getMapFromDatabase(category).isEmpty() ? "hinzugefügt" : "für diese Suche"));
+        } else
+            emptyTextView.setVisibility(View.GONE);
+
         AndroidTreeView tView = new AndroidTreeView(context, completeTree);
         tView.setUseAutoToggle(false);
+        Utility.GenericInterface<TreeNode> updateSelectedList = treeNode -> {
+            String uuid = ((ParentClass_Tree) treeNode.getValue()).getUuid();
+            if (treeNode.isSelected())
+                selectedIds.add(uuid);
+            else
+                selectedIds.remove(uuid);
+//            Toast.makeText(context, "Ausgewählt: " + selectedIds.size(), Toast.LENGTH_SHORT).show();
+            updateSelectedRecycler.run();
+        };
 
         tView.setDefaultNodeClickListener((node, value) -> {
             if (node.isSelectable()) {
-                node.setSelected(!node.isSelected());
-                ((CustomTreeNodeHolder) node.getViewHolder()).update();
+                if (node.isSelected()) {
+                    node.setSelected(false);
+                    ((CustomTreeNodeHolder) node.getViewHolder()).update();
+                    updateSelectedList.runGenericInterface(node);
+                } else {
+                    for (TreeNode child : completeTree.getChildren()) {
+                        if (((ParentClass_Tree) child.getValue()).manageSelection(child, node, updateSelectedList)) {
+                            break;
+                        }
+                    }
+                }
+
             }
         });
         tView.setDefaultNodeLongClickListener((node, value) -> {
-            if (node.isSelectable()) {
-                node.setSelected(!node.isSelected());
-                ((CustomTreeNodeHolder) node.getViewHolder()).update();
-            }
+            addNew(context, (ParentClass_Tree) value, searchQuery, category, newObject -> {
+                selectedIds.add(newObject.getUuid());
+                updateSelectedRecycler.run();
+                buildTreeView(container, category, selectedIds, searchQuery, updateSelectedRecycler);
+            });
             return true;
         });
 
         container.addView(tView.getView());
         tView.expandAll();
+    }
+
+    public static void addNew(Context context, @Nullable ParentClass_Tree parent, String name, CategoriesActivity.CATEGORIES category, Utility.GenericInterface<ParentClass_Tree> onAdded) {
+        CustomDialog.Builder(context)
+                .setTitle(category.getSingular() + " Hinzufügen")
+                .addOptionalModifications(customDialog -> {
+                    if (parent == null)
+                        customDialog.setText("Mit langem Klicken auf eine Kategorie können Unterkategorien hinzugefügt werden.");
+                    else
+                        customDialog.setText("Neue Subkategorie zu " + parent.getName() + " hinzufügen");
+                })
+                .setEdit(new CustomDialog.EditBuilder().setHint(category.getSingular() + " Name").setText(name))
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
+                    String text = customDialog.getEditText();
+                    ParentClass_Tree newObject = (ParentClass_Tree) ParentClass.newCategory(category, text);
+                    if (parent != null) {
+                        parent.addChild(newObject);
+                    } else {
+                        ((Map<String, ParentClass>) Utility.getMapFromDatabase(category)).put(newObject.getUuid(), newObject);
+                    }
+                    Toast.makeText(context, (Database.saveAll_simple() ? "" : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
+                    onAdded.runGenericInterface(newObject);
+                })
+                .disableLastAddedButton()
+                .show();
+
+    }
+
+    private boolean manageSelection(TreeNode root, TreeNode selected, Utility.GenericInterface<TreeNode> changedSelection) {
+        if (selected == root) {
+            if (!isChildSelected(root)) {
+                selected.setSelected(true);
+                ((CustomTreeNodeHolder) selected.getViewHolder()).update();
+                changedSelection.runGenericInterface(selected);
+            }
+            return true;
+        } else if (root.isLeaf()) {
+            return false;
+        } else {
+            for (TreeNode child : root.getChildren()) {
+                if (manageSelection(child, selected, changedSelection)) {
+                    if (root.isSelected()) {
+                        root.setSelected(false);
+                        ((CustomTreeNodeHolder) root.getViewHolder()).update();
+                        changedSelection.runGenericInterface(root);
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    private boolean isChildSelected(TreeNode root) {
+        if (root.isSelected())
+            return true;
+        return root.getChildren().stream().anyMatch(this::isChildSelected);
     }
     //  <------------------------- Tree -------------------------
 

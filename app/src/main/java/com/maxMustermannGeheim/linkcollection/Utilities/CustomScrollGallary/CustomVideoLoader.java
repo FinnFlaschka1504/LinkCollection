@@ -36,6 +36,7 @@ public class CustomVideoLoader extends DefaultVideoLoader {
 
     public CustomVideoLoader(Media media) {
         super(media.getImagePath(), 0);
+        this.media = media;
     }
 
     @Override

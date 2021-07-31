@@ -9,6 +9,7 @@ import java.util.UUID;
 
 public class Media extends ParentClass_Image {
     private List<String> personIdList = new CustomList<>();
+    private List<String> categoryIdList = new CustomList<>();
 
 
     //  ------------------------- Constructor ------------------------->
@@ -29,6 +30,15 @@ public class Media extends ParentClass_Image {
 
     public Media setPersonIdList(CustomList<String> personIdList) {
         this.personIdList = personIdList;
+        return this;
+    }
+
+    public List<String> getCategoryIdList() {
+        return categoryIdList;
+    }
+
+    public Media setCategoryIdList(List<String> categoryIdList) {
+        this.categoryIdList = categoryIdList;
         return this;
     }
     //  <------------------------- Getter & Setter -------------------------

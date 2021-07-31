@@ -665,6 +665,9 @@ public class CategoriesActivity extends AppCompatActivity {
                 case MEDIA_PERSON:
                     getCategoryList = t -> ((Media) t).getPersonIdList();
                     break;
+                case MEDIA_CATEGORY:
+                    getCategoryList = t -> ((Media) t).getCategoryIdList();
+                    break;
             }
             intersectionList = new com.finn.androidUtilities.CustomList<>(getCategoryList.runGenericInterface(list.get(0)));
             if (list.size() > 1)

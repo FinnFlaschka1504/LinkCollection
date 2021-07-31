@@ -17,6 +17,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
@@ -47,7 +49,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaCategory;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomScrollGallary.CustomPicassoImageLoader;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomScrollGallary.CustomGlideImageLoader;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomScrollGallary.CustomVideoLoader;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -56,14 +58,12 @@ import com.veinhorn.scrollgalleryview.MediaInfo;
 import com.veinhorn.scrollgalleryview.ScrollGalleryView;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.logging.Handler;
 import java.util.stream.Collectors;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
@@ -106,7 +106,6 @@ public class MediaActivity extends AppCompatActivity {
     private MultiSelectHelper<Media> selectHelper;
     private Menu toolBarMenu;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.PERSON));
-    private List<Media> shownMediaList;
 
     private TextView elementCount;
     private SearchView media_search;
@@ -378,12 +377,7 @@ public class MediaActivity extends AppCompatActivity {
         mediaList.sort((media1, media2) -> {
             File file1 = new File(media1.getImagePath());
             File file2 = new File(media2.getImagePath());
-            if (file1.exists() && file2.exists())
-                return (int) (file1.lastModified() - file2.lastModified()) * -1;
-            else if (file1.exists())
-                return 1;
-            else
-                return -1;
+            return Long.compare(file1.lastModified(), file2.lastModified()) * -1;
         });
         return mediaList;
     }
@@ -492,7 +486,9 @@ public class MediaActivity extends AppCompatActivity {
             activeSelection = false;
             CustomList<Selectable<T>> allSelected = getAllSelected();
             contentList.forEach(tSelectable -> tSelectable.selected = false);
-            customRecycler.reload();
+            customRecycler.getAdapter().notifyDataSetChanged();
+
+//            customRecycler.reload();
 
             ((CollapsingToolbarLayout) context.findViewById(R.id.collapsingToolbarLayout)).setTitleEnabled(true);
 //            Toolbar toolbar = context.findViewById(R.id.toolbar);
@@ -526,7 +522,7 @@ public class MediaActivity extends AppCompatActivity {
                 stopSelection();
                 return this;
             }
-            customRecycler.update(index);
+            customRecycler.getAdapter().notifyItemChanged(index);
             updateToolbarTitle();
             return this;
         }
@@ -686,6 +682,7 @@ public class MediaActivity extends AppCompatActivity {
         CustomList<Media> newMedia = isAdd ? new CustomList<>() : oldMedia.stream().map(Media::clone).collect(Collectors.toCollection(CustomList::new));
 
         CustomList<String> mediaPersonIdList = CategoriesActivity.getCategoriesIntersection(newMedia, CategoriesActivity.CATEGORIES.MEDIA_PERSON);
+        CustomList<String> mediaCategoryIdList = CategoriesActivity.getCategoriesIntersection(newMedia, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY);
 
         CustomDialog.Builder(this)
                 .setTitle("Mehrere " + plural + (isAdd ? " Hinzufügen" : " Bearbeiten"))
@@ -701,7 +698,10 @@ public class MediaActivity extends AppCompatActivity {
                         Utility.showEditItemDialog(this, customDialog, mediaPersonIdList, mediaPersonIdList, CategoriesActivity.CATEGORIES.MEDIA_PERSON);
                     });
                     view.findViewById(R.id.dialog_editMedia_editCategories).setOnClickListener(v -> {
-                        Utility.showEditTreeItemDialog(this, new CustomList<>("mediaCategory_402d676a-77e5-42e8-8444-57cbb137c13b", "mediaCategory_aeeae1b3-bab5-418c-b043-18e409e564b8"), strings -> {}, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY);
+                        Utility.showEditTreeItemDialog(this, mediaCategoryIdList, newList -> {
+                            mediaCategoryIdList.replaceWith(newList);
+                            ((TextView) view.findViewById(R.id.dialog_editMedia_categories)).setText(String.join(", ", mediaCategoryIdList.map(id -> MediaCategory.findObjectById(id).getName())));
+                        }, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY);
                     });
 
                     view.findViewById(R.id.dialog_editMedia_editCategories).setOnLongClickListener(v -> {
@@ -718,6 +718,7 @@ public class MediaActivity extends AppCompatActivity {
                     });
 
                     ((TextView) view.findViewById(R.id.dialog_editMedia_persons)).setText(String.join(", ", mediaPersonIdList.map(id -> database.mediaPersonMap.get(id).getName())));
+                    ((TextView) view.findViewById(R.id.dialog_editMedia_categories)).setText(String.join(", ", mediaCategoryIdList.map(id -> MediaCategory.findObjectById(id).getName())));
                 })
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .addOptionalModifications(customDialog -> {
@@ -734,16 +735,17 @@ public class MediaActivity extends AppCompatActivity {
                                 .addConfirmationDialogToLastAddedButton(singOrPlur + " Löschen", "Möchstest du wirklich " + oldMedia.size() + " " + singOrPlur + " löschen?");
                     }
                 })
-                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> saveMultipleMedia(customDialog, oldMedia, newMedia, mediaPersonIdList))
+                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> saveMultipleMedia(customDialog, oldMedia, newMedia, mediaPersonIdList, mediaCategoryIdList))
                 .show();
     }
 
-    private void saveMultipleMedia(CustomDialog editDialog, CustomList<Media> oldMedia, List<Media> newMedia, CustomList<String> mediaPersonIdList) {
+    private void saveMultipleMedia(CustomDialog editDialog, CustomList<Media> oldMedia, List<Media> newMedia, CustomList<String> mediaPersonIdList, CustomList<String> mediaCategoryIdList) {
         boolean isAdd = oldMedia == null || oldMedia.isEmpty();
         int size = newMedia.size();
 
         if (isAdd) {
             newMedia.forEach(media -> media.getPersonIdList().addAll(mediaPersonIdList));
+            newMedia.forEach(media -> media.getCategoryIdList().addAll(mediaCategoryIdList));
 
             newMedia.removeIf(media -> {
                 Optional<Media> first = database.mediaMap.values().stream().filter(media1 -> media.getImagePath().equals(media1.getImagePath())).findFirst();
@@ -757,19 +759,8 @@ public class MediaActivity extends AppCompatActivity {
 
             database.mediaMap.putAll(newMedia.stream().collect(Collectors.toMap(Media::getUuid, o -> o)));
         } else {
-            CustomList<String> originalMediaPersonIdList = CategoriesActivity.getCategoriesIntersection(newMedia, CategoriesActivity.CATEGORIES.MEDIA_PERSON);
-            CustomList<String> deletedPersonsIds = new CustomList<>(originalMediaPersonIdList);
-            CustomList<String> addedPersonsIds = new CustomList<>(mediaPersonIdList);
-            deletedPersonsIds.removeAll(mediaPersonIdList);
-            addedPersonsIds.removeAll(originalMediaPersonIdList);
-
-            newMedia.forEach(media -> {
-                List<String> personIdList = media.getPersonIdList();
-                personIdList.removeAll(deletedPersonsIds);
-                CustomList<String> customList = new CustomList<>(personIdList).addAllDistinct(addedPersonsIds);
-                personIdList.clear();
-                personIdList.addAll(customList);
-            });
+            applyNewIdList(newMedia, mediaPersonIdList, CategoriesActivity.CATEGORIES.MEDIA_PERSON);
+            applyNewIdList(newMedia, mediaCategoryIdList, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY);
 
             oldMedia.forEachCount((media, count) -> {
                 media.getChangesFrom(newMedia.get(count));
@@ -781,6 +772,32 @@ public class MediaActivity extends AppCompatActivity {
         reLoadRecycler();
     }
 
+    private void applyNewIdList(List<Media> newMedia, CustomList<String> newIdList, CategoriesActivity.CATEGORIES category) {
+        Utility.GenericReturnInterface<Media, List<String>> getCategoryList;
+        switch (category) {
+            default:
+            case MEDIA_PERSON:
+                getCategoryList = Media::getPersonIdList;
+                break;
+            case MEDIA_CATEGORY:
+                getCategoryList = Media::getCategoryIdList;
+                break;
+        }
+
+        CustomList<String> originalIdList = CategoriesActivity.getCategoriesIntersection(newMedia, category);
+        CustomList<String> deletedPersonsIds = new CustomList<>(originalIdList);
+        CustomList<String> addedPersonsIds = new CustomList<>(newIdList);
+        deletedPersonsIds.removeAll(newIdList);
+        addedPersonsIds.removeAll(originalIdList);
+
+        newMedia.forEach(media -> {
+            List<String> idList = getCategoryList.runGenericInterface(media);
+            idList.removeAll(deletedPersonsIds);
+            CustomList<String> customList = new CustomList<>(idList).addAllDistinct(addedPersonsIds);
+            idList.clear();
+            idList.addAll(customList);
+        });
+    }
 
     // --------------- SelectMediaHelper
 
@@ -866,7 +883,7 @@ public class MediaActivity extends AppCompatActivity {
                                                     .override(700, 700)
                                                     .centerCrop();
 
-                                            ImageView imageView = (ImageView) itemView.findViewById(R.id.listItem_image_imgaeView);
+                                            ImageView imageView = itemView.findViewById(R.id.listItem_image_imgaeView);
                                             Glide.with(context)
                                                     .load(imageUri)
                                                     .apply(myOptions)
@@ -922,9 +939,10 @@ public class MediaActivity extends AppCompatActivity {
                     .override(CustomUtility.dpToPx(sizeDp), CustomUtility.dpToPx(sizeDp))
                     .centerCrop();
 
-            ImageView imageView = (ImageView) view.findViewById(R.id.listItem_image_imgaeView);
+            ImageView imageView = view.findViewById(R.id.listItem_image_imgaeView);
             Glide.with(imageView.getContext())
                     .load(imageUri)
+                    .error(R.drawable.ic_broken_image)
                     .apply(myOptions)
                     .into(imageView);
 
@@ -1017,33 +1035,34 @@ public class MediaActivity extends AppCompatActivity {
     }
 
     private void setMediaScrollGallery(List<Media> shownMediaList) {
-//        clearScrollGallery();
-        this.shownMediaList = shownMediaList;
-        for (Media media : shownMediaList) {
-            if (media.getImagePath().endsWith(".mp4"))
-                scrollGalleryView.addMedia(MediaInfo.mediaLoader(new CustomVideoLoader(media)));
-            else
-                scrollGalleryView.addMedia(MediaInfo.mediaLoader(new CustomPicassoImageLoader(media)));
-        }
+        scrollGalleryView.addMedia(
+                shownMediaList.stream().map(media -> {
+                    if (media.getImagePath().endsWith(".mp4"))
+                        return MediaInfo.mediaLoader(new CustomVideoLoader(media));
+                    else
+                        return MediaInfo.mediaLoader(new CustomGlideImageLoader(media));
+                }).collect(Collectors.toList()));
     }
 
     private void clearScrollGallery() {
-        if (shownMediaList != null) {
-            for (int i = 0; i < shownMediaList.size(); i++)
-                scrollGalleryView.removeMedia(0);
-        }
-
+        scrollGalleryView.clearGallery();
     }
 
     private void showScrollGallery(int index) {
         scrollGalleryView.setVisibility(View.VISIBLE);
         scrollGalleryView.setCurrentItem(index);
         LinearLayout thumbnailContainer = findViewById(R.id.thumbnails_container);
+        thumbnailContainer.setBackgroundColor(Color.argb(100, 0,0, 0));
 
-        HorizontalScrollView thumbnailScrollView = (HorizontalScrollView) findViewById(R.id.thumbnails_scroll_view);
+//        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+//        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+//        getWindow().setDecorFitsSystemWindows(false);
+
+        HorizontalScrollView thumbnailScrollView = findViewById(R.id.thumbnails_scroll_view);
         //1440
         thumbnailContainer.postDelayed(() -> {
-            int thumbnailCoords[] = new int[2];
+            int[] thumbnailCoords = new int[2];
             thumbnailContainer.getChildAt(index).getLocationOnScreen(thumbnailCoords);
             int thumbnailCenterX = thumbnailCoords[0] + 200 / 2;
             int thumbnailDelta = 1440 / 2 - thumbnailCenterX;
@@ -1054,6 +1073,10 @@ public class MediaActivity extends AppCompatActivity {
 
     private void hideScrollGallery() {
         scrollGalleryView.setVisibility(View.GONE);
+//        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+//        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+//        getWindow().setDecorFitsSystemWindows(true);
         clearScrollGallery();
     }
     //  <------------------------- ScrollGallery -------------------------

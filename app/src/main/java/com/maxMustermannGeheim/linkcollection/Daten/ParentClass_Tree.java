@@ -1,6 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Daten;
 
 import android.content.Context;
+import android.util.Pair;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -9,11 +10,10 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 
 import com.finn.androidUtilities.CustomDialog;
+import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomUtility;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaCategory;
-import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomTreeNodeHolder;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -22,6 +22,7 @@ import com.unnamed.b.atv.view.AndroidTreeView;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -45,11 +46,13 @@ public class ParentClass_Tree extends ParentClass {
         return this;
     }
     
-    public static TreeNode getFilteredCompleteTree(Context context, CategoriesActivity.CATEGORIES category, String searchQuery, CustomList<String> selectedIds){
+    public static TreeNode getFilteredCompleteTree(Context context, CategoriesActivity.CATEGORIES category, String searchQuery, 
+                                                   @Nullable CustomList<String> selectedIds, AndroidTreeView tView, Comparator<ParentClass_Tree> comparator, 
+                                                   @Nullable Utility.DoubleGenericInterface<ViewGroup,TreeNode> customLayoutAdjustments){
         TreeNode root = TreeNode.root();
 
-        for (ParentClass parentClass : Utility.getMapFromDatabase(category).values()) {
-            TreeNode childNode = ((ParentClass_Tree) parentClass)._getRecursiveTree(context, searchQuery, selectedIds);
+        for (ParentClass_Tree parentClass : new CustomList<>(((Map<String, ParentClass_Tree>) Utility.getMapFromDatabase(category)).values()).sorted(comparator)) {
+            TreeNode childNode = parentClass._getRecursiveTree(context, searchQuery, selectedIds, tView, comparator, customLayoutAdjustments);
             if (childNode != null)
                 root.addChild(childNode);
         }
@@ -57,10 +60,12 @@ public class ParentClass_Tree extends ParentClass {
         return root;
     }
 
-    public TreeNode _getRecursiveTree(Context context, String searchQuery, CustomList<String> selectedIds) {
+    public TreeNode _getRecursiveTree(Context context, String searchQuery, 
+                                      @Nullable CustomList<String> selectedIds, AndroidTreeView tView, Comparator<ParentClass_Tree> comparator, 
+                                      @Nullable Utility.DoubleGenericInterface<ViewGroup,TreeNode> customLayoutAdjustments) {
         boolean matches = true;
         TreeNode treeNode = new TreeNode(this)
-                .setViewHolder(new CustomTreeNodeHolder(context));
+                .setViewHolder(new CustomTreeNodeHolder(context, tView, customLayoutAdjustments));
         if (CustomUtility.stringExists(searchQuery)) {
             matches = name.toLowerCase().contains(searchQuery.toLowerCase());
             if (children.isEmpty() && !matches)
@@ -68,7 +73,8 @@ public class ParentClass_Tree extends ParentClass {
             else if (!children.isEmpty()) {
                 List<TreeNode> list = children
                         .stream()
-                        .map(parentClass_tree -> parentClass_tree._getRecursiveTree(context, searchQuery, selectedIds))
+                        .sorted(comparator)
+                        .map(parentClass_tree -> parentClass_tree._getRecursiveTree(context, searchQuery, selectedIds, tView, comparator, customLayoutAdjustments))
                         .filter(obj -> !Objects.isNull(obj))
                         .collect(Collectors.toList());
 
@@ -83,66 +89,81 @@ public class ParentClass_Tree extends ParentClass {
             treeNode
                     .addChildren(children
                             .stream()
-                            .map(parentClass_tree -> parentClass_tree._getRecursiveTree(context, searchQuery, selectedIds))
+                            .map(parentClass_tree -> parentClass_tree._getRecursiveTree(context, searchQuery, selectedIds, tView, comparator, customLayoutAdjustments))
                             .collect(Collectors.toList()));
         }
-        treeNode.setSelectable(matches);
-        treeNode.setSelected(selectedIds.contains(uuid));
+        treeNode.setSelectable(selectedIds != null && matches);
+        treeNode.setSelected(selectedIds != null && selectedIds.contains(uuid));
         return treeNode;
     }
 
-    public static void buildTreeView(ViewGroup container, CategoriesActivity.CATEGORIES category, CustomList<String> selectedIds, String searchQuery, Runnable updateSelectedRecycler) {
+    public static Pair<AndroidTreeView,TreeNode> buildTreeView(ViewGroup container, CategoriesActivity.CATEGORIES category,
+                                     @Nullable CustomList<String> selectedIds, String searchQuery,
+                                     @Nullable Runnable updateSelectedRecycler, Comparator<ParentClass_Tree> comparator, TextView emptyTextView, 
+                                     @Nullable Pair<TreeNode.TreeNodeClickListener, TreeNode.TreeNodeLongClickListener> clickListenerPair, 
+                                     @Nullable Utility.DoubleGenericInterface<ViewGroup,TreeNode> customLayoutAdjustments) {
         Context context = container.getContext();
         container.removeAllViews();
 
-        TreeNode completeTree = MediaCategory.getFilteredCompleteTree(context, category, searchQuery, selectedIds);
+        AndroidTreeView tView = new AndroidTreeView(context);
+        tView.setUseAutoToggle(false);
+        TreeNode completeTree = MediaCategory.getFilteredCompleteTree(context, category, searchQuery, selectedIds, tView, comparator, customLayoutAdjustments);
+        tView.setRoot(completeTree);
 
-        TextView emptyTextView = ((ViewGroup) container.getParent()).findViewById(R.id.dialogEditCategory_empty);
         if (completeTree.getChildren().isEmpty()) {
             emptyTextView.setVisibility(View.VISIBLE);
             emptyTextView.setText(String.format("Keine %s %s", category.getPlural(), Utility.getMapFromDatabase(category).isEmpty() ? "hinzugefügt" : "für diese Suche"));
         } else
             emptyTextView.setVisibility(View.GONE);
 
-        AndroidTreeView tView = new AndroidTreeView(context, completeTree);
-        tView.setUseAutoToggle(false);
         Utility.GenericInterface<TreeNode> updateSelectedList = treeNode -> {
             String uuid = ((ParentClass_Tree) treeNode.getValue()).getUuid();
             if (treeNode.isSelected())
                 selectedIds.add(uuid);
             else
                 selectedIds.remove(uuid);
-//            Toast.makeText(context, "Ausgewählt: " + selectedIds.size(), Toast.LENGTH_SHORT).show();
-            updateSelectedRecycler.run();
+            CustomUtility.runRunnable(updateSelectedRecycler);
         };
 
-        tView.setDefaultNodeClickListener((node, value) -> {
-            if (node.isSelectable()) {
-                if (node.isSelected()) {
-                    node.setSelected(false);
-                    ((CustomTreeNodeHolder) node.getViewHolder()).update();
-                    updateSelectedList.runGenericInterface(node);
-                } else {
-                    for (TreeNode child : completeTree.getChildren()) {
-                        if (((ParentClass_Tree) child.getValue()).manageSelection(child, node, updateSelectedList)) {
-                            break;
+        if (clickListenerPair != null) {
+            tView.setDefaultNodeClickListener(clickListenerPair.first);
+            tView.setDefaultNodeLongClickListener(clickListenerPair.second);
+        } else if (selectedIds != null){
+            tView.setDefaultNodeClickListener((node, value) -> {
+                if (node.isSelectable()) {
+                    if (node.isSelected()) {
+                        node.setSelected(false);
+                        ((CustomTreeNodeHolder) node.getViewHolder()).update();
+                        updateSelectedList.runGenericInterface(node);
+                    } else {
+                        for (TreeNode child : completeTree.getChildren()) {
+                            if (((ParentClass_Tree) child.getValue()).manageSelection(child, node, updateSelectedList)) {
+                                break;
+                            }
                         }
                     }
+
                 }
-
-            }
-        });
-        tView.setDefaultNodeLongClickListener((node, value) -> {
-            addNew(context, (ParentClass_Tree) value, searchQuery, category, newObject -> {
-                selectedIds.add(newObject.getUuid());
-                updateSelectedRecycler.run();
-                buildTreeView(container, category, selectedIds, searchQuery, updateSelectedRecycler);
             });
-            return true;
-        });
 
+            tView.setDefaultNodeLongClickListener((node, value) -> {
+                addNew(context, (ParentClass_Tree) value, searchQuery, category, newObject -> {
+                    selectedIds.add(newObject.getUuid());
+                    updateSelectedRecycler.run();
+                    buildTreeView(container, category, selectedIds, searchQuery, updateSelectedRecycler, comparator, emptyTextView, clickListenerPair, null);
+                });
+                return true;
+            });
+        }
+
+
+//        View view = tView.getView();
+////        view.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+//        container.addView(view);
         container.addView(tView.getView());
         tView.expandAll();
+        updateAll(completeTree);
+        return Pair.create(tView, completeTree);
     }
 
     public static void addNew(Context context, @Nullable ParentClass_Tree parent, String name, CategoriesActivity.CATEGORIES category, Utility.GenericInterface<ParentClass_Tree> onAdded) {
@@ -202,6 +223,12 @@ public class ParentClass_Tree extends ParentClass {
             return true;
         return root.getChildren().stream().anyMatch(this::isChildSelected);
     }
+
+    public static void updateAll(TreeNode root){
+        if (root.getViewHolder() instanceof CustomTreeNodeHolder)
+            ((CustomTreeNodeHolder) root.getViewHolder()).update();
+        root.getChildren().forEach(ParentClass_Tree::updateAll);
+    }
     //  <------------------------- Tree -------------------------
 
 
@@ -245,6 +272,32 @@ public class ParentClass_Tree extends ParentClass {
                 return child;
         }
         return null;
+    }
+
+    public static int getAllCount(TreeNode root, String searchQuery){
+        int nodeValue = root.isRoot() || (CustomUtility.stringExists(searchQuery) && !Utility.containsIgnoreCase(((ParentClass_Tree) root.getValue()).getName(), searchQuery)) ? 0 : 1;
+        return root.getChildren().stream().mapToInt(treeNode -> getAllCount(treeNode, searchQuery)).sum() + nodeValue;
+    }
+
+    public static int getAllCount(CategoriesActivity.CATEGORIES category){
+        Collection<ParentClass_Tree> values = (Collection<ParentClass_Tree>) Utility.getMapFromDatabase(category).values();
+        return values.stream().mapToInt(ParentClass_Tree::_getAllCount).sum();
+    }
+
+    public int _getAllCount() {
+        return children.stream().mapToInt(ParentClass_Tree::_getAllCount).sum() + 1;
+    }
+
+    public static List<ParentClass_Tree> getAll(CategoriesActivity.CATEGORIES category) {
+        Collection<ParentClass_Tree> values = (Collection<ParentClass_Tree>) Utility.getMapFromDatabase(category).values();
+        List<ParentClass_Tree> list = CustomUtility.concatenateCollections(values.stream().map(ParentClass_Tree::_getAll).collect(Collectors.toList()));
+        return list;
+    }
+
+    public List<ParentClass_Tree> _getAll() {
+        List<ParentClass_Tree> list = CustomUtility.concatenateCollections(children.stream().map(ParentClass_Tree::_getAll).collect(Collectors.toCollection(CustomList::new)));
+        list.add(this);
+        return list;
     }
     //  <------------------------- Convenience -------------------------
 }

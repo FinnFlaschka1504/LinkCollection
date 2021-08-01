@@ -63,6 +63,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaPerson;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Person;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tree;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
@@ -464,6 +465,7 @@ public class Settings extends AppCompatActivity {
                 .setSetLayout((space, view) -> {
                     ((TextView) view.findViewById(R.id.main_media_count)).setText("" + database.mediaMap.size());
                     ((TextView) view.findViewById(R.id.main_media_personCount)).setText("" + database.mediaPersonMap.size());
+                    ((TextView) view.findViewById(R.id.main_media_categoryCount)).setText("" + ParentClass_Tree.getAllCount(CategoriesActivity.CATEGORIES.MEDIA_CATEGORY));
                 })
                 .setAssociatedClasses(Media.class, MediaPerson.class)
                 .setSettingsDialog(null));

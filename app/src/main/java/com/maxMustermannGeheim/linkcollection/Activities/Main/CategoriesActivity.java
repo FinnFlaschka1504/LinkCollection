@@ -14,10 +14,12 @@ import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -46,6 +48,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tree;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
@@ -55,10 +58,15 @@ import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
+import com.unnamed.b.atv.model.TreeNode;
+import com.unnamed.b.atv.view.AndroidTreeView;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -119,15 +127,18 @@ public class CategoriesActivity extends AppCompatActivity {
     SharedPreferences mySPR_daten;
     private String searchQuery = "";
     private boolean multiSelectMode;
-    private List<ParentClass> selectedList = new ArrayList<>();
+    private com.finn.androidUtilities.CustomList<ParentClass> selectedList = new com.finn.androidUtilities.CustomList<>();
+    private com.finn.androidUtilities.CustomList<String> selectedTreeList = new com.finn.androidUtilities.CustomList<>();
     private Runnable setToolbarTitle;
+    private boolean isTreeCategory;
 
     private CustomRecycler customRecycler;
     private SearchView categories_search;
     private SearchView.OnQueryTextListener textListener;
     private TextView elementCount;
 
-    private List<Pair<ParentClass, Integer>> allDatenObjektPairList;
+    private List<Pair<ParentClass, Integer>> allDatenObjektPairList = new ArrayList<>();
+    private Map<String, Integer> treeObjectCountMap = new HashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -190,6 +201,7 @@ public class CategoriesActivity extends AppCompatActivity {
 
         category = (CATEGORIES) getIntent().getSerializableExtra(MainActivity.EXTRA_CATEGORY);
 
+        isTreeCategory = CustomUtility.boolOr(category, CATEGORIES.MEDIA_CATEGORY);
 
         loadDatabase();
     }
@@ -198,8 +210,9 @@ public class CategoriesActivity extends AppCompatActivity {
         Runnable whenLoaded = () -> {
             setContentView(R.layout.activity_catigorys);
 
-            setDatenObjektIntegerPairList();
-            sortList(allDatenObjektPairList);
+            setObjectAndCount();
+            if (!isTreeCategory)
+                sortList(allDatenObjektPairList);
 
 
             setLayout();
@@ -228,7 +241,10 @@ public class CategoriesActivity extends AppCompatActivity {
 
         categories_search = findViewById(R.id.search);
 
-        loadRecycler();
+        if (isTreeCategory)
+            loadTreeRecycler();
+        else
+            loadRecycler();
 
         textListener = new SearchView.OnQueryTextListener() {
             @Override
@@ -265,106 +281,114 @@ public class CategoriesActivity extends AppCompatActivity {
                 .setAllReversed(reverse)
                 .setList(datenObjektPairList)
                 .sort(sort_type);
-//        switch (sort_type) {
-//            case NAME:
-//                datenObjektPairList.sort((objekt1, objekt2) -> objekt1.first.getName().compareTo(objekt2.first.getName()));
-//                break;
-//            case COUNT:
-//                datenObjektPairList.sort((objekt1, objekt2) -> objekt1.second.compareTo(objekt2.second));
-//                Collections.reverse(datenObjektPairList);
-//                break;
-//        }
         return datenObjektPairList;
     }
 
-    private void setDatenObjektIntegerPairList() {
-        List<Pair<ParentClass, Integer>> pairList = new ArrayList<>();
+    private void setObjectAndCount() {
+        if (isTreeCategory) {
+            Collection<? extends ParentClass> parentObjects;
+            Utility.GenericReturnInterface<ParentClass, List<String>> getList;
+            switch (category) {
+                default:
+                    return;
+                case MEDIA_CATEGORY:
+                    parentObjects = Utility.getMapFromDatabase(CATEGORIES.MEDIA).values();
+                    getList = parentClass -> ((Media) parentClass).getCategoryIdList();
+                    break;
+            }
 
-        switch (category) {
-            case DARSTELLER:
-                for (ParentClass parentClass : database.darstellerMap.values()) {
-                    int count = 0;
-                    for (Video video : database.videoMap.values()) {
-                        if (video.getDarstellerList().contains(parentClass.getUuid()))
-                            count++;
+            List<ParentClass_Tree> allTreeObjects = ParentClass_Tree.getAll(category);
+            treeObjectCountMap = allTreeObjects.stream().collect(Collectors.toMap(com.finn.androidUtilities.ParentClass::getUuid, object -> (int) parentObjects.stream().filter(o -> getList.runGenericInterface(o).contains(object.getUuid())).count()));
+        } else {
+            List<Pair<ParentClass, Integer>> pairList = new ArrayList<>();
+            switch (category) {
+                case DARSTELLER:
+                    for (ParentClass parentClass : database.darstellerMap.values()) {
+                        int count = 0;
+                        for (Video video : database.videoMap.values()) {
+                            if (video.getDarstellerList().contains(parentClass.getUuid()))
+                                count++;
+                        }
+                        pairList.add(new Pair<>(parentClass, count));
                     }
-                    pairList.add(new Pair<>(parentClass, count));
-                }
-                break;
-            case GENRE:
-                for (ParentClass parentClass : database.genreMap.values()) {
-                    int count = 0;
-                    for (Video video : database.videoMap.values()) {
-                        if (video.getGenreList().contains(parentClass.getUuid()))
-                            count++;
+                    break;
+                case GENRE:
+                    for (ParentClass parentClass : database.genreMap.values()) {
+                        int count = 0;
+                        for (Video video : database.videoMap.values()) {
+                            if (video.getGenreList().contains(parentClass.getUuid()))
+                                count++;
+                        }
+                        pairList.add(new Pair<>(parentClass, count));
                     }
-                    pairList.add(new Pair<>(parentClass, count));
-                }
-                break;
-            case STUDIOS:
-                for (ParentClass parentClass : database.studioMap.values()) {
-                    int count = 0;
-                    for (Video video : database.videoMap.values()) {
-                        if (video.getStudioList().contains(parentClass.getUuid()))
-                            count++;
+                    break;
+                case STUDIOS:
+                    for (ParentClass parentClass : database.studioMap.values()) {
+                        int count = 0;
+                        for (Video video : database.videoMap.values()) {
+                            if (video.getStudioList().contains(parentClass.getUuid()))
+                                count++;
+                        }
+                        pairList.add(new Pair<>(parentClass, count));
                     }
-                    pairList.add(new Pair<>(parentClass, count));
-                }
-                break;
-            case KNOWLEDGE_CATEGORIES:
-                for (ParentClass parentClass : database.knowledgeCategoryMap.values()) {
-                    int count = 0;
-                    for (Knowledge knowledge : database.knowledgeMap.values()) {
-                        if (knowledge.getCategoryIdList().contains(parentClass.getUuid()))
-                            count++;
+                    break;
+                case KNOWLEDGE_CATEGORIES:
+                    for (ParentClass parentClass : database.knowledgeCategoryMap.values()) {
+                        int count = 0;
+                        for (Knowledge knowledge : database.knowledgeMap.values()) {
+                            if (knowledge.getCategoryIdList().contains(parentClass.getUuid()))
+                                count++;
+                        }
+                        pairList.add(new Pair<>(parentClass, count));
                     }
-                    pairList.add(new Pair<>(parentClass, count));
-                }
-                break;
-            case PERSON:
-                for (ParentClass parentClass : database.personMap.values()) {
-                    final int[] count = {0};
-                    for (Owe owe : database.oweMap.values()) {
-                        owe.getItemList().stream().filter(item -> item.getPersonId().equals(parentClass.getUuid())).forEach(item -> count[0] += Math.round(item.getAmount()));
+                    break;
+                case PERSON:
+                    for (ParentClass parentClass : database.personMap.values()) {
+                        final int[] count = {0};
+                        for (Owe owe : database.oweMap.values()) {
+                            owe.getItemList().stream().filter(item -> item.getPersonId().equals(parentClass.getUuid())).forEach(item -> count[0] += Math.round(item.getAmount()));
+                        }
+                        pairList.add(new Pair<>(parentClass, count[0]));
                     }
-                    pairList.add(new Pair<>(parentClass, count[0]));
-                }
-                break;
-            case JOKE_CATEGORIES:
-                for (ParentClass parentClass : database.jokeCategoryMap.values()) {
-                    int count = 0;
-                    for (Joke joke : database.jokeMap.values()) {
-                        if (joke.getCategoryIdList().contains(parentClass.getUuid()))
-                            count++;
+                    break;
+                case JOKE_CATEGORIES:
+                    for (ParentClass parentClass : database.jokeCategoryMap.values()) {
+                        int count = 0;
+                        for (Joke joke : database.jokeMap.values()) {
+                            if (joke.getCategoryIdList().contains(parentClass.getUuid()))
+                                count++;
+                        }
+                        pairList.add(new Pair<>(parentClass, count));
                     }
-                    pairList.add(new Pair<>(parentClass, count));
-                }
-                break;
-            case SHOW_GENRES:
-                for (ParentClass parentClass : database.showGenreMap.values()) {
-                    int count = 0;
-                    for (Show show : database.showMap.values()) {
-                        if (show.getGenreIdList().contains(parentClass.getUuid()))
-                            count++;
+                    break;
+                case SHOW_GENRES:
+                    for (ParentClass parentClass : database.showGenreMap.values()) {
+                        int count = 0;
+                        for (Show show : database.showMap.values()) {
+                            if (show.getGenreIdList().contains(parentClass.getUuid()))
+                                count++;
+                        }
+                        pairList.add(new Pair<>(parentClass, count));
                     }
-                    pairList.add(new Pair<>(parentClass, count));
-                }
-                break;
-            case MEDIA_PERSON:
-                for (ParentClass parentClass : database.mediaPersonMap.values()) {
-                    int count = 0;
-                    for (Media media : database.mediaMap.values()) {
-                        if (media.getPersonIdList().contains(parentClass.getUuid()))
-                            count++;
+                    break;
+                case MEDIA_PERSON:
+                    for (ParentClass parentClass : database.mediaPersonMap.values()) {
+                        int count = 0;
+                        for (Media media : database.mediaMap.values()) {
+                            if (media.getPersonIdList().contains(parentClass.getUuid()))
+                                count++;
+                        }
+                        pairList.add(new Pair<>(parentClass, count));
                     }
-                    pairList.add(new Pair<>(parentClass, count));
-                }
-                break;
+                    break;
 
+            }
+            allDatenObjektPairList = pairList;
         }
-        allDatenObjektPairList = pairList;
     }
 
+
+    //  ------------------------- Recycler ------------------------->
     private void loadRecycler() {
         customRecycler = new CustomRecycler<Pair<ParentClass, Integer>>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_catigory_item)
@@ -421,7 +445,7 @@ public class CategoriesActivity extends AppCompatActivity {
                                 () -> {
                                     if (parentClassIntegerPair.first instanceof ParentClass_Tmdb)
                                         ((ParentClass_Tmdb) parentClassIntegerPair.first).tryUpdateData(this, () ->
-                                            customRecycler.update(customRecycler.getRecycler().getChildAdapterPosition(itemView)));
+                                                customRecycler.update(customRecycler.getRecycler().getChildAdapterPosition(itemView)));
                                 },
                                 () -> Utility.roundImageView(listItem_categoryItem_image, 4), this::removeFocusFromSearch);
                     } else
@@ -560,6 +584,169 @@ public class CategoriesActivity extends AppCompatActivity {
 
     }
 
+    private void loadTreeRecycler() {
+        // ToDo: Löschen doppelt bestätigen wenn Kinder noch vorhanden & Umbenennen-/ Läschen-Dialog als Methode
+        customRecycler = new CustomRecycler<Pair<ParentClass, Integer>>(this, findViewById(R.id.recycler))
+                .setItemLayout(R.layout.empty_layout)
+                .setGetActiveObjectList(() -> new CustomList<>(Pair.create(null, null)))
+                .setSetItemContent((customRecycler1, itemView, parentClassIntegerPair) -> {
+                    Pair<TreeNode.TreeNodeClickListener, TreeNode.TreeNodeLongClickListener> clickListenerPair = Pair.create((node, value) -> {
+                        startActivityForResult(new Intent(this, category.getSearchIn())
+                                        .putExtra(EXTRA_SEARCH, ((ParentClass_Tree) value).getName())
+                                        .putExtra(EXTRA_SEARCH_CATEGORY, category),
+                                START_CATEGORY_SEARCH);
+                    }, (node, value) -> {
+                        if (!Utility.isOnline(this))
+                            return false;
+
+                        removeFocusFromSearch();
+                        ParentClass parentClass = (ParentClass) value;
+
+                        CustomDialog.Builder(this)
+                                .setTitle(category.getSingular() + " Umbenennen, oder Löschen")
+                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                                .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
+                                    CustomDialog.Builder(this)
+                                            .setTitle("Löschen")
+                                            .setText("Wirklich '" + parentClass.getName() + "' löschen?")
+                                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                            .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
+                                                customDialog.dismiss();
+                                                removeCatigory(Pair.create(parentClass, 1));
+                                            })
+                                            .show();
+                                }, false)
+                                .transformPreviousButtonToImageButton()
+                                .enableDynamicWrapHeight(this)
+                                .enableAutoUpdateDynamicWrapHeight()
+                                .addOptionalModifications(customDialog1 -> {
+                                    if (parentClass instanceof ParentClass_Image) {
+                                        customDialog1
+                                                .addButton("Testen", customDialog2 -> {
+                                                    String url = ((EditText) customDialog2.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
+                                                    ImageView preview = customDialog2.findViewById(R.id.dialog_editTmdbCategory_preview);
+                                                    if (CustomUtility.stringExists(url)) {
+                                                        Utility.loadUrlIntoImageView(this, preview, Utility.getTmdbImagePath_ifNecessary(url, true), null);
+                                                        preview.setVisibility(View.VISIBLE);
+                                                    } else {
+                                                        Toast.makeText(this, "Nichts eingegeben", Toast.LENGTH_SHORT).show();
+                                                        preview.setVisibility(View.GONE);
+                                                    }
+                                                }, false);
+                                    }
+                                })
+                                .alignPreviousButtonsLeft()
+                                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
+                                    if (!Utility.isOnline(this))
+                                        return;
+                                    ParentClass_Alias.applyNameAndAlias(parentClass, ((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim());
+                                    if (parentClass instanceof ParentClass_Image) {
+                                        String url = ((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
+                                        ((ParentClass_Image) parentClass).setImagePath(CustomUtility.stringExists(url) ? url : null);
+                                    }
+                                    reLoadRecycler();
+                                    Toast.makeText(this, (Database.saveAll_simple() ? "" : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
+
+                                })
+                                .setView(R.layout.dialog_edit_tmdb_category)
+                                .setSetViewContent((customDialog, view1, reload) -> {
+                                    TextInputLayout dialog_editTmdbCategory_name_layout = view1.findViewById(R.id.dialog_editTmdbCategory_name_layout);
+                                    dialog_editTmdbCategory_name_layout.getEditText().setText(ParentClass_Alias.combineNameAndAlias(parentClass));
+
+                                    com.finn.androidUtilities.Helpers.TextInputHelper helper =
+                                            new com.finn.androidUtilities.Helpers.TextInputHelper((Button) customDialog.getActionButton().getButton(), dialog_editTmdbCategory_name_layout);
+
+                                    if (parentClass instanceof ParentClass_Alias) {
+//                                    helper.setInputType(dialog_editTmdbCategory_name_layout, com.finn.androidUtilities.Helpers.TextInputHelper.INPUT_TYPE.MULTI_LINE);
+                                        dialog_editTmdbCategory_name_layout.getEditText().setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_CLASS_TEXT);
+                                    }
+
+                                    if (parentClass instanceof ParentClass_Image) {
+                                        if (parentClass instanceof ParentClass_Tmdb) {
+                                            ImageView dialog_editTmdbCategory_internet = view1.findViewById(R.id.dialog_editTmdbCategory_internet);
+                                            if (((ParentClass_Tmdb) parentClass).getTmdbId() != 0) {
+                                                dialog_editTmdbCategory_internet.setOnClickListener(v -> Utility.openUrl(this, "https://www.themoviedb.org/person/" + ((ParentClass_Tmdb) parentClass).getTmdbId(), true));
+                                                dialog_editTmdbCategory_internet.setVisibility(View.VISIBLE);
+                                            }
+                                        }
+
+                                        CustomUtility.setMargins(view1.findViewById(R.id.dialog_editTmdbCategory_nameLayout), -1, -1, -1, 0);
+                                        view1.findViewById(R.id.dialog_editTmdbCategory_urlLayout).setVisibility(View.VISIBLE);
+                                        TextInputLayout dialog_editTmdbCategory_url_layout = view1.findViewById(R.id.dialog_editTmdbCategory_url_layout);
+                                        String url = ((ParentClass_Image) parentClass).getImagePath();
+                                        dialog_editTmdbCategory_url_layout.getEditText().setText(url);
+                                        ImageView preview = customDialog.findViewById(R.id.dialog_editTmdbCategory_preview);
+                                        if (CustomUtility.stringExists(url)) {
+                                            Utility.loadUrlIntoImageView(this, preview, Utility.getTmdbImagePath_ifNecessary(url, true), null);
+                                            preview.setVisibility(View.VISIBLE);
+                                        }
+                                        helper.addValidator(dialog_editTmdbCategory_url_layout).setValidation(dialog_editTmdbCategory_url_layout, (validator, text) -> {
+                                            validator.asWhiteList();
+                                            if (text.isEmpty() || text.matches(pictureRegexAll) || text.matches(ActivityResultHelper.uriRegex))
+                                                validator.setValid();
+                                            if (text.toLowerCase().contains("http") && !text.toLowerCase().contains("https"))
+                                                validator.setInvalid("Die URL muss 'https' sein!");
+                                        }).validate();
+
+                                        view1.findViewById(R.id.dialog_editTmdbCategory_localStorage).setOnClickListener(v -> {
+                                            ActivityResultHelper.addFileChooserRequest(this, "image/*", o -> {
+                                                String path = ActivityResultHelper.getPath(this, ((Intent) o).getData());
+                                                dialog_editTmdbCategory_url_layout.getEditText().setText(path);
+                                            });
+                                        });
+
+                                    }
+                                })
+                                .enableDoubleClickOutsideToDismiss(customDialog -> {
+                                    boolean result = !((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim().equals(ParentClass_Alias.combineNameAndAlias(parentClass));
+                                    return result || (parentClass instanceof ParentClass_Image && !Utility.boolOr(((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim(), ((ParentClass_Image) parentClass).getImagePath(), ""));
+                                })
+                                .show();
+                        return true;
+                    });
+                    Pair<AndroidTreeView, TreeNode> pair = ParentClass_Tree.buildTreeView((ViewGroup) itemView, category,
+                            (multiSelectMode ? selectedTreeList : null), searchQuery, null,
+                            (o1, o2) -> {
+                                switch (sort_type) {
+                                    default:
+                                        return 0;
+                                    case NAME:
+                                        return o1.getName().compareTo(o2.getName());
+                                    case COUNT:
+                                        return treeObjectCountMap.get(o1.getUuid()).compareTo(treeObjectCountMap.get(o2.getUuid())) * (reverse ? -1 : 1);
+                                }
+                            }, findViewById(R.id.no_item), (multiSelectMode ? null : clickListenerPair),
+                            (viewGroup, node) -> {
+                                TextView textSecondary = viewGroup.findViewById(R.id.customTreeNode_text_secondary);
+                                ParentClass_Tree value = (ParentClass_Tree) node.getValue();
+                                if (!CustomUtility.stringExists(searchQuery) || Utility.containsIgnoreCase(value.getName(), searchQuery)) {
+                                    textSecondary.setVisibility(View.VISIBLE);
+//                                    ((LinearLayout) textSecondary.getParent().getParent()).setClickable(true);
+                                } else {
+                                    textSecondary.setVisibility(View.GONE);
+//                                    ((LinearLayout) textSecondary.getParent().getParent()).setClickable(false);
+                                }
+                                textSecondary.setText("" + treeObjectCountMap.get(value.getUuid()));
+                            });
+
+                    int size = ParentClass_Tree.getAllCount(pair.second, searchQuery);
+                    String elementCountText = size > 1 ? size + " Elemente" : (size == 1 ? "Ein" : "Kein") + " Element";
+                    elementCount.setText(elementCountText);
+                })
+                .hideDivider()
+                .generate();
+
+    }
+
+    private void loadSubTreeRecycler(TreeNode node) {
+
+    }
+
+    private void reLoadRecycler() {
+        customRecycler.reload();
+    }
+    //  <------------------------- Recycler -------------------------
+
     private void removeCatigory(Pair<ParentClass, Integer> item) {
         ParentClass parentClass = item.first;
         allDatenObjektPairList.remove(item);
@@ -612,15 +799,23 @@ public class CategoriesActivity extends AppCompatActivity {
                     media.getPersonIdList().remove(parentClass.getUuid());
                 }
                 break;
+            case MEDIA_CATEGORY:
+                String parentId = ((ParentClass_Tree) parentClass).getParentId();
+                if (CustomUtility.stringExists(parentId)) {
+                    ParentClass_Tree.findObjectById(category, parentId).getChildren().remove(parentClass);
+                } else
+                    database.mediaCategoryMap.remove(parentClass.getUuid());
+
+                for (Media media : database.mediaMap.values()) {
+                    media.getCategoryIdList().remove(parentClass.getUuid());
+                }
+                break;
         }
         Database.saveAll();
         setResult(RESULT_OK);
         reLoadRecycler();
     }
 
-    private void reLoadRecycler() {
-        customRecycler.reload();
-    }
 
     private void showRandomDialog() {
         CustomList<Pair<ParentClass, Integer>> filterdDatenObjektPairList = new CustomList<>(sortList(filterList(allDatenObjektPairList)));
@@ -644,7 +839,7 @@ public class CategoriesActivity extends AppCompatActivity {
                     CustomDialog.changeText(customDialog, randomPair[0].first.getName() + " (" + randomPair[0].second + ")");
                 }, false)
                 .addButton("Suchen", customDialog -> {
-                    startActivityForResult(new Intent(this, VideoActivity.class)
+                    startActivityForResult(new Intent(this, category.getSearchIn())
                                     .putExtra(EXTRA_SEARCH, randomPair[0].first.getName())
                                     .putExtra(EXTRA_SEARCH_CATEGORY, category),
                             START_CATEGORY_SEARCH);
@@ -676,7 +871,7 @@ public class CategoriesActivity extends AppCompatActivity {
         }
     }
 
-
+    //  ------------------------- ToolBar ------------------------->
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         toolBarMenu = menu;
@@ -684,7 +879,11 @@ public class CategoriesActivity extends AppCompatActivity {
 
         if (setToolbarTitle != null) setToolbarTitle.run();
         menu.findItem(R.id.taskBar_category_sortByTime).setVisible(category.getSearchIn().equals(VideoActivity.class));
+        if (isTreeCategory) {
+            menu.findItem(R.id.taskBar_category_random).setVisible(false);
+            menu.findItem(R.id.taskBar_category_showAs).setVisible(false);
 
+        }
         return true;
     }
 
@@ -693,10 +892,12 @@ public class CategoriesActivity extends AppCompatActivity {
         int id = item.getItemId();
         switch (id) {
             case R.id.taskBar_category_multiSelect:
-                if (selectedList.isEmpty()) {
+                if ((selectedList.isEmpty() || isTreeCategory) && selectedTreeList.isEmpty()) {
                     multiSelectMode = !multiSelectMode;
                     reLoadRecycler();
                 } else {
+                    if (!selectedTreeList.isEmpty())
+                        selectedList.replaceWith(selectedTreeList.map(uuid -> ParentClass_Tree.findObjectById(category, uuid)));
                     if (selectedList.size() == 1) {
                         startActivityForResult(new Intent(this, category.getSearchIn())
                                         .putExtra(EXTRA_SEARCH, selectedList.get(0).getName())
@@ -776,19 +977,21 @@ public class CategoriesActivity extends AppCompatActivity {
         return true;
     }
 
+    private void removeFocusFromSearch() {
+        categories_search.clearFocus();
+    }
+//  <------------------------- ToolBar -------------------------
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (resultCode == RESULT_OK /*&& requestCode == START_VIDEOS*/) {
-            setDatenObjektIntegerPairList();
+            setObjectAndCount();
             textListener.onQueryTextChange(categories_search.getQuery().toString());
             reLoadRecycler();
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    private void removeFocusFromSearch() {
-        categories_search.clearFocus();
-    }
 
     @Override
     public void onBackPressed() {

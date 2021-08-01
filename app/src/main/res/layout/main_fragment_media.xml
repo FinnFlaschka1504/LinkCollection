@@ -162,7 +162,7 @@
                     android:elevation="3dp"
                     android:foreground="@drawable/ripple"
                     android:gravity="center"
-                    android:onClick="openStudioActivity"
+                    android:onClick="openMediaCategoryActivity"
                     android:orientation="vertical">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
@@ -173,7 +173,7 @@
                             android:layout_width="0dp"
                             android:layout_height="0dp"
                             android:alpha="0.075"
-                            android:src="@drawable/ic_studio"
+                            android:src="@drawable/ic_genre"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
@@ -197,12 +197,12 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginBottom="8dp"
-                                android:text="Studios"
+                                android:text="Kategorie"
                                 android:textSize="24sp"
                                 android:textStyle="bold" />
 
                             <TextView
-                                android:id="@+id/main_studioCount"
+                                android:id="@+id/main_media_categoryCount"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="–" />

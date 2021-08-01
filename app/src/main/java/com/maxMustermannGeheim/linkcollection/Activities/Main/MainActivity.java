@@ -87,6 +87,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     public static final int START_SHOW_NEXT_EPISODE = ++count;
     public static final int START_MEDIA = ++count;
     public static final int START_MEDIA_PERSON = ++count;
+    public static final int START_MEDIA_CATEGORY = ++count;
 
     private static Database database;
     private static SharedPreferences mySPR_daten;
@@ -777,6 +778,14 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         Intent intent = new Intent(this, CategoriesActivity.class);
         intent.putExtra(EXTRA_CATEGORY, CategoriesActivity.CATEGORIES.MEDIA_PERSON);
         startActivityForResult(intent, START_MEDIA_PERSON);
+    }
+
+    public void openMediaCategoryActivity(View view) {
+        if (!Database.isReady())
+            return;
+        Intent intent = new Intent(this, CategoriesActivity.class);
+        intent.putExtra(EXTRA_CATEGORY, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY);
+        startActivityForResult(intent, START_MEDIA_CATEGORY);
     }
     //  <------------------------- Media -------------------------
 

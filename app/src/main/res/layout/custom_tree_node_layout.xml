@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingHorizontal="16dp"
-    android:paddingTop="5dp">
+    android:paddingStart="3dp"
+    android:paddingEnd="16dp">
 
     <Space
         android:id="@+id/customTreeNode_inset"
@@ -13,14 +13,45 @@
         android:layout_height="wrap_content"
         android:minWidth="50dp" />
 
+    <FrameLayout
+        android:clickable="true"
+        android:layout_width="28dp"
+        android:layout_height="match_parent">
+
+        <View
+            android:id="@+id/divider2"
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="center_horizontal"
+            android:background="?android:attr/listDivider"
+            android:visibility="gone" />
+
+        <ImageView
+            android:id="@+id/customTreeNode_expandButton"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginVertical="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/grey_rounded_corners"
+            android:foreground="@null"
+            android:tint="@color/colorTileBackground"
+            app:srcCompat="@drawable/ic_remove" />
+    </FrameLayout>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:background="?attr/selectableItemBackground"
+        android:orientation="vertical"
+        android:paddingTop="5dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:minHeight="32dp"
             android:orientation="horizontal">
 
 
@@ -30,8 +61,19 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:textSize="18sp"
+                android:layout_marginStart="4dp"
                 android:textStyle="bold"
                 tools:text="Main Text" />
+
+            <TextView
+                android:id="@+id/customTreeNode_text_secondary"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:textSize="18sp"
+                android:visibility="gone"
+                tools:text="Secondary Text"
+                tools:visibility="visible" />
 
             <CheckBox
                 android:id="@+id/customTreeNode_checked"
@@ -41,11 +83,11 @@
 
 
             <!--            <ImageView-->
-<!--                android:id="@+id/customTreeNode_status"-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:layout_marginLeft="8dp"-->
-<!--                android:src="@drawable/ic_correct" />-->
+            <!--                android:id="@+id/customTreeNode_status"-->
+            <!--                android:layout_width="wrap_content"-->
+            <!--                android:layout_height="wrap_content"-->
+            <!--                android:layout_marginLeft="8dp"-->
+            <!--                android:src="@drawable/ic_correct" />-->
 
         </LinearLayout>
 

@@ -50,6 +50,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.SearchView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
@@ -145,6 +146,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -974,6 +976,8 @@ public class Utility {
 //            return true;
         Database database = Database.getInstance();
         if (filterTypeSet.contains(MediaActivity.FILTER_TYPE.PERSON) && media.getPersonIdList().stream().anyMatch(uuid -> database.mediaPersonMap.get(uuid).getName().toLowerCase().contains(query.toLowerCase())))
+            return true;
+        if (filterTypeSet.contains(MediaActivity.FILTER_TYPE.CATEGORY) && media.getCategoryIdList().stream().anyMatch(uuid -> ParentClass_Tree.findObjectById(CategoriesActivity.CATEGORIES.MEDIA_CATEGORY, uuid).getName().toLowerCase().contains(query.toLowerCase())))
             return true;
         return false;
     }
@@ -1871,7 +1875,7 @@ public class Utility {
     public static CustomDialog showEditTreeItemDialog(Context context, List<String> preSelectedIdList, GenericInterface<List<String>> onSaved, CategoriesActivity.CATEGORIES category) {
         // ToDo: Vielleicht Durch https://github.com/jakebonk/DraggableTreeView ersetzen
         Database database = Database.getInstance();
-        CustomList<String> selectedIds = new CustomList<>(preSelectedIdList);
+        com.finn.androidUtilities.CustomList<String> selectedIds = new com.finn.androidUtilities.CustomList<>(preSelectedIdList);
         String categoryName = category.getPlural();
         String[] searchQuery = {""};
 
@@ -1883,6 +1887,7 @@ public class Utility {
                 .disableScroll()
                 .setSetViewContent((customDialog, view, reload) -> {
                     FrameLayout editCategoryLayout = view.findViewById(R.id.dialogEditCategory_selectLayout);
+                    TextView emptyTextView = view.findViewById(R.id.dialogEditCategory_empty);
 
                     // vvvvvvvvvvvvvvv Selected
                     CustomRecycler<String> selectedRecycler = new CustomRecycler<>((AppCompatActivity) context, view.findViewById(R.id.dialogEditCategory_selectedCategories));
@@ -1890,6 +1895,8 @@ public class Utility {
                         view.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(selectedIds.isEmpty() ? View.VISIBLE : View.GONE);
                         selectedRecycler.reload();
                     };
+                    Comparator<ParentClass_Tree> treeComparator = (parentClass1, parentClass2) -> parentClass1.getName().compareTo(parentClass2.getName());
+
                     selectedRecycler
                             .setItemLayout(R.layout.list_item_bubble)
                             .setObjectList(selectedIds)
@@ -1904,12 +1911,12 @@ public class Utility {
                                         "Swipe nach Oben zum abwählen", Toast.LENGTH_SHORT).show();
                             })
                             .enableSwiping((objectList, direction, s) -> {
-                                ParentClass_Tree.buildTreeView(editCategoryLayout, category, selectedIds, searchQuery[0], updateSelectedRecycler);
+                                ParentClass_Tree.buildTreeView(editCategoryLayout, category, selectedIds, searchQuery[0], updateSelectedRecycler, treeComparator, emptyTextView, null, null);
                             }, true, false)
                             .generate();
 
                     // vvvvvvvvvvvvvvv Tree
-                    ParentClass_Tree.buildTreeView(editCategoryLayout, category, selectedIds, searchQuery[0], updateSelectedRecycler);
+                    ParentClass_Tree.buildTreeView(editCategoryLayout, category, selectedIds, searchQuery[0], updateSelectedRecycler, treeComparator, emptyTextView, null, null);
 
                     // vvvvvvvvvvvvvvv Search
                     SearchView searchView = view.findViewById(R.id.dialogEditCategory_search);
@@ -1924,7 +1931,7 @@ public class Utility {
                         @Override
                         public boolean onQueryTextChange(String s) {
                             searchQuery[0] = s.trim();
-                            ParentClass_Tree.buildTreeView(editCategoryLayout, category, selectedIds, searchQuery[0], updateSelectedRecycler);
+                            ParentClass_Tree.buildTreeView(editCategoryLayout, category, selectedIds, searchQuery[0], updateSelectedRecycler, treeComparator, emptyTextView, null, null);
                             return true;
                         }
                     });
@@ -1935,7 +1942,7 @@ public class Utility {
                         ParentClass_Tree.addNew(context, null, searchQuery[0], category, newObject -> {
                             selectedIds.add(newObject.getUuid());
                             updateSelectedRecycler.run();
-                            ParentClass_Tree.buildTreeView(editCategoryLayout, category, selectedIds, searchQuery[0], updateSelectedRecycler);
+                            ParentClass_Tree.buildTreeView(editCategoryLayout, category, selectedIds, searchQuery[0], updateSelectedRecycler, treeComparator, emptyTextView, null, null);
                         });
                     });
                 })
@@ -1956,12 +1963,18 @@ public class Utility {
     public static Map<String, ? extends ParentClass> getMapFromDatabase(CategoriesActivity.CATEGORIES category) {
         Database database = Database.getInstance();
         switch (category) {
+//            case VIDEO:
+//                return database.videoMap;
             case DARSTELLER:
                 return database.darstellerMap;
             case STUDIOS:
                 return database.studioMap;
             case GENRE:
                 return database.genreMap;
+            case PERSON:
+                return database.personMap;
+            case SHOW:
+                return database.showMap;
             case KNOWLEDGE_CATEGORIES:
                 return database.knowledgeCategoryMap;
             case JOKE_CATEGORIES:
@@ -1970,6 +1983,8 @@ public class Utility {
                 return database.showGenreMap;
             case COLLECTION:
                 return database.videoMap;
+            case MEDIA:
+                return database.mediaMap;
             case MEDIA_PERSON:
                 return database.mediaPersonMap;
             case MEDIA_CATEGORY:
@@ -3199,6 +3214,12 @@ public class Utility {
 
     // ---
 
+    public static boolean containsIgnoreCase(String in, String query){
+        return in.toLowerCase().contains(query.toLowerCase());
+    }
+
+    // ---
+
     public static boolean stringExists(CharSequence s) {
         return s != null && !s.toString().trim().isEmpty();
     }
@@ -3363,6 +3384,14 @@ public class Utility {
     public static <T> boolean runGenericInterface(GenericInterface<T> genericInterface, T parameter) {
         if (genericInterface != null) {
             genericInterface.runGenericInterface(parameter);
+            return true;
+        }
+        return false;
+    }
+
+    public static <T,T2> boolean runDoubleGenericInterface(DoubleGenericInterface<T,T2> genericInterface, T parameter, T2 parameter2) {
+        if (genericInterface != null) {
+            genericInterface.run(parameter, parameter2);
             return true;
         }
         return false;

@@ -71,7 +71,7 @@ import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivit
 public class MediaActivity extends AppCompatActivity {
 
     public enum FILTER_TYPE {
-        PERSON("Person");
+        PERSON("Person"), CATEGORY("Kategorie");
 
         String name;
 
@@ -105,7 +105,7 @@ public class MediaActivity extends AppCompatActivity {
     private CustomRecycler<MultiSelectHelper.Selectable<Media>> mediaRecycler;
     private MultiSelectHelper<Media> selectHelper;
     private Menu toolBarMenu;
-    private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.PERSON));
+    private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.PERSON, FILTER_TYPE.CATEGORY));
 
     private TextView elementCount;
     private SearchView media_search;
@@ -274,24 +274,11 @@ public class MediaActivity extends AppCompatActivity {
                     case MEDIA_PERSON:
                         filterTypeSet.add(FILTER_TYPE.PERSON);
                         break;
-//                    case EPISODE:
-//                        String episode_string = getIntent().getStringExtra(EXTRA_EPISODE);
-//                        if (episode_string != null) {
-//                            Show.Episode episode = new Gson().fromJson(episode_string, Show.Episode.class);
-//                            findEpisode(episode, () -> {
-//                                Show.Episode oldEpisode = database.showMap.get(episode.getShowId()).getSeasonList().get(episode.getSeasonNumber())
-//                                        .getEpisodeMap().get(episode.getUuid());
-//
-//                                if (oldEpisode != null)
-//                                    showEpisodeDetailDialog(null, oldEpisode, true);
-//                                else
-//                                    apiSeasonRequest(database.showMap.get(episode.getShowId()), episode.getSeasonNumber(), () ->
-//                                            showEpisodeDetailDialog(null, database.tempShowSeasonEpisodeMap.get(database.showMap.get(episode.getShowId())).get(episode.getSeasonNumber())
-//                                                    .get(episode.getUuid()), true));
-//                            });
-//                        }
+                    case MEDIA_CATEGORY:
+                        filterTypeSet.add(FILTER_TYPE.CATEGORY);
+                        break;
                 }
-//
+
                 String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
                 if (extraSearch != null) {
                     media_search.setQuery(extraSearch, true);
@@ -752,6 +739,7 @@ public class MediaActivity extends AppCompatActivity {
                 if (first.isPresent()) {
                     Media media1 = first.get();
                     Utility.addAllDistinct(media.getPersonIdList(), media1.getPersonIdList());
+                    Utility.addAllDistinct(media.getCategoryIdList(), media1.getCategoryIdList());
                     return true;
                 } else
                     return false;

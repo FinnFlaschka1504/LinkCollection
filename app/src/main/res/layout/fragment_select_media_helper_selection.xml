@@ -19,6 +19,8 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical|end"
         android:layout_marginEnd="8dp"
+        android:alpha=".70"
         android:background="@drawable/grey_rounded_corners"
+        android:tint="@color/colorTileBackground"
         app:srcCompat="@drawable/ic_add" />
 </FrameLayout>

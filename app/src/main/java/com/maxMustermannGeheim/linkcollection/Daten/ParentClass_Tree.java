@@ -229,6 +229,33 @@ public class ParentClass_Tree extends ParentClass {
             ((CustomTreeNodeHolder) root.getViewHolder()).update();
         root.getChildren().forEach(ParentClass_Tree::updateAll);
     }
+
+    // ---------------
+
+    public static void rebuildMap(CategoriesActivity.CATEGORIES category, com.allyants.draggabletreeview.TreeNode root) {
+        Map<String, ParentClass> map = (Map<String, ParentClass>) Utility.getMapFromDatabase(category);
+        getAll(category).forEach(parentClass_tree -> {
+            parentClass_tree.setParentId(null);
+            parentClass_tree.getChildren().clear();
+        });
+        map.clear();
+
+        for (com.allyants.draggabletreeview.TreeNode baseChild : root.getChildren()) {
+            ParentClass_Tree data = (ParentClass_Tree) baseChild.getData();
+            map.put(data.getUuid(), data);
+            Utility.runRecursiveGenericInterface(baseChild, (parentNode, recursiveInterface) -> {
+                ArrayList<com.allyants.draggabletreeview.TreeNode> children = parentNode.getChildren();
+                if (children.isEmpty())
+                    return;
+                ParentClass_Tree parentObject = (ParentClass_Tree) parentNode.getData();
+                for (com.allyants.draggabletreeview.TreeNode childNode : children) {
+                    ParentClass_Tree childObject = (ParentClass_Tree) childNode.getData();
+                    parentObject.addChild(childObject);
+                    recursiveInterface.run(childNode, recursiveInterface);
+                }
+            });
+        }
+    }
     //  <------------------------- Tree -------------------------
 
 

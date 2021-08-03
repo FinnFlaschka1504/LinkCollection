@@ -41,4 +41,9 @@
         android:icon="@drawable/ic_show_as_list"
         android:title="Anzeigen Als"
         app:showAsAction="always" />
+    <item
+        android:id="@+id/taskBar_category_sortTree"
+        android:icon="@drawable/ic_sort_tree"
+        android:title="Baum neu Sortieren"
+        app:showAsAction="always" />
 </menu>

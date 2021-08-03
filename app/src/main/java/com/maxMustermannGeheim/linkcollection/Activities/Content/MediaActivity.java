@@ -570,6 +570,7 @@ public class MediaActivity extends AppCompatActivity {
 
     }
 
+    // ToDo: Wenn in select, dann auch mit Button groß machen können
 
     private void loadRecycler() {
         int width = Utility.getScreenSize(this).first;
@@ -602,47 +603,21 @@ public class MediaActivity extends AppCompatActivity {
                 .setSetItemContent((customRecycler, itemView, mediaSelectable) -> {
                     SelectMediaHelper.loadPathIntoImageView(mediaSelectable.content.getImagePath(), itemView, CustomUtility.pxToDp(width / columnCount));
 
-                    if (mediaSelectable.isSelected())
-                        itemView.findViewById(R.id.listItem_image_selected).setVisibility(View.VISIBLE);
-                    else
-                        itemView.findViewById(R.id.listItem_image_selected).setVisibility(View.GONE);
+                    itemView.findViewById(R.id.listItem_image_selected).setVisibility(mediaSelectable.isSelected() ? View.VISIBLE : View.GONE);
+                    View fullScreenButton = itemView.findViewById(R.id.listItem_image_fullScreen);
+                    fullScreenButton.setVisibility(selectHelper.isActiveSelection() ? View.VISIBLE : View.GONE);
+                    fullScreenButton.setOnClickListener(v -> setMediaScrollGalleryAndShow(Arrays.asList(mediaSelectable.getContent()), 0));
                 })
                 .setOnClickListener((customRecycler, view, mediaSelectable, index) -> {
                     if (selectHelper.isActiveSelection()) {
                         selectHelper.toggleSelection(index);
                     } else {
                         setMediaScrollGalleryAndShow(customRecycler.getObjectList().stream().map(MultiSelectHelper.Selectable::getContent).collect(Collectors.toList()), index);
-
-//                        CustomDialog.Builder(this)
-//                                .setView(R.layout.dialog_scroll_gallery)
-//                                .setDimensionsFullscreen()
-//                                .setSetViewContent((customDialog, view1, reload) -> {
-////                                    ScrollGalleryView scrollGalleryView = view1.findViewById(R.id.scroll_gallery_view);
-////
-////                                    scrollGalleryView
-////                                            .setThumbnailSize(200)
-////                                            .setZoom(true)
-////                                            .withHiddenThumbnails(false)
-////                                            .hideThumbnailsOnClick(true)
-//////                .hideThumbnailsAfter(5000)
-////                                            .addOnImageClickListener((position) -> {
-////                                                Log.i(getClass().getName(), "You have clicked on image #" + position);
-////                                            })
-////                                            .setFragmentManager(getSupportFragmentManager());
-//
-////                                    ((HackyViewPager) view1.findViewById(com.veinhorn.scrollgalleryview.R.id.viewPager)).setOffscreenPageLimit(3);
-//
-////                                    for (String imageUrl : Arrays.asList("/storage/emulated/0/DCIM/Camera/20210701_154709.jpg", "/storage/emulated/0/DCIM/Camera/20210630_163607.jpg", "/storage/emulated/0/DCIM/Camera/20210630_152825.jpg", "/storage/emulated/0/DCIM/Camera/20210630_164032.jpg")) {
-////                                        scrollGalleryView.addMedia(MediaInfo.mediaLoader(new CustomPicassoImageLoader(imageUrl), ""));
-////                                    }
-////                                    scrollGalleryView.addMedia(MediaInfo.mediaLoader(new CustomVideoLoader("/storage/emulated/0/DCIM/Camera/20210718_222030.mp4", R.drawable.simpsons_movie_poster), ""));
-//
-//                                })
-//                                .show();
                     }
                 })
                 .setOnLongClickListener((customRecycler, view, mediaSelectable, index) -> {
                     selectHelper.startSelection(index);
+                    customRecycler.getAdapter().notifyDataSetChanged();
                 })
                 .setRowOrColumnCount(columnCount)
                 .generate();
@@ -1061,10 +1036,12 @@ public class MediaActivity extends AppCompatActivity {
 
     private void hideScrollGallery() {
         scrollGalleryView.setVisibility(View.GONE);
-//        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        int currentItem = scrollGalleryView.getCurrentItem();
+//        mediaRecycler.scrollTo(currentItem, false);
+        if (scrollGalleryView.getViewPager().getChildCount() > 1)
+            mediaRecycler.getRecycler().getLayoutManager().scrollToPosition(currentItem);
+        // ToDo: Funktioniert nicht wirklich ^^
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-//        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-//        getWindow().setDecorFitsSystemWindows(true);
         clearScrollGallery();
     }
     //  <------------------------- ScrollGallery -------------------------
@@ -1146,10 +1123,10 @@ public class MediaActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (selectHelper.isActiveSelection()) {
-            selectHelper.stopSelection();
-        } else if (scrollGalleryView.getVisibility() == View.VISIBLE) {
+        if (scrollGalleryView.getVisibility() == View.VISIBLE) {
             hideScrollGallery();
+        } else if (selectHelper.isActiveSelection()) {
+            selectHelper.stopSelection();
         } else
             super.onBackPressed();
     }

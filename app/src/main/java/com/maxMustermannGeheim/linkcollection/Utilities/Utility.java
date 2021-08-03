@@ -3404,6 +3404,24 @@ public class Utility {
         }
         return false;
     }
+
+    // --------------- Recursion
+
+    public interface RecursiveGenericInterface<T> {
+        void run(T t, RecursiveGenericInterface<T> recursiveInterface);
+    }
+
+    public static <T> void runRecursiveGenericInterface(T t, RecursiveGenericInterface<T> recursiveInterface) {
+        recursiveInterface.run(t, recursiveInterface);
+    }
+
+    public interface RecursiveGenericReturnInterface<T,R> {
+        R run(T t, RecursiveGenericReturnInterface<T, R> recursiveInterface);
+    }
+
+    public static <T, R> R runRecursiveGenericReturnInterface(T t, RecursiveGenericReturnInterface<T, R> recursiveInterface) {
+        return recursiveInterface.run(t, recursiveInterface);
+    }
     //  <------------------------- Interfaces -------------------------
 
 

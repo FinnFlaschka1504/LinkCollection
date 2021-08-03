@@ -115,7 +115,7 @@ public class CustomVideoLoader extends DefaultVideoLoader {
             Glide.with(context)
                     .load(media.getImagePath())
                     .apply(new RequestOptions()
-                            .override(100, 100)
+                            .override(200, 200)
                             .centerCrop())
                     .into(thumbnailView);
 //            Picasso.get()

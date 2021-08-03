@@ -4,27 +4,22 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingStart="3dp"
     android:paddingEnd="16dp">
 
-    <Space
-        android:id="@+id/customTreeNode_inset"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minWidth="50dp" />
 
-    <FrameLayout
+    <LinearLayout
         android:clickable="true"
-        android:layout_width="28dp"
+        android:layout_width="wrap_content"
+        android:minWidth="28dp"
+        android:paddingStart="3dp"
         android:layout_height="match_parent">
 
-        <View
-            android:id="@+id/divider2"
-            android:layout_width="1dp"
-            android:layout_height="match_parent"
-            android:layout_gravity="center_horizontal"
-            android:background="?android:attr/listDivider"
-            android:visibility="gone" />
+        <Space
+            android:id="@+id/customTreeNode_inset"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="50dp" />
+
 
         <ImageView
             android:id="@+id/customTreeNode_expandButton"
@@ -38,7 +33,7 @@
             android:foreground="@null"
             android:tint="@color/colorTileBackground"
             app:srcCompat="@drawable/ic_remove" />
-    </FrameLayout>
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"

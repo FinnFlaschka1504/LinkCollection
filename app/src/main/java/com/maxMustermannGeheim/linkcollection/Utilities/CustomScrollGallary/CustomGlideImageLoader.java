@@ -59,7 +59,7 @@ public class CustomGlideImageLoader extends PicassoImageLoader {
                             thumbHeight == null ? 100 : thumbHeight)
                     .placeholder(com.veinhorn.scrollgalleryview.loader.picasso.R.drawable.placeholder_image)
                     .error(R.drawable.ic_broken_image)
-                    .centerInside()
+                    .centerCrop()
                     .into(thumbnailView, new ImageCallback(callback));
         } else
             super.loadThumbnail(context, thumbnailView, callback);

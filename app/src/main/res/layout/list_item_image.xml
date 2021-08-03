@@ -19,21 +19,40 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|start"
-        android:layout_marginStart="5dp"
-        android:layout_marginBottom="5dp"
+        android:layout_margin="10dp"
         android:background="@drawable/grey_rounded_corners"
         android:backgroundTint="#8C4A4A4A"
         app:srcCompat="@drawable/ic_play_arrow" />
 
     <ImageView
-        android:id="@+id/listItem_image_selected"
+        android:id="@+id/listItem_image_fullScreen"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="top|end"
-        android:layout_margin="5dp"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="10dp"
         android:background="@drawable/grey_rounded_corners"
-        android:backgroundTint="#8CE81E61"
-        android:visibility="gone"
-        app:srcCompat="@drawable/ic_check"
-        tools:visibility="visible" />
+        android:backgroundTint="#8C4A4A4A"
+        android:tint="#FFFFFF"
+        app:srcCompat="@drawable/ic_zoom_out" />
+
+    <FrameLayout
+        android:id="@+id/listItem_image_selected"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="3dp"
+            app:srcCompat="@drawable/border" />
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_margin="10dp"
+            android:background="@drawable/grey_rounded_corners"
+            android:backgroundTint="#8CE81E61"
+            app:srcCompat="@drawable/ic_check" />
+    </FrameLayout>
 </FrameLayout>

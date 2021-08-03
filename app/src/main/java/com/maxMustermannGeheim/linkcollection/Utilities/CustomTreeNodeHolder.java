@@ -44,9 +44,9 @@ public class CustomTreeNodeHolder extends TreeNode.BaseNodeViewHolder<ParentClas
         view.findViewById(R.id.customTreeNode_inset).setMinimumWidth((node.getLevel() - 1)/*parentClass._getTempLevel()*/ * CustomUtility.dpToPx(24));
 
         ImageView expandButton = view.findViewById(R.id.customTreeNode_expandButton);
-        FrameLayout parent = (FrameLayout) expandButton.getParent();
+        ViewGroup parent = (ViewGroup) expandButton.getParent();
         if (node.isLeaf()) {
-            expandButton.setVisibility(View.GONE);
+            expandButton.setVisibility(View.INVISIBLE);
         } else {
             expandButton.setVisibility(View.VISIBLE);
             expandButton.setImageResource(node.isExpanded() ? R.drawable.ic_remove : R.drawable.ic_add);

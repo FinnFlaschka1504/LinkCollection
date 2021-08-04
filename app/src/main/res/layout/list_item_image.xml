@@ -33,12 +33,16 @@
         android:background="@drawable/grey_rounded_corners"
         android:backgroundTint="#8C4A4A4A"
         android:tint="#FFFFFF"
-        app:srcCompat="@drawable/ic_zoom_out" />
+        android:visibility="gone"
+        app:srcCompat="@drawable/ic_zoom_out"
+        tools:visibility="visible" />
 
     <FrameLayout
         android:id="@+id/listItem_image_selected"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        tools:visibility="visible">
 
         <ImageView
             android:layout_width="match_parent"

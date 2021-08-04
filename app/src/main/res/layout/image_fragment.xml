@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+
     <com.github.chrisbanes.photoview.PhotoView
         android:id="@+id/photoView"
         android:layout_width="match_parent"
@@ -12,8 +13,18 @@
         android:adjustViewBounds="true"
         android:src="@drawable/placeholder_image" />
 
+
+    <VideoView
+        android:id="@+id/imageFragment_video"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center_vertical"
+        android:visibility="gone"
+        tools:layout_height="250dp"
+        tools:visibility="visible" />
+
     <ImageView
-        android:id="@+id/imageView"
+        android:id="@+id/imageFragment_videoIndicator"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
@@ -23,4 +34,15 @@
         android:visibility="gone"
         app:srcCompat="@android:drawable/ic_media_play"
         tools:visibility="visible" />
+
+<!--    <TextView-->
+<!--        android:id="@+id/imageFragment_description"-->
+<!--        style="@style/TextWithShadow"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_gravity="bottom"-->
+<!--        android:layout_marginStart="16dp"-->
+<!--        android:layout_marginBottom="100dp"-->
+<!--        android:text="15.04.2000\nFinn\nGeburtstag"-->
+<!--        android:textStyle="bold" />-->
 </FrameLayout>

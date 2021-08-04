@@ -17,6 +17,19 @@
         android:textColor="@android:color/white"
         android:layout_above="@+id/thumbnails_scroll_view"/>
 
+    <TextView
+        android:id="@+id/customImageDescription"
+        style="@style/TextWithShadow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="100dp"
+        android:text="15.04.2000\nFinn\nGeburtstag"
+        android:textStyle="bold" />
+
+
     <HorizontalScrollView
         android:id="@+id/thumbnails_scroll_view"
         android:layout_width="match_parent"

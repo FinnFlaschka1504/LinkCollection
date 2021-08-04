@@ -19,6 +19,8 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -31,6 +33,7 @@ import androidx.core.content.ContextCompat;
 import com.allyants.draggabletreeview.DraggableTreeView;
 import com.allyants.draggabletreeview.SimpleTreeViewAdapter;
 import com.finn.androidUtilities.CustomDialog;
+import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
@@ -55,7 +58,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomTreeViewAdapter;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
@@ -63,7 +65,9 @@ import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.unnamed.b.atv.model.TreeNode;
 import com.unnamed.b.atv.view.AndroidTreeView;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -215,7 +219,6 @@ public class CategoriesActivity extends AppCompatActivity {
             setObjectAndCount();
             if (!isTreeCategory)
                 sortList(allDatenObjektPairList);
-
 
             setLayout();
         };
@@ -395,7 +398,7 @@ public class CategoriesActivity extends AppCompatActivity {
     private void loadRecycler() {
         customRecycler = new CustomRecycler<Pair<ParentClass, Integer>>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_catigory_item)
-                .setGetActiveObjectList(() -> {
+                .setGetActiveObjectList((customRecycler) -> {
                     List<Pair<ParentClass, Integer>> filteredList = sortList(filterList(allDatenObjektPairList));
 
                     TextView noItem = findViewById(R.id.no_item);
@@ -459,7 +462,6 @@ public class CategoriesActivity extends AppCompatActivity {
                     userListItem_categoryItem_check.setChecked(selectedList.contains(parentClassIntegerPair.first));
                 })
                 .setRowOrColumnCount(columnCount)
-                .hideDivider()
                 .setOnClickListener((customRecycler, view, parentClassIntegerPair, index) -> {
                     if (!multiSelectMode) {
                         removeFocusFromSearch();
@@ -486,12 +488,11 @@ public class CategoriesActivity extends AppCompatActivity {
 
     }
 
-
     private void loadTreeRecycler() {
         // ToDo: Löschen doppelt bestätigen wenn Kinder noch vorhanden
         customRecycler = new CustomRecycler<Pair<ParentClass, Integer>>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.empty_layout)
-                .setGetActiveObjectList(() -> new CustomList<>(Pair.create(null, null)))
+                .setGetActiveObjectList((customRecycler) -> new CustomList<>(Pair.create(null, null)))
                 .setSetItemContent((customRecycler1, itemView, parentClassIntegerPair) -> {
                     Pair<TreeNode.TreeNodeClickListener, TreeNode.TreeNodeLongClickListener> clickListenerPair = Pair.create((node, value) -> {
                         startActivityForResult(new Intent(this, category.getSearchIn())
@@ -506,7 +507,7 @@ public class CategoriesActivity extends AppCompatActivity {
                         showEditCategoryDialog(parentClass);
                         return true;
                     });
-                    Pair<AndroidTreeView, TreeNode> pair = ParentClass_Tree.buildTreeView((ViewGroup) itemView, category,
+                    CustomUtility.Triple<AndroidTreeView, View,TreeNode> triple = ParentClass_Tree.buildTreeView((ViewGroup) itemView, category,
                             (multiSelectMode ? selectedTreeList : null), searchQuery, null,
                             (o1, o2) -> {
                                 switch (sort_type) {
@@ -531,11 +532,10 @@ public class CategoriesActivity extends AppCompatActivity {
                                 textSecondary.setText("" + treeObjectCountMap.get(value.getUuid()));
                             });
 
-                    int size = ParentClass_Tree.getAllCount(pair.second, searchQuery);
+                    int size = ParentClass_Tree.getAllCount(triple.third, searchQuery);
                     String elementCountText = size > 1 ? size + " Elemente" : (size == 1 ? "Ein" : "Kein") + " Element";
                     elementCount.setText(elementCountText);
                 })
-                .hideDivider()
                 .generate();
 
     }
@@ -664,6 +664,13 @@ public class CategoriesActivity extends AppCompatActivity {
                 .disableScroll()
                 .setSetViewContent((customDialog, view, reload) -> {
                     DraggableTreeView treeView = view.findViewById(R.id.dialog_editTree_treeView);
+                    try {
+                        Field sideMargin = DraggableTreeView.class.getDeclaredField("sideMargin");
+                        sideMargin.setAccessible(true);
+                        sideMargin.set(treeView, 35);
+                    } catch (NoSuchFieldException | IllegalAccessException ignored) {
+
+                    }
 
                     CustomList<? extends ParentClass> list = new CustomList<>(Utility.getMapFromDatabase(category).values()).sorted((o1, o2) ->  o1.getName().compareTo(o2.getName()));
 
@@ -682,6 +689,9 @@ public class CategoriesActivity extends AppCompatActivity {
                     }
 
                     SimpleTreeViewAdapter adapter = new CustomTreeViewAdapter(this, root);
+                    TextView textView = new TextView(this);
+                    textView.setText("Test");
+                    adapter.setPlaceholder(textView);
                     treeView.setAdapter(adapter);
                 })
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
@@ -761,7 +771,6 @@ public class CategoriesActivity extends AppCompatActivity {
         setResult(RESULT_OK);
         reLoadRecycler();
     }
-
     //  <------------------------- Edit -------------------------
 
 

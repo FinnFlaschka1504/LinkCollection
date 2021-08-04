@@ -52,19 +52,19 @@
                 app:popupTheme="@style/TitleTextStyle"
                 app:title="Medien" />
 
-<!--            <androidx.appcompat.widget.Toolbar-->
-<!--                android:id="@+id/media_selectionToolbar"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="?attr/actionBarSize"-->
-<!--                android:layout_gravity="bottom"-->
-<!--                android:layout_marginBottom="49dp"-->
-<!--                android:visibility="gone"-->
-<!--                app:layout_collapseMode="pin"-->
-<!--                app:menu="@menu/task_bar_joke"-->
-<!--                app:navigationIcon="@drawable/ic_arrow_back_white"-->
-<!--                app:popupTheme="@style/TitleTextStyle"-->
-<!--                app:title="Ausgewählt (5)"-->
-<!--                tools:visibility="gone" />-->
+            <!--            <androidx.appcompat.widget.Toolbar-->
+            <!--                android:id="@+id/media_selectionToolbar"-->
+            <!--                android:layout_width="match_parent"-->
+            <!--                android:layout_height="?attr/actionBarSize"-->
+            <!--                android:layout_gravity="bottom"-->
+            <!--                android:layout_marginBottom="49dp"-->
+            <!--                android:visibility="gone"-->
+            <!--                app:layout_collapseMode="pin"-->
+            <!--                app:menu="@menu/task_bar_joke"-->
+            <!--                app:navigationIcon="@drawable/ic_arrow_back_white"-->
+            <!--                app:popupTheme="@style/TitleTextStyle"-->
+            <!--                app:title="Ausgewählt (5)"-->
+            <!--                tools:visibility="gone" />-->
 
 
             <LinearLayout
@@ -100,20 +100,29 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler"
+    <com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller
+        android:id="@+id/fastScroller"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+        app:handleDrawable="@drawable/fast_scroll_thumb"
+        app:handleHeight="40dp"
+        app:handleWidth="30dp"
+        app:trackMarginEnd="20dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller>
 
     <com.veinhorn.scrollgalleryview.ScrollGalleryView
         android:id="@+id/scroll_gallery_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="#000"
         android:elevation="100dp"
-        android:visibility="gone"
-        android:background="#000" />
+        android:visibility="gone" />
 
 
     <TextView

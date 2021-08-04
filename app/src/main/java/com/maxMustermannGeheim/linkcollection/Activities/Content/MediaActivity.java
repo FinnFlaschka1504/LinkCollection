@@ -11,13 +11,13 @@ import android.os.Environment;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.RelativeSizeSpan;
+import android.transition.TransitionManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
@@ -26,10 +26,12 @@ import android.widget.LinearLayout;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.VideoView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager.widget.ViewPager;
 
 import com.afollestad.dragselectrecyclerview.DragSelectReceiver;
 import com.afollestad.dragselectrecyclerview.DragSelectTouchListener;
@@ -58,6 +60,7 @@ import com.veinhorn.scrollgalleryview.MediaInfo;
 import com.veinhorn.scrollgalleryview.ScrollGalleryView;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -106,6 +109,7 @@ public class MediaActivity extends AppCompatActivity {
     private MultiSelectHelper<Media> selectHelper;
     private Menu toolBarMenu;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.PERSON, FILTER_TYPE.CATEGORY));
+    private VideoView currentVideoPreview;
 
     private TextView elementCount;
     private SearchView media_search;
@@ -170,14 +174,20 @@ public class MediaActivity extends AppCompatActivity {
         @SuppressLint("RestrictedApi") Runnable whenLoaded = () -> {
 
             setContentView(R.layout.activity_media);
-            allMediaList = new CustomList<>(database.mediaMap.values());
-            sortList(allMediaList);
+//            allMediaList = new CustomList<>(database.mediaMap.values());
+//            sortList(allMediaList);
 
 
             scrollGalleryView = findViewById(R.id.scroll_gallery_view);
-//            new ScrollGalleryView(this, )
-//            Utility.replaceView(findViewById(R.id.scroll_gallery_view), );
             ((HackyViewPager) findViewById(com.veinhorn.scrollgalleryview.R.id.viewPager)).setOffscreenPageLimit(3);
+//            ScrollGalleryView newScrollGalleryView = new ScrollGalleryView(this, null) {
+//                private void setThumbnailsTransition() {
+//                    Toast.makeText(MediaActivity.this, "Jay", Toast.LENGTH_SHORT).show();
+//                    TransitionManager.beginDelayedTransition(findViewById(R.id.thumbnails_scroll_view));
+//                }
+//            };
+//            Utility.replaceView(scrollGalleryView, newScrollGalleryView, null);
+//            scrollGalleryView = newScrollGalleryView;
 
             scrollGalleryView
                     .setThumbnailSize(200)
@@ -185,9 +195,31 @@ public class MediaActivity extends AppCompatActivity {
                     .withHiddenThumbnails(false)
                     .hideThumbnailsOnClick(true)
                     .addOnImageClickListener((position) -> {
-                        Log.i(getClass().getName(), "You have clicked on image #" + position);
+                        toggleDescriptionVisibility(this);
                     })
+
                     .setFragmentManager(getSupportFragmentManager());
+
+            scrollGalleryView
+                    .addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
+                        @Override
+                        public void onPageSelected(int position) {
+                            super.onPageSelected(position);
+                            ((TextView) findViewById(R.id.customImageDescription)).setText(mediaRecycler.getObjectList().get(position).getContent()._getDescription());
+                            View currentView = getCurrentViewFromViewPager(scrollGalleryView.getViewPager());
+                            if (currentView != null) {
+                                VideoView videoView = currentView.findViewById(R.id.imageFragment_video);
+                                if (currentVideoPreview != null && currentVideoPreview != videoView)
+                                    currentVideoPreview.pause();
+                                if (videoView.getVisibility() == View.VISIBLE) {
+                                    videoView.start();
+                                    currentVideoPreview = videoView;
+                                }
+                            }
+                        }
+                    });
+
+//            scrollGalleryView.getViewPager().on
 
             Toolbar toolbar = findViewById(R.id.toolbar);
             toolbar.setTitle(plural);
@@ -295,22 +327,42 @@ public class MediaActivity extends AppCompatActivity {
         } else
             whenLoaded.run();
     }
+
+    public static View getCurrentViewFromViewPager(ViewPager viewPager) {
+        try {
+            final int currentItem = viewPager.getCurrentItem();
+            for (int i = 0; i < viewPager.getChildCount(); i++) {
+                final View child = viewPager.getChildAt(i);
+                final ViewPager.LayoutParams layoutParams = (ViewPager.LayoutParams) child.getLayoutParams();
+
+                Field f = layoutParams.getClass().getDeclaredField("position"); //NoSuchFieldException
+                f.setAccessible(true);
+                int position = (Integer) f.get(layoutParams); //IllegalAccessException
+
+                if (!layoutParams.isDecor && currentItem == position) {
+                    return child;
+                }
+            }
+        } catch (NoSuchFieldException | IllegalArgumentException | IllegalAccessException ignored) {
+        }
+        return null;
+    }
     //  <------------------------- Start -------------------------
 
 
     //  ------------------------- Recycler ------------------------->
-    private CustomList<Media> filterList(CustomList<Media> mediaList) {
+    private CustomList<MultiSelectHelper.Selectable<Media>> filterList(CustomList<MultiSelectHelper.Selectable<Media>> selectableMediaList) {
         if (!searchQuery.isEmpty()) {
             if (searchQuery.contains("|")) {
-                mediaList = mediaList.filterOr(searchQuery.split("\\|"), (media, s) -> Utility.containedInMedia(s.trim(), media, filterTypeSet), false);
+                selectableMediaList = selectableMediaList.filterOr(searchQuery.split("\\|"), (mediaSelectable, s) -> Utility.containedInMedia(s.trim(), mediaSelectable.getContent(), filterTypeSet), false);
             } else {
-                mediaList = mediaList.filterAnd(searchQuery.split("&"), (media, s) -> Utility.containedInMedia(s.trim(), media, filterTypeSet), false);
+                selectableMediaList = selectableMediaList.filterAnd(searchQuery.split("&"), (mediaSelectable, s) -> Utility.containedInMedia(s.trim(), mediaSelectable.getContent(), filterTypeSet), false);
             }
         }
-        return mediaList;
+        return selectableMediaList;
     }
 
-    private CustomList<Media> sortList(CustomList<Media> mediaList) {
+    private CustomList<MultiSelectHelper.Selectable<Media>> sortList(CustomList<MultiSelectHelper.Selectable<Media>> mediaSelectableList) {
 //        Map<Show, List<Show.Episode>> showEpisodeMap = mediaList.stream().collect(Collectors.toMap(show -> show, this::getEpisodeList));
 //
 //        new Helpers.SortHelper<>(mediaList)
@@ -361,12 +413,12 @@ public class MediaActivity extends AppCompatActivity {
 //                .finish()
 //                .sort(() -> sort_type);
 
-        mediaList.sort((media1, media2) -> {
-            File file1 = new File(media1.getImagePath());
-            File file2 = new File(media2.getImagePath());
+        mediaSelectableList.sort((media1, media2) -> {
+            File file1 = new File(media1.getContent().getImagePath());
+            File file2 = new File(media2.getContent().getImagePath());
             return Long.compare(file1.lastModified(), file2.lastModified()) * -1;
         });
-        return mediaList;
+        return mediaSelectableList;
     }
 
     class MyDragSelectReceiver implements DragSelectReceiver {
@@ -475,14 +527,7 @@ public class MediaActivity extends AppCompatActivity {
             contentList.forEach(tSelectable -> tSelectable.selected = false);
             customRecycler.getAdapter().notifyDataSetChanged();
 
-//            customRecycler.reload();
-
             ((CollapsingToolbarLayout) context.findViewById(R.id.collapsingToolbarLayout)).setTitleEnabled(true);
-//            Toolbar toolbar = context.findViewById(R.id.toolbar);
-//            toolbar.setTitle(context.plural);
-//            context.setSupportActionBar(toolbar);
-//            toolbar.setVisibility(View.VISIBLE);
-//            context.findViewById(R.id.media_selectionToolbar).setVisibility(View.GONE);
 
             toolBarMenu.findItem(R.id.taskBar_media_add).setVisible(true);
             toolBarMenu.findItem(R.id.taskBar_media_edit).setVisible(false);
@@ -503,25 +548,30 @@ public class MediaActivity extends AppCompatActivity {
         }
 
 
-        public MultiSelectHelper<T> toggleSelection(int index) {
-            contentList.get(index).toggleSelection();
-            if (getAllSelected().isEmpty()) {
-                stopSelection();
+        public MultiSelectHelper<T> toggleSelection(Selectable<Media> mediaSelectable, int index) {
+            mediaSelectable.toggleSelection();
+            if (!checkSelectionStatusAndUpdateToolbarTitle())
                 return this;
-            }
             customRecycler.getAdapter().notifyItemChanged(index);
-            updateToolbarTitle();
             return this;
         }
 
         public void setSelected(int index, boolean selected) {
-            Selectable<T> selectable = contentList.get(index);
+            Selectable<T> selectable = customRecycler.getObjectList().get(index);
             if (selectable.selected != selected) {
                 selectable.selected = selected;
                 customRecycler.getAdapter().notifyItemChanged(index);
-//                customRecycler.update(index);
                 updateToolbarTitle();
             }
+        }
+
+        public boolean checkSelectionStatusAndUpdateToolbarTitle() {
+            if (getAllSelected().isEmpty()) {
+                stopSelection();
+                return false;
+            }
+            updateToolbarTitle();
+            return true;
         }
 
         private void updateToolbarTitle() {
@@ -529,7 +579,7 @@ public class MediaActivity extends AppCompatActivity {
         }
         //  <------------------------- Convenience -------------------------
 
-        static class Selectable<P> {
+        public static class Selectable<P> {
             public boolean selected;
             public P content;
 
@@ -567,14 +617,13 @@ public class MediaActivity extends AppCompatActivity {
             }
             //  <------------------------- Convenience -------------------------
         }
-
     }
-
-    // ToDo: Wenn in select, dann auch mit Button groß machen können
 
     private void loadRecycler() {
         int width = Utility.getScreenSize(this).first;
         int columnCount = 3;
+        int sizePx = width / columnCount;
+        int sizeDp = CustomUtility.pxToDp(sizePx);
 
         DragSelectTouchListener dragSelectTouchListener = DragSelectTouchListener.Companion.create(this, new MyDragSelectReceiver(), null);
         selectHelper = new MultiSelectHelper<>(this);
@@ -585,8 +634,9 @@ public class MediaActivity extends AppCompatActivity {
                 .addOptionalModifications(customRecycler -> selectHelper.customRecycler = customRecycler)
                 .setItemLayout(R.layout.list_item_image)
                 .setGetActiveObjectList(customRecycler -> {
-                    CustomList<Media> filteredList = sortList(filterList(new CustomList<>(database.mediaMap.values())));
-                    selectHelper.updateFromList(filteredList, true);
+                    allMediaList = new CustomList<>(database.mediaMap.values());
+                    selectHelper.updateFromList(allMediaList, true);
+                    CustomList<MultiSelectHelper.Selectable<Media>> filteredList = sortList(filterList(selectHelper.getContentList()));
 
                     TextView noItem = findViewById(R.id.no_item);
                     String text = media_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche";
@@ -598,10 +648,11 @@ public class MediaActivity extends AppCompatActivity {
                     SpannableStringBuilder builder = new SpannableStringBuilder().append(elementCountText).append("\n", new RelativeSizeSpan(0.5f), Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
                     elementCount.setText(builder);
 
-                    return selectHelper.getContentList();
+                    return filteredList;
                 })
                 .setSetItemContent((customRecycler, itemView, mediaSelectable) -> {
-                    SelectMediaHelper.loadPathIntoImageView(mediaSelectable.content.getImagePath(), itemView, CustomUtility.pxToDp(width / columnCount));
+                    itemView.setLayoutParams(new FrameLayout.LayoutParams(sizePx, sizePx));
+                    SelectMediaHelper.loadPathIntoImageView(mediaSelectable.content.getImagePath(), itemView, sizeDp);
 
                     itemView.findViewById(R.id.listItem_image_selected).setVisibility(mediaSelectable.isSelected() ? View.VISIBLE : View.GONE);
                     View fullScreenButton = itemView.findViewById(R.id.listItem_image_fullScreen);
@@ -610,7 +661,7 @@ public class MediaActivity extends AppCompatActivity {
                 })
                 .setOnClickListener((customRecycler, view, mediaSelectable, index) -> {
                     if (selectHelper.isActiveSelection()) {
-                        selectHelper.toggleSelection(index);
+                        selectHelper.toggleSelection(mediaSelectable, index);
                     } else {
                         setMediaScrollGalleryAndShow(customRecycler.getObjectList().stream().map(MultiSelectHelper.Selectable::getContent).collect(Collectors.toList()), index);
                     }
@@ -690,6 +741,7 @@ public class MediaActivity extends AppCompatActivity {
                                 .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog1 -> {
                                     oldMedia.forEach(media -> database.mediaMap.remove(media.getUuid()));
                                     reLoadRecycler();
+                                    selectHelper.checkSelectionStatusAndUpdateToolbarTitle();
                                     Toast.makeText(this, (Database.saveAll_simple() ? plural : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
                                 })
                                 .alignPreviousButtonsLeft()
@@ -722,12 +774,21 @@ public class MediaActivity extends AppCompatActivity {
 
             database.mediaMap.putAll(newMedia.stream().collect(Collectors.toMap(Media::getUuid, o -> o)));
         } else {
+            // ToDo: Hier ansetzen
             applyNewIdList(newMedia, mediaPersonIdList, CategoriesActivity.CATEGORIES.MEDIA_PERSON);
             applyNewIdList(newMedia, mediaCategoryIdList, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY);
 
             oldMedia.forEachCount((media, count) -> {
                 media.getChangesFrom(newMedia.get(count));
             });
+
+            if (CustomUtility.stringExists(searchQuery) && isExtraSearch()) {
+                selectHelper.getAllSelected().forEach(mediaSelectable -> {
+                    if (!Utility.containedInMedia(searchQuery, mediaSelectable.getContent(), filterTypeSet))
+                        mediaSelectable.setSelected(false);
+                });
+                selectHelper.checkSelectionStatusAndUpdateToolbarTitle();
+            }
         }
 
         Toast.makeText(this, (Database.saveAll_simple() ? size + " " + (size > 1 ? plural : singular) : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
@@ -828,71 +889,6 @@ public class MediaActivity extends AppCompatActivity {
 
                 if (selectedRecycler != null)
                     selectedRecycler.reload();
-
-                if (true)
-                    return;
-
-
-                CustomDialog.Builder(context)
-                        .setDimensionsFullscreen()
-                        .disableScroll()
-                        .setView(new CustomRecycler<String>(context)
-                                        .setObjectList(pathList)
-                                        .setItemLayout(R.layout.list_item_image)
-                                        .setSetItemContent((customRecycler, itemView, path) -> {
-                                            File imgFile = new File(path);
-                                            Uri imageUri = Uri.fromFile(imgFile);
-                                            RequestOptions myOptions = new RequestOptions()
-                                                    .override(700, 700)
-                                                    .centerCrop();
-
-                                            ImageView imageView = itemView.findViewById(R.id.listItem_image_imgaeView);
-                                            Glide.with(context)
-                                                    .load(imageUri)
-                                                    .apply(myOptions)
-                                                    .into(imageView);
-
-                                            ImageView videoIndicator = itemView.findViewById(R.id.listItem_image_videoIndicator);
-
-                                            if (path.endsWith(".mp4"))
-                                                videoIndicator.setVisibility(View.VISIBLE);
-                                            else
-                                                videoIndicator.setVisibility(View.GONE);
-
-//                                            imageView.setOnClickListener(v -> {
-//                                                context.startActivity(new Intent(context, MyFragmentGallery.class));
-////                                        CustomDialog.Builder(this)
-////                                                .setView(R.layout.dialog_scroll_gallery)
-////                                                .setDimensionsFullscreen()
-//////                                                .removeBackground_and_margin()
-////                                                .disableScroll()
-////                                                .setSetViewContent((customDialog, view, reload) -> {
-////                                                    ScrollGalleryView scrollGallery = customDialog.findViewById(R.id.dialog_scrollGallery_view);
-////                                                    ScrollGalleryView
-////                                                            .from(scrollGallery)
-////                                                            .settings(
-////                                                                    GallerySettings
-////                                                                            .from(getSupportFragmentManager())
-////                                                                            .thumbnailSize(100)
-////                                                                            .enableZoom(true)
-////                                                                            .build()
-////                                                            )
-//////                                                            .add(image("https://www.anti-bias.eu/wp-content/uploads/2015/01/shutterstock_92612287-e1420280083718.jpg"))
-////                                                            .add(MediaInfo.mediaLoader(new CustomGlideImageLoader("https://www.anti-bias.eu/wp-content/uploads/2015/01/shutterstock_92612287-e1420280083718.jpg") {
-////
-////                                                            }))
-//////                                                            .add(image("http://povodu.ru/wp-content/uploads/2016/04/pochemu-korabl-derzitsa-na-vode.jpg"))
-//////                                                            .add(video("http://www.sample-videos.com/video/mp4/720/big_buck_bunny_720p_1mb.mp4", R.drawable.placeholder_image))
-////                                                            .build();
-////                                                })
-////                                                .show();
-//                                            });
-
-                                        })
-                                        .setRowOrColumnCount(2)
-                                        .generateRecyclerView()
-                        )
-                        .show();
             });
         }
 
@@ -917,8 +913,8 @@ public class MediaActivity extends AppCompatActivity {
 
 
         }
-
         //  <------------------------- Convenience -------------------------
+
 
         //  ------------------------- Builder ------------------------->
         public static SelectMediaHelper Builder(AppCompatActivity context, CustomList<Media> selectedMedia) {
@@ -1012,18 +1008,16 @@ public class MediaActivity extends AppCompatActivity {
     }
 
     private void showScrollGallery(int index) {
+        removeFocusFromSearch();
         scrollGalleryView.setVisibility(View.VISIBLE);
         scrollGalleryView.setCurrentItem(index);
+        ((TextView) findViewById(R.id.customImageDescription)).setText(mediaRecycler.getObjectList().get(index).getContent()._getDescription());
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+
+
         LinearLayout thumbnailContainer = findViewById(R.id.thumbnails_container);
         thumbnailContainer.setBackgroundColor(Color.argb(100, 0,0, 0));
-
-//        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-//        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-//        getWindow().setDecorFitsSystemWindows(false);
-
         HorizontalScrollView thumbnailScrollView = findViewById(R.id.thumbnails_scroll_view);
-        //1440
         thumbnailContainer.postDelayed(() -> {
             int[] thumbnailCoords = new int[2];
             thumbnailContainer.getChildAt(index).getLocationOnScreen(thumbnailCoords);
@@ -1043,6 +1037,25 @@ public class MediaActivity extends AppCompatActivity {
         // ToDo: Funktioniert nicht wirklich ^^
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
         clearScrollGallery();
+        currentVideoPreview = null;
+    }
+
+    public static void toggleDescriptionVisibility(AppCompatActivity activity) {
+        int visibility = activity.findViewById(com.veinhorn.scrollgalleryview.R.id.thumbnails_scroll_view).getVisibility();
+        View view = activity.findViewById(R.id.customImageDescription);
+        TransitionManager.beginDelayedTransition((ViewGroup) view.getParent());
+        view.setVisibility(visibility);
+    }
+
+    public static void shouldVideoPreviewStart(MediaActivity activity, VideoView videoView, Media media) {
+        int currentItem = activity.scrollGalleryView.getCurrentItem();
+        if (currentItem == 0 && activity.selectHelper.isActiveSelection()) {
+            videoView.start();
+            activity.currentVideoPreview = videoView;
+        } else if (activity.mediaRecycler.getObjectList().get(currentItem).getContent() == media) {
+            videoView.start();
+            activity.currentVideoPreview = videoView;
+        }
     }
     //  <------------------------- ScrollGallery -------------------------
 
@@ -1102,6 +1115,10 @@ public class MediaActivity extends AppCompatActivity {
     private void removeFocusFromSearch() {
         media_search.clearFocus();
     }
+
+    private boolean isExtraSearch() {
+        return Objects.equals(media_search.getQuery().toString(), getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH));
+    }
     //  <------------------------- ToolBar -------------------------
 
 
@@ -1111,12 +1128,9 @@ public class MediaActivity extends AppCompatActivity {
         if (requestCode == REQUEST_CODE_STORAGE_MANAGER) {
             if (checkAndRequestStoragePermission())
                 loadDatabase();
-
-//            if (resultCode == RESULT_OK) {
-//                if (checkAndRequestStoragePermission())
-//                    loadDatabase();
-//            } else
-//                checkAndRequestStoragePermission();
+        } else if (requestCode == CustomVideoLoader.START_ACTIVITY_VIDEO_PLAYER) {
+            if (currentVideoPreview != null)
+                currentVideoPreview.start();
         }
     }
 
@@ -1125,11 +1139,14 @@ public class MediaActivity extends AppCompatActivity {
     public void onBackPressed() {
         if (scrollGalleryView.getVisibility() == View.VISIBLE) {
             hideScrollGallery();
+        } else if (Utility.stringExists(media_search.getQuery().toString()) && !isExtraSearch()) {
+            media_search.setQuery("", false);
         } else if (selectHelper.isActiveSelection()) {
             selectHelper.stopSelection();
         } else
             super.onBackPressed();
     }
+
 }
 
 /*

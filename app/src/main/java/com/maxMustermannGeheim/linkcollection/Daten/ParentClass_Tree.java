@@ -97,11 +97,11 @@ public class ParentClass_Tree extends ParentClass {
         return treeNode;
     }
 
-    public static Pair<AndroidTreeView,TreeNode> buildTreeView(ViewGroup container, CategoriesActivity.CATEGORIES category,
-                                     @Nullable CustomList<String> selectedIds, String searchQuery,
-                                     @Nullable Runnable updateSelectedRecycler, Comparator<ParentClass_Tree> comparator, TextView emptyTextView, 
-                                     @Nullable Pair<TreeNode.TreeNodeClickListener, TreeNode.TreeNodeLongClickListener> clickListenerPair, 
-                                     @Nullable Utility.DoubleGenericInterface<ViewGroup,TreeNode> customLayoutAdjustments) {
+    public static CustomUtility.Triple<AndroidTreeView, View,TreeNode> buildTreeView(ViewGroup container, CategoriesActivity.CATEGORIES category,
+                                                                         @Nullable CustomList<String> selectedIds, String searchQuery,
+                                                                         @Nullable Runnable updateSelectedRecycler, Comparator<ParentClass_Tree> comparator, TextView emptyTextView,
+                                                                         @Nullable Pair<TreeNode.TreeNodeClickListener, TreeNode.TreeNodeLongClickListener> clickListenerPair,
+                                                                         @Nullable Utility.DoubleGenericInterface<ViewGroup,TreeNode> customLayoutAdjustments) {
         Context context = container.getContext();
         container.removeAllViews();
 
@@ -125,6 +125,14 @@ public class ParentClass_Tree extends ParentClass {
             CustomUtility.runRunnable(updateSelectedRecycler);
         };
 
+        Utility.DoubleGenericInterface<TreeNode, TreeNode> manageSelection = (root, node) -> {
+            for (TreeNode child : root.getChildren()) {
+                if (((ParentClass_Tree) child.getValue()).manageSelection(child, node, updateSelectedList)) {
+                    break;
+                }
+            }
+        };
+
         if (clickListenerPair != null) {
             tView.setDefaultNodeClickListener(clickListenerPair.first);
             tView.setDefaultNodeLongClickListener(clickListenerPair.second);
@@ -135,22 +143,36 @@ public class ParentClass_Tree extends ParentClass {
                         node.setSelected(false);
                         ((CustomTreeNodeHolder) node.getViewHolder()).update();
                         updateSelectedList.runGenericInterface(node);
-                    } else {
-                        for (TreeNode child : completeTree.getChildren()) {
-                            if (((ParentClass_Tree) child.getValue()).manageSelection(child, node, updateSelectedList)) {
-                                break;
-                            }
-                        }
-                    }
+                    } else
+                        manageSelection.run(completeTree, node);
 
                 }
             });
 
             tView.setDefaultNodeLongClickListener((node, value) -> {
                 addNew(context, (ParentClass_Tree) value, searchQuery, category, newObject -> {
-                    selectedIds.add(newObject.getUuid());
-                    updateSelectedRecycler.run();
-                    buildTreeView(container, category, selectedIds, searchQuery, updateSelectedRecycler, comparator, emptyTextView, clickListenerPair, null);
+//                    selectedIds.add(newObject.getUuid());
+//                    completeTree.sel
+//                    updateSelectedRecycler.run();
+                    CustomUtility.Triple<AndroidTreeView, View,TreeNode> triple = buildTreeView(container, category, selectedIds, searchQuery, updateSelectedRecycler, comparator, emptyTextView, clickListenerPair, null);
+
+                    TreeNode root = triple.third;
+
+                    TreeNode foundTreeNode = Utility.runRecursiveGenericReturnInterface(root, TreeNode.class, (treeNode, recursiveInterface) -> {
+                        for (TreeNode child : treeNode.getChildren()) {
+                            if (child.getValue() == newObject)
+                                return child;
+                            else if (!child.isLeaf()) {
+                                TreeNode returnNode = recursiveInterface.run(child, recursiveInterface);
+                                if (returnNode != null)
+                                    return returnNode;
+                            }
+                        }
+                        return null;
+                    });
+
+                    manageSelection.run(root, foundTreeNode);
+
                 });
                 return true;
             });
@@ -160,10 +182,11 @@ public class ParentClass_Tree extends ParentClass {
 //        View view = tView.getView();
 ////        view.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 //        container.addView(view);
-        container.addView(tView.getView());
+        View view = tView.getView();
+        container.addView(view);
         tView.expandAll();
         updateAll(completeTree);
-        return Pair.create(tView, completeTree);
+        return CustomUtility.Triple.create(tView, view, completeTree);
     }
 
     public static void addNew(Context context, @Nullable ParentClass_Tree parent, String name, CategoriesActivity.CATEGORIES category, Utility.GenericInterface<ParentClass_Tree> onAdded) {

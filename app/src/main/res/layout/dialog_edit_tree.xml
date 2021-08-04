@@ -6,5 +6,6 @@
     <com.allyants.draggabletreeview.DraggableTreeView
         android:id="@+id/dialog_editTree_treeView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent"
+        android:layout_marginStart="-35dp"/>
 </LinearLayout>

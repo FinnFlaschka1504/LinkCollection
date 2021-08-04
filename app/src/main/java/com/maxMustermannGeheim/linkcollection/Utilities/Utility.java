@@ -3419,7 +3419,7 @@ public class Utility {
         R run(T t, RecursiveGenericReturnInterface<T, R> recursiveInterface);
     }
 
-    public static <T, R> R runRecursiveGenericReturnInterface(T t, RecursiveGenericReturnInterface<T, R> recursiveInterface) {
+    public static <T, R> R runRecursiveGenericReturnInterface(T t, Class<R> returnType, RecursiveGenericReturnInterface<T, R> recursiveInterface) {
         return recursiveInterface.run(t, recursiveInterface);
     }
     //  <------------------------- Interfaces -------------------------

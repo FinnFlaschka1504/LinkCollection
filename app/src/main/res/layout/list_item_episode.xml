@@ -111,7 +111,7 @@
                 android:layout_weight="1"
                 android:textColor="@color/colorPrimaryDark"
                 android:textStyle="bold"
-                tools:text="Name sdasdasdasdasd sdsdds" />
+                tools:text="Name sdasdasdasdasd asd asd asd sdsdds" />
 
             <TextView
                 android:id="@+id/listItem_episode_rating"

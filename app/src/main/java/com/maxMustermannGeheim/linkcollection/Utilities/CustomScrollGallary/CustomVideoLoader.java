@@ -4,16 +4,19 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.media.MediaPlayer;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.VideoView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.MediaActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.squareup.picasso.Callback;
@@ -24,10 +27,11 @@ import com.veinhorn.scrollgalleryview.loader.DefaultVideoLoader;
 import com.veinhorn.scrollgalleryview.loader.MediaLoader;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.util.Date;
 
 public class CustomVideoLoader extends DefaultVideoLoader {
-//    String videoPath;
+    public static final int START_ACTIVITY_VIDEO_PLAYER = 98765;
     Media media;
 
     public CustomVideoLoader(String url, int mId) {
@@ -42,44 +46,41 @@ public class CustomVideoLoader extends DefaultVideoLoader {
     @Override
     public void loadMedia(Context context, ImageView imageView, SuccessCallback callback) {
         if (media.getImagePath().startsWith("/storage/")) {
+
+            VideoView videoView = ((FrameLayout) imageView.getParent()).findViewById(R.id.imageFragment_video);
+            videoView.setVisibility(View.VISIBLE);
+            videoView.setVideoPath(media.getImagePath());
+            videoView.setOnPreparedListener(mp -> {
+                mp.setVolume(0f, 0f);
+                mp.setLooping(true);
+            });
+
+            videoView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+                @Override
+                public void onViewAttachedToWindow(View v) {
+                    if (context instanceof MediaActivity) {
+                        MediaActivity activity = (MediaActivity) context;
+                        MediaActivity.shouldVideoPreviewStart((MediaActivity) context, videoView, media);
+                    }
+                }
+
+                @Override
+                public void onViewDetachedFromWindow(View v) {
+                }
+            });
+
+
+            videoView.setOnTouchListener((v, event) -> imageView.onTouchEvent(event));
+
             Glide.with(context)
                     .load(new File(media.getImagePath()))
                     .into(imageView);
 
-            ((FrameLayout) imageView.getParent()).getChildAt(1).setVisibility(View.VISIBLE);
-//            Picasso.get()
-//                    .load(new File(videoPath))
-//                    .placeholder(com.veinhorn.scrollgalleryview.loader.picasso.R.drawable.placeholder_image)
-//                    .into(imageView, new ImageCallback(callback));
-            GestureDetector.SimpleOnGestureListener simpleOnGestureListener = new GestureDetector.SimpleOnGestureListener() {
-                @Override
-                public boolean onSingleTapConfirmed(MotionEvent e) {
-                    return super.onSingleTapConfirmed(e);
-                }
-
-                @Override
-                public boolean onSingleTapUp(MotionEvent e) {
-                    return super.onSingleTapUp(e);
-                }
-
-                @Override
-                public void onShowPress(MotionEvent e) {
-                    super.onShowPress(e);
-                }
-
-                @Override
-                public boolean onDown(MotionEvent e) {
-                    return super.onDown(e);
-                }
-            };
+            ((FrameLayout) imageView.getParent()).findViewById(R.id.imageFragment_videoIndicator).setVisibility(View.VISIBLE);
 
             long[] clickedAt = {0L, 0L, 0L};
 
-//            GestureDetectorCompat gestureDetectorCompat = new GestureDetectorCompat(context, simpleOnGestureListener);
-
             imageView.setOnTouchListener((view, motionEvent) -> {
-//                Toast.makeText(context, "" + motionEvent.getAction(), Toast.LENGTH_SHORT).show();
-//                return gestureDetectorCompat.onTouchEvent(motionEvent);
                 clickedAt[0] = new Date().getTime();
                 clickedAt[1] = (long) motionEvent.getX();
                 clickedAt[2] = (long) motionEvent.getY();
@@ -92,12 +93,22 @@ public class CustomVideoLoader extends DefaultVideoLoader {
                     boolean outVert = clickedAt[2] < imageBounds.top || clickedAt[2] > imageBounds.bottom;
                     if (outHor || outVert) {
                         ScrollGalleryView galleryView = ((AppCompatActivity) context).findViewById(R.id.scroll_gallery_view);
-                        if (((AppCompatActivity) context).findViewById(com.veinhorn.scrollgalleryview.R.id.thumbnails_scroll_view).getVisibility() == View.VISIBLE) {
+                        boolean visible = ((AppCompatActivity) context).findViewById(com.veinhorn.scrollgalleryview.R.id.thumbnails_scroll_view).getVisibility() == View.VISIBLE;
+                        if (visible) {
                             galleryView.hideThumbnails();
                         }
                         else {
                             galleryView.showThumbnails();
                         }
+                        try {
+                            Field field;
+                            field = ScrollGalleryView.class.getDeclaredField("isThumbnailsHidden");
+                            field.setAccessible(true);
+                            field.set(galleryView, visible);
+                        } catch (NoSuchFieldException | IllegalAccessException ignored) {
+                        }
+// ToDo: IsThumbnailsHidden setzen
+                        MediaActivity.toggleDescriptionVisibility((AppCompatActivity) context);
                     } else
                         displayVideo(context, media.getImagePath());
                 }
@@ -118,22 +129,16 @@ public class CustomVideoLoader extends DefaultVideoLoader {
                             .override(200, 200)
                             .centerCrop())
                     .into(thumbnailView);
-//            Picasso.get()
-//                    .load(new File(videoPath))
-////                    .resize(thumbWidth == null ? 100 : thumbWidth,
-////                            thumbHeight == null ? 100 : thumbHeight)
-//                    .resize(100, 100)
-//                    .placeholder(com.veinhorn.scrollgalleryview.loader.picasso.R.drawable.placeholder_image)
-//                    .centerInside()
-//                    .into(thumbnailView, new ImageCallback(callback));
         } else
             super.loadThumbnail(context, thumbnailView, callback);
     }
 
     private void displayVideo(Context context, String url) {
+        if (!new File(url).exists())
+            return;
         Intent intent = new Intent(context, VideoPlayerActivity.class);
         intent.putExtra(Constants.URL, url);
-        context.startActivity(intent);
+        ((AppCompatActivity) context).startActivityForResult(intent, START_ACTIVITY_VIDEO_PLAYER);
     }
 
     /**

@@ -2,7 +2,9 @@ package com.maxMustermannGeheim.linkcollection.Utilities.CustomScrollGallary;
 
 
 import android.content.Context;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.github.chrisbanes.photoview.PhotoView;
@@ -45,7 +47,7 @@ public class CustomGlideImageLoader extends PicassoImageLoader {
                     .placeholder(com.veinhorn.scrollgalleryview.loader.picasso.R.drawable.placeholder_image)
                     .error(R.drawable.ic_broken_image)
                     .into(imageView);
-
+//            ((TextView) ((FrameLayout) imageView.getParent()).findViewById(R.id.imageFragment_description)).setText(media._getDescription());
         } else
             super.loadMedia(context, imageView, callback);
     }

@@ -170,6 +170,7 @@ public class Database {
         for (Content content : contentList) contentMap.put(content.key, content);
     }
 
+    // ToDo: Offline Modus mit Firebase https://firebase.google.com/docs/database/android/offline-capabilities
 
     private Database(boolean online) {
         Log.d(TAG, "Database: Construktor");

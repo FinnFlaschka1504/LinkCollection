@@ -89,8 +89,8 @@ public class ActivityResultHelper extends AppCompatActivity {
         String uuid = UUID.randomUUID().toString();
 
         requestMap.put(uuid, Pair.create(dummyActivity -> {
-            Intent intent = new Intent(Intent.ACTION_GET_CONTENT).setType(mimeType).putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-            dummyActivity.startActivityForResult(Intent.createChooser(intent, "Dateien Auswählen"), MULTI_FILE_SELECT_CODE);
+            Intent intent = new Intent(Intent.ACTION_PICK).setType(mimeType).putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+            dummyActivity.startActivityForResult(intent, MULTI_FILE_SELECT_CODE);
         }, onUriResult_Fail));
 
         context.startActivity(new Intent(context, ActivityResultHelper.class).putExtra(EXTRA_UUID, uuid));

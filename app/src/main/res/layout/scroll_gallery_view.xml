@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/scrollGalleryView_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -12,10 +15,10 @@
         android:id="@+id/imageDescription"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="15dp"
+        android:layout_above="@+id/thumbnails_scroll_view"
         android:layout_marginLeft="15dp"
-        android:textColor="@android:color/white"
-        android:layout_above="@+id/thumbnails_scroll_view"/>
+        android:layout_marginBottom="15dp"
+        android:textColor="@android:color/white" />
 
     <TextView
         android:id="@+id/customImageDescription"
@@ -25,10 +28,9 @@
         android:layout_alignParentBottom="true"
         android:layout_gravity="bottom"
         android:layout_marginStart="16dp"
-        android:layout_marginBottom="100dp"
+        android:layout_marginBottom="95dp"
         android:text="15.04.2000\nFinn\nGeburtstag"
         android:textStyle="bold" />
-
 
     <HorizontalScrollView
         android:id="@+id/thumbnails_scroll_view"

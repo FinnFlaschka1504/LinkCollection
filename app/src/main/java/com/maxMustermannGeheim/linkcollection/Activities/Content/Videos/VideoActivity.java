@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -489,7 +490,7 @@ public class VideoActivity extends AppCompatActivity {
 
                 if (advancedQueryHelper.hasLengthSub()) {
                     Pair<Integer, Integer> lengthMinMax = advancedQueryHelper.getLengthMinMax();
-                    lengthVideoCheck = video -> video.getLength() >= lengthMinMax.first && video.getLength() <= lengthMinMax.second;
+                    lengthVideoCheck = video -> video.getLength() >= lengthMinMax.first && (lengthMinMax.second == -1 || video.getLength() <= lengthMinMax.second);
                 }
 
                 Predicate<Video> finalRatingVideoCheck = ratingVideoCheck;

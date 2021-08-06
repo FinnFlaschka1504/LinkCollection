@@ -8,6 +8,7 @@ import android.media.MediaPlayer;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewParent;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.VideoView;
@@ -16,9 +17,13 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
+import com.finn.androidUtilities.CustomUtility;
+import com.github.chrisbanes.photoview.PhotoView;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.MediaActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
 import com.maxMustermannGeheim.linkcollection.R;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
+import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.squareup.picasso.Callback;
 import com.veinhorn.scrollgalleryview.Constants;
 import com.veinhorn.scrollgalleryview.ScrollGalleryView;
@@ -28,7 +33,9 @@ import com.veinhorn.scrollgalleryview.loader.MediaLoader;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class CustomVideoLoader extends DefaultVideoLoader {
     public static final int START_ACTIVITY_VIDEO_PLAYER = 98765;
@@ -47,72 +54,109 @@ public class CustomVideoLoader extends DefaultVideoLoader {
     public void loadMedia(Context context, ImageView imageView, SuccessCallback callback) {
         if (media.getImagePath().startsWith("/storage/")) {
 
-            VideoView videoView = ((FrameLayout) imageView.getParent()).findViewById(R.id.imageFragment_video);
+            FrameLayout parent = (FrameLayout) imageView.getParent();
+
+            Utility.DoubleGenericInterface<VideoView, Boolean> setPreviewVolume = (singleVideoView, on) -> {
+                ((MediaActivity) context).isVideoPreviewSoundOn = on;
+
+                CustomList<VideoView> changeList = singleVideoView != null ? new CustomList<>(singleVideoView) : new CustomList<>(((MediaActivity) context).currentMediaPlayerMap.keySet());
+                changeList.forEach(videoView -> {
+                    FrameLayout viewParent = (FrameLayout) videoView.getParent();
+                    if (on) {
+                        viewParent.findViewById(R.id.imageFragment_volumeOn).setVisibility(View.VISIBLE);
+                        viewParent.findViewById(R.id.imageFragment_volumeOff).setVisibility(View.GONE);
+                        ((MediaActivity) context).currentMediaPlayerMap.get(videoView).setVolume(1f, 1f);
+//                        ((MediaActivity) context).currentMediaPlayerMap.values().forEach(mp -> mp.setVolume(1f, 1f));
+                    } else {
+                        viewParent.findViewById(R.id.imageFragment_volumeOn).setVisibility(View.GONE);
+                        viewParent.findViewById(R.id.imageFragment_volumeOff).setVisibility(View.VISIBLE);
+                        ((MediaActivity) context).currentMediaPlayerMap.get(videoView).setVolume(0f, 0f);
+//                        ((MediaActivity) context).currentMediaPlayerMap.values().forEach(mp -> mp.setVolume(0f, 0f));
+                    }
+                });
+            };
+
+            parent.findViewById(R.id.imageFragment_volumeLayout).setOnClickListener(v -> setPreviewVolume.run(null, !((MediaActivity) context).isVideoPreviewSoundOn));
+
+            parent.findViewById(R.id.imageFragment_videoButtonLayout).setVisibility(View.VISIBLE);
+            int visibility = ((AppCompatActivity) context).findViewById(com.veinhorn.scrollgalleryview.R.id.thumbnails_scroll_view).getVisibility();
+            parent.findViewById(R.id.imageFragment_playVideo).setVisibility(visibility);
+            parent.findViewById(R.id.imageFragment_volumeLayout).setVisibility(visibility);
+
+
+            VideoView videoView = parent.findViewById(R.id.imageFragment_video);
             videoView.setVisibility(View.VISIBLE);
             videoView.setVideoPath(media.getImagePath());
             videoView.setOnPreparedListener(mp -> {
-                mp.setVolume(0f, 0f);
                 mp.setLooping(true);
+                ((MediaActivity) context).currentMediaPlayerMap.put(videoView, mp);
+                setPreviewVolume.run(videoView, ((MediaActivity) context).isVideoPreviewSoundOn);
             });
 
             videoView.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
                 @Override
                 public void onViewAttachedToWindow(View v) {
                     if (context instanceof MediaActivity) {
-                        MediaActivity activity = (MediaActivity) context;
                         MediaActivity.shouldVideoPreviewStart((MediaActivity) context, videoView, media);
                     }
                 }
 
                 @Override
                 public void onViewDetachedFromWindow(View v) {
+                    ((MediaActivity) context).currentMediaPlayerMap.remove(videoView);
                 }
             });
 
 
-            videoView.setOnTouchListener((v, event) -> imageView.onTouchEvent(event));
+//            videoView.setOnTouchListener((v, event) -> imageView.onTouchEvent(event));
 
-            Glide.with(context)
-                    .load(new File(media.getImagePath()))
-                    .into(imageView);
+//            Glide.with(context)
+//                    .load(new File(media.getImagePath()))
+//                    .into(imageView);
+//            parent.setOnClickListener(CustomUtility.getOnClickListener(imageView));
+//            parent.setClickable(true);
+//            imageView.setVisibility(View.INVISIBLE);
+            imageView.setAlpha(0f);
+//            ((PhotoView) imageView).setZoomable(false);
 
-            ((FrameLayout) imageView.getParent()).findViewById(R.id.imageFragment_videoIndicator).setVisibility(View.VISIBLE);
-
-            long[] clickedAt = {0L, 0L, 0L};
-
-            imageView.setOnTouchListener((view, motionEvent) -> {
-                clickedAt[0] = new Date().getTime();
-                clickedAt[1] = (long) motionEvent.getX();
-                clickedAt[2] = (long) motionEvent.getY();
-                return false;
+            parent.findViewById(R.id.imageFragment_playVideo).setOnClickListener(v -> {
+                displayVideo(context, media.getImagePath());
             });
-            ((FrameLayout) imageView.getParent()).setOnClickListener(v -> {
-                if (true/*new Date().getTime() - clickedAt[0] < 200*/) {
-                    RectF imageBounds = getImageBounds(imageView);
-                    boolean outHor = clickedAt[1] < imageBounds.left || clickedAt[1] > imageBounds.right;
-                    boolean outVert = clickedAt[2] < imageBounds.top || clickedAt[2] > imageBounds.bottom;
-                    if (outHor || outVert) {
-                        ScrollGalleryView galleryView = ((AppCompatActivity) context).findViewById(R.id.scroll_gallery_view);
-                        boolean visible = ((AppCompatActivity) context).findViewById(com.veinhorn.scrollgalleryview.R.id.thumbnails_scroll_view).getVisibility() == View.VISIBLE;
-                        if (visible) {
-                            galleryView.hideThumbnails();
-                        }
-                        else {
-                            galleryView.showThumbnails();
-                        }
-                        try {
-                            Field field;
-                            field = ScrollGalleryView.class.getDeclaredField("isThumbnailsHidden");
-                            field.setAccessible(true);
-                            field.set(galleryView, visible);
-                        } catch (NoSuchFieldException | IllegalAccessException ignored) {
-                        }
-// ToDo: IsThumbnailsHidden setzen
-                        MediaActivity.toggleDescriptionVisibility((AppCompatActivity) context);
-                    } else
-                        displayVideo(context, media.getImagePath());
-                }
-            });
+
+//            long[] clickedAt = {0L, 0L, 0L};
+//
+//            imageView.setOnTouchListener((view, motionEvent) -> {
+//                clickedAt[0] = new Date().getTime();
+//                clickedAt[1] = (long) motionEvent.getX();
+//                clickedAt[2] = (long) motionEvent.getY();
+//                return false;
+//            });
+//            parent.setOnClickListener(v -> {
+//                if (true/*new Date().getTime() - clickedAt[0] < 200*/) {
+//                    RectF imageBounds = getImageBounds(imageView);
+//                    boolean outHor = clickedAt[1] < imageBounds.left || clickedAt[1] > imageBounds.right;
+//                    boolean outVert = clickedAt[2] < imageBounds.top || clickedAt[2] > imageBounds.bottom;
+//                    if (outHor || outVert) {
+//                        ScrollGalleryView galleryView = ((AppCompatActivity) context).findViewById(R.id.scroll_gallery_view);
+//                        boolean visible = ((AppCompatActivity) context).findViewById(com.veinhorn.scrollgalleryview.R.id.thumbnails_scroll_view).getVisibility() == View.VISIBLE;
+//                        if (visible) {
+//                            galleryView.hideThumbnails();
+//                        }
+//                        else {
+//                            galleryView.showThumbnails();
+//                        }
+//                        try {
+//                            Field field;
+//                            field = ScrollGalleryView.class.getDeclaredField("isThumbnailsHidden");
+//                            field.setAccessible(true);
+//                            field.set(galleryView, visible);
+//                        } catch (NoSuchFieldException | IllegalAccessException ignored) {
+//                        }
+//                        MediaActivity.toggleDescriptionVisibility((AppCompatActivity) context);
+//                    } else
+//                        displayVideo(context, media.getImagePath());
+//                }
+//            });
 
         } else
             super.loadMedia(context, imageView, callback);

@@ -8,7 +8,7 @@
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@id/main_bottom_navigation">
+        android:layout_marginBottom="40dp">
 
 
         <com.google.android.material.appbar.AppBarLayout
@@ -99,6 +99,7 @@
             <FrameLayout
                 android:id="@+id/main_frame_container"
                 android:layout_width="match_parent"
+                android:paddingBottom="16dp"
                 android:layout_height="match_parent">
 
             </FrameLayout>
@@ -110,7 +111,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:background="@color/colorBackground"
+        android:background="@drawable/navigation_bar_gradient"
         android:clipChildren="false"
         app:elevation="0dp" />
 

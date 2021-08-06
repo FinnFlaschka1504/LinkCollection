@@ -50,7 +50,6 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.SearchView;
 import android.widget.SeekBar;
 import android.widget.Spinner;
@@ -171,7 +170,7 @@ import top.defaults.drawabletoolbox.DrawableBuilder;
 
 public class Utility {
 
-    //  --------------- isOnline --------------->
+    /**  ------------------------- isOnline ------------------------->  */
     static public boolean isOnline(Context context) {
         if (isOnline()) {
             return true;
@@ -214,7 +213,7 @@ public class Utility {
         OnResult onResult;
         Context context;
 
-        //  ------------------------- Constructors ------------------------->
+        /**  ------------------------- Constructors ------------------------->  */
         public PingThread(Runnable onTrue, Runnable onFalse) {
             this.onTrue = onTrue;
             this.onFalse = onFalse;
@@ -234,7 +233,7 @@ public class Utility {
             this.onResult = onResult;
             this.context = context;
         }
-        //  <------------------------- Constructors -------------------------
+        /**  <------------------------- Constructors -------------------------  */
 
         @Override
         public void run() {
@@ -266,7 +265,7 @@ public class Utility {
             return false;
         }
     }
-    //  <--------------- isOnline ---------------
+    /**  <------------------------- isOnline -------------------------  */
 
 
     public static void openFileChooser(AppCompatActivity activity, String imeType, int... requestCode) {
@@ -415,7 +414,7 @@ public class Utility {
     }
 
 
-    //  ------------------------- Api ------------------------->
+    /**  ------------------------- Api ------------------------->  */
     public static void importTmdbGenre(Context context, boolean direct, boolean isVideo) {
         Runnable executeImport = () -> {
             String requestUrl = "https://api.themoviedb.org/3/genre/" +
@@ -719,10 +718,10 @@ public class Utility {
 
         return CustomUtility.stringExistsOrElse(map.get(id), String.valueOf(id));
     }
-    //  <------------------------- Api -------------------------
+    /**  <------------------------- Api -------------------------  */
 
 
-    //  ------------------------- watchLater ------------------------->
+    /**  ------------------------- watchLater ------------------------->  */
     public static List<String> getWatchLaterList_uuid() {
         return getWatchLaterList().stream().map(ParentClass::getUuid).collect(Collectors.toList());
     }
@@ -734,17 +733,17 @@ public class Utility {
 
         return database.videoMap.values().stream().filter(Video::isWatchLater).collect(Collectors.toCollection(CustomList::new));
     }
-    //  <------------------------- watchLater -------------------------
+    /**  <------------------------- watchLater -------------------------  */
 
-    //  --------------- Copy --------------->
+    /**  ------------------------- Copy ------------------------->  */
     public static <T> T deepCopy(T t) {
         Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
         return (T) gson.fromJson(gson.toJson(t), t.getClass());
     }
-    //  <--------------- Copy ---------------
+    /**  <------------------------- Copy -------------------------  */
 
 
-    //  --------------- OnClickListener --------------->
+    /**  ------------------------- OnClickListener ------------------------->  */
     public static View.OnClickListener getOnClickListener(View view) {
         View.OnClickListener retrievedListener = null;
         String viewStr = "android.view.View";
@@ -785,10 +784,10 @@ public class Utility {
     interface InterceptOnClick {
         boolean runInterceptOnClick(View view);
     }
-    //  <--------------- OnClickListener ---------------
+    /**  <------------------------- OnClickListener -------------------------  */
 
-    //  ----- Filter ----->
-    //  ----- ... in Videos ----->
+    /**  ------------------------- Filter ------------------------->  */
+    /**  ------------------------- ... in Videos ------------------------->  */
     public static boolean containedInVideo(String query, Video video, HashSet<VideoActivity.FILTER_TYPE> filterTypeSet) {
         if (video.getUuid().equals(query)) return true;
         if (filterTypeSet.contains(VideoActivity.FILTER_TYPE.NAME)) {
@@ -887,9 +886,9 @@ public class Utility {
             return true;
         return false;
     }
-    //  <----- ... in Videos -----
+    /**  <------------------------- ... in Videos -------------------------  */
 
-    //  ----- ... in Knowledge ----->
+    /**  ------------------------- ... in Knowledge ------------------------->  */
     public static boolean containedInKnowledge(String query, Knowledge knowledge, HashSet<KnowledgeActivity.FILTER_TYPE> filterTypeSet) {
         if (filterTypeSet.contains(KnowledgeActivity.FILTER_TYPE.NAME) && knowledge.getName().toLowerCase().contains(query.toLowerCase()))
             return true;
@@ -908,9 +907,9 @@ public class Utility {
 
         return false;
     }
-    //  <----- ... in Knowledge -----
+    /**  <------------------------- ... in Knowledge -------------------------  */
 
-    //  ----- ... in Owe ----->
+    /**  ------------------------- ... in Owe ------------------------->  */
     public static boolean containedInOwe(String query, Owe owe, HashSet<OweActivity.FILTER_TYPE> filterTypeSet) {
         if (!filterTypeSet.contains(OweActivity.FILTER_TYPE.OWN) && owe.getOwnOrOther() == Owe.OWN_OR_OTHER.OWN)
             return false;
@@ -938,9 +937,9 @@ public class Utility {
 //            }
 //        }
     }
-    //  <----- ... in Owe -----
+    /**  <------------------------- ... in Owe -------------------------  */
 
-    //  ----- ... in Joke ----->
+    /**  ------------------------- ... in Joke ------------------------->  */
     public static boolean containedInJoke(String query, Joke joke, HashSet<JokeActivity.FILTER_TYPE> filterTypeSet) {
         if (filterTypeSet.contains(JokeActivity.FILTER_TYPE.NAME) && joke.getName().toLowerCase().contains(query.toLowerCase()))
             return true;
@@ -955,9 +954,9 @@ public class Utility {
 
         return false;
     }
-    //  <----- ... in Joke -----
+    /**  <------------------------- ... in Joke -------------------------  */
 
-    //  ----- ... in Show ----->
+    /**  ------------------------- ... in Show ------------------------->  */
     public static boolean containedInShow(String query, Show show, HashSet<ShowActivity.FILTER_TYPE> filterTypeSet) {
         if (show.getUuid().equals(query)) return true;
         if (filterTypeSet.contains(ShowActivity.FILTER_TYPE.NAME) && show.getName().toLowerCase().contains(query.toLowerCase()))
@@ -967,9 +966,9 @@ public class Utility {
             return true;
         return false;
     }
-    //  <----- ... in Show -----
+    /**  <------------------------- ... in Show -------------------------  */
 
-    //  ----- ... in Media ----->
+    /**  ------------------------- ... in Media ------------------------->  */
     public static boolean containedInMedia(String query, Media media, HashSet<MediaActivity.FILTER_TYPE> filterTypeSet) {
 //        if (media.getUuid().equals(query)) return true;
 //        if (filterTypeSet.contains(MediaActivity.FILTER_TYPE.PERSON) && media.getName().toLowerCase().contains(query.toLowerCase()))
@@ -981,13 +980,13 @@ public class Utility {
             return true;
         return false;
     }
-    //  <----- ... in Media -----
-//  <----- Filter -----
+    /**  <------------------------- ... in Media -------------------------  */
+/**  <------------------------- Filter -------------------------  */
 
 
     private static Date currentDate;
 
-    //  --------------- FilmCalender --------------->
+    /**  ------------------------- FilmCalender ------------------------->  */
     public static void setupFilmCalender(Context context, CompactCalendarView calendarView, FrameLayout layout, List<Video> videoList, boolean openVideo) {
         calendarView.removeAllEvents();
         TextView calender_month = layout.findViewById(R.id.fragmentCalender_month);
@@ -1099,11 +1098,11 @@ public class Utility {
             Database.saveAll();
         });
     }
-    //  <--------------- FilmCalender ---------------
+    /**  <------------------------- FilmCalender -------------------------  */
 
     // ToDo: Alignment von den Buttons ändern
 
-    //  --------------- EpisodeCalender --------------->
+    /**  ------------------------- EpisodeCalender ------------------------->  */
     public static void setupEpisodeCalender(Context context, CompactCalendarView calendarView, FrameLayout layout, List<Show.Episode> episodeList, boolean openEpisode) {
         calendarView.removeAllEvents();
         TextView calender_month = layout.findViewById(R.id.fragmentCalender_month);
@@ -1195,7 +1194,7 @@ public class Utility {
             setButtons(layout, 0, calendarView, episodeList, customRecycler);
         });
     }
-    //  <--------------- EpisodeCalender ---------------
+    /**  <------------------------- EpisodeCalender -------------------------  */
 
     private static void loadVideoList(List<Event> eventList, FrameLayout layout, CustomRecycler<Event> customRecycler) {
         eventList = new ArrayList<>(eventList);
@@ -1264,15 +1263,17 @@ public class Utility {
         dialog_editViews_previous.setAlpha(dateList.stream().anyMatch(date -> date.before(currentDate)) ? 1f : 0.5f);
         dialog_editViews_next.setAlpha(dateList.stream().anyMatch(date -> date.after(currentDate)) ? 1f : 0.5f);
 
-        OnHorizontalSwipeTouchListener touchListener = new OnHorizontalSwipeTouchListener(layout.getContext()) {
+        OnSwipeTouchListener touchListener = new OnSwipeTouchListener(layout.getContext()) {
             @Override
-            public void onSwipeRight() {
+            public boolean onSwipeRight() {
                 dialog_editViews_previous.callOnClick();
+                return true;
             }
 
             @Override
-            public void onSwipeLeft() {
+            public boolean onSwipeLeft() {
                 dialog_editViews_next.callOnClick();
+                return true;
             }
         };
         layout.findViewById(R.id.fragmentCalender_viewLayout).setOnTouchListener(touchListener);
@@ -1281,24 +1282,23 @@ public class Utility {
     }
 
 
-    public static class OnHorizontalSwipeTouchListener implements View.OnTouchListener {
+    public static class OnSwipeTouchListener implements View.OnTouchListener {
 
         private final GestureDetector gestureDetector;
-        Runnable cancelTouch;
+//        Runnable cancelTouch;
 
 
-        public OnHorizontalSwipeTouchListener(Context ctx) {
+        public OnSwipeTouchListener(Context ctx) {
             gestureDetector = new GestureDetector(ctx, new GestureListener());
-
         }
 
 
         @Override
         public boolean onTouch(View v, MotionEvent event) {
-            cancelTouch = () -> {
-                event.setAction(MotionEvent.ACTION_CANCEL);
-                v.onTouchEvent(event);
-            };
+//            cancelTouch = () -> {
+//                event.setAction(MotionEvent.ACTION_CANCEL);
+//                v.onTouchEvent(event);
+//            };
             return gestureDetector.onTouchEvent(event);
         }
 
@@ -1321,21 +1321,19 @@ public class Utility {
                     if (Math.abs(diffX) > Math.abs(diffY)) {
                         if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
                             if (diffX > 0) {
-                                onSwipeRight();
+                                result = onSwipeRight();
                             } else {
-                                onSwipeLeft();
+                                result = onSwipeLeft();
                             }
-                            result = true;
                         }
                     }
-//                    else if (Math.abs(diffY) > SWIPE_THRESHOLD && Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD) {
-//                        if (diffY > 0) {
-//                            onSwipeBottom();
-//                        } else {
-//                            onSwipeTop();
-//                        }
-//                        result = true;
-//                    }
+                    else if (Math.abs(diffY) > SWIPE_THRESHOLD && Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD) {
+                        if (diffY > 0) {
+                            result = onSwipeBottom();
+                        } else {
+                            result = onSwipeTop();
+                        }
+                    }
                 } catch (Exception exception) {
                     exception.printStackTrace();
                 }
@@ -1345,21 +1343,25 @@ public class Utility {
             }
         }
 
-        public void onSwipeRight() {
+        public boolean onSwipeRight() {
+            return false;
         }
 
-        public void onSwipeLeft() {
+        public boolean onSwipeLeft() {
+            return false;
         }
 
-//        public void onSwipeTop() {
-//        }
-//
-//        public void onSwipeBottom() {
-//        }
+        public boolean onSwipeTop() {
+            return false;
+        }
+
+        public boolean onSwipeBottom() {
+            return false;
+        }
     }
 
 
-    //  ------------------------- Checks ------------------------->
+    /**  ------------------------- Checks ------------------------->  */
     public static boolean isUrl(String text) {
         return text.matches("(?i)^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?!(?:10|127)(?:\\.\\d{1,3}){3})(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?(?:[/?#]\\S*)?$");
     }
@@ -1371,10 +1373,10 @@ public class Utility {
 
     public static final String imdbPattern_full = "^tt\\d{7,8}$";
     public static final String imdbPattern = "tt\\d{7,8}";
-    //  <------------------------- Checks -------------------------
+    /**  <------------------------- Checks -------------------------  */
 
 
-    //  ------------------------- Text ------------------------->
+    /**  ------------------------- Text ------------------------->  */
     public static String removeTrailingZeros(double d) {
         return removeTrailingZeros(String.valueOf(d));
     }
@@ -1492,10 +1494,10 @@ public class Utility {
 
         return format;
     }
-    //  <------------------------- Text -------------------------
+    /**  <------------------------- Text -------------------------  */
 
 
-    //  --------------- Time --------------->
+    /**  ------------------------- Time ------------------------->  */
     public static Date removeTime(Date date) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(date);
@@ -1526,10 +1528,10 @@ public class Utility {
             return false;
         return new Date().before(date);
     }
-    //  <--------------- Time ---------------
+    /**  <------------------------- Time -------------------------  */
 
 
-    //  --------------- Toast --------------->
+    /**  ------------------------- Toast ------------------------->  */
     public static Toast centeredToast(Context context, String text) {
         Toast toast = Toast.makeText(context, text, Toast.LENGTH_SHORT);
         TextView v = toast.getView().findViewById(android.R.id.message);
@@ -1547,9 +1549,9 @@ public class Utility {
         if (view != null) view.setOnClickListener(onClickListener);
         toast.show();
     }
-    //  <--------------- Toast ---------------
+    /**  <------------------------- Toast -------------------------  */
 
-    //  ------------------------- EditItem ------------------------->
+    /**  ------------------------- EditItem ------------------------->  */
     public static CustomDialog showEditItemDialog(Context context, CustomDialog addOrEditDialog, List<String> preSelectedUuidList, Object o, CategoriesActivity.CATEGORIES category) {
         Database database = Database.getInstance();
 
@@ -1954,7 +1956,7 @@ public class Utility {
                 })
                 .show();
     }
-    //  <------------------------- EditItem -------------------------
+    /**  <------------------------- EditItem -------------------------  */
 
     public static ParentClass getObjectFromDatabase(CategoriesActivity.CATEGORIES category, String uuid) {
         return getMapFromDatabase(category).get(uuid);
@@ -2083,7 +2085,7 @@ public class Utility {
     }
 
 
-    //  ----- Pixels ----->
+    /**  ------------------------- Pixels ------------------------->  */
     public static int pxToDp(int px) {
         return (int) (px / Resources.getSystem().getDisplayMetrics().density);
     }
@@ -2108,20 +2110,20 @@ public class Utility {
         int height = size.y;
         return Pair.create(width, height);
     }
-    //  <----- Pixels -----
+    /**  <------------------------- Pixels -------------------------  */
 
 
-    //  ------------------------- Advanced Search ------------------------->
+    /**  ------------------------- Advanced Search ------------------------->  */
     public static CustomDialog showAdvancedSearchDialog(Context context, SearchView searchView, Collection<? extends ParentClass_Ratable> ratables) {
-        //  ------------------------- Rating ------------------------->
+        /**  ------------------------- Rating ------------------------->  */
         boolean[] singleMode = {false};
         final int[] min = {0};
         final int[] max = {20};
         boolean preSelected = false;
-        //  <------------------------- Rating -------------------------
+        /**  <------------------------- Rating -------------------------  */
 
 
-        //  ------------------------- Watched ------------------------->
+        /**  ------------------------- Watched ------------------------->  */
         final Date[] from = {null};
         final Date[] to = {null};
 
@@ -2129,12 +2131,12 @@ public class Utility {
 
         final String[] pivot = {""};
         final String[] duration = {""};
-        //  <------------------------- Watched -------------------------
+        /**  <------------------------- Watched -------------------------  */
 
-        //  ------------------------- Length ------------------------->
+        /**  ------------------------- Length ------------------------->  */
         final Integer[] minLength = {null};
         final Integer[] maxLength = {null};
-        //  <------------------------- Length -------------------------
+        /**  <------------------------- Length -------------------------  */
 
         AdvancedQueryHelper advancedQueryHelper = AdvancedQueryHelper.getAdvancedQuery(searchView.getQuery().toString());
         if (advancedQueryHelper.hasAdvancedSearch()) {
@@ -2187,7 +2189,7 @@ public class Utility {
                     final Runnable[] applyStrings = {() -> {
                     }};
 
-                    //  ------------------------- Rating ------------------------->
+                    /**  ------------------------- Rating ------------------------->  */
                     TextView rangeText = customDialog.findViewById(R.id.dialog_advancedSearch_range);
                     RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_advancedSearch_rangeBar);
                     SeekBar singleBar = customDialog.findViewById(R.id.dialog_advancedSearch_singleBar);
@@ -2248,10 +2250,10 @@ public class Utility {
                             singleBar.setProgress(min);
                         }
                     });
-                    //  <------------------------- Rating -------------------------
+                    /**  <------------------------- Rating -------------------------  */
 
 
-                    //  ------------------------- DateRange ------------------------->
+                    /**  ------------------------- DateRange ------------------------->  */
                     TextView dialog_advancedSearch_viewed_text = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_text);
                     Runnable setDateRangeTextView = () -> {
                         if (from[0] != null && to[0] != null) {
@@ -2298,10 +2300,10 @@ public class Utility {
                         resetDateRange.run();
                         return true;
                     });
-                    //  <------------------------- DateRange -------------------------
+                    /**  <------------------------- DateRange -------------------------  */
 
 
-                    //  ------------------------- Duration ------------------------->
+                    /**  ------------------------- Duration ------------------------->  */
                     TextInputEditText since_edit = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_since_edit);
                     Spinner since_unit = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_since_unit);
                     TextInputEditText duration_edit = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_duration_edit);
@@ -2363,7 +2365,6 @@ public class Utility {
                         }
                     };
 
-
                     since_edit.addTextChangedListener(new TextWatcher() {
                         @Override
                         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -2414,18 +2415,21 @@ public class Utility {
                     };
                     since_unit.setOnItemSelectedListener(spinnerListener);
                     duration_unit.setOnItemSelectedListener(spinnerListener);
-                    //  <------------------------- Duration -------------------------
+                    /**  <------------------------- Duration -------------------------  */
 
-                    //  ------------------------- Length ------------------------->
+                    /**  ------------------------- Length ------------------------->  */
                     TextInputEditText minLength_edit = customDialog.findViewById(R.id.dialog_advancedSearch_length_min_edit);
                     TextInputEditText maxLength_edit = customDialog.findViewById(R.id.dialog_advancedSearch_length_max_edit);
 
                     if (minLength[0] != null) {
-                        minLength_edit.setText(String.valueOf(minLength[0]));
-                        maxLength_edit.setText(String.valueOf(maxLength[0]));
+                        minLength_edit.setText(CustomUtility.isNotValueReturnOrElse(minLength[0], -1, String::valueOf, integer -> null));
+                        maxLength_edit.setText(CustomUtility.isNotValueReturnOrElse(maxLength[0], -1, String::valueOf, integer -> null));
                     }
 
-                    //  <------------------------- Length -------------------------
+                    /**  <------------------------- Length -------------------------  */
+
+                    // --------------- Test
+                    // vvvvvvvvvvvvvvv test2
                     /**/
                     // --------------- Chart
 
@@ -2558,7 +2562,7 @@ public class Utility {
                     List<String> filter = new ArrayList<>();
                     String removedQuery = AdvancedQueryHelper.removeAdvancedSearch(searchView.getQuery());
 
-                    //  ------------------------- Rating ------------------------->
+                    /**  ------------------------- Rating ------------------------->  */
                     RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_advancedSearch_rangeBar);
                     min[0] = rangeBar.getMinThumbValue();
                     max[0] = rangeBar.getMaxThumbValue();
@@ -2572,10 +2576,10 @@ public class Utility {
 
                         filter.add(ratingFilter);
                     }
-                    //  <------------------------- Rating -------------------------
+                    /**  <------------------------- Rating -------------------------  */
 
 
-                    //  ------------------------- DateRange ------------------------->
+                    /**  ------------------------- DateRange ------------------------->  */
                     if (from[0] != null) {
                         String dateFilter;
                         if (to[0] != null)
@@ -2596,15 +2600,26 @@ public class Utility {
                             dateDurationFilter = String.format(Locale.getDefault(), "d:%s", duration[0]);
                         filter.add(dateDurationFilter);
                     }
-                    //  <------------------------- DateRange -------------------------
+                    /**  <------------------------- DateRange -------------------------  */
 
-                    //  ------------------------- Length ------------------------->
-                    String  minLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_length_min_edit)).getText().toString();
-                    String maxLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_length_max_edit)).getText().toString();
 
-                    if (CustomUtility.stringExists(minLength_str))
-                        filter.add(String.format(Locale.getDefault(), "l:%d-%d", Integer.parseInt(minLength_str), Integer.parseInt(CustomUtility.stringExistsOrElse(maxLength_str, minLength_str))));
-                    //  <------------------------- Length -------------------------
+                    /**  ------------------------- Length ------------------------->  */
+                    String  minLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_length_min_edit)).getText().toString().trim();
+                    String maxLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_length_max_edit)).getText().toString().trim();
+
+                    if (CustomUtility.stringExists(minLength_str) && CustomUtility.stringExists(maxLength_str)) {
+                        if (Objects.equals(minLength_str, maxLength_str))
+                            filter.add(String.format(Locale.getDefault(), "l:%s", minLength_str));
+                        else
+                            filter.add(String.format(Locale.getDefault(), "l:%s-%s", minLength_str, maxLength_str));
+                    } else if (CustomUtility.stringExists(minLength_str))
+                        filter.add(String.format(Locale.getDefault(), "l:%s-", minLength_str));
+                    else if (CustomUtility.stringExists(maxLength_str))
+                        filter.add(String.format(Locale.getDefault(), "l:-%s", maxLength_str));
+
+//                    if (CustomUtility.stringExists(minLength_str))
+//                            filter.add(String.format(Locale.getDefault(), "l:%d-%d", Integer.parseInt(minLength_str), Integer.parseInt(CustomUtility.stringExistsOrElse(maxLength_str, minLength_str))));
+                    /**  <------------------------- Length -------------------------  */
 
                     String newQuery = Utility.isNotValueReturnOrElse(removedQuery, "", s -> s + " ", null);
                     newQuery += filter.isEmpty() ? "" : String.format("{%s}", String.join(" ", filter));
@@ -2622,7 +2637,7 @@ public class Utility {
         public static final Pattern ratingPattern = Pattern.compile("(?<=r: ?)(([0-4]((.|,)\\d{1,2})?)|5((.|,)00?)?)(-(([0-4]((\\4|\\6)(?<=[,.])\\d{1,2})?)|5((\\4|\\6)(?<=[,.])00?)?))?(?=\\s*(\\}|\\w:))");
         public static final Pattern datePattern = Pattern.compile("(?<=d: ?)(\\d{1,2}\\.\\d{1,2}\\.(\\d{4}|\\d{2}))(-\\d{1,2}\\.\\d{1,2}\\.(\\d{4}|\\d{2}))?(?=\\s*(\\}|\\w:))");
         public static final Pattern durationPattern = Pattern.compile("(?<=d: ?)((-?\\d+[dmy])|(-?\\d+[dmy]|_(-?\\d+)?[my])(;-?\\d+[dmy]))(?=\\s*(\\}|\\w:))");
-        public static final Pattern lengthPattern = Pattern.compile("(?<=l: ?)\\d+(-\\d+)?(?=\\s*(\\}|\\w:))");
+        public static final Pattern lengthPattern = Pattern.compile("(?<=l: ?)(\\d+)?-?(\\d+)?(?=\\s*(\\}|\\w:))");
 //        public static final Pattern durationModePattern = Pattern.compile("(?<=\\d[dmy])[ba]");
 
         public String advancedQuery, restQuery, fullQuery, ratingSub, dateSub, durationSub, lengthSub;
@@ -2662,9 +2677,9 @@ public class Utility {
                     }
                 }
                 if (advancedQueryHelper.advancedQuery.contains("l:")) {
-                    Matcher dateMatcher = lengthPattern.matcher(advancedQueryHelper.advancedQuery);
-                    if (dateMatcher.find()) {
-                        advancedQueryHelper.lengthSub = dateMatcher.group(0);
+                    Matcher lengthMatcher = lengthPattern.matcher(advancedQueryHelper.advancedQuery);
+                    if (lengthMatcher.find()) {
+                        advancedQueryHelper.lengthSub = lengthMatcher.group(0);
                     }
                 }
             }
@@ -2676,7 +2691,7 @@ public class Utility {
         }
 
 
-        //  ------------------------- Checks ------------------------->
+        /**  ------------------------- Checks ------------------------->  */
         public boolean hasAdvancedSearch() {
             return advancedQuery != null;
         }
@@ -2704,10 +2719,10 @@ public class Utility {
         public boolean hasLengthSub() {
             return lengthSub != null;
         }
-//  <------------------------- Checks -------------------------
+        /**  <------------------------- Checks -------------------------  */
 
 
-        //  ------------------------- Convenience ------------------------->
+        /**  ------------------------- Convenience ------------------------->  */
         public Pair<Float, Float> getRatingMinMax() {
             if (ratingSub == null)
                 return null;
@@ -2813,8 +2828,8 @@ public class Utility {
 
         public Pair<Integer, Integer> getLengthMinMax() {
             String[] range = lengthSub.split("-");
-            int min = Integer.parseInt(range[0]);
-            int max = Integer.parseInt(range.length > 1 ? range[1] : range[0]);
+            int min = range.length > 0 ? Integer.parseInt(CustomUtility.isNotValueOrElse(range[0], "", "-1")) : -1;
+            int max = range.length > 1 ? Integer.parseInt(CustomUtility.isNotValueOrElse(range[1], "", "-1")) : (lengthSub.endsWith("-") ? -1 : min);
 
             return Pair.create(min,max);
         }
@@ -2822,9 +2837,9 @@ public class Utility {
         public static String removeAdvancedSearch(CharSequence fullQuery) {
             return fullQuery.toString().replaceAll(AdvancedQueryHelper.advancedSearchPattern.pattern(), "").trim();
         }
-        //  <------------------------- Convenience -------------------------
+        /**  <------------------------- Convenience -------------------------  */
     }
-    //  <------------------------- Advanced Search -------------------------
+    /**  <------------------------- Advanced Search -------------------------  */
 
 
     public static void sendText(AppCompatActivity activity, String text) {
@@ -2839,7 +2854,7 @@ public class Utility {
 
     }
 
-    //  ------------------------- Date & String ------------------------->
+    /**  ------------------------- Date & String ------------------------->  */
     public static Date getDateFromJsonString(String key, JSONObject jsonObject) {
         try {
             return new SimpleDateFormat("yyyy-MM-dd", Locale.GERMANY).parse(jsonObject.getString(key));
@@ -2851,10 +2866,10 @@ public class Utility {
     public static String formatDate(String format, Date date) {
         return new SimpleDateFormat(format, Locale.getDefault()).format(date);
     }
-    //  <------------------------- Date & String -------------------------
+    /**  <------------------------- Date & String -------------------------  */
 
 
-    //  ------------------------- SetDimensions ------------------------->
+    /**  ------------------------- SetDimensions ------------------------->  */
     public static void setDimensions(View view, boolean width, boolean height) {
         ViewGroup.LayoutParams lp = view.getLayoutParams();
         if (lp == null) {
@@ -2872,10 +2887,10 @@ public class Utility {
             lp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
         view.setLayoutParams(lp);
     }
-    //  <------------------------- SetDimensions -------------------------
+    /**  <------------------------- SetDimensions -------------------------  */
 
 
-    //  --------------- getViews --------------->
+    /**  ------------------------- getViews ------------------------->  */
     public static <T extends View> ArrayList<T> getViewsByType(ViewGroup root, Class<T> tClass) {
         final ArrayList<T> result = new ArrayList<>();
         for (int i = 0; i < root.getChildCount(); i++) {
@@ -2921,10 +2936,10 @@ public class Utility {
     public interface TransferState<S, T> {
         void runTransferState(S source, T target);
     }
-    //  <--------------- getViews ---------------
+    /**  <------------------------- getViews -------------------------  */
 
 
-    //  --------------- SquareView --------------->
+    /**  ------------------------- SquareView ------------------------->  */
     enum EQUAL_MODE {
         HEIGHT, WIDTH, MAX, MIN
     }
@@ -2963,10 +2978,10 @@ public class Utility {
                 break;
         }
     }
-    //  <--------------- SquareView ---------------
+    /**  <------------------------- SquareView -------------------------  */
 
 
-//    //  ------------------------- ViewAspectRatio ------------------------->
+//    /**  ------------------------- ViewAspectRatio ------------------------->  */
 //    public static void applyAspectRatioWidth(View view, double aspectRatio){
 //        ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
 //
@@ -2997,10 +3012,10 @@ public class Utility {
 //        });
 //
 //    }
-//    //  <------------------------- ViewAspectRatio -------------------------
+//    /**  <------------------------- ViewAspectRatio -------------------------  */
 
 
-    //  ------------------------- ScaleMatchingParent ------------------------->
+    /**  ------------------------- ScaleMatchingParent ------------------------->  */
     public static void scaleMatchingParentWidth(View view) {
         view.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
             ViewGroup parent = (ViewGroup) v.getParent();
@@ -3020,10 +3035,10 @@ public class Utility {
             view.setLayoutParams(new LinearLayout.LayoutParams(parentWidth, (int) (parentWidth * ratio)));
         });
     }
-    //  <------------------------- ScaleMatchingParent -------------------------
+    /**  <------------------------- ScaleMatchingParent -------------------------  */
 
 
-    //  --------------- Generated Visuals --------------->
+    /**  ------------------------- Generated Visuals ------------------------->  */
     public static Drawable drawableBuilder_rectangle(int color, int corners, boolean ripple) {
         DrawableBuilder drawableBuilder = new DrawableBuilder()
                 .rectangle()
@@ -3046,10 +3061,10 @@ public class Utility {
     public static int setAlphaOfColor(int color, int alpha) {
         return (color & 0x00ffffff) | (alpha << 24);
     }
-    //  <--------------- Generated Visuals ---------------
+    /**  <------------------------- Generated Visuals -------------------------  */
 
 
-    //  --------------- ConcatCollections --------------->
+    /**  ------------------------- ConcatCollections ------------------------->  */
     public interface GetCollections<T, V> {
         Collection<V> runGetCollections(T t);
     }
@@ -3074,10 +3089,10 @@ public class Utility {
         into.addAll(customList);
         return into;
     }
-    //  <--------------- ConcatCollections ---------------
+    /**  <------------------------- ConcatCollections -------------------------  */
 
 
-    //  ------------------------- ifNotNull ------------------------->
+    /**  ------------------------- ifNotNull ------------------------->  */
     public static <E> boolean ifNotNull(E e, ExecuteIfNotNull<E> executeIfNotNull) {
         if (e == null)
             return false;
@@ -3110,10 +3125,10 @@ public class Utility {
     public static <T> T returnIfNull(T object, T returnIfNull) {
         return object != null ? object : returnIfNull;
     }
-    //  <------------------------- ifNotNull -------------------------
+    /**  <------------------------- ifNotNull -------------------------  */
 
 
-    //  ------------------------- Reflections ------------------------->
+    /**  ------------------------- Reflections ------------------------->  */
     public static List<TextWatcher> removeTextListeners(TextView view) {
         List<TextWatcher> returnList = null;
         try {
@@ -3125,10 +3140,10 @@ public class Utility {
         }
         return returnList;
     }
-    //  <------------------------- Reflections -------------------------
+    /**  <------------------------- Reflections -------------------------  */
 
 
-    //  ------------------------- EasyLogic ------------------------->
+    /**  ------------------------- EasyLogic ------------------------->  */
     public static class NoArgumentException extends RuntimeException {
         public static final String DEFAULT_MESSAGE = "Keine Argumente mitgegeben";
 
@@ -3273,10 +3288,10 @@ public class Utility {
         } else
             return orElse.runGenericInterface(input);
     }
-    //  <------------------------- EasyLogic -------------------------
+    /**  <------------------------- EasyLogic -------------------------  */
 
 
-    //  ------------------------- Switch Expression ------------------------->
+    /**  ------------------------- Switch Expression ------------------------->  */
     public static class SwitchExpression<Input, Output> {
         private Input input;
         private CustomList<Pair<Input, Object>> caseList = new CustomList<>();
@@ -3290,14 +3305,14 @@ public class Utility {
             return new SwitchExpression<>(input);
         }
 
-        //  ------------------------- Getters & Setters ------------------------->
+        /**  ------------------------- Getters & Setters ------------------------->  */
         public Input getInput() {
             return input;
         }
-        //  <------------------------- Getters & Setters -------------------------
+        /**  <------------------------- Getters & Setters -------------------------  */
 
 
-        //  ------------------------- Cases ------------------------->
+        /**  ------------------------- Cases ------------------------->  */
         public <Type> SwitchExpression<Input, Type> addCase(Input inputCase, ExecuteOnCase<Input, Type> executeOnCase) {
             caseList.add(new Pair<>(inputCase, executeOnCase));
             return (SwitchExpression<Input, Type>) this;
@@ -3335,7 +3350,7 @@ public class Utility {
         public interface ExecuteOnCase<Input, Output> {
             Output runExecuteOnCase(Input input);
         }
-        //  <------------------------- Cases -------------------------
+        /**  <------------------------- Cases -------------------------  */
 
 
         public Output evaluate() {
@@ -3357,10 +3372,10 @@ public class Utility {
             }
         }
     }
-    //  <------------------------- Switch Expression -------------------------
+    /**  <------------------------- Switch Expression -------------------------  */
 
 
-    //  ------------------------- Interfaces ------------------------->
+    /**  ------------------------- Interfaces ------------------------->  */
     public interface GenericInterface<T> {
         void runGenericInterface(T t);
     }
@@ -3422,10 +3437,10 @@ public class Utility {
     public static <T, R> R runRecursiveGenericReturnInterface(T t, Class<R> returnType, RecursiveGenericReturnInterface<T, R> recursiveInterface) {
         return recursiveInterface.run(t, recursiveInterface);
     }
-    //  <------------------------- Interfaces -------------------------
+    /**  <------------------------- Interfaces -------------------------  */
 
 
-    //  ------------------------- ImageView ------------------------->
+    /**  ------------------------- ImageView ------------------------->  */
     private static Bitmap getBitmapFromUri(Uri uri, Context context) {
         ParcelFileDescriptor parcelFileDescriptor = null;
         try {
@@ -3662,11 +3677,10 @@ public class Utility {
             return imagePath;
         return (!imagePath.matches("\\/\\w+\\.\\w+") ? "" : "https://image.tmdb.org/t/p/" + (original ? "original" : "w92") + "/") + imagePath;
     }
+    /**  <------------------------- ImageView -------------------------  */
 
-    //  <------------------------- ImageView -------------------------
 
-
-    //  ------------------------- GetImageUrlsFromText ------------------------->
+    /**  ------------------------- GetImageUrlsFromText ------------------------->  */
     public static CustomList<String> getImageUrlsFromText(String html) {
         Matcher matcher = Pattern.compile(CategoriesActivity.pictureRegex).matcher(html);
         CustomList<String> urlList = new CustomList<>();
@@ -3675,10 +3689,10 @@ public class Utility {
         }
         return urlList;
     }
-    //  <------------------------- GetImageUrlsFromText -------------------------
+    /**  <------------------------- GetImageUrlsFromText -------------------------  */
 
 
-    //  ------------------------- GetOpenGraphFromWebsite ------------------------->
+    /**  ------------------------- GetOpenGraphFromWebsite ------------------------->  */
     public static void getOpenGraphFromWebsite(String url, GenericInterface<OpenGraph> onResult) {
         @SuppressLint("StaticFieldLeak") AsyncTask<GenericInterface<OpenGraph>, Object, OpenGraph> task = new AsyncTask<Utility.GenericInterface<OpenGraph>, Object, OpenGraph>() {
             Utility.GenericInterface<OpenGraph> onResult;
@@ -3708,9 +3722,9 @@ public class Utility {
         task.execute(onResult);
 
     }
-    //  <------------------------- GetOpenGraphFromWebsite -------------------------
+    /**  <------------------------- GetOpenGraphFromWebsite -------------------------  */
 
-    //  ------------------------- Videos Aktuallisieren ------------------------->
+    /**  ------------------------- Videos Aktuallisieren ------------------------->  */
     public static void updateVideos(Context context, CustomList<Video> updateList) {
         Database database = Database.getInstance();
         RequestQueue requestQueue = Volley.newRequestQueue(context);
@@ -3942,10 +3956,10 @@ public class Utility {
         loadDetails[0].run();
 
     }
-    //  <------------------------- Videos Aktuallisieren -------------------------
+    /**  <------------------------- Videos Aktuallisieren -------------------------  */
 
 
-    //  ------------------------- ExpendableToolbar ------------------------->
+    /**  ------------------------- ExpendableToolbar ------------------------->  */
     public static Runnable applyExpendableToolbar_recycler(Context context, RecyclerView recycler, Toolbar toolbar, AppBarLayout appBarLayout, CollapsingToolbarLayout collapsingToolbarLayout, TextView noItem, String title) {
         final boolean[] canExpand = {true};
         int tolerance = 50;
@@ -4065,9 +4079,9 @@ public class Utility {
             });
         };
     }
-    //  <------------------------- ExpendableToolbar -------------------------
+    /**  <------------------------- ExpendableToolbar -------------------------  */
 
-    //  ------------------------- Arrays ------------------------->
+    /**  ------------------------- Arrays ------------------------->  */
     public static int getIndexByString(Context context, int arrayId, String language) {
         String[] array = context.getResources().getStringArray(arrayId);
         for (int i = 0; i < array.length; i++) {
@@ -4106,9 +4120,9 @@ public class Utility {
 //        }
 //        return orElse.runGenericInterface();
 //    }
-    //  <------------------------- Arrays -------------------------
+    /**  <------------------------- Arrays -------------------------  */
 
-    //  ------------------------- Maps ------------------------->
+    /**  ------------------------- Maps ------------------------->  */
     public static <T, E> Set<T> getKeysByValue(Map<T, E> map, E value) {
         return map.entrySet()
                 .stream()
@@ -4116,5 +4130,5 @@ public class Utility {
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
     }
-    //  <------------------------- Maps -------------------------
+    /**  <------------------------- Maps -------------------------  */
 }

@@ -39,7 +39,6 @@ import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomInternetHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomPopupWindow;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -97,7 +96,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
     private static Settings.Space currentSpace;
     private View main_offline;
-    private Utility.OnHorizontalSwipeTouchListener touchListener;
+    private Utility.OnSwipeTouchListener touchListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -407,25 +406,27 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 mySPR_settings.edit().putInt(SETTING_LAST_OPEN_SPACE, currentSpace.getItemId()).apply();
             if (Settings.Space.allSpaces.filter(Settings.Space::isShown, false).size() > 1) {
                 ViewGroup view = (ViewGroup) currentSpace.getFragment().getView();
-                touchListener = new Utility.OnHorizontalSwipeTouchListener(MainActivity.this) {
+                touchListener = new Utility.OnSwipeTouchListener(MainActivity.this) {
                     @Override
-                    public void onSwipeRight() {
+                    public boolean onSwipeRight() {
                         Settings.Space previous = Settings.Space.allSpaces.filter(Settings.Space::isShown, false).previous(currentSpace);
                         if (previous.isInMore()) {
                             Settings.Space.nextMoreSpace = previous;
                             ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.SPACE_MORE);
                         } else
                             ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(previous.getItemId());
+                        return true;
                     }
 
                     @Override
-                    public void onSwipeLeft() {
+                    public boolean onSwipeLeft() {
                         Settings.Space next = Settings.Space.allSpaces.filter(Settings.Space::isShown, false).next(currentSpace);
                         if (next.isInMore()) {
                             Settings.Space.nextMoreSpace = next;
                             ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(Settings.Space.SPACE_MORE);
                         } else
                             ((BottomNavigationView) findViewById(R.id.main_bottom_navigation)).setSelectedItemId(next.getItemId());
+                        return true;
                     }
                 };
 

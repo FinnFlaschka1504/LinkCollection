@@ -919,13 +919,17 @@ public class ShowActivity extends AppCompatActivity {
 
         season = seasonList.get(previousEpisode.getSeasonNumber());
 
-        if (season.getEpisodesCount() > previousEpisode.getEpisodeNumber()) {
+        Map<Integer, Map<String, Show.Episode>> tempShowSeasonMap = database.tempShowSeasonEpisodeMap.get(show);
+        if (season.getEpisodesCount() > previousEpisode.getEpisodeNumber() /*|| CustomUtility.isNullReturnOrElse(
+                season.getEpisodeMap().values().stream().max((o1, o2) -> Integer.compare(o1.getEpisodeNumber(), o2.getEpisodeNumber()))
+                        .orElse(null), false, episode -> episode.getEpisodeNumber() > previousEpisode.getEpisodeNumber())*/) {
             apiSeasonRequest(show, season.getSeasonNumber(), () -> {
-                onNextEpisode.runOnNextEpisode(database.tempShowSeasonEpisodeMap.get(show).get(season.getSeasonNumber()).get("E:" + (previousEpisode.getEpisodeNumber() + 1)));
+                onNextEpisode.runOnNextEpisode(tempShowSeasonMap.get(season.getSeasonNumber()).get("E:" + (previousEpisode.getEpisodeNumber() + 1)));
             });
         } else if (show.getSeasonsCount() > season.getSeasonNumber()) {
             apiSeasonRequest(show, season.getSeasonNumber() + 1, () -> {
-                onNextEpisode.runOnNextEpisode(database.tempShowSeasonEpisodeMap.get(show).get(season.getSeasonNumber() + 1).get("E:1"));
+                onNextEpisode.runOnNextEpisode(tempShowSeasonMap.get(season.getSeasonNumber() + 1).values()
+                        .stream().min((o1, o2) -> Integer.compare(o1.getEpisodeNumber(), o2.getEpisodeNumber())).orElse(null));
             });
         } else
             onNextEpisode.runOnNextEpisode(null);

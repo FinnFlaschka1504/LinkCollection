@@ -35,14 +35,68 @@
         app:srcCompat="@android:drawable/ic_media_play"
         tools:visibility="visible" />
 
-<!--    <TextView-->
-<!--        android:id="@+id/imageFragment_description"-->
-<!--        style="@style/TextWithShadow"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:layout_gravity="bottom"-->
-<!--        android:layout_marginStart="16dp"-->
-<!--        android:layout_marginBottom="100dp"-->
-<!--        android:text="15.04.2000\nFinn\nGeburtstag"-->
-<!--        android:textStyle="bold" />-->
+    <FrameLayout
+        android:id="@+id/imageFragment_videoButtonLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="150dp"
+        android:layout_gravity="bottom"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <LinearLayout
+            android:id="@+id/imageFragment_playVideo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center|center_horizontal"
+            android:background="@drawable/round_background"
+            android:backgroundTint="#8C4A4A4A"
+            android:clickable="true"
+            android:gravity="center|center_vertical"
+            android:paddingStart="5dp"
+            android:paddingEnd="10dp">
+
+            <ImageView
+                android:id="@+id/imageView3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:srcCompat="@drawable/ic_play_arrow" />
+
+            <TextView
+                android:id="@+id/textView3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Video Wiedergeben"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+
+        <FrameLayout
+            android:id="@+id/imageFragment_volumeLayout"
+            android:layout_width="29dp"
+            android:layout_height="29dp"
+            android:layout_gravity="end|bottom"
+            android:layout_marginEnd="16dp"
+            android:background="@drawable/round_background"
+            android:backgroundTint="#8B3C3C3C"
+            android:clickable="true"
+            android:padding="5dp">
+
+            <ImageView
+                android:id="@+id/imageFragment_volumeOff"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:tint="#FFFFFF"
+                app:srcCompat="@drawable/ic_volume_off" />
+
+            <ImageView
+                android:id="@+id/imageFragment_volumeOn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:tint="#FFFFFF"
+                app:srcCompat="@drawable/ic_volume_up" />
+        </FrameLayout>
+    </FrameLayout>
+
 </FrameLayout>

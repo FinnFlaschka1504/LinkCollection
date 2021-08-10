@@ -333,8 +333,18 @@ public class Utility {
             return String.format(Locale.GERMANY, "%.2f €", amount);
     }
 
-    public static void applyCategoriesLink(AppCompatActivity activity, CategoriesActivity.CATEGORIES category, TextView textView, List<String> idList, Map<String, ? extends ParentClass> map) {
-        CustomList<ParentClass> list = idList.stream().map(map::get).collect(Collectors.toCollection(CustomList::new));
+    public static void applyCategoriesLink(AppCompatActivity activity, CategoriesActivity.CATEGORIES category, TextView textView, List<String> idList) {
+        CustomList<ParentClass> list;
+        switch (category) {
+            default:
+                Map<String, ? extends ParentClass> map = getMapFromDatabase(category);
+                list = idList.stream().map(map::get).collect(Collectors.toCollection(CustomList::new));
+                break;
+            case MEDIA_CATEGORY:
+                list = idList.stream().map(id -> ParentClass_Tree.findObjectById(category, id)).collect(Collectors.toCollection(CustomList::new));
+                break;
+
+        }
 
 
         SpannableStringBuilder builder = new SpannableStringBuilder();
@@ -408,7 +418,7 @@ public class Utility {
 
         textView.setText(builder);
         textView.setMovementMethod(LinkMovementMethod.getInstance());
-        textView.setHighlightColor(Color.TRANSPARENT);
+//        textView.setHighlightColor(Color.TRANSPARENT);
         textView.setLinkTextColor(textView.getTextColors());
 //                activity.getResources().getColorStateList(R.color.clickable_text_color, null));
     }
@@ -863,7 +873,7 @@ public class Utility {
         return false;
     }
 
-    private static boolean containedInCollection(String query, String uuid, boolean exact) {
+    public static boolean containedInCollection(String query, String uuid, boolean exact) {
         Database database = Database.getInstance();
         for (com.maxMustermannGeheim.linkcollection.Daten.Videos.Collection collection : database.collectionMap.values()) {
             if (exact) {

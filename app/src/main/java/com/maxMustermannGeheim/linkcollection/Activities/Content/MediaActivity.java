@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
@@ -12,7 +13,9 @@ import android.os.Environment;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.RelativeSizeSpan;
+import android.text.style.StyleSpan;
 import android.transition.TransitionManager;
+import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -52,9 +55,12 @@ import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaCategory;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomPopupWindow;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomScrollGallary.CustomGlideImageLoader;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomScrollGallary.CustomVideoLoader;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.veinhorn.scrollgalleryview.HackyViewPager;
 import com.veinhorn.scrollgalleryview.MediaInfo;
@@ -63,6 +69,7 @@ import com.veinhorn.scrollgalleryview.ScrollGalleryView;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -71,11 +78,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
 public class MediaActivity extends AppCompatActivity {
+    public static final String ADVANCED_SEARCH__PERSON = "ADVANCED_SEARCH__PERSON";
 
     public enum FILTER_TYPE {
         PERSON("Person"), CATEGORY("Kategorie");
@@ -116,6 +125,7 @@ public class MediaActivity extends AppCompatActivity {
     private VideoView currentVideoPreview;
     public boolean isVideoPreviewSoundOn = false;
     public Map<VideoView, MediaPlayer> currentMediaPlayerMap = new HashMap<>();
+    private Helpers.AdvancedQueryHelper advancedQueryHelper;
 
     private TextView elementCount;
     private SearchView media_search;
@@ -179,59 +189,8 @@ public class MediaActivity extends AppCompatActivity {
         @SuppressLint("RestrictedApi") Runnable whenLoaded = () -> {
 
             setContentView(R.layout.activity_media);
-//            allMediaList = new CustomList<>(database.mediaMap.values());
-//            sortList(allMediaList);
 
-
-            scrollGalleryView = findViewById(R.id.scroll_gallery_view);
-            ((HackyViewPager) findViewById(com.veinhorn.scrollgalleryview.R.id.viewPager)).setOffscreenPageLimit(3);
-//            ScrollGalleryView newScrollGalleryView = new ScrollGalleryView(this, null) {
-//                private void setThumbnailsTransition() {
-//                    Toast.makeText(MediaActivity.this, "Jay", Toast.LENGTH_SHORT).show();
-//                    TransitionManager.beginDelayedTransition(findViewById(R.id.thumbnails_scroll_view));
-//                }
-//            };
-//            Utility.replaceView(scrollGalleryView, newScrollGalleryView, null);
-//            scrollGalleryView = newScrollGalleryView;
-
-            scrollGalleryView
-                    .setThumbnailSize(200)
-                    .setZoom(true)
-                    .withHiddenThumbnails(false)
-                    .hideThumbnailsOnClick(true)
-                    .addOnImageClickListener((position) -> {
-                        toggleDescriptionAndButtonVisibility(this);
-                    })
-                    .setFragmentManager(getSupportFragmentManager());
-
-            scrollGalleryView
-                    .addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
-                        @Override
-                        public void onPageSelected(int position) {
-                            super.onPageSelected(position);
-                            ((TextView) findViewById(R.id.customImageDescription)).setText(mediaRecycler.getObjectList().get(position).getContent()._getDescription());
-                            View currentView = getCurrentViewFromViewPager(scrollGalleryView.getViewPager());
-                            if (currentView != null) {
-                                VideoView videoView = currentView.findViewById(R.id.imageFragment_video);
-                                if (currentVideoPreview != null && currentVideoPreview != videoView)
-                                    currentVideoPreview.pause();
-                                if (videoView.getVisibility() == View.VISIBLE) {
-                                    videoView.start();
-                                    currentVideoPreview = videoView;
-                                }
-                            }
-                        }
-                    });
-
-//            findViewById(R.id.viewPager).setOnTouchListener(new Utility.OnSwipeTouchListener(this){
-//                @Override
-//                public boolean onSwipeBottom() {
-//                    Toast.makeText(MediaActivity.this, "Swipe", Toast.LENGTH_SHORT).show();
-//                    return true;
-//                }
-//            });
-
-//            scrollGalleryView.getViewPager().on
+            setupScrollGalleryView();
 
             Toolbar toolbar = findViewById(R.id.toolbar);
             toolbar.setTitle(plural);
@@ -986,6 +945,71 @@ public class MediaActivity extends AppCompatActivity {
 
 
     //  ------------------------- ScrollGallery ------------------------->
+    private void setupScrollGalleryView() {
+        scrollGalleryView = findViewById(R.id.scroll_gallery_view);
+        ((HackyViewPager) findViewById(com.veinhorn.scrollgalleryview.R.id.viewPager)).setOffscreenPageLimit(3);
+
+        scrollGalleryView
+                .setThumbnailSize(200)
+                .setZoom(true)
+                .withHiddenThumbnails(false)
+                .hideThumbnailsOnClick(true)
+                .addOnImageClickListener((position) -> {
+                    toggleDescriptionAndButtonVisibility(this);
+                })
+                .setFragmentManager(getSupportFragmentManager());
+
+        scrollGalleryView
+                .addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
+                    @Override
+                    public void onPageSelected(int position) {
+                        super.onPageSelected(position);
+                        setCustomDescription(position);
+                        View currentView = getCurrentViewFromViewPager(scrollGalleryView.getViewPager());
+                        if (currentView != null) {
+                            VideoView videoView = currentView.findViewById(R.id.imageFragment_video);
+                            if (currentVideoPreview != null && currentVideoPreview != videoView)
+                                currentVideoPreview.pause();
+                            if (videoView.getVisibility() == View.VISIBLE) {
+                                videoView.start();
+                                currentVideoPreview = videoView;
+                            }
+                        }
+                    }
+                });
+    }
+
+    private void setCustomDescription(int index) {
+        Media media = mediaRecycler.getObjectList().get(index).getContent();
+        LinearLayout linearLayout = findViewById(R.id.customImageDescription);
+
+        linearLayout.removeAllViews();
+
+        if (!media.getPersonIdList().isEmpty()) {
+            TextView textView = new TextView(new ContextThemeWrapper(this, R.style.TextWithShadow));
+            textView.setTypeface(Typeface.DEFAULT_BOLD);
+            Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.MEDIA_PERSON, textView, media.getPersonIdList());
+            textView.setText(new SpannableStringBuilder().append("P: ", new StyleSpan(Typeface.ITALIC), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE).append(textView.getText()));
+            linearLayout.addView(textView);
+        }
+
+        if (!media.getCategoryIdList().isEmpty()) {
+            TextView textView = new TextView(new ContextThemeWrapper(this, R.style.TextWithShadow));
+            textView.setTypeface(Typeface.DEFAULT_BOLD);
+            Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY, textView, media.getCategoryIdList());
+            textView.setText(new SpannableStringBuilder().append("K: ", new StyleSpan(Typeface.ITALIC), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE).append(textView.getText()));
+            linearLayout.addView(textView);
+        }
+
+        long lastModified = new File(media.getImagePath()).lastModified();
+        if (lastModified > 0) {
+            TextView textView = new TextView(new ContextThemeWrapper(this, R.style.TextWithShadow));
+            textView.setTypeface(Typeface.DEFAULT_BOLD);
+            textView.setText(new SpannableStringBuilder().append("D: ", new StyleSpan(Typeface.ITALIC), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE).append(Utility.formatDate("dd.MM.yyyy", new Date(lastModified))));
+            linearLayout.addView(textView);
+        }
+    }
+
     private void setMediaScrollGalleryAndShow(List<Media> shownMediaList, int index) {
         setMediaScrollGallery(shownMediaList);
         showScrollGallery(index);
@@ -1009,7 +1033,7 @@ public class MediaActivity extends AppCompatActivity {
         removeFocusFromSearch();
         scrollGalleryView.setVisibility(View.VISIBLE);
         scrollGalleryView.setCurrentItem(index);
-        ((TextView) findViewById(R.id.customImageDescription)).setText(mediaRecycler.getObjectList().get(index).getContent()._getDescription());
+        setCustomDescription(index);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
 
 

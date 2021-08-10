@@ -2,8 +2,6 @@ package com.maxMustermannGeheim.linkcollection.Utilities;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
-import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Handler;
 import android.text.Editable;
@@ -24,7 +22,6 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
-import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -32,6 +29,7 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RatingBar;
+import android.widget.SearchView;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
@@ -39,8 +37,13 @@ import androidx.annotation.NonNull;
 
 import com.finn.androidUtilities.CustomUtility;
 import com.google.android.material.textfield.TextInputLayout;
+import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
+
+import org.intellij.lang.annotations.Language;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
@@ -50,6 +53,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import me.zhanghai.android.materialratingbar.MaterialRatingBar;
@@ -1470,4 +1476,208 @@ public class Helpers {
         //  <------------------------- Convenience -------------------------
     }
     //  <------------------------- WebViewHelper -------------------------
+
+
+    /** ------------------------- AdvancedSearch ------------------------->  */
+    public static class AdvancedQueryHelper <T> {
+        private static final Pattern advancedSearchPattern = Pattern.compile("\\{.*\\}");
+        private SearchView searchView;
+        public String fullQuery, advancedQuery, restQuery;
+        private CustomList<SearchCriteria> criteriaList = new CustomList<>();
+        private Utility.DoubleGenericInterface<String, CustomList<T>> restFilter;
+
+        /**  ------------------------- Constructor ------------------------->  */
+        public AdvancedQueryHelper(SearchView searchView) {
+            this.searchView = searchView;
+        }
+        /**  <------------------------- Constructor -------------------------  */
+
+
+        /**  ------------------------- Getter & Setter ------------------------->  */
+        public <Result> AdvancedQueryHelper<T> addCriteria(Utility.GenericReturnInterface<AdvancedQueryHelper<T>, SearchCriteria<T, Result>> getCriteria) {
+            criteriaList.add(getCriteria.runGenericInterface(this));
+            return this;
+        }
+
+        public AdvancedQueryHelper<T> addCriteria_defaultName() {
+            criteriaList.add(new Helpers.AdvancedQueryHelper.SearchCriteria<T, String>("n", "[^]]+?")
+                    .setParser(String::toLowerCase)
+                    .setBuildPredicate(sub -> t -> ((ParentClass) t).getName().toLowerCase().contains(sub)));
+            return this;
+        }
+
+        public AdvancedQueryHelper<T> addCriteria_ParentClass(String key, CategoriesActivity.CATEGORIES category, Utility.GenericReturnInterface<T, List<String>> getList) {
+            criteriaList.add(new Helpers.AdvancedQueryHelper.SearchCriteria<T, Pair<String, CustomList<ParentClass>>>(key, "([^|&]+?)([|&][^|&]+?)*")
+                    .setParser(sub -> {
+                        CustomList<ParentClass> list = new CustomList<>();
+                        for (String name : sub.split("[|&]")) {
+                            Utility.getMapFromDatabase(category).values().stream().filter(parentClass -> parentClass.getName().equals(name.trim())).findFirst().ifPresent(list::add);
+                        }
+                        return Pair.create(sub.contains("&") ? "&" : sub.contains("|") ? "|" : "", list);
+                    })
+                    .setBuildPredicate(pair -> {
+                        CustomList<String> idList = pair.second.map(com.finn.androidUtilities.ParentClass::getUuid);
+                        return t -> {
+                            switch (pair.first) {
+                                case "|":
+                                    return getList.runGenericInterface(t).stream().anyMatch(idList::contains);
+                                default:
+                                case "&":
+                                    return getList.runGenericInterface(t).containsAll(idList);
+                            }
+                        };
+                    }));
+            return this;
+        }
+
+        public AdvancedQueryHelper<T> setRestFilter(Utility.DoubleGenericInterface<String, CustomList<T>> restFilter) {
+            this.restFilter = restFilter;
+            return this;
+        }
+        /**  <------------------------- Getter & Setter -------------------------  */
+
+
+        /**  <------------------------- Convenience -------------------------  */
+        public String getQuery() {
+            return searchView.getQuery().toString().trim();
+        }
+
+
+        public AdvancedQueryHelper<T> clean() {
+            fullQuery = advancedQuery = restQuery = "";
+            criteriaList.forEach(criteria -> {
+                criteria.sub = "";
+                criteria.predicate = null;
+            });
+            return this;
+        }
+
+        public static String removeAdvancedSearch(CharSequence fullQuery) {
+            return fullQuery.toString().replaceAll(advancedSearchPattern.pattern(), "").trim();
+        }
+
+        public boolean istExtraSearch(String extraSearch) {
+            Matcher matcher = Pattern.compile("\\{\\[\\w+:([^\\]]+)\\]\\}").matcher(getQuery());
+            return matcher.find() && extraSearch.equals(matcher.group(1));
+        }
+        /**  ------------------------- Convenience ------------------------->  */
+
+
+        /**  ------------------------- Function ------------------------->  */
+        public AdvancedQueryHelper<T> splitQuery() {
+            fullQuery = getQuery();
+            if (fullQuery.contains("{")) {
+                Matcher advancedQueryMatcher = advancedSearchPattern.matcher(fullQuery);
+
+                if (advancedQueryMatcher.find()) {
+                    advancedQuery = advancedQueryMatcher.group(0);
+                } else {
+                    restQuery = fullQuery;
+                    return this;
+                }
+
+                criteriaList.forEach(criteria -> criteria.matchQuery(advancedQuery));
+
+                restQuery = advancedQueryMatcher.replaceAll("").trim();
+
+            } else
+                restQuery = fullQuery;
+            return this;
+        }
+
+        public AdvancedQueryHelper<T> filterAdvanced(CustomList<T> list) {
+            criteriaList.forEach(SearchCriteria::buildPredicate);
+            list.filter(t -> {
+                for (SearchCriteria criteria : criteriaList) {
+                    if (!criteria.matchObject(t))
+                        return false;
+                }
+                return true;
+            }, true);
+            return this;
+        }
+
+        public AdvancedQueryHelper<T> filterRest(CustomList<T> list) {
+            if (restFilter != null && CustomUtility.stringExists(restQuery))
+                restFilter.run(restQuery, list);
+            return this;
+        }
+
+        public AdvancedQueryHelper<T> filter(CustomList<T> list) {
+            return filterAdvanced(list).filterRest(list);
+        }
+
+        public AdvancedQueryHelper<T> filterFull(CustomList<T> list) {
+            return clean().splitQuery().filter(list);
+        }
+        /**  <------------------------- Function -------------------------  */
+        // ---------------
+
+        public static class SearchCriteria <T, Result> {
+            public String key;
+            public Pattern pattern;
+            public String sub;
+            private Utility.GenericReturnInterface<String, Result> parser;
+            private Utility.GenericReturnInterface<Result, Predicate<T>> buildPredicate;
+            public Predicate<T> predicate;
+            // ToDo: In und aus Dialog
+
+            /**  ------------------------- Constructor ------------------------->  */
+            public SearchCriteria(String key, @Language("RegExp") String regex) {
+                this.key = key;
+                this.pattern = Pattern.compile(String.format("(?<=\\[%s: ?)%s(?=\\s*\\])", key, regex));
+            }
+            /**  <------------------------- Constructor -------------------------  */
+
+
+            /**  ------------------------- Getter & Setter ------------------------->  */
+            public SearchCriteria<T, Result> setParser(Utility.GenericReturnInterface<String, Result> parser) {
+                this.parser = parser;
+                return this;
+            }
+
+            public SearchCriteria<T, Result> setBuildPredicate(Utility.GenericReturnInterface<Result, Predicate<T>> buildPredicate) {
+                this.buildPredicate = buildPredicate;
+                return this;
+            }
+
+            public <A> SearchCriteria<T, Result> setBuildPredicate_fromLastAdded(AdvancedQueryHelper<A> advancedQueryHelper) {
+                SearchCriteria last = advancedQueryHelper.criteriaList.getLast();
+                if (last != null)
+                    buildPredicate = (Utility.GenericReturnInterface<Result, Predicate<T>>) last.buildPredicate;
+                return this;
+            }
+            /**  <------------------------- Getter & Setter -------------------------  */
+
+
+            /**  ------------------------- Convenience ------------------------->  */
+            public String matchQuery(String query) {
+                if (query.contains("[" + key + ":")) {
+                    Matcher ratingMatcher = pattern.matcher(query);
+                    if (ratingMatcher.find())
+                        return sub = ratingMatcher.group(0);
+                }
+                return "";
+            }
+
+            public SearchCriteria<T, Result> buildPredicate() {
+                if (CustomUtility.stringExists(sub) && parser != null && buildPredicate != null) {
+                    predicate = buildPredicate.runGenericInterface(parser.runGenericInterface(sub));
+                }
+                return this;
+            }
+
+            public boolean matchObject(T t) {
+                if (predicate == null)
+                    return true;
+                return predicate.test(t);
+            }
+
+            public boolean has() {
+                return CustomUtility.stringExists(sub);
+            }
+            /**  <------------------------- Convenience -------------------------  */
+        }
+    }
+    /**  <------------------------- AdvancedSearch -------------------------  */
 }

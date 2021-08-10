@@ -901,7 +901,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                         dialog_detailKnowledge_content.setText("");
                     }
 
-                    Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES, view.findViewById(R.id.dialog_detailKnowledge_categories), knowledge.getCategoryIdList(), database.knowledgeCategoryMap);
+                    Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES, view.findViewById(R.id.dialog_detailKnowledge_categories), knowledge.getCategoryIdList());
 //                    ((TextView) view.findViewById(R.id.dialog_detailKnowledge_categories)).setText(String.join(", ", categoriesNames));
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_sources)).setText(knowledge.getSources().stream().map(strings -> strings.get(0)).collect(Collectors.joining(", ")));
                     ((TextView) view.findViewById(R.id.dialog_detailKnowledge_lastChanged)).setText(String.format("%s Uhr", new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.GERMANY).format(knowledge.getLastChanged())));

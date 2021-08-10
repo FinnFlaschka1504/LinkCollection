@@ -3,16 +3,12 @@ package com.maxMustermannGeheim.linkcollection.Activities.Content;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.ShortcutInfo;
-import android.content.pm.ShortcutManager;
-import android.graphics.drawable.Icon;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.TextView;
@@ -414,7 +410,7 @@ public class JokeActivity extends AppCompatActivity {
                     view.findViewById(R.id.dialog_detailJoke_punchLine_layout).setVisibility(joke.getPunchLine() == null || joke.getPunchLine().isEmpty() ? View.GONE : View.VISIBLE);
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_title)).setText(joke.getName());
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_punchLine)).setText(joke.getPunchLine());
-                    Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.JOKE_CATEGORIES, view.findViewById(R.id.dialog_detailJoke_categories), joke.getCategoryIdList(), database.jokeCategoryMap);
+                    Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.JOKE_CATEGORIES, view.findViewById(R.id.dialog_detailJoke_categories), joke.getCategoryIdList());
 //                    ((TextView) view.findViewById(R.id.dialog_detailJoke_categories)).setText(
 //                            joke.getCategoryIdList().stream().map(uuid -> database.jokeCategoryMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                     ((TextView) view.findViewById(R.id.dialog_detailJoke_addedDate)).setText(String.format("%s Uhr", new SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.GERMANY).format(joke.getAddedDate())));

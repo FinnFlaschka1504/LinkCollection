@@ -984,7 +984,7 @@ public class ShowActivity extends AppCompatActivity {
                     if (reload)
                         customDialog.setTitle(show.getName());
 //                    ((TextView) view.findViewById(R.id.dialog_detailShow_title)).setText(show.getName());
-                    Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.SHOW_GENRES, view.findViewById(R.id.dialog_detailShow_genre), show.getGenreIdList(), database.showGenreMap);
+                    Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.SHOW_GENRES, view.findViewById(R.id.dialog_detailShow_genre), show.getGenreIdList());
                     view.findViewById(R.id.dialog_detailShow_genre).setSelected(true);
                     ((TextView) view.findViewById(R.id.dialog_detailShow_release))
                             .setText(show.getFirstAirDate() != null ? new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(show.getFirstAirDate()) : "");

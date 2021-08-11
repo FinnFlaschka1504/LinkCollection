@@ -201,8 +201,8 @@ public class CollectionActivity extends AppCompatActivity {
 //                    }
 //                }
 //
-                String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
-                if (extraSearch != null) {
+            String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
+            if (extraSearch != null) {
 //                    if (extraSearch.equals(SEEN_SEARCH))
 //                        mode = VideoActivity.MODE.SEEN;
 //                    else if (extraSearch.equals(WATCH_LATER_SEARCH))
@@ -210,10 +210,10 @@ public class CollectionActivity extends AppCompatActivity {
 //                    else if (extraSearch.equals(UPCOMING_SEARCH))
 //                        mode = VideoActivity.MODE.UPCOMING;
 //                    else
-                    filterTypeSet.remove(FILTER_TYPE.FILM);
-                    searchView.setQuery(extraSearch, false);
+                filterTypeSet.remove(FILTER_TYPE.FILM);
+                searchView.setQuery(extraSearch, false);
 //                    textListener.onQueryTextSubmit(searchView.getQuery().toString());
-                }
+            }
 //            }
 //            setSearchHint();
 
@@ -484,11 +484,15 @@ public class CollectionActivity extends AppCompatActivity {
                             .generate();
 
                     view.findViewById(R.id.dialogDetail_collection_edtiVideos).setOnClickListener(v -> {
-                        Utility.showEditItemDialog(this, null, collection.getFilmIdList(), collection, CategoriesActivity.CATEGORIES.COLLECTION)
-                                .addOnDialogDismiss(customDialog1 -> {
-                                    videoRecycler.reload();
-                                    Database.saveAll();
-                                });
+                        Utility.showEditItemDialog(this, collection.getFilmIdList(), CategoriesActivity.CATEGORIES.COLLECTION, (customDialog1, selectedIds) -> {
+                            collection.setFilmIdList(selectedIds);
+                            videoRecycler.reload();
+                            Database.saveAll();
+                        });
+//                                .addOnDialogDismiss(customDialog1 -> {
+//                                    videoRecycler.reload();
+//                                    Database.saveAll();
+//                                });
                     });
                 })
                 .addOnDialogDismiss(customDialog -> {
@@ -875,7 +879,11 @@ public class CollectionActivity extends AppCompatActivity {
 
                         ImageView editFilms = customDialog.findViewById(R.id.dialog_editOrAddCollection_editFilms);
                         editFilms.setOnClickListener(v -> {
-                            Utility.showEditItemDialog(this, customDialog, editCollection.getFilmIdList(), editCollection, CategoriesActivity.CATEGORIES.COLLECTION);
+                            Utility.showEditItemDialog(this, editCollection.getFilmIdList(), CategoriesActivity.CATEGORIES.COLLECTION, (customDialog1, selectedIds) -> {
+                                editCollection.setFilmIdList(selectedIds);
+                                ((TextView) customDialog.findViewById(R.id.dialog_editOrAddCollection_films)).setText(
+                                        CategoriesActivity.joinCategoriesIds(selectedIds, CategoriesActivity.CATEGORIES.COLLECTION));
+                            });
                         });
 
                         customDialog.findViewById(R.id.dialog_editOrAddCollection_autoImportToCollection).setOnClickListener(v -> {

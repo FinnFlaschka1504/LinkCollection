@@ -602,7 +602,12 @@ public class KnowledgeActivity extends AppCompatActivity {
                     });
 
                     view.findViewById(R.id.dialog_editOrAddKnowledge_editCategories).setOnClickListener(view1 ->
-                            Utility.showEditItemDialog(this, customDialog, editKnowledge[0].getCategoryIdList(), editKnowledge[0], CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES));
+                            Utility.showEditItemDialog(this, editKnowledge[0].getCategoryIdList(), CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES, (customDialog1, selectedIds) -> {
+                                editKnowledge[0].setCategoryIdList(selectedIds);
+                                ((TextView) customDialog.findViewById(R.id.dialog_editOrAddJoke_categories)).setText(
+                                        CategoriesActivity.joinCategoriesIds(selectedIds, CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES));
+
+                            }));
                     view.findViewById(R.id.dialog_editOrAddKnowledge_editSources).setOnClickListener(view1 ->
                             showSourcesDialog(editKnowledge[0], view.findViewById(R.id.dialog_editOrAddKnowledge_sources), true));
                 })

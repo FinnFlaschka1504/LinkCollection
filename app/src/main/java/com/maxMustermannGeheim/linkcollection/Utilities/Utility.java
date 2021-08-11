@@ -1068,13 +1068,10 @@ public class Utility {
 
         }
 
-        final Date[] selectedDate = {removeTime(new Date())};
         calendarView.setListener(new CompactCalendarView.CompactCalendarViewListener() {
             @Override
             public void onDayClick(Date dateClicked) {
                 currentDate = dateClicked;
-                selectedDate[0] = dateClicked;
-//                if (videoList.size() == 1)
                 setButtons(layout, calendarView.getEvents(dateClicked).size(), calendarView, videoList, customRecycler);
                 loadVideoList(calendarView.getEvents(dateClicked), layout, customRecycler);
             }
@@ -1093,17 +1090,20 @@ public class Utility {
             return;
 
         layout.findViewById(R.id.dialog_editViews_add).setOnClickListener(view -> {
-            videoList.get(0).addDate(selectedDate[0], false);
+            if (currentDate.equals(Utility.removeTime(new Date())))
+                videoList.get(0).addDate(new Date(), true);
+            else
+                videoList.get(0).addDate(currentDate, false);
             calendarView.addEvent(new Event(context.getColor(R.color.colorDayNightContent)
-                    , selectedDate[0].getTime(), videoList.get(0)));
-            loadVideoList(calendarView.getEvents(selectedDate[0]), layout, customRecycler);
+                    , currentDate.getTime(), videoList.get(0)));
+            loadVideoList(calendarView.getEvents(currentDate), layout, customRecycler);
             setButtons(layout, 1, calendarView, videoList, customRecycler);
             Database.saveAll();
         });
         layout.findViewById(R.id.dialog_editViews_remove).setOnClickListener(view -> {
-            videoList.get(0).removeDate(selectedDate[0]);
-            calendarView.removeEvents(selectedDate[0]);
-            loadVideoList(calendarView.getEvents(selectedDate[0]), layout, customRecycler);
+            videoList.get(0).removeDate(currentDate);
+            calendarView.removeEvents(currentDate);
+            loadVideoList(calendarView.getEvents(currentDate), layout, customRecycler);
             setButtons(layout, 0, calendarView, videoList, customRecycler);
             Database.saveAll();
         });
@@ -1170,7 +1170,7 @@ public class Utility {
             @Override
             public void onDayClick(Date dateClicked) {
                 currentDate = dateClicked;
-                selectedDate[0] = dateClicked;
+//                selectedDate[0] = dateClicked;
 //                if (episodeList.size() == 1)
                 setButtons(layout, calendarView.getEvents(dateClicked).size(), calendarView, episodeList, customRecycler);
                 loadVideoList(calendarView.getEvents(dateClicked), layout, customRecycler);
@@ -1191,16 +1191,19 @@ public class Utility {
 
         Show.Episode episode = episodeList.get(0);
         layout.findViewById(R.id.dialog_editViews_add).setOnClickListener(view -> {
-            episode.addDate(selectedDate[0], false);
+            if (currentDate.equals(Utility.removeTime(new Date())))
+                episode.addDate(new Date(), true);
+            else
+                episode.addDate(currentDate, false);
             calendarView.addEvent(new Event(context.getColor(R.color.colorDayNightContent)
-                    , selectedDate[0].getTime(), episode));
-            loadVideoList(calendarView.getEvents(selectedDate[0]), layout, customRecycler);
+                    , currentDate.getTime(), episode));
+            loadVideoList(calendarView.getEvents(currentDate), layout, customRecycler);
             setButtons(layout, 1, calendarView, episodeList, customRecycler);
         });
         layout.findViewById(R.id.dialog_editViews_remove).setOnClickListener(view -> {
-            episode.removeDate(selectedDate[0]);
-            calendarView.removeEvents(selectedDate[0]);
-            loadVideoList(calendarView.getEvents(selectedDate[0]), layout, customRecycler);
+            episode.removeDate(currentDate);
+            calendarView.removeEvents(currentDate);
+            loadVideoList(calendarView.getEvents(currentDate), layout, customRecycler);
             setButtons(layout, 0, calendarView, episodeList, customRecycler);
         });
     }
@@ -1562,7 +1565,7 @@ public class Utility {
     /**  <------------------------- Toast -------------------------  */
 
     /**  ------------------------- EditItem ------------------------->  */
-    public static CustomDialog showEditItemDialog(Context context, CustomDialog addOrEditDialog, List<String> preSelectedUuidList, Object o, CategoriesActivity.CATEGORIES category) {
+    public static CustomDialog showEditItemDialog(Context context, List<String> preSelectedUuidList, CategoriesActivity.CATEGORIES category, DoubleGenericInterface<CustomDialog, List<String>> onSaved) {
         Database database = Database.getInstance();
 
         if (preSelectedUuidList == null)
@@ -1574,32 +1577,6 @@ public class Utility {
         final String[] searchQuery = {""};
 
         allObjectsList = new ArrayList<>(getMapFromDatabase(category).values());
-//        switch (category) {
-//            default:
-//            case DARSTELLER:
-//                allObjectsList = new ArrayList<>(database.darstellerMap.values());
-//                break;
-//            case STUDIOS:
-//                allObjectsList = new ArrayList<>(database.studioMap.values());
-//                break;
-//            case GENRE:
-//                allObjectsList = new ArrayList<>(database.genreMap.values());
-//                break;
-//            case KNOWLEDGE_CATEGORIES:
-//                allObjectsList = new ArrayList<>(database.knowledgeCategoryMap.values());
-//                break;
-//            case JOKE_CATEGORIES:
-//                allObjectsList = new ArrayList<>(database.jokeCategoryMap.values());
-//                break;
-//            case SHOW_GENRES:
-//                allObjectsList = new ArrayList<>(database.showGenreMap.values());
-//                break;
-//            case COLLECTION:
-//                allObjectsList = new ArrayList<>(database.videoMap.values());
-//                break;
-//            case MEDIA_PERSON:
-//                allObjectsList = new ArrayList<>(database.mediaPersonMap.values());
-//        }
 
         int saveButtonId = View.generateViewId();
         ParentClass newParentClass = ParentClass.newCategory(category, "");
@@ -1670,7 +1647,7 @@ public class Utility {
                                             selectedUuidList.add(newParentClass.getUuid());
                                             customDialog1.dismiss();
                                             customDialog.dismiss();
-                                            showEditItemDialog(context, addOrEditDialog, selectedUuidList, o, category);
+                                            showEditItemDialog(context, selectedUuidList, category, onSaved);
                                             Database.saveAll();
                                         })
                                         .setView(R.layout.dialog_edit_tmdb_category)
@@ -1718,51 +1695,52 @@ public class Utility {
                             .alignPreviousButtonsLeft();
                 })
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
-                    List<String> nameList = new ArrayList<>();
-                    switch (category) {
-                        case DARSTELLER:
-                            ((Video) o).setDarstellerList(selectedUuidList);
-                            selectedUuidList.forEach(uuid -> nameList.add(database.darstellerMap.get(uuid).getName()));
-                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_actor)).setText(String.join(", ", nameList));
-                            break;
-                        case STUDIOS:
-                            ((Video) o).setStudioList(selectedUuidList);
-                            selectedUuidList.forEach(uuid -> nameList.add(database.studioMap.get(uuid).getName()));
-                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_studio)).setText(String.join(", ", nameList));
-                            break;
-                        case GENRE:
-                            ((Video) o).setGenreList(selectedUuidList);
-                            selectedUuidList.forEach(uuid -> nameList.add(database.genreMap.get(uuid).getName()));
-                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_Genre)).setText(String.join(", ", nameList));
-                            break;
-                        case KNOWLEDGE_CATEGORIES:
-                            ((Knowledge) o).setCategoryIdList(selectedUuidList);
-                            selectedUuidList.forEach(uuid -> nameList.add(database.knowledgeCategoryMap.get(uuid).getName()));
-                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddKnowledge_categories)).setText(String.join(", ", nameList));
-                            break;
-                        case JOKE_CATEGORIES:
-                            ((Joke) o).setCategoryIdList(selectedUuidList);
-                            selectedUuidList.forEach(uuid -> nameList.add(database.jokeCategoryMap.get(uuid).getName()));
-                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddJoke_categories)).setText(String.join(", ", nameList));
-                            break;
-                        case SHOW_GENRES:
-                            ((Show) o).setGenreIdList(selectedUuidList);
-                            selectedUuidList.forEach(uuid -> nameList.add(database.showGenreMap.get(uuid).getName()));
-                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAdd_show_Genre)).setText(String.join(", ", nameList));
-                            break;
-                        case COLLECTION:
-                            ((com.maxMustermannGeheim.linkcollection.Daten.Videos.Collection) o).setFilmIdList(new com.finn.androidUtilities.CustomList<>(selectedUuidList));
-                            if (addOrEditDialog != null)
-                                ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddCollection_films)).setText(
-                                        selectedUuidList.stream().map(uuid -> database.videoMap.get(uuid).getName()).collect(Collectors.joining(", ")));
-                            break;
-                        case MEDIA_PERSON:
-                            com.finn.androidUtilities.CustomList<String> idList = (com.finn.androidUtilities.CustomList<String>) o;
-                            idList.replaceWith(selectedUuidList);
-                            addOrEditDialog.reloadView();
-                            break;
-
-                    }
+                    onSaved.run(customDialog, selectedUuidList);
+//                    List<String> nameList = new ArrayList<>();
+//                    switch (category) {
+//                        case DARSTELLER:
+//                            ((Video) o).setDarstellerList(selectedUuidList);
+//                            selectedUuidList.forEach(uuid -> nameList.add(database.darstellerMap.get(uuid).getName()));
+//                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_actor)).setText(String.join(", ", nameList));
+//                            break;
+//                        case STUDIOS:
+//                            ((Video) o).setStudioList(selectedUuidList);
+//                            selectedUuidList.forEach(uuid -> nameList.add(database.studioMap.get(uuid).getName()));
+//                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_studio)).setText(String.join(", ", nameList));
+//                            break;
+//                        case GENRE:
+//                            ((Video) o).setGenreList(selectedUuidList);
+//                            selectedUuidList.forEach(uuid -> nameList.add(database.genreMap.get(uuid).getName()));
+//                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_Genre)).setText(String.join(", ", nameList));
+//                            break;
+//                        case KNOWLEDGE_CATEGORIES:
+//                            ((Knowledge) o).setCategoryIdList(selectedUuidList);
+//                            selectedUuidList.forEach(uuid -> nameList.add(database.knowledgeCategoryMap.get(uuid).getName()));
+//                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddKnowledge_categories)).setText(String.join(", ", nameList));
+//                            break;
+//                        case JOKE_CATEGORIES:
+//                            ((Joke) o).setCategoryIdList(selectedUuidList);
+//                            selectedUuidList.forEach(uuid -> nameList.add(database.jokeCategoryMap.get(uuid).getName()));
+//                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddJoke_categories)).setText(String.join(", ", nameList));
+//                            break;
+//                        case SHOW_GENRES:
+//                            ((Show) o).setGenreIdList(selectedUuidList);
+//                            selectedUuidList.forEach(uuid -> nameList.add(database.showGenreMap.get(uuid).getName()));
+//                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAdd_show_Genre)).setText(String.join(", ", nameList));
+//                            break;
+//                        case COLLECTION:
+//                            ((com.maxMustermannGeheim.linkcollection.Daten.Videos.Collection) o).setFilmIdList(new com.finn.androidUtilities.CustomList<>(selectedUuidList));
+//                            if (addOrEditDialog != null)
+//                                ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddCollection_films)).setText(
+//                                        selectedUuidList.stream().map(uuid -> database.videoMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+//                            break;
+//                        case MEDIA_PERSON:
+//                            com.finn.androidUtilities.CustomList<String> idList = (com.finn.androidUtilities.CustomList<String>) o;
+//                            idList.replaceWith(selectedUuidList);
+//                            addOrEditDialog.reloadView();
+//                            break;
+//
+//                    }
                 }, saveButtonId)
                 .show();
 
@@ -1776,7 +1754,14 @@ public class Utility {
                 .setObjectList(selectedUuidList)
                 .enableDragAndDrop((customRecycler, objectList) -> {})
                 .setSetItemContent((customRecycler, itemView, uuid) -> {
-                    ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(getObjectFromDatabase(category, uuid).getName());
+                    ParentClass parentClass = getObjectFromDatabase(category, uuid);
+                    if (parentClass instanceof ParentClass_Image && CustomUtility.stringExists(((ParentClass_Image) parentClass).getImagePath())) {
+                        ImageView imageView = itemView.findViewById(R.id.list_bubble_image);
+                        loadUrlIntoImageView(context, imageView, getTmdbImagePath_ifNecessary(((ParentClass_Image) parentClass).getImagePath(), false), null, null, () -> Utility.roundImageView(imageView, 3));
+                        imageView.setVisibility(View.VISIBLE);
+                    } else
+                        itemView.findViewById(R.id.list_bubble_image).setVisibility(View.GONE);
+                    ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(parentClass.getName());
                     dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.GONE);
                 })
                 .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
@@ -2125,11 +2110,11 @@ public class Utility {
 
     /**  ------------------------- Advanced Search ------------------------->  */
     public static CustomDialog showAdvancedSearchDialog(Context context, SearchView searchView, Collection<? extends ParentClass_Ratable> ratables) {
+        boolean preSelected = false;
         /**  ------------------------- Rating ------------------------->  */
         boolean[] singleMode = {false};
         final int[] min = {0};
         final int[] max = {20};
-        boolean preSelected = false;
         /**  <------------------------- Rating -------------------------  */
 
 
@@ -2194,15 +2179,15 @@ public class Utility {
 
         return CustomDialog.Builder(context)
                 .setTitle("Erweiterte Suche")
-                .setView(R.layout.dialog_filter_by_rating)
+                .setView(R.layout.dialog_advanced_search_video)
                 .setSetViewContent((customDialog, view, reload) -> {
                     final Runnable[] applyStrings = {() -> {
                     }};
 
                     /**  ------------------------- Rating ------------------------->  */
-                    TextView rangeText = customDialog.findViewById(R.id.dialog_advancedSearch_range);
-                    RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_advancedSearch_rangeBar);
-                    SeekBar singleBar = customDialog.findViewById(R.id.dialog_advancedSearch_singleBar);
+                    TextView rangeText = customDialog.findViewById(R.id.dialog_advancedSearch_video_range);
+                    RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_advancedSearch_video_rangeBar);
+                    SeekBar singleBar = customDialog.findViewById(R.id.dialog_advancedSearch_video_singleBar);
                     CustomUtility.GenericInterface<Pair<Integer, Integer>> setText = pair -> {
                         singleBar.setEnabled(singleMode[0]);
                         if (singleMode[0])
@@ -2264,7 +2249,7 @@ public class Utility {
 
 
                     /**  ------------------------- DateRange ------------------------->  */
-                    TextView dialog_advancedSearch_viewed_text = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_text);
+                    TextView dialog_advancedSearch_viewed_text = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_text);
                     Runnable setDateRangeTextView = () -> {
                         if (from[0] != null && to[0] != null) {
                             dialog_advancedSearch_viewed_text.setText(String.format("%s - %s", dateFormat.format(from[0]), dateFormat.format(to[0])));
@@ -2297,7 +2282,7 @@ public class Utility {
                         applyStrings[0].run();
                     });
 
-                    customDialog.findViewById(R.id.dialog_advancedSearch_viewed_change).setOnClickListener(v -> picker.show(((AppCompatActivity) context).getSupportFragmentManager(), picker.toString()));
+                    customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_change).setOnClickListener(v -> picker.show(((AppCompatActivity) context).getSupportFragmentManager(), picker.toString()));
                     Runnable resetDateRange = () -> {
                         if (from[0] != null || to[0] != null) {
                             from[0] = null;
@@ -2306,7 +2291,7 @@ public class Utility {
                         }
                     };
 
-                    customDialog.findViewById(R.id.dialog_advancedSearch_viewed_change).setOnLongClickListener(v -> {
+                    customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_change).setOnLongClickListener(v -> {
                         resetDateRange.run();
                         return true;
                     });
@@ -2314,10 +2299,10 @@ public class Utility {
 
 
                     /**  ------------------------- Duration ------------------------->  */
-                    TextInputEditText since_edit = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_since_edit);
-                    Spinner since_unit = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_since_unit);
-                    TextInputEditText duration_edit = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_duration_edit);
-                    Spinner duration_unit = customDialog.findViewById(R.id.dialog_advancedSearch_viewed_duration_unit);
+                    TextInputEditText since_edit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_since_edit);
+                    Spinner since_unit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_since_unit);
+                    TextInputEditText duration_edit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_duration_edit);
+                    Spinner duration_unit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_duration_unit);
                     Map<String, Integer> modeMap = new HashMap<>();
                     modeMap.put("d", 0);
                     modeMap.put("m", 1);
@@ -2427,9 +2412,10 @@ public class Utility {
                     duration_unit.setOnItemSelectedListener(spinnerListener);
                     /**  <------------------------- Duration -------------------------  */
 
+
                     /**  ------------------------- Length ------------------------->  */
-                    TextInputEditText minLength_edit = customDialog.findViewById(R.id.dialog_advancedSearch_length_min_edit);
-                    TextInputEditText maxLength_edit = customDialog.findViewById(R.id.dialog_advancedSearch_length_max_edit);
+                    TextInputEditText minLength_edit = customDialog.findViewById(R.id.dialog_advancedSearch_video_length_min_edit);
+                    TextInputEditText maxLength_edit = customDialog.findViewById(R.id.dialog_advancedSearch_video_length_max_edit);
 
                     if (minLength[0] != null) {
                         minLength_edit.setText(CustomUtility.isNotValueReturnOrElse(minLength[0], -1, String::valueOf, integer -> null));
@@ -2438,8 +2424,7 @@ public class Utility {
 
                     /**  <------------------------- Length -------------------------  */
 
-                    // --------------- Test
-                    // vvvvvvvvvvvvvvv test2
+                    // ---------------
                     /**/
                     // --------------- Chart
 
@@ -2573,7 +2558,7 @@ public class Utility {
                     String removedQuery = AdvancedQueryHelper.removeAdvancedSearch(searchView.getQuery());
 
                     /**  ------------------------- Rating ------------------------->  */
-                    RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_advancedSearch_rangeBar);
+                    RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_advancedSearch_video_rangeBar);
                     min[0] = rangeBar.getMinThumbValue();
                     max[0] = rangeBar.getMaxThumbValue();
 
@@ -2614,8 +2599,8 @@ public class Utility {
 
 
                     /**  ------------------------- Length ------------------------->  */
-                    String  minLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_length_min_edit)).getText().toString().trim();
-                    String maxLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_length_max_edit)).getText().toString().trim();
+                    String  minLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_video_length_min_edit)).getText().toString().trim();
+                    String maxLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_video_length_max_edit)).getText().toString().trim();
 
                     if (CustomUtility.stringExists(minLength_str) && CustomUtility.stringExists(maxLength_str)) {
                         if (Objects.equals(minLength_str, maxLength_str))
@@ -2626,9 +2611,6 @@ public class Utility {
                         filter.add(String.format(Locale.getDefault(), "l:%s-", minLength_str));
                     else if (CustomUtility.stringExists(maxLength_str))
                         filter.add(String.format(Locale.getDefault(), "l:-%s", maxLength_str));
-
-//                    if (CustomUtility.stringExists(minLength_str))
-//                            filter.add(String.format(Locale.getDefault(), "l:%d-%d", Integer.parseInt(minLength_str), Integer.parseInt(CustomUtility.stringExistsOrElse(maxLength_str, minLength_str))));
                     /**  <------------------------- Length -------------------------  */
 
                     String newQuery = Utility.isNotValueReturnOrElse(removedQuery, "", s -> s + " ", null);
@@ -2636,8 +2618,8 @@ public class Utility {
                     searchView.setQuery(newQuery, false);
 
                 })
-                .setOnTouchOutside(CustomDialog::dismiss)
-                .setDismissWhenClickedOutside(false)
+//                .setOnTouchOutside(CustomDialog::dismiss)
+//                .setDismissWhenClickedOutside(false)
                 .show();
 
     }

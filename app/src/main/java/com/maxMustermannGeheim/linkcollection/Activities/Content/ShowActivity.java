@@ -1212,7 +1212,11 @@ public class ShowActivity extends AppCompatActivity {
                     });
 
                     view.findViewById(R.id.dialog_editOrAdd_show_editGenre).setOnClickListener(view1 ->
-                            Utility.showEditItemDialog(this, customDialog, editShow.getGenreIdList(), editShow, CategoriesActivity.CATEGORIES.SHOW_GENRES));
+                            Utility.showEditItemDialog(this, editShow.getGenreIdList(), CategoriesActivity.CATEGORIES.SHOW_GENRES, (customDialog1, selectedIds) -> {
+                                editShow.setGenreIdList(selectedIds);
+                                ((TextView) customDialog.findViewById(R.id.dialog_editOrAdd_show_Genre)).setText(
+                                        CategoriesActivity.joinCategoriesIds(selectedIds, CategoriesActivity.CATEGORIES.SHOW_GENRES));
+                            }));
                 })
                 .enableDoubleClickOutsideToDismiss(customDialog -> {
                     String title = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_show_title)).getText().toString().trim();

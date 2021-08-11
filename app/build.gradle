@@ -79,7 +79,7 @@ dependencies {
     implementation 'com.github.bmelnychuk:atv:1.2.9'
     implementation 'com.github.jakebonk:DraggableTreeView:1.0.1'
     implementation 'com.quiph.ui:recyclerviewfastscroller:1.0.0'
-
+    implementation 'com.github.pchmn:MaterialChipsInput:1.0.8'
 
     implementation group: 'org.apache-extras.beanshell', name: 'bsh', version: '2.0b6'
     implementation group: 'com.google.guava', name: 'guava', version: '28.2-android'

@@ -664,7 +664,10 @@ public class MediaActivity extends AppCompatActivity {
                             .build();
 
                     view.findViewById(R.id.dialog_editMedia_editPersons).setOnClickListener(v -> {
-                        Utility.showEditItemDialog(this, customDialog, mediaPersonIdList, mediaPersonIdList, CategoriesActivity.CATEGORIES.MEDIA_PERSON);
+                        Utility.showEditItemDialog(this, mediaPersonIdList, CategoriesActivity.CATEGORIES.MEDIA_PERSON, (customDialog1, selectedIds) -> {
+                            mediaPersonIdList.replaceWith(selectedIds);
+                            customDialog.reloadView();
+                        });
                     });
                     view.findViewById(R.id.dialog_editMedia_editCategories).setOnClickListener(v -> {
                         Utility.showEditTreeItemDialog(this, mediaCategoryIdList, newList -> {

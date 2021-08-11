@@ -13,7 +13,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.bumptech.glide.Glide;
+import com.finn.androidUtilities.CustomUtility;
 import com.maxMustermannGeheim.linkcollection.R;
+import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
+import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +24,8 @@ import java.util.stream.Collectors;
 
 public class CustomAutoCompleteAdapter extends ArrayAdapter<ImageAdapterItem> {
     private List<ImageAdapterItem> listFull;
+    private CharSequence searchQuery = "";
+    private boolean imagesEnabled = true;
 
 
     public CustomAutoCompleteAdapter(@NonNull Context context, @NonNull List<ImageAdapterItem> objects) {
@@ -47,34 +52,23 @@ public class CustomAutoCompleteAdapter extends ArrayAdapter<ImageAdapterItem> {
         ImageAdapterItem item = getItem(position);
 
         if (item != null) {
-            textView.setText(item.getText());
+            textView.setText(Helpers.SpannableStringHelper.highlightText(searchQuery.toString(), item.getText()));
 
-            if (item.getImagePath() == null || item.getImagePath().isEmpty())
-                imageView.setVisibility(View.INVISIBLE);
-            else {
-                imageView.setVisibility(View.VISIBLE);
+            if (imagesEnabled) {
+                if (CustomUtility.stringExists(item.getImagePath()))
+                    imageView.setVisibility(View.INVISIBLE);
+                else {
+                    imageView.setVisibility(View.VISIBLE);
 
-                Glide
-                        .with(getContext())
-                        .load("https://image.tmdb.org/t/p/w92/" + item.getImagePath())
+                    Glide
+                            .with(getContext())
+                            .load("https://image.tmdb.org/t/p/w92/" + item.getImagePath())
 //                        .centerCrop()
-                        .placeholder(R.drawable.ic_download)
-                        .into(imageView);
-//                Glide.with(getContext()).load("http://image.tmdb.org/t/p/w92/" + item.getImagePath()).listener(new RequestListener<Drawable>() {
-//                    @Override
-//                    public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-//                        return false;
-//                    }
-//
-//                    @Override
-//                    public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-//                        item.setImage(null);
-////                        autoCompleteAdapter.notifyDataSetChanged();
-//                        return false;
-//                    }
-//                }).submit();
-
-            }
+                            .placeholder(R.drawable.ic_download)
+                            .into(imageView);
+                }
+            } else
+                imageView.setVisibility(View.GONE);
 
 //            if (item.getImage() == null)
 //                imageView.setImageResource(R.drawable.ic_download);
@@ -88,6 +82,7 @@ public class CustomAutoCompleteAdapter extends ArrayAdapter<ImageAdapterItem> {
     private Filter filter = new Filter() {
         @Override
         protected FilterResults performFiltering(CharSequence constraint) {
+            searchQuery = constraint;
             FilterResults results = new FilterResults();
             List<ImageAdapterItem> suggestions = new ArrayList<>();
 

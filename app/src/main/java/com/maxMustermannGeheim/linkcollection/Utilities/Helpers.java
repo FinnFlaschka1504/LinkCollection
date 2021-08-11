@@ -31,17 +31,23 @@ import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.SeekBar;
+import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.IdRes;
+import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.finn.androidUtilities.CustomUtility;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
-import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
-import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
+import com.pchmn.materialchips.ChipsInput;
+import com.pchmn.materialchips.model.Chip;
 
 import org.intellij.lang.annotations.Language;
 
@@ -51,7 +57,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -1143,7 +1151,7 @@ public class Helpers {
                 settings.setLoadWithOverviewMode(true);
             }
 //            if (!userAgent.equals(USER_AGENT))
-                settings.setUserAgentString(userAgent);
+            settings.setUserAgentString(userAgent);
 
             settings.setSupportZoom(true);
             settings.setBuiltInZoomControls(true);
@@ -1478,22 +1486,32 @@ public class Helpers {
     //  <------------------------- WebViewHelper -------------------------
 
 
-    /** ------------------------- AdvancedSearch ------------------------->  */
-    public static class AdvancedQueryHelper <T> {
+    /**
+     * ------------------------- AdvancedSearch ------------------------->
+     */
+    public static class AdvancedQueryHelper<T> {
         private static final Pattern advancedSearchPattern = Pattern.compile("\\{.*\\}");
         private SearchView searchView;
         public String fullQuery, advancedQuery, restQuery;
         private CustomList<SearchCriteria> criteriaList = new CustomList<>();
         private Utility.DoubleGenericInterface<String, CustomList<T>> restFilter;
+        private int dialogLayoutId;
+        private com.finn.androidUtilities.CustomDialog.OnDialogCallback optionalModifications;
+        private AppCompatActivity context;
 
-        /**  ------------------------- Constructor ------------------------->  */
-        public AdvancedQueryHelper(SearchView searchView) {
+        /**
+         * ------------------------- Constructor ------------------------->
+         */
+        public AdvancedQueryHelper(AppCompatActivity context, SearchView searchView) {
             this.searchView = searchView;
+            this.context = context;
         }
-        /**  <------------------------- Constructor -------------------------  */
+/**  <------------------------- Constructor -------------------------  */
 
 
-        /**  ------------------------- Getter & Setter ------------------------->  */
+        /**
+         * ------------------------- Getter & Setter ------------------------->
+         */
         public <Result> AdvancedQueryHelper<T> addCriteria(Utility.GenericReturnInterface<AdvancedQueryHelper<T>, SearchCriteria<T, Result>> getCriteria) {
             criteriaList.add(getCriteria.runGenericInterface(this));
             return this;
@@ -1506,8 +1524,8 @@ public class Helpers {
             return this;
         }
 
-        public AdvancedQueryHelper<T> addCriteria_ParentClass(String key, CategoriesActivity.CATEGORIES category, Utility.GenericReturnInterface<T, List<String>> getList) {
-            criteriaList.add(new Helpers.AdvancedQueryHelper.SearchCriteria<T, Pair<String, CustomList<ParentClass>>>(key, "([^|&]+?)([|&][^|&]+?)*")
+        public AdvancedQueryHelper<T> addCriteria_ParentClass(String key, CategoriesActivity.CATEGORIES category, Utility.GenericReturnInterface<T, List<String>> getList, @Nullable Context context, @Nullable @IdRes Integer textViewId, @Nullable @IdRes Integer spinnerId, @Nullable @IdRes Integer editButtonId) {
+            SearchCriteria<T, Pair<String, CustomList<ParentClass>>> criteria = new SearchCriteria<T, Pair<String, CustomList<ParentClass>>>(key, "([^|&]+?)([|&][^|&]+?)*")
                     .setParser(sub -> {
                         CustomList<ParentClass> list = new CustomList<>();
                         for (String name : sub.split("[|&]")) {
@@ -1526,7 +1544,37 @@ public class Helpers {
                                     return getList.runGenericInterface(t).containsAll(idList);
                             }
                         };
-                    }));
+                    });
+            if (context != null && textViewId != null && spinnerId != null && editButtonId != null) {
+                criteria.setApplyDialog((customDialog, pair, criteria1) -> {
+                    CustomList<String> selectedIdList = CustomUtility.isNullReturnOrElse(pair, new CustomList<>(), pair1 -> pair1.second.map(com.finn.androidUtilities.ParentClass::getUuid));
+                    TextView textView = customDialog.findViewById(textViewId);
+
+                    int currentSpinnerPosition = CustomUtility.isNullReturnOrElse(pair, 0, pair1 -> !CustomUtility.stringExists(pair1.first) || pair1.first.equals("&") ? 0 : 1);
+                    Spinner spinner = customDialog.findViewById(spinnerId);
+                    spinner.setSelection(currentSpinnerPosition);
+
+                    Runnable setTextView = () -> textView.setText(CategoriesActivity.joinCategoriesIds(selectedIdList, category));
+                    setTextView.run();
+
+                    customDialog.findViewById(editButtonId).setOnClickListener(v -> {
+                        Utility.showEditItemDialog(context, selectedIdList, category, (customDialog1, selectedIds) -> {
+                            selectedIdList.replaceWith(selectedIds);
+                            setTextView.run();
+                        });
+                    });
+
+
+                    return customDialog1 -> selectedIdList.isEmpty() ? null : String.format(Locale.getDefault(), "%s:%s", key, CategoriesActivity.joinCategoriesIds(selectedIdList, category, spinner.getSelectedItemPosition() == 0 ? " & " : " | "));
+                });
+            }
+            criteriaList.add(criteria);
+            return this;
+
+        }
+
+        public AdvancedQueryHelper<T> addCriteria_ParentClass(String key, CategoriesActivity.CATEGORIES category, Utility.GenericReturnInterface<T, List<String>> getList) {
+            addCriteria_ParentClass(key, category, getList, null, null, null, null);
             return this;
         }
 
@@ -1534,14 +1582,21 @@ public class Helpers {
             this.restFilter = restFilter;
             return this;
         }
+
+        public AdvancedQueryHelper<T> setDialogOptions(@LayoutRes int dialogLayoutId, @Nullable com.finn.androidUtilities.CustomDialog.OnDialogCallback optionalModifications) {
+            this.dialogLayoutId = dialogLayoutId;
+            this.optionalModifications = optionalModifications;
+            return this;
+        }
         /**  <------------------------- Getter & Setter -------------------------  */
 
 
-        /**  <------------------------- Convenience -------------------------  */
+        /**
+         * <------------------------- Convenience -------------------------
+         */
         public String getQuery() {
             return searchView.getQuery().toString().trim();
         }
-
 
         public AdvancedQueryHelper<T> clean() {
             fullQuery = advancedQuery = restQuery = "";
@@ -1560,10 +1615,20 @@ public class Helpers {
             Matcher matcher = Pattern.compile("\\{\\[\\w+:([^\\]]+)\\]\\}").matcher(getQuery());
             return matcher.find() && extraSearch.equals(matcher.group(1));
         }
+
+        public boolean hasAdvancedSearch() {
+            return criteriaList.stream().anyMatch(SearchCriteria::has);
+        }
+
+        public SearchCriteria getSearchCriteriaByKey(String key) {
+            return criteriaList.stream().filter(criteria -> criteria.key.equals(key)).findFirst().orElse(null);
+        }
         /**  ------------------------- Convenience ------------------------->  */
 
 
-        /**  ------------------------- Function ------------------------->  */
+        /**
+         * ------------------------- Function ------------------------->
+         */
         public AdvancedQueryHelper<T> splitQuery() {
             fullQuery = getQuery();
             if (fullQuery.contains("{")) {
@@ -1611,18 +1676,78 @@ public class Helpers {
             return clean().splitQuery().filter(list);
         }
         /**  <------------------------- Function -------------------------  */
+
+
+        /**
+         * ------------------------- Dialog ------------------------->
+         */
+        public AdvancedQueryHelper<T> showAdvancedSearchDialog() {
+            clean().splitQuery();
+            CustomList<Utility.GenericReturnInterface<com.finn.androidUtilities.CustomDialog, String>> onSaveList = new CustomList<>();
+
+            boolean preSelected = hasAdvancedSearch();
+
+            com.finn.androidUtilities.CustomDialog.Builder(context)
+                    .setTitle("Erweiterte Suche")
+                    .setView(dialogLayoutId)
+                    .setSetViewContent((customDialog, view, reload) -> criteriaList.forEach(criteria -> {
+                        if (criteria.applyDialog == null)
+                            return;
+                        Object o;
+                        if (CustomUtility.stringExists(criteria.sub))
+                            o = criteria.parser.runGenericInterface(criteria.sub);
+                        else
+                            o = null;
+                        onSaveList.add(criteria.applyDialog.runApplyDialog(customDialog, o, criteria));
+                    }))
+                    .addOptionalModifications(customDialog -> {
+                        if (preSelected) {
+                            customDialog
+                                    .addButton(R.drawable.ic_reset, customDialog1 -> {
+                                        String removedQuery = Utility.AdvancedQueryHelper.removeAdvancedSearch(searchView.getQuery());
+                                        searchView.setQuery(removedQuery, false);
+                                        Toast.makeText(context, "Erweiterte Suche zurückgesetzt", Toast.LENGTH_SHORT).show();
+                                    })
+                                    .alignPreviousButtonsLeft();
+                        }
+                    })
+                    .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                    .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
+                        String restQuery = removeAdvancedSearch(getQuery());
+                        CustomList<String> filterList = onSaveList.map(onSave -> onSave.runGenericInterface(customDialog)).filter(Objects::nonNull, true).map(s -> "[" + s + "]");
+                        String newQuery = Utility.isNotValueReturnOrElse(restQuery, "", s -> s + " ", null);
+                        newQuery += filterList.isEmpty() ? "" : String.format("{%s}", String.join(" ", filterList));
+                        searchView.setQuery(newQuery, false);
+                    })
+                    .addOptionalModifications(customDialog -> {
+                        if (optionalModifications != null)
+                            optionalModifications.runOnDialogCallback(customDialog);
+                    })
+                    .enableDynamicWrapHeight(context)
+                    .show();
+
+
+            return this;
+        }
+        /**
+         * <------------------------- Dialog -------------------------
+         */
+
         // ---------------
 
-        public static class SearchCriteria <T, Result> {
+        public static class SearchCriteria<T, Result> {
             public String key;
             public Pattern pattern;
             public String sub;
             private Utility.GenericReturnInterface<String, Result> parser;
             private Utility.GenericReturnInterface<Result, Predicate<T>> buildPredicate;
             public Predicate<T> predicate;
+            private ApplyDialogInterface<T, Result> applyDialog;
             // ToDo: In und aus Dialog
 
-            /**  ------------------------- Constructor ------------------------->  */
+            /**
+             * ------------------------- Constructor ------------------------->
+             */
             public SearchCriteria(String key, @Language("RegExp") String regex) {
                 this.key = key;
                 this.pattern = Pattern.compile(String.format("(?<=\\[%s: ?)%s(?=\\s*\\])", key, regex));
@@ -1630,7 +1755,9 @@ public class Helpers {
             /**  <------------------------- Constructor -------------------------  */
 
 
-            /**  ------------------------- Getter & Setter ------------------------->  */
+            /**
+             * ------------------------- Getter & Setter ------------------------->
+             */
             public SearchCriteria<T, Result> setParser(Utility.GenericReturnInterface<String, Result> parser) {
                 this.parser = parser;
                 return this;
@@ -1647,10 +1774,17 @@ public class Helpers {
                     buildPredicate = (Utility.GenericReturnInterface<Result, Predicate<T>>) last.buildPredicate;
                 return this;
             }
+
+            public SearchCriteria<T, Result> setApplyDialog(ApplyDialogInterface<T, Result> applyDialog) {
+                this.applyDialog = applyDialog;
+                return this;
+            }
             /**  <------------------------- Getter & Setter -------------------------  */
 
 
-            /**  ------------------------- Convenience ------------------------->  */
+            /**
+             * ------------------------- Convenience ------------------------->
+             */
             public String matchQuery(String query) {
                 if (query.contains("[" + key + ":")) {
                     Matcher ratingMatcher = pattern.matcher(query);
@@ -1676,7 +1810,20 @@ public class Helpers {
             public boolean has() {
                 return CustomUtility.stringExists(sub);
             }
-            /**  <------------------------- Convenience -------------------------  */
+
+            public Result parse() {
+                if (CustomUtility.stringExists(sub) && parser != null)
+                    return parser.runGenericInterface(sub);
+                else
+                    return null;
+            }
+            /**
+             * <------------------------- Convenience -------------------------
+             */
+
+            public interface ApplyDialogInterface<T, Result> {
+                Utility.GenericReturnInterface<com.finn.androidUtilities.CustomDialog, String> runApplyDialog(com.finn.androidUtilities.CustomDialog customDialog, Result result, SearchCriteria<T, Result> criteria);
+            }
         }
     }
     /**  <------------------------- AdvancedSearch -------------------------  */

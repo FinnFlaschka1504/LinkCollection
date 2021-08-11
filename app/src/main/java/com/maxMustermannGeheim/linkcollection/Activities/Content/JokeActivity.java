@@ -382,7 +382,11 @@ public class JokeActivity extends AppCompatActivity {
 
 
                     view.findViewById(R.id.dialog_editOrAddJoke_editCategories).setOnClickListener(view1 ->
-                            Utility.showEditItemDialog(this, addOrEditDialog[0], editJoke[0].getCategoryIdList(), editJoke[0], CategoriesActivity.CATEGORIES.JOKE_CATEGORIES));
+                            Utility.showEditItemDialog(this, editJoke[0].getCategoryIdList(), CategoriesActivity.CATEGORIES.JOKE_CATEGORIES, (customDialog1, selectedIds) -> {
+                                editJoke[0].setCategoryIdList(selectedIds);
+                                ((TextView) customDialog.findViewById(R.id.dialog_editOrAddJoke_categories)).setText(
+                                        CategoriesActivity.joinCategoriesIds(selectedIds, CategoriesActivity.CATEGORIES.JOKE_CATEGORIES));
+                            }));
                 })
                 .enableDoubleClickOutsideToDismiss(customDialog -> {
                     String title = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddJoke_Titel)).getText().toString().trim();

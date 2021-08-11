@@ -19,8 +19,6 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -67,7 +65,6 @@ import com.unnamed.b.atv.view.AndroidTreeView;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -826,6 +823,16 @@ public class CategoriesActivity extends AppCompatActivity {
                 list.forEach(media -> intersectionList.retainAll(getCategoryList.runGenericInterface(media)));
             return intersectionList;
         }
+    }
+
+    public static String joinCategoriesIds(List<String> idList, CATEGORIES category) {
+        return joinCategoriesIds(idList, category, ", ");
+    }
+
+    public static String joinCategoriesIds(List<String> idList, CATEGORIES category, String delimiter) {
+        // ToDo: Auch ParentClass_Tree unterstützen
+        Map<String, ? extends ParentClass> map = Utility.getMapFromDatabase(category);
+        return idList.stream().map(id -> map.get(id).getName()).collect(Collectors.joining(delimiter));
     }
 
     //  ------------------------- ToolBar ------------------------->

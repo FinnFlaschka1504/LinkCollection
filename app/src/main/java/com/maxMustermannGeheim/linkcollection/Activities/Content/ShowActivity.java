@@ -39,6 +39,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.res.ResourcesCompat;
 
+import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomRecycler.Expandable;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -57,11 +58,11 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAutoCompleteAdapter;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.ImageAdapterItem;
 import com.finn.androidUtilities.CustomDialog;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.finn.androidUtilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -104,6 +105,7 @@ public class ShowActivity extends AppCompatActivity {
     public static final String EXTRA_EPISODE = "EXTRA_EPISODE";
     public static final String ACTION_NEXT_EPISODE = "ACTION_NEXT_EPISODE";
     public static final String EXTRA_NEXT_EPISODE_SELECT = "EXTRA_NEXT_EPISODE_SELECT";
+    private final String ADVANCED_SEARCH_CRITERIA_GENRE = "g";
 
     enum SORT_TYPE {
         NAME, VIEWS, RATING, LATEST
@@ -142,6 +144,7 @@ public class ShowActivity extends AppCompatActivity {
     private String plural;
     private String searchQuery = "";
     private Runnable setToolbarTitle;
+    private Helpers.AdvancedQueryHelper<Show> advancedQueryHelper;
 
     CustomList<Show> allShowList = new CustomList<>();
 
@@ -195,6 +198,16 @@ public class ShowActivity extends AppCompatActivity {
             setToolbarTitle = Utility.applyExpendableToolbar_recycler(this, findViewById(R.id.recycler), toolbar, appBarLayout, collapsingToolbarLayout, noItem, plural);
 
             shows_search = findViewById(R.id.search);
+            advancedQueryHelper = new Helpers.AdvancedQueryHelper<Show>(this, shows_search)
+                    .setRestFilter((restQuery, showList) -> {
+                        if (restQuery.contains("|")) {
+                            showList.filterOr(restQuery.split("\\|"), (show, s) -> Utility.containedInShow(s.trim(), show, filterTypeSet), true);
+                        } else {
+                            showList.filterAnd(restQuery.split("&"), (show, s) -> Utility.containedInShow(s.trim(), show, filterTypeSet), true);
+                        }
+                    })
+                    .addCriteria_defaultName()
+                    .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_GENRE, CategoriesActivity.CATEGORIES.SHOW_GENRES, Show::getGenreIdList);
 
             loadRecycler();
 
@@ -358,33 +371,30 @@ public class ShowActivity extends AppCompatActivity {
 
             CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
             if (extraSearchCategory != null) {
-                filterTypeSet.clear();
+                if (extraSearchCategory == CategoriesActivity.CATEGORIES.EPISODE) {
+                    String episode_string = getIntent().getStringExtra(EXTRA_EPISODE);
+                    if (episode_string != null) {
+                        Show.Episode episode = new Gson().fromJson(episode_string, Show.Episode.class);
+                        findEpisode(episode, () -> {
+                            Show.Episode oldEpisode = database.showMap.get(episode.getShowId()).getSeasonList().get(episode.getSeasonNumber())
+                                    .getEpisodeMap().get(episode.getUuid());
 
-                switch (extraSearchCategory) {
-                    case SHOW_GENRES:
-                        filterTypeSet.add(FILTER_TYPE.GENRE);
-                        break;
-                    case EPISODE:
-                        String episode_string = getIntent().getStringExtra(EXTRA_EPISODE);
-                        if (episode_string != null) {
-                            Show.Episode episode = new Gson().fromJson(episode_string, Show.Episode.class);
-                            findEpisode(episode, () -> {
-                                Show.Episode oldEpisode = database.showMap.get(episode.getShowId()).getSeasonList().get(episode.getSeasonNumber())
-                                        .getEpisodeMap().get(episode.getUuid());
-
-                                if (oldEpisode != null)
-                                    showEpisodeDetailDialog(null, oldEpisode, true);
-                                else
-                                    apiSeasonRequest(database.showMap.get(episode.getShowId()), episode.getSeasonNumber(), () ->
-                                            showEpisodeDetailDialog(null, database.tempShowSeasonEpisodeMap.get(database.showMap.get(episode.getShowId())).get(episode.getSeasonNumber())
-                                                    .get(episode.getUuid()), true));
-                            });
-                        }
+                            if (oldEpisode != null)
+                                showEpisodeDetailDialog(null, oldEpisode, true);
+                            else
+                                apiSeasonRequest(database.showMap.get(episode.getShowId()), episode.getSeasonNumber(), () ->
+                                        showEpisodeDetailDialog(null, database.tempShowSeasonEpisodeMap.get(database.showMap.get(episode.getShowId())).get(episode.getSeasonNumber())
+                                                .get(episode.getUuid()), true));
+                        });
+                    }
                 }
 
                 String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
                 if (extraSearch != null) {
-                    shows_search.setQuery(extraSearch, true);
+                    if (extraSearchCategory == CategoriesActivity.CATEGORIES.SHOW_GENRES)
+                        advancedQueryHelper.wrapExtraSearch(extraSearchCategory, extraSearch);
+                    else
+                        shows_search.setQuery(extraSearch, true);
                 }
             }
             setSearchHint();
@@ -401,11 +411,7 @@ public class ShowActivity extends AppCompatActivity {
 
     private CustomList<Show> filterList(CustomList<Show> showList) {
         if (!searchQuery.isEmpty()) {
-            if (searchQuery.contains("|")) {
-                showList = showList.filterOr(searchQuery.split("\\|"), (show, s) -> Utility.containedInShow(s.trim(), show, filterTypeSet), false);
-            } else {
-                showList = showList.filterAnd(searchQuery.split("&"), (show, s) -> Utility.containedInShow(s.trim(), show, filterTypeSet), false);
-            }
+            advancedQueryHelper.filterFull(showList);
         }
         return showList;
     }
@@ -919,18 +925,25 @@ public class ShowActivity extends AppCompatActivity {
 
         season = seasonList.get(previousEpisode.getSeasonNumber());
 
-        Map<Integer, Map<String, Show.Episode>> tempShowSeasonMap = database.tempShowSeasonEpisodeMap.get(show);
-        if (season.getEpisodesCount() > previousEpisode.getEpisodeNumber() /*|| CustomUtility.isNullReturnOrElse(
-                season.getEpisodeMap().values().stream().max((o1, o2) -> Integer.compare(o1.getEpisodeNumber(), o2.getEpisodeNumber()))
-                        .orElse(null), false, episode -> episode.getEpisodeNumber() > previousEpisode.getEpisodeNumber())*/) {
-            apiSeasonRequest(show, season.getSeasonNumber(), () -> {
-                onNextEpisode.runOnNextEpisode(tempShowSeasonMap.get(season.getSeasonNumber()).get("E:" + (previousEpisode.getEpisodeNumber() + 1)));
-            });
-        } else if (show.getSeasonsCount() > season.getSeasonNumber()) {
+//        Map<Integer, Map<String, Show.Episode>> tempShowSeasonMap = database.tempShowSeasonEpisodeMap.get(show);
+
+        Runnable requestNextSeason = () -> {
             apiSeasonRequest(show, season.getSeasonNumber() + 1, () -> {
-                onNextEpisode.runOnNextEpisode(tempShowSeasonMap.get(season.getSeasonNumber() + 1).values()
+                onNextEpisode.runOnNextEpisode(database.tempShowSeasonEpisodeMap.get(show).get(season.getSeasonNumber() + 1).values()
                         .stream().min((o1, o2) -> Integer.compare(o1.getEpisodeNumber(), o2.getEpisodeNumber())).orElse(null));
             });
+        };
+
+        if (season.getEpisodesCount() > previousEpisode.getEpisodeNumber() || season.getEpisodesCount() > (new CustomList<>(season.getEpisodeMap().values()).sorted((o1, o2) -> Integer.compare(o1.getEpisodeNumber(), o2.getEpisodeNumber())).indexOf(previousEpisode) + 1)) {
+            apiSeasonRequest(show, season.getSeasonNumber(), () -> {
+                Show.Episode episode = database.tempShowSeasonEpisodeMap.get(show).get(season.getSeasonNumber()).get("E:" + (previousEpisode.getEpisodeNumber() + 1));
+                if (episode == null && show.getSeasonsCount() > season.getSeasonNumber())
+                    requestNextSeason.run();
+                else
+                    onNextEpisode.runOnNextEpisode(episode);
+            });
+        } else if (show.getSeasonsCount() > season.getSeasonNumber()) {
+            requestNextSeason.run();
         } else
             onNextEpisode.runOnNextEpisode(null);
 
@@ -1764,7 +1777,7 @@ public class ShowActivity extends AppCompatActivity {
                     Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
                     SpannableStringBuilder viewsText = helper.quickItalic("Keine Ansichten");
                     if (episode.getDateList().size() > 0) {
-                        Date lastWatched = CustomList.cast(episode.getDateList()).getBiggest();
+                        Date lastWatched = new CustomList<>(episode.getDateList()).getBiggest();
                         viewsText = helper.append(String.valueOf(episode.getDateList().size())).append(
                                 String.format(Locale.getDefault(), "   (%s – %dd)",
                                         new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(lastWatched),
@@ -2466,11 +2479,13 @@ public class ShowActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (Utility.stringExists(shows_search.getQuery().toString()) && !Objects.equals(shows_search.getQuery().toString(), getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH))) {
-            shows_search.setQuery("", false);
-            return;
-        }
+//        if (Utility.stringExists(shows_search.getQuery().toString()) && !Objects.equals(shows_search.getQuery().toString(), getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH))) {
+//            shows_search.setQuery("", false);
+//            return;
+//        }
 
+        if (advancedQueryHelper.handleBackPress(this))
+            return;
         super.onBackPressed();
     }
 }

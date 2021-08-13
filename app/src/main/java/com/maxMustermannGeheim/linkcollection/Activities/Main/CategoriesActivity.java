@@ -463,7 +463,7 @@ public class CategoriesActivity extends AppCompatActivity {
                     if (!multiSelectMode) {
                         removeFocusFromSearch();
                         startActivityForResult(new Intent(this, category.getSearchIn())
-                                        .putExtra(EXTRA_SEARCH, parentClassIntegerPair.first.getName())
+                                        .putExtra(EXTRA_SEARCH, escapeForSearchExtra(parentClassIntegerPair.first.getName()))
                                         .putExtra(EXTRA_SEARCH_CATEGORY, category),
                                 START_CATEGORY_SEARCH);
                     } else {
@@ -493,7 +493,7 @@ public class CategoriesActivity extends AppCompatActivity {
                 .setSetItemContent((customRecycler1, itemView, parentClassIntegerPair) -> {
                     Pair<TreeNode.TreeNodeClickListener, TreeNode.TreeNodeLongClickListener> clickListenerPair = Pair.create((node, value) -> {
                         startActivityForResult(new Intent(this, category.getSearchIn())
-                                        .putExtra(EXTRA_SEARCH, ((ParentClass_Tree) value).getName())
+                                        .putExtra(EXTRA_SEARCH, escapeForSearchExtra(((ParentClass_Tree) value).getName()))
                                         .putExtra(EXTRA_SEARCH_CATEGORY, category),
                                 START_CATEGORY_SEARCH);
                     }, (node, value) -> {
@@ -794,7 +794,7 @@ public class CategoriesActivity extends AppCompatActivity {
                 }, false)
                 .addButton("Suchen", customDialog -> {
                     startActivityForResult(new Intent(this, category.getSearchIn())
-                                    .putExtra(EXTRA_SEARCH, randomPair[0].first.getName())
+                                    .putExtra(EXTRA_SEARCH, escapeForSearchExtra(randomPair[0].first.getName()))
                                     .putExtra(EXTRA_SEARCH_CATEGORY, category),
                             START_CATEGORY_SEARCH);
                 })
@@ -830,10 +830,19 @@ public class CategoriesActivity extends AppCompatActivity {
     }
 
     public static String joinCategoriesIds(List<String> idList, CATEGORIES category, String delimiter) {
-        // ToDo: Auch ParentClass_Tree unterstützen
-        Map<String, ? extends ParentClass> map = Utility.getMapFromDatabase(category);
-        return idList.stream().map(id -> map.get(id).getName()).collect(Collectors.joining(delimiter));
+        return joinCategoriesIds(idList, category, delimiter, false);
     }
+
+    public static String joinCategoriesIds(List<String> idList, CATEGORIES category, String delimiter, boolean escape) {
+        // ToDo: Auch ParentClass_Tree unterstützen
+
+        return idList.stream().map(id -> {
+            if (escape)
+                return CategoriesActivity.escapeForSearchExtra(Utility.findObjectById(category, id).getName());
+            return Utility.findObjectById(category, id).getName();
+        }).collect(Collectors.joining(delimiter));
+    }
+
 
     //  ------------------------- ToolBar ------------------------->
     @Override
@@ -864,7 +873,7 @@ public class CategoriesActivity extends AppCompatActivity {
                         selectedList.replaceWith(selectedTreeList.map(uuid -> ParentClass_Tree.findObjectById(category, uuid)));
                     if (selectedList.size() == 1) {
                         startActivityForResult(new Intent(this, category.getSearchIn())
-                                        .putExtra(EXTRA_SEARCH, selectedList.get(0).getName())
+                                        .putExtra(EXTRA_SEARCH, escapeForSearchExtra(selectedList.get(0).getName()))
                                         .putExtra(EXTRA_SEARCH_CATEGORY, category),
                                 START_CATEGORY_SEARCH);
                         break;
@@ -880,14 +889,14 @@ public class CategoriesActivity extends AppCompatActivity {
                             .alignPreviousButtonsLeft()
                             .addButton("&", customDialog -> {
                                 startActivityForResult(new Intent(this, category.getSearchIn())
-                                                .putExtra(EXTRA_SEARCH, selectedList.stream().map(ParentClass::getName).collect(Collectors.joining(" & ")))
+                                                .putExtra(EXTRA_SEARCH, selectedList.stream().map(parentClass -> escapeForSearchExtra(parentClass.getName())).collect(Collectors.joining(" & ")))
                                                 .putExtra(EXTRA_SEARCH_CATEGORY, category),
                                         START_CATEGORY_SEARCH);
                             })
                             .colorLastAddedButton()
                             .addButton("|", customDialog -> {
                                 startActivityForResult(new Intent(this, category.getSearchIn())
-                                                .putExtra(EXTRA_SEARCH, selectedList.stream().map(ParentClass::getName).collect(Collectors.joining(" | ")))
+                                                .putExtra(EXTRA_SEARCH, selectedList.stream().map(parentClass -> escapeForSearchExtra(parentClass.getName())).collect(Collectors.joining(" | ")))
                                                 .putExtra(EXTRA_SEARCH_CATEGORY, category),
                                         START_CATEGORY_SEARCH);
                             })
@@ -947,7 +956,29 @@ public class CategoriesActivity extends AppCompatActivity {
     private void removeFocusFromSearch() {
         categories_search.clearFocus();
     }
-//  <------------------------- ToolBar -------------------------
+    //  <------------------------- ToolBar -------------------------
+
+
+    /**  ------------------------- Convenience ------------------------->  */
+    public static String escapeForSearchExtra(String s) {
+        if (s.contains("&"))
+            return s.replaceAll("&", "\\\\&");
+        else if (s.contains("|"))
+            return s.replaceAll("\\|", "\\\\|");
+        else
+            return s;
+    }
+
+    public static String deEscapeForSearchExtra(String s) {
+        if (s.contains("\\&"))
+            return s.replaceAll("\\\\&", "&");
+        else if (s.contains("\\|"))
+            return s.replaceAll("\\\\\\|", "\\|");
+        else
+            return s;
+    }
+    /**  <------------------------- Convenience -------------------------  */
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {

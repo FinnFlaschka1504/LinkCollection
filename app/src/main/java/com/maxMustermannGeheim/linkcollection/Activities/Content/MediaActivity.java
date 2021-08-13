@@ -11,6 +11,8 @@ import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.RelativeSizeSpan;
@@ -20,6 +22,7 @@ import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -48,6 +51,7 @@ import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
+import com.google.firebase.database.Transaction;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
@@ -132,6 +136,8 @@ public class MediaActivity extends AppCompatActivity {
     public boolean isVideoPreviewSoundOn = false;
     public Map<VideoView, MediaPlayer> currentMediaPlayerMap = new HashMap<>();
     private Helpers.AdvancedQueryHelper<MultiSelectHelper.Selectable<Media>> advancedQueryHelper;
+    private Utility.OnSwipeTouchListener onSwipeTouchListener;
+    private boolean scrollGalleryShown;
 
     private TextView elementCount;
     private SearchView media_search;
@@ -197,6 +203,14 @@ public class MediaActivity extends AppCompatActivity {
             setContentView(R.layout.activity_media);
 
             setupScrollGalleryView();
+
+            onSwipeTouchListener = new Utility.OnSwipeTouchListener(this) {
+                @Override
+                public boolean onSwipeBottom() {
+                    hideScrollGallery();
+                    return super.onSwipeBottom();
+                }
+            };
 
             Toolbar toolbar = findViewById(R.id.toolbar);
             toolbar.setTitle(plural);
@@ -998,6 +1012,8 @@ public class MediaActivity extends AppCompatActivity {
                     }
                 });
 
+//        Utility.reflectionSet(scrollGalleryView, "useDefaultThumbnailsTransition", false);
+
         findViewById(R.id.scrollGalleryView_edit).setOnClickListener(v -> {
             int index = indexOfMedia(getCurrentGalleryMedia());
             CustomDialog customDialog = showEditMultipleDialog(new CustomList<>(mediaRecycler.getObjectList().get(index).getContent()));
@@ -1061,6 +1077,7 @@ public class MediaActivity extends AppCompatActivity {
     }
 
     private void showScrollGallery(int index) {
+        scrollGalleryShown = true;
         removeFocusFromSearch();
 
         if (findViewById(com.veinhorn.scrollgalleryview.R.id.thumbnails_scroll_view).getVisibility() == View.GONE) {
@@ -1097,6 +1114,7 @@ public class MediaActivity extends AppCompatActivity {
     }
 
     private void hideScrollGallery() {
+        scrollGalleryShown = false;
         scrollGalleryView.setVisibility(View.GONE);
         int currentItem = scrollGalleryView.getCurrentItem();
 //        mediaRecycler.scrollTo(currentItem, false);
@@ -1116,15 +1134,17 @@ public class MediaActivity extends AppCompatActivity {
             viewParent.findViewById(R.id.imageFragment_volumeLayout).setVisibility(visibility);
         };
         ViewGroup parent = (ViewGroup) getCurrentViewFromViewPager(((MediaActivity) activity).scrollGalleryView.getViewPager());
-        Set<VideoView> keySet = ((MediaActivity) activity).currentMediaPlayerMap.keySet();
+        Set<VideoView> keySet = new HashSet<>((((MediaActivity) activity).currentMediaPlayerMap.keySet()));
         VideoView videoView = null;
         if (parent != null) {
             videoView = parent.findViewById(R.id.imageFragment_video);
             keySet.remove(videoView);
         }
-        keySet.forEach(setVideoButtonVisibility::runGenericInterface);
+        new Handler(Looper.getMainLooper()).postDelayed(() -> keySet.forEach(setVideoButtonVisibility::runGenericInterface), 100);
+//        keySet.forEach(setVideoButtonVisibility::runGenericInterface);
 
         View view = activity.findViewById(R.id.customImageDescription);
+//        TransitionManager.beginDelayedTransition(activity.findViewById(R.id.scrollGalleryView_root));
         TransitionManager.beginDelayedTransition((ViewGroup) view.getParent());
         view.setVisibility(visibility);
         activity.findViewById(R.id.scrollGalleryView_edit).setVisibility(visibility);
@@ -1178,6 +1198,10 @@ public class MediaActivity extends AppCompatActivity {
         } catch (NoSuchFieldException | IllegalAccessException e) {
             return null;
         }
+    }
+
+    private boolean isScrollViewVisible() {
+        return scrollGalleryView.getVisibility() == View.VISIBLE;
     }
     //  <------------------------- ScrollGallery -------------------------
 
@@ -1261,7 +1285,7 @@ public class MediaActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (scrollGalleryView.getVisibility() == View.VISIBLE) {
+        if (scrollGalleryShown) {
             hideScrollGallery();
         } else if (advancedQueryHelper.handleBackPress(this)) {
             return;
@@ -1271,6 +1295,13 @@ public class MediaActivity extends AppCompatActivity {
             super.onBackPressed();
     }
 
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (scrollGalleryShown && onSwipeTouchListener != null)
+            onSwipeTouchListener.onTouch(null, ev);
+        return super.dispatchTouchEvent(ev);
+    }
 }
 
 /*

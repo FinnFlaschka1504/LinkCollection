@@ -365,7 +365,7 @@ public class Utility {
                             Toast.makeText(activity, s, Toast.LENGTH_SHORT).show();
                             activity.startActivity(new Intent(activity, CategoriesActivity.class)
                                     .putExtra(MainActivity.EXTRA_CATEGORY, category)
-                                    .putExtra(CategoriesActivity.EXTRA_SEARCH, s));
+                                    .putExtra(CategoriesActivity.EXTRA_SEARCH, CategoriesActivity.escapeForSearchExtra(s)));
                         };
 
                         if (!(parentClass instanceof Darsteller) || ((Darsteller) parentClass).getTmdbId() == 0)
@@ -390,7 +390,7 @@ public class Utility {
                         Toast.makeText(activity, s, Toast.LENGTH_SHORT).show();
                         activity.startActivity(new Intent(activity, activity.getClass())
                                 .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, category)
-                                .putExtra(CategoriesActivity.EXTRA_SEARCH, s));
+                                .putExtra(CategoriesActivity.EXTRA_SEARCH, CategoriesActivity.escapeForSearchExtra(s)));
                     }
                 }
 
@@ -2001,6 +2001,15 @@ public class Utility {
                 return ParentClass_Tree.findObjectByName(category, name);
             default:
                 return getMapFromDatabase(category).values().stream().filter(parentClass -> parentClass.getName().equals(name)).findFirst().orElse(null);
+        }
+    }
+
+    public static ParentClass findObjectById(CategoriesActivity.CATEGORIES category, String id) {
+        switch (category) {
+            case MEDIA_CATEGORY:
+                return ParentClass_Tree.findObjectById(category, id);
+            default:
+                return getMapFromDatabase(category).values().stream().filter(parentClass -> parentClass.getUuid().equals(id)).findFirst().orElse(null);
         }
     }
 

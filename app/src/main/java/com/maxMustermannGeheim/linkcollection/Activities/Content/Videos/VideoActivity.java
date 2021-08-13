@@ -192,7 +192,6 @@ public class VideoActivity extends AppCompatActivity {
     private CustomRecycler<Video> customRecycler_VideoList;
     FloatingActionButton videos_confirmDelete;
     private SearchView videos_search;
-    private Utility.AdvancedQueryHelper previousAdvancedQueryHelper;
 
     @SuppressLint("RestrictedApi")
     @Override
@@ -1027,12 +1026,12 @@ public class VideoActivity extends AppCompatActivity {
                 final Pair<Date, Date>[] datePair = new Pair[]{null};
                 final Pair<Long, Long>[] datePairTime = new Pair[]{null};
 
-                if (CustomUtility.stringExists(searchQuery) && previousAdvancedQueryHelper != null && previousAdvancedQueryHelper.hasDateOrDurationSub()) {
-                    if ((datePair[0] = previousAdvancedQueryHelper.datePair) == null)
-                        datePair[0] = previousAdvancedQueryHelper.getDateOrDurationMinMax();
 
-                    datePairTime[0] = Pair.create(datePair[0].first.getTime(), datePair[0].second.getTime());
+                if (CustomUtility.stringExists(searchQuery) && advancedQueryHelper != null && (advancedQueryHelper.has(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION))) {
+                    if ((datePair[0] = (Pair<Date, Date>) advancedQueryHelper.parse(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION)) != null)
+                        datePairTime[0] = Pair.create(datePair[0].first.getTime(), datePair[0].second.getTime());
                 }
+
                 videoList.sort((video1, video2) -> {
                     List<Date> dateList1 = video1.getDateList();
                     List<Date> dateList2 = video2.getDateList();
@@ -1093,14 +1092,13 @@ public class VideoActivity extends AppCompatActivity {
                         final int[] viewSum = {0};
                         final double[] ratingSum = {0};
                         final double[] ratingCount = {0};
-                        if (CustomUtility.stringExists(searchQuery) && previousAdvancedQueryHelper != null && previousAdvancedQueryHelper.hasDateOrDurationSub()) {
+
+                        if (CustomUtility.stringExists(searchQuery) && advancedQueryHelper != null && advancedQueryHelper.has(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION)) {
                             final Pair<Date, Date>[] datePair = new Pair[]{null};
                             final Pair<Long, Long>[] datePairTime = new Pair[]{null};
 
-                            if ((datePair[0] = previousAdvancedQueryHelper.datePair) == null)
-                                datePair[0] = previousAdvancedQueryHelper.getDateOrDurationMinMax();
-
-                            datePairTime[0] = Pair.create(datePair[0].first.getTime(), datePair[0].second.getTime());
+                            if ((datePair[0] = (Pair<Date, Date>) advancedQueryHelper.parse(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION)) != null)
+                                datePairTime[0] = Pair.create(datePair[0].first.getTime(), datePair[0].second.getTime());
 
                             filteredList.forEach(video -> {
                                 int videoViews = (int) video.getDateList().stream().filter(date -> {

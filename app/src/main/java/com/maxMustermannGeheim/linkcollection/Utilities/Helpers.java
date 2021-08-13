@@ -1529,10 +1529,15 @@ public class Helpers {
             SearchCriteria<T, Pair<String, CustomList<ParentClass>>> criteria = new SearchCriteria<T, Pair<String, CustomList<ParentClass>>>(key, "([^|&]+?)([|&][^|&]+?)*")
                     .setParser(sub -> {
                         CustomList<ParentClass> list = new CustomList<>();
-                        for (String name : sub.split("[|&]")) {
-                            CustomUtility.ifNotNull(Utility.findObjectByName(category, name.trim()), list::add);
-                        }
-                        return Pair.create(sub.contains("&") ? "&" : sub.contains("|") ? "|" : "", list);
+                        if (sub.contains("|") || sub.contains("&")) {
+                            for (String name : sub.split("(?<!\\\\)[|&]")) {
+                                name = CategoriesActivity.deEscapeForSearchExtra(name);
+                                CustomUtility.ifNotNull(Utility.findObjectByName(category, name.trim()), list::add);
+                            }
+                        } else
+                            CustomUtility.ifNotNull(Utility.findObjectByName(category, sub.trim()), list::add);
+
+                        return Pair.create(sub.matches(".*(?<!\\\\)&.*") ? "&" : sub.matches(".*(?<!\\\\)\\|.*") ? "|" : "", list);
                     })
                     .setBuildPredicate(pair -> {
                         CustomList<String> idList = pair.second.map(com.finn.androidUtilities.ParentClass::getUuid);
@@ -1566,7 +1571,7 @@ public class Helpers {
                     });
 
 
-                    return customDialog1 -> selectedIdList.isEmpty() ? null : String.format(Locale.getDefault(), "%s:%s", key, CategoriesActivity.joinCategoriesIds(selectedIdList, category, spinner.getSelectedItemPosition() == 0 ? " & " : " | "));
+                    return customDialog1 -> selectedIdList.isEmpty() ? null : String.format(Locale.getDefault(), "%s:%s", key, CategoriesActivity.joinCategoriesIds(selectedIdList, category, spinner.getSelectedItemPosition() == 0 ? " & " : " | ", true));
                 });
             }
             criteria.setCategory(category);
@@ -1614,7 +1619,10 @@ public class Helpers {
         }
 
         public boolean istExtraSearch(String extraSearch) {
-            Matcher matcher = Pattern.compile("\\{\\[\\w+:([^\\]]+)\\]\\}").matcher(getQuery());
+            String query = getQuery();
+            if (query.equals(extraSearch))
+                return true;
+            Matcher matcher = Pattern.compile("\\{\\[\\w+:([^\\]]+)\\]\\}").matcher(query);
             return matcher.find() && extraSearch.equals(matcher.group(1));
         }
 
@@ -1640,6 +1648,29 @@ public class Helpers {
 
         public boolean hasAdvancedSearch() {
             return criteriaList.stream().anyMatch(SearchCriteria::has);
+        }
+
+        public boolean has(String... keys) {
+            for (String key : keys) {
+                SearchCriteria criteria = getSearchCriteriaByKey(key);
+                if (criteria == null)
+                    continue;
+                if (criteria.has())
+                    return true;
+            }
+            return false;
+        }
+
+        public Object parse(String... keys) {
+            for (String key : keys) {
+                SearchCriteria criteria = getSearchCriteriaByKey(key);
+                if (criteria == null)
+                    continue;
+                Object parse = criteria.parse();
+                if (parse != null)
+                    return parse;
+            }
+            return null;
         }
 
         public SearchCriteria getSearchCriteriaByKey(String key) {

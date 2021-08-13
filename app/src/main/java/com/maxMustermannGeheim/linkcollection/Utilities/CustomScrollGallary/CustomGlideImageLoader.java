@@ -38,6 +38,10 @@ public class CustomGlideImageLoader extends PicassoImageLoader {
         thumbHeight = thumbnailHeight;
     }
 
+    public Media getMedia() {
+        return media;
+    }
+
     @Override
     public void loadMedia(Context context, ImageView imageView, SuccessCallback callback) {
         if (media.getImagePath().startsWith("/storage/")) {

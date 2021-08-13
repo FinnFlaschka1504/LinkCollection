@@ -324,6 +324,29 @@ public class ParentClass_Tree extends ParentClass {
         return null;
     }
 
+    public static ParentClass_Tree findObjectByName(CategoriesActivity.CATEGORIES category, String name) {
+        Collection<ParentClass_Tree> values = (Collection<ParentClass_Tree>) Utility.getMapFromDatabase(category).values();
+        for (ParentClass_Tree parentClass : values) {
+            ParentClass_Tree child;
+            if ((child = parentClass.findObjectByName(name)) != null)
+                return child;
+        }
+        return null;
+    }
+
+    private ParentClass_Tree findObjectByName(String name) {
+        if (this.name.equals(name))
+            return this;
+        for (ParentClass_Tree parentClass : children) {
+            ParentClass_Tree child;
+            if ((child = parentClass.findObjectByName(name)) != null)
+                return child;
+        }
+        return null;
+    }
+
+    // ---------------
+
     public static int getAllCount(TreeNode root, String searchQuery){
         int nodeValue = root.isRoot() || (CustomUtility.stringExists(searchQuery) && !Utility.containsIgnoreCase(((ParentClass_Tree) root.getValue()).getName(), searchQuery)) ? 0 : 1;
         return root.getChildren().stream().mapToInt(treeNode -> getAllCount(treeNode, searchQuery)).sum() + nodeValue;
@@ -337,6 +360,8 @@ public class ParentClass_Tree extends ParentClass {
     public int _getAllCount() {
         return children.stream().mapToInt(ParentClass_Tree::_getAllCount).sum() + 1;
     }
+
+    // ---------------
 
     public static List<ParentClass_Tree> getAll(CategoriesActivity.CATEGORIES category) {
         Collection<ParentClass_Tree> values = (Collection<ParentClass_Tree>) Utility.getMapFromDatabase(category).values();

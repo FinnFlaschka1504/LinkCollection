@@ -48,6 +48,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.pchmn.materialchips.ChipsInput;
 import com.pchmn.materialchips.model.Chip;
+import com.finn.androidUtilities.CustomList;
 
 import org.intellij.lang.annotations.Language;
 
@@ -1506,7 +1507,7 @@ public class Helpers {
             this.searchView = searchView;
             this.context = context;
         }
-/**  <------------------------- Constructor -------------------------  */
+        /**  <------------------------- Constructor -------------------------  */
 
 
         /**
@@ -1529,7 +1530,7 @@ public class Helpers {
                     .setParser(sub -> {
                         CustomList<ParentClass> list = new CustomList<>();
                         for (String name : sub.split("[|&]")) {
-                            Utility.getMapFromDatabase(category).values().stream().filter(parentClass -> parentClass.getName().equals(name.trim())).findFirst().ifPresent(list::add);
+                            CustomUtility.ifNotNull(Utility.findObjectByName(category, name.trim()), list::add);
                         }
                         return Pair.create(sub.contains("&") ? "&" : sub.contains("|") ? "|" : "", list);
                     })
@@ -1568,6 +1569,7 @@ public class Helpers {
                     return customDialog1 -> selectedIdList.isEmpty() ? null : String.format(Locale.getDefault(), "%s:%s", key, CategoriesActivity.joinCategoriesIds(selectedIdList, category, spinner.getSelectedItemPosition() == 0 ? " & " : " | "));
                 });
             }
+            criteria.setCategory(category);
             criteriaList.add(criteria);
             return this;
 
@@ -1614,6 +1616,26 @@ public class Helpers {
         public boolean istExtraSearch(String extraSearch) {
             Matcher matcher = Pattern.compile("\\{\\[\\w+:([^\\]]+)\\]\\}").matcher(getQuery());
             return matcher.find() && extraSearch.equals(matcher.group(1));
+        }
+
+        public boolean handleBackPress(AppCompatActivity context) {
+            if (Utility.stringExists(getQuery())) {
+                String extraSearch = context.getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
+                if (!CustomUtility.stringExists(extraSearch) || !istExtraSearch(extraSearch)) {
+                    searchView.setQuery("", false);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public boolean wrapExtraSearch(CategoriesActivity.CATEGORIES category, String extraSearch) {
+            Optional<SearchCriteria> optional = criteriaList.stream().filter(criteria -> Objects.equals(criteria.getCategory(), category)).findFirst();
+            if (optional.isPresent()) {
+                searchView.setQuery(String.format(Locale.getDefault(), "{[%s:%s]}", optional.get().key, extraSearch), false);
+                return true;
+            }
+            return false;
         }
 
         public boolean hasAdvancedSearch() {
@@ -1743,6 +1765,7 @@ public class Helpers {
             private Utility.GenericReturnInterface<Result, Predicate<T>> buildPredicate;
             public Predicate<T> predicate;
             private ApplyDialogInterface<T, Result> applyDialog;
+            private CategoriesActivity.CATEGORIES category;
             // ToDo: In und aus Dialog
 
             /**
@@ -1777,6 +1800,15 @@ public class Helpers {
 
             public SearchCriteria<T, Result> setApplyDialog(ApplyDialogInterface<T, Result> applyDialog) {
                 this.applyDialog = applyDialog;
+                return this;
+            }
+
+            public CategoriesActivity.CATEGORIES getCategory() {
+                return category;
+            }
+
+            public SearchCriteria<T, Result> setCategory(CategoriesActivity.CATEGORIES category) {
+                this.category = category;
                 return this;
             }
             /**  <------------------------- Getter & Setter -------------------------  */

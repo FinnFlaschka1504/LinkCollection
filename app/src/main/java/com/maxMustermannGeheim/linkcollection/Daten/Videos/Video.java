@@ -2,7 +2,7 @@ package com.maxMustermannGeheim.linkcollection.Daten.Videos;
 
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
+import com.finn.androidUtilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.scottyab.aescrypt.AESCrypt;
 

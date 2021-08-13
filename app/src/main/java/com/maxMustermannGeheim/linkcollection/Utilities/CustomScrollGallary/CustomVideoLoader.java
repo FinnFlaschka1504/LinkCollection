@@ -39,7 +39,7 @@ import java.util.List;
 
 public class CustomVideoLoader extends DefaultVideoLoader {
     public static final int START_ACTIVITY_VIDEO_PLAYER = 98765;
-    Media media;
+    private Media media;
 
     public CustomVideoLoader(String url, int mId) {
         super(url, mId);
@@ -48,6 +48,10 @@ public class CustomVideoLoader extends DefaultVideoLoader {
     public CustomVideoLoader(Media media) {
         super(media.getImagePath(), 0);
         this.media = media;
+    }
+
+    public Media getMedia() {
+        return media;
     }
 
     @Override

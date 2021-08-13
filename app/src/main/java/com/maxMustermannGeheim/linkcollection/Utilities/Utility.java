@@ -736,12 +736,12 @@ public class Utility {
         return getWatchLaterList().stream().map(ParentClass::getUuid).collect(Collectors.toList());
     }
 
-    public static CustomList<Video> getWatchLaterList() {
+    public static com.finn.androidUtilities.CustomList<Video> getWatchLaterList() {
         if (!Database.isReady())
-            return new CustomList<>();
+            return new com.finn.androidUtilities.CustomList<>();
         Database database = Database.getInstance();
 
-        return database.videoMap.values().stream().filter(Video::isWatchLater).collect(Collectors.toCollection(CustomList::new));
+        return database.videoMap.values().stream().filter(Video::isWatchLater).collect(Collectors.toCollection(com.finn.androidUtilities.CustomList::new));
     }
     /**  <------------------------- watchLater -------------------------  */
 
@@ -1954,14 +1954,19 @@ public class Utility {
     /**  <------------------------- EditItem -------------------------  */
 
     public static ParentClass getObjectFromDatabase(CategoriesActivity.CATEGORIES category, String uuid) {
-        return getMapFromDatabase(category).get(uuid);
+        switch (category) {
+            case MEDIA_CATEGORY:
+                return ParentClass_Tree.findObjectById(category, uuid);
+            default:
+                return getMapFromDatabase(category).get(uuid);
+        }
     }
 
     public static Map<String, ? extends ParentClass> getMapFromDatabase(CategoriesActivity.CATEGORIES category) {
         Database database = Database.getInstance();
         switch (category) {
-//            case VIDEO:
-//                return database.videoMap;
+            case VIDEO:
+                return database.videoMap;
             case DARSTELLER:
                 return database.darstellerMap;
             case STUDIOS:
@@ -1988,6 +1993,15 @@ public class Utility {
                 return database.mediaCategoryMap;
         }
         return null;
+    }
+
+    public static ParentClass findObjectByName(CategoriesActivity.CATEGORIES category, String name) {
+        switch (category) {
+            case MEDIA_CATEGORY:
+                return ParentClass_Tree.findObjectByName(category, name);
+            default:
+                return getMapFromDatabase(category).values().stream().filter(parentClass -> parentClass.getName().equals(name)).findFirst().orElse(null);
+        }
     }
 
     public static class Triple<A, B, C> {
@@ -3132,6 +3146,15 @@ public class Utility {
         }
         return returnList;
     }
+
+    public static <T, V> void reflectionSet(T t, String fieldName, V value) {
+        try {
+            Field field = t.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            field.set(t, value);
+        } catch (NoSuchFieldException | IllegalAccessException ignored) {
+        }
+    }
     /**  <------------------------- Reflections -------------------------  */
 
 
@@ -3802,7 +3825,7 @@ public class Utility {
                 try {
                     if (response.has("production_companies")) {
                         JSONArray companies = response.getJSONArray("production_companies");
-                        CustomList<ParentClass_Tmdb> tempStudioList = new CustomList<>();
+                        com.finn.androidUtilities.CustomList<ParentClass_Tmdb> tempStudioList = new com.finn.androidUtilities.CustomList<>();
 
                         for (int i = 0; i < companies.length(); i++) {
                             JSONObject object = companies.getJSONObject(i);
@@ -3855,7 +3878,7 @@ public class Utility {
 
                 try {
                     JSONArray actors = response.getJSONObject("credits").getJSONArray("cast");
-                    CustomList<ParentClass_Tmdb> tempCastList = new CustomList<>();
+                    com.finn.androidUtilities.CustomList<ParentClass_Tmdb> tempCastList = new com.finn.androidUtilities.CustomList<>();
 
                     if (actors.length() != 0) {
                         for (int i = 0; i < actors.length(); i++) {

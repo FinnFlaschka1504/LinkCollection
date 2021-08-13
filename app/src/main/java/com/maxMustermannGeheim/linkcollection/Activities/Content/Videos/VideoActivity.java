@@ -77,7 +77,7 @@ import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAutoCompleteAdapter;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.ImageAdapterItem;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
+import com.finn.androidUtilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -787,13 +787,6 @@ public class VideoActivity extends AppCompatActivity {
                     .addCriteria(videoAdvancedQueryHelper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, String>(ADVANCED_SEARCH_CRITERIA_COLLECTION, "[^]]+?")
                             .setParser(sub -> sub)
                             .setBuildPredicate(sub -> video -> Utility.containedInCollection(sub, video.getUuid(), true)));
-//                    .addCriteria_ParentClass("c", CategoriesActivity.CATEGORIES.COLLECTION, Video::getGenreList);
-
-//            videos_search.setQuery(new Helpers.SpannableStringHelper().appendColor("{[da:Leslie Nielsen]}", Color.RED).get(), false); //[r:4.5-5] [l:120-] [d:10d] [d:15.4.00-1.1.2020]
-
-//            Chip chip = new Chip(this);
-//            chip.setText("Test");
-//            chip.setChipIcon(getDrawable(R.drawable.ic_show_as_grid));
 
             textListener = new SearchView.OnQueryTextListener() {
                 @Override
@@ -888,25 +881,6 @@ public class VideoActivity extends AppCompatActivity {
 
             CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
             if (extraSearchCategory != null) {
-//                if (!extraSearchCategory.equals(CategoriesActivity.CATEGORIES.VIDEO)) {
-//                    filterTypeSet.clear();
-//
-//                    switch (extraSearchCategory) {
-//                        case DARSTELLER:
-//                            filterTypeSet.add(FILTER_TYPE.ACTOR);
-//                            break;
-//                        case GENRE:
-//                            filterTypeSet.add(FILTER_TYPE.GENRE);
-//                            break;
-//                        case STUDIOS:
-//                            filterTypeSet.add(FILTER_TYPE.STUDIO);
-//                            break;
-//                        case COLLECTION:
-//                            filterTypeSet.add(FILTER_TYPE.COLLECTION);
-//                            break;
-//                    }
-//                }
-
                 String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
                 if (extraSearch != null) {
                     if (extraSearch.equals(SEEN_SEARCH))
@@ -916,28 +890,7 @@ public class VideoActivity extends AppCompatActivity {
                     else if (extraSearch.equals(UPCOMING_SEARCH))
                         mode = MODE.UPCOMING;
                     else {
-                        if (CustomUtility.boolOr(extraSearchCategory, CategoriesActivity.CATEGORIES.DARSTELLER, CategoriesActivity.CATEGORIES.GENRE, CategoriesActivity.CATEGORIES.STUDIOS, CategoriesActivity.CATEGORIES.COLLECTION)) {
-                            String key;
-                            switch (extraSearchCategory) {
-                                case DARSTELLER:
-                                    key = ADVANCED_SEARCH_CRITERIA_ACTOR;
-                                    break;
-                                case GENRE:
-                                    key = ADVANCED_SEARCH_CRITERIA_GENRE;
-                                    break;
-                                case STUDIOS:
-                                    filterTypeSet.add(FILTER_TYPE.STUDIO);
-                                    key = ADVANCED_SEARCH_CRITERIA_STUDIO;
-                                    break;
-                                case COLLECTION:
-                                    key = ADVANCED_SEARCH_CRITERIA_COLLECTION;
-                                    break;
-                                default:
-                                    key = "FEHLER";
-                                    break;
-                            }
-                            videos_search.setQuery(String.format(Locale.getDefault(), "{[%s:%s]}", key, extraSearch), false);
-                        } else {
+                        if (!advancedQueryHelper.wrapExtraSearch(extraSearchCategory, extraSearch)) {
                             videos_search.setQuery(extraSearch, false);
                             if (extraSearch.matches("\\w*?_[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}"))
                                 allVideoList.stream().filter(video -> video.getUuid().equals(extraSearch)).findFirst().ifPresent(video1 -> detailDialog = showDetailDialog(video1));
@@ -970,7 +923,7 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     private List<Video> filterList() {
-        filteredVideoList = new CustomList<>(allVideoList);
+        filteredVideoList = new com.finn.androidUtilities.CustomList<>(allVideoList);
 //        if (true)
 //            return filterdVideoList;
         if (mode.equals(MODE.SEEN)) {
@@ -1362,7 +1315,7 @@ public class VideoActivity extends AppCompatActivity {
                     Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
                     SpannableStringBuilder viewsText = helper.quickItalic("Keine Ansichten");
                     if (views[0] > 0) {
-                        Date lastWatched = CustomList.cast(video.getDateList()).getBiggest();
+                        Date lastWatched = new CustomList<>(video.getDateList()).getBiggest();
                         viewsText = helper.append(String.valueOf(views[0])).append(
                                 String.format(Locale.getDefault(), "   (%s – %dd)",
                                         new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(lastWatched),
@@ -1661,11 +1614,11 @@ public class VideoActivity extends AppCompatActivity {
                                     ImageView selectPrevious = view1.findViewById(R.id.dialog_editThumbnail_select_previous);
                                     ImageView selectNext = view1.findViewById(R.id.dialog_editThumbnail_select_next);
                                     selectPrevious.setOnClickListener(v1 -> {
-                                        currentResult[0] = resultList.previous(currentResult[0]);
+                                        currentResult[0] = resultList.previous(currentResult[0], true);
                                         customDialog1.reloadView();
                                     });
                                     selectNext.setOnClickListener(v1 -> {
-                                        currentResult[0] = resultList.next(currentResult[0]);
+                                        currentResult[0] = resultList.next(currentResult[0], true);
                                         customDialog1.reloadView();
                                     });
 
@@ -3266,13 +3219,8 @@ public class VideoActivity extends AppCompatActivity {
             return;
         }
 
-        if (Utility.stringExists(videos_search.getQuery().toString())) {//&& !videos_search.getQuery().toString().matches(CategoriesActivity.uuidRegex) && Utility.isNullReturnOrElse(getCallingActivity(), true, componentName -> !componentName.getClassName().equals(CategoriesActivity.class.getName()))) {
-            String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
-            if (!CustomUtility.stringExists(extraSearch) || !advancedQueryHelper.istExtraSearch(extraSearch)) {
-                videos_search.setQuery("", false);
-                return;
-            }
-        }
+        if (advancedQueryHelper.handleBackPress(this))
+            return;
 
         super.onBackPressed();
     }

@@ -6,6 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+
     <com.veinhorn.scrollgalleryview.HackyViewPager
         android:id="@+id/viewPager"
         android:layout_width="match_parent"
@@ -20,6 +21,23 @@
         android:layout_marginBottom="15dp"
         android:textColor="@android:color/white" />
 
+    <FrameLayout
+        android:id="@+id/scrollGalleryView_edit"
+        android:layout_width="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="45dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/round_background"
+        android:backgroundTint="#8B3C3C3C"
+        android:clickable="true"
+        android:padding="7dp"
+        android:layout_height="wrap_content">
+        <ImageView
+            android:layout_width="19dp"
+            android:layout_height="19dp"
+            android:tint="#FFFFFF"
+            app:srcCompat="@drawable/ic_edit" />
+    </FrameLayout>
     <LinearLayout
         android:id="@+id/customImageDescription"
         android:layout_width="wrap_content"
@@ -29,17 +47,6 @@
         android:layout_marginStart="16dp"
         android:layout_marginBottom="95dp"
         android:orientation="vertical" />
-<!--    <TextView-->
-<!--        android:id="@+id/customImageDescription"-->
-<!--        style="@style/TextWithShadow"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:layout_alignParentBottom="true"-->
-<!--        android:layout_gravity="bottom"-->
-<!--        android:layout_marginStart="16dp"-->
-<!--        android:layout_marginBottom="95dp"-->
-<!--        android:text="15.04.2000\nFinn\nGeburtstag"-->
-<!--        android:textStyle="bold" />-->
 
     <HorizontalScrollView
         android:id="@+id/thumbnails_scroll_view"

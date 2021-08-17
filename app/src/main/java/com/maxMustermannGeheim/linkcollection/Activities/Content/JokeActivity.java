@@ -17,6 +17,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomRecycler;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
@@ -24,10 +25,11 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
+import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.finn.androidUtilities.CustomDialog;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -44,6 +46,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class JokeActivity extends AppCompatActivity {
+    private final String ADVANCED_SEARCH_CRITERIA_CATEGORY = "c";
 
     enum SORT_TYPE{
         NAME, RATING, LATEST
@@ -86,6 +89,7 @@ public class JokeActivity extends AppCompatActivity {
     private CustomDialog detailDialog;
     private boolean isDialog;
     private Runnable setToolbarTitle;
+    private Helpers.AdvancedQueryHelper<Joke> advancedQueryHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -121,6 +125,15 @@ public class JokeActivity extends AppCompatActivity {
             setToolbarTitle = Utility.applyExpendableToolbar_recycler(this, findViewById(R.id.recycler), toolbar, appBarLayout, collapsingToolbarLayout, noItem, toolbar.getTitle().toString());
 
             joke_search = findViewById(R.id.search);
+            advancedQueryHelper = new Helpers.AdvancedQueryHelper<Joke>(this, joke_search)
+                    .setRestFilter((restQuery, jokeList) -> {
+                        if (searchQuery.contains("|"))
+                            jokeList.filterOr(searchQuery.split("\\|"), (joke, s) -> Utility.containedInJoke(s.trim(), joke, filterTypeSet), true);
+                        else
+                            jokeList.filterAnd(searchQuery.split("&"), (joke, s) -> Utility.containedInJoke(s.trim(), joke, filterTypeSet), true);
+                    })
+                    .addCriteria_defaultName()
+                    .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_CATEGORY, CategoriesActivity.CATEGORIES.JOKE_CATEGORIES, Joke::getCategoryIdList);
 
             loadRecycler();
 
@@ -167,17 +180,9 @@ public class JokeActivity extends AppCompatActivity {
 //            });
             CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
             if (extraSearchCategory != null) {
-                filterTypeSet.clear();
-
-                switch (extraSearchCategory) {
-                    case JOKE_CATEGORIES:
-                        filterTypeSet.add(FILTER_TYPE.CATEGORY);
-                        break;
-                }
-
                 String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
                 if (extraSearch != null) {
-                    joke_search.setQuery(extraSearch, true);
+                    advancedQueryHelper.wrapAndSetExtraSearch(extraSearchCategory, extraSearch);
                 }
             }
             setSearchHint();
@@ -279,10 +284,7 @@ public class JokeActivity extends AppCompatActivity {
         CustomList<Joke> customList = new CustomList<>(allJokeList);
 
         if (!searchQuery.isEmpty()) {
-            if (searchQuery.contains("|"))
-                customList.filterOr(searchQuery.split("\\|"), (joke, s) -> Utility.containedInJoke(s.trim(), joke, filterTypeSet), true);
-            else
-                customList.filterAnd(searchQuery.split("&"), (joke, s) -> Utility.containedInJoke(s.trim(), joke, filterTypeSet), true);
+            advancedQueryHelper.filterFull(customList);
         }
         return sortList(customList);
 
@@ -619,10 +621,8 @@ public class JokeActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (Utility.stringExists(joke_search.getQuery().toString()) && !Objects.equals(joke_search.getQuery().toString(), getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH))) {
-            joke_search.setQuery("", false);
+        if (advancedQueryHelper.handleBackPress(this))
             return;
-        }
 
         super.onBackPressed();
     }

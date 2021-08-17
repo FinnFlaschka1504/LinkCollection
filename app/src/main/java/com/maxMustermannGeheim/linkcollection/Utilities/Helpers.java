@@ -1637,16 +1637,25 @@ public class Helpers {
             return false;
         }
 
-        public boolean wrapExtraSearch(CategoriesActivity.CATEGORIES category, String extraSearch) {
-            Optional<SearchCriteria> optional = criteriaList.stream().filter(criteria -> Objects.equals(criteria.getCategory(), category)).findFirst();
-            if (optional.isPresent()) {
-                searchView.setQuery(String.format(Locale.getDefault(), "{[%s:%s]}", optional.get().key, extraSearch), false);
+        public boolean wrapAndSetExtraSearch(CategoriesActivity.CATEGORIES category, String extraSearch) {
+            String search = wrapExtraSearch(category, extraSearch);
+            if (CustomUtility.stringExists(search)) {
+                searchView.setQuery(search, false);
                 return true;
             }
             return false;
         }
 
-        public boolean hasAdvancedSearch() {
+        public String wrapExtraSearch(CategoriesActivity.CATEGORIES category, String extraSearch) {
+            Optional<SearchCriteria> optional = criteriaList.stream().filter(criteria -> Objects.equals(criteria.getCategory(), category)).findFirst();
+            if (optional.isPresent()) {
+                return String.format(Locale.getDefault(), "{[%s:%s]}", optional.get().key, extraSearch);
+            }
+            return "";
+        }
+
+
+            public boolean hasAdvancedSearch() {
             return criteriaList.stream().anyMatch(SearchCriteria::has);
         }
 

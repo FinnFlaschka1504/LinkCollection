@@ -34,6 +34,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomUtility;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
@@ -47,7 +48,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.Owe.Person;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.finn.androidUtilities.CustomDialog;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -68,6 +68,7 @@ import java.util.stream.Collectors;
 public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDialogCallback {
     public static final String EXTRA_OWN_OR_OTHER = "EXTRA_OWN_OR_OTHER";
     public static final String EXTRA_OPEN = "EXTRA_OPEN";
+    private final String ADVANCED_SEARCH_CRITERIA_PERSON = "p";
     private static final int CALCULATOR_REQUESTCODE_AMOUNT = 1;
     CustomDialog sourcesDialog;
 
@@ -113,6 +114,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
     private CustomDialog detailDialog;
     private boolean fireSearch;
     private Runnable setToolbarTitle;
+    private Helpers.AdvancedQueryHelper<Owe> advancedQueryHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -125,41 +127,6 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
 
         Settings.startSettings_ifNeeded(this);
         mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
-
-        CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
-        if (extraSearchCategory != null) {
-            filterTypeSet.remove(FILTER_TYPE.NAME);
-            filterTypeSet.remove(FILTER_TYPE.DESCRIPTION);
-
-            if (extraSearchCategory == CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES) {
-                filterTypeSet.add(FILTER_TYPE.PERSON);
-            }
-
-            String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
-            if (extraSearch != null) {
-                fireSearch = true;
-                searchQuery = extraSearch;
-            }
-        }
-        Owe.OWN_OR_OTHER ownOrOther = (Owe.OWN_OR_OTHER) getIntent().getSerializableExtra(EXTRA_OWN_OR_OTHER);
-        if (ownOrOther != null) {
-            fireSearch = true;
-            switch (ownOrOther) {
-                case OWN:
-                    filterTypeSet.remove(FILTER_TYPE.OTHER);
-                    break;
-                case OTHER:
-                    filterTypeSet.remove(FILTER_TYPE.OWN);
-                    break;
-            }
-        }
-        Boolean open = (Boolean) getIntent().getSerializableExtra(EXTRA_OPEN);
-        if (open != null) {
-            if (open)
-                filterTypeSet.remove(FILTER_TYPE.CLOSED);
-            else
-                filterTypeSet.remove(FILTER_TYPE.OPEN);
-        }
 
 
         loadDatabase();
@@ -179,6 +146,45 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
             setToolbarTitle = Utility.applyExpendableToolbar_recycler(this, findViewById(R.id.recycler), toolbar, appBarLayout, collapsingToolbarLayout, noItem, toolbar.getTitle().toString());
 
             owe_search = findViewById(R.id.search);
+            advancedQueryHelper = new Helpers.AdvancedQueryHelper<Owe>(this, owe_search)
+                    .setRestFilter((restQuery, oweList) -> {
+                        if (searchQuery.contains("|"))
+                            oweList.filterOr(searchQuery.split("\\|"), (owe, s) -> Utility.containedInOwe(s.trim(), owe, filterTypeSet), true);
+                        else
+                            oweList.filterAnd(searchQuery.split("&"), (owe, s) -> Utility.containedInOwe(s.trim(), owe, filterTypeSet), true);
+                    })
+                    .addCriteria_defaultName()
+                    .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_PERSON, CategoriesActivity.CATEGORIES.PERSON, owe -> owe.getItemList().stream().map(Owe.Item::getPersonId).collect(Collectors.toList()));
+
+            CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
+            if (extraSearchCategory != null) {
+
+                String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
+                if (extraSearch != null) {
+                    fireSearch = true;
+                    searchQuery = advancedQueryHelper.wrapExtraSearch(extraSearchCategory, extraSearch);
+                }
+            }
+            Owe.OWN_OR_OTHER ownOrOther = (Owe.OWN_OR_OTHER) getIntent().getSerializableExtra(EXTRA_OWN_OR_OTHER);
+            if (ownOrOther != null) {
+                fireSearch = true;
+                switch (ownOrOther) {
+                    case OWN:
+                        filterTypeSet.remove(FILTER_TYPE.OTHER);
+                        break;
+                    case OTHER:
+                        filterTypeSet.remove(FILTER_TYPE.OWN);
+                        break;
+                }
+            }
+            Boolean open = (Boolean) getIntent().getSerializableExtra(EXTRA_OPEN);
+            if (open != null) {
+                if (open)
+                    filterTypeSet.remove(FILTER_TYPE.CLOSED);
+                else
+                    filterTypeSet.remove(FILTER_TYPE.OPEN);
+            }
+
 
             loadRecycler();
 
@@ -320,11 +326,10 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
             return true;
         }, true);
 
+        // ToDo: Auch in Advances Search aufnehmen
+
         if (!searchQuery.isEmpty()) {
-            if (searchQuery.contains("|"))
-                customList.filterOr(searchQuery.split("\\|"), (owe, s) -> Utility.containedInOwe(s.trim(), owe, filterTypeSet), true);
-            else
-                customList.filterAnd(searchQuery.split("&"), (owe, s) -> Utility.containedInOwe(s.trim(), owe, filterTypeSet), true);
+            advancedQueryHelper.filterFull(customList);
         }
         return sortList(customList);
     }
@@ -1160,10 +1165,8 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
 
     @Override
     public void onBackPressed() {
-        if (Utility.stringExists(owe_search.getQuery().toString()) && !Objects.equals(owe_search.getQuery().toString(), getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH))) {
-            owe_search.setQuery("", false);
+        if (advancedQueryHelper.handleBackPress(this))
             return;
-        }
 
         super.onBackPressed();
     }

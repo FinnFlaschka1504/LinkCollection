@@ -58,7 +58,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
-import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAutoCompleteAdapter;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.ImageAdapterItem;
@@ -392,7 +391,7 @@ public class ShowActivity extends AppCompatActivity {
                 String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
                 if (extraSearch != null) {
                     if (extraSearchCategory == CategoriesActivity.CATEGORIES.SHOW_GENRES)
-                        advancedQueryHelper.wrapExtraSearch(extraSearchCategory, extraSearch);
+                        advancedQueryHelper.wrapAndSetExtraSearch(extraSearchCategory, extraSearch);
                     else
                         shows_search.setQuery(extraSearch, true);
                 }

@@ -33,6 +33,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomRecycler;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
@@ -44,7 +45,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -65,6 +65,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class KnowledgeActivity extends AppCompatActivity {
+    private final String ADVANCED_SEARCH_CRITERIA_CATEGORY = "c";
 
 
     enum SORT_TYPE {
@@ -107,6 +108,7 @@ public class KnowledgeActivity extends AppCompatActivity {
     private CustomDialog detailDialog;
     private boolean isDialog;
     private Runnable setToolbarTitle;
+    private Helpers.AdvancedQueryHelper<Knowledge> advancedQueryHelper;
 
 
     @Override
@@ -127,21 +129,6 @@ public class KnowledgeActivity extends AppCompatActivity {
 
         loadDatabase();
 
-        CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
-        if (extraSearchCategory != null) {
-            filterTypeSet.clear();
-
-            switch (extraSearchCategory) {
-                case KNOWLEDGE_CATEGORIES:
-                    filterTypeSet.add(FILTER_TYPE.CATEGORY);
-                    break;
-            }
-
-            String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
-            if (extraSearch != null) {
-                knowledge_search.setQuery(extraSearch, true);
-            }
-        }
     }
 
     private void loadDatabase() {
@@ -158,6 +145,16 @@ public class KnowledgeActivity extends AppCompatActivity {
             setToolbarTitle = Utility.applyExpendableToolbar_recycler(this, findViewById(R.id.recycler), toolbar, appBarLayout, collapsingToolbarLayout, noItem, toolbar.getTitle().toString());
 
             knowledge_search = findViewById(R.id.search);
+            advancedQueryHelper = new Helpers.AdvancedQueryHelper<Knowledge>(this, knowledge_search)
+                    .setRestFilter((restQuery, knowledgeList) -> {
+                        if (searchQuery.contains("|"))
+                            knowledgeList.filterOr(searchQuery.split("\\|"), (knowledge, s) -> Utility.containedInKnowledge(s.trim(), knowledge, filterTypeSet), true);
+                        else
+                            knowledgeList.filterAnd(searchQuery.split("&"), (knowledge, s) -> Utility.containedInKnowledge(s.trim(), knowledge, filterTypeSet), true);
+                    })
+                    .addCriteria_defaultName()
+                    .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_CATEGORY, CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES, Knowledge::getCategoryIdList);
+
 
             loadRecycler();
 
@@ -240,18 +237,10 @@ public class KnowledgeActivity extends AppCompatActivity {
 
             CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
             if (extraSearchCategory != null) {
-                filterTypeSet.clear();
-
-                switch (extraSearchCategory) {
-                    case KNOWLEDGE_CATEGORIES:
-                        filterTypeSet.add(FILTER_TYPE.CATEGORY);
-                        break;
-                }
 
                 String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
-                if (extraSearch != null) {
-                    knowledge_search.setQuery(extraSearch, true);
-                }
+                if (extraSearch != null)
+                    advancedQueryHelper.wrapAndSetExtraSearch(extraSearchCategory, extraSearch);
             }
             setSearchHint();
 
@@ -356,10 +345,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         CustomList<Knowledge> customList = new CustomList<>(allKnowledgeList);
 
         if (!searchQuery.isEmpty()) {
-            if (searchQuery.contains("|"))
-                customList.filterOr(searchQuery.split("\\|"), (knowledge, s) -> Utility.containedInKnowledge(s.trim(), knowledge, filterTypeSet), true);
-            else
-                customList.filterAnd(searchQuery.split("&"), (knowledge, s) -> Utility.containedInKnowledge(s.trim(), knowledge, filterTypeSet), true);
+            advancedQueryHelper.filterFull(customList);
         }
         return sortList(customList);
     }
@@ -1508,10 +1494,8 @@ public class KnowledgeActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (Utility.stringExists(knowledge_search.getQuery().toString()) && !Objects.equals(knowledge_search.getQuery().toString(), getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH))) {
-            knowledge_search.setQuery("", false);
+        if (advancedQueryHelper.handleBackPress(this))
             return;
-        }
 
         super.onBackPressed();
     }

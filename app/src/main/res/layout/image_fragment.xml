@@ -18,7 +18,7 @@
         android:id="@+id/imageFragment_video"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_gravity="center_vertical"
+        android:layout_gravity="center|center_vertical"
         android:visibility="gone"
         tools:layout_height="250dp"
         tools:visibility="visible" />

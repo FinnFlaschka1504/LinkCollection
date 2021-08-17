@@ -28,7 +28,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.google.common.hash.Hashing;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
-import com.maxMustermannGeheim.linkcollection.Activities.Content.MediaActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.Media.MediaActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.CollectionActivity;

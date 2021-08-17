@@ -7,6 +7,7 @@ import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -64,6 +65,7 @@ import androidx.appcompat.widget.AppCompatImageButton;
 import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.widget.NestedScrollView;
+import androidx.lifecycle.Lifecycle;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
@@ -96,7 +98,7 @@ import com.google.gson.GsonBuilder;
 import com.innovattic.rangeseekbar.RangeSeekBar;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
-import com.maxMustermannGeheim.linkcollection.Activities.Content.MediaActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.Media.MediaActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.CollectionActivity;
@@ -175,7 +177,8 @@ public class Utility {
         if (isOnline()) {
             return true;
         } else {
-            Toast.makeText(context, "Keine Internetverbindung", Toast.LENGTH_SHORT).show();
+            if (isActivityInForeground((AppCompatActivity) context))
+                Toast.makeText(context, "Keine Internetverbindung", Toast.LENGTH_SHORT).show();
             return false;
         }
     }
@@ -287,6 +290,10 @@ public class Utility {
         AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, mPendingIntent);
         System.exit(0);
+    }
+
+    public static boolean isActivityInForeground(AppCompatActivity activity){
+        return activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED);
     }
 
     public static String hash(String s) {
@@ -1386,6 +1393,10 @@ public class Utility {
 
     public static final String imdbPattern_full = "^tt\\d{7,8}$";
     public static final String imdbPattern = "tt\\d{7,8}";
+
+    public static boolean isPortrait(AppCompatActivity activity) {
+        return activity.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
+    }
     /**  <------------------------- Checks -------------------------  */
 
 

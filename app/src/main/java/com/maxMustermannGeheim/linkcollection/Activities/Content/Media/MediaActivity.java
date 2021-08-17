@@ -1,13 +1,15 @@
-package com.maxMustermannGeheim.linkcollection.Activities.Content;
+package com.maxMustermannGeheim.linkcollection.Activities.Content.Media;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.content.res.ColorStateList;
+import android.content.res.Configuration;
+import android.database.ContentObserver;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.media.MediaPlayer;
-import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -38,6 +40,7 @@ import android.widget.VideoView;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
@@ -51,7 +54,6 @@ import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
-import com.google.firebase.database.Transaction;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
@@ -60,8 +62,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaCategory;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomPopupWindow;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomScrollGallary.CustomGlideImageLoader;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomScrollGallary.CustomVideoLoader;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -85,7 +85,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
@@ -138,6 +137,7 @@ public class MediaActivity extends AppCompatActivity {
     private Helpers.AdvancedQueryHelper<MultiSelectHelper.Selectable<Media>> advancedQueryHelper;
     private Utility.OnSwipeTouchListener onSwipeTouchListener;
     private boolean scrollGalleryShown;
+    private CustomUtility.Triple<Integer, Integer, Integer> recyclerMetrics;
 
     private TextView elementCount;
     private SearchView media_search;
@@ -223,6 +223,7 @@ public class MediaActivity extends AppCompatActivity {
             setToolbarTitle = Utility.applyExpendableToolbar_recycler(this, findViewById(R.id.recycler), toolbar, appBarLayout, collapsingToolbarLayout, noItem, plural);
 
             media_search = findViewById(R.id.search);
+            removeFocusFromSearch();
 
             advancedQueryHelper = new Helpers.AdvancedQueryHelper<MultiSelectHelper.Selectable<Media>>(this, media_search)
                     .setRestFilter((searchQuery, selectableMediaList) -> {
@@ -241,6 +242,7 @@ public class MediaActivity extends AppCompatActivity {
             textListener = new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String s) {
+                    removeFocusFromSearch();
                     this.onQueryTextChange(s);
                     return true;
                 }
@@ -306,7 +308,7 @@ public class MediaActivity extends AppCompatActivity {
 
                 String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
                 if (extraSearch != null) {
-                    if (!advancedQueryHelper.wrapExtraSearch(extraSearchCategory, extraSearch))
+                    if (!advancedQueryHelper.wrapAndSetExtraSearch(extraSearchCategory, extraSearch))
                         media_search.setQuery(extraSearch, true);
                 }
             }
@@ -417,7 +419,6 @@ public class MediaActivity extends AppCompatActivity {
             return mediaRecycler.getObjectList().get(i);
         }
     }
-
 
     static class MultiSelectHelper<T> {
         CustomRecycler<Selectable<T>> customRecycler;
@@ -589,17 +590,24 @@ public class MediaActivity extends AppCompatActivity {
         }
     }
 
-    private void loadRecycler() {
-        int width = Utility.getScreenSize(this).first;
-        int columnCount = 3;
+    private void setRecyclerMetrics() {
+        boolean isPortrait = Utility.isPortrait(this);
+        int width = Utility.getScreenSize(this).first - (isPortrait ? 0 : 100);
+        int columnCount = isPortrait ? 3 : 5;
         int sizePx = width / columnCount;
         int sizeDp = CustomUtility.pxToDp(sizePx);
+        recyclerMetrics = CustomUtility.Triple.create(columnCount, sizePx, sizeDp);
+    }
+
+    private void loadRecycler() {
+        RecyclerView recyclerView = findViewById(R.id.recycler);
+
+        setRecyclerMetrics();
 
         DragSelectTouchListener dragSelectTouchListener = DragSelectTouchListener.Companion.create(this, new MyDragSelectReceiver(), null);
         selectHelper = new MultiSelectHelper<>(this);
         selectHelper.dragSelectTouchListener = dragSelectTouchListener;
 
-        RecyclerView recyclerView = findViewById(R.id.recycler);
         mediaRecycler = new CustomRecycler<MultiSelectHelper.Selectable<Media>>(this, recyclerView)
                 .addOptionalModifications(customRecycler -> selectHelper.customRecycler = customRecycler)
                 .setItemLayout(R.layout.list_item_image)
@@ -621,8 +629,8 @@ public class MediaActivity extends AppCompatActivity {
                     return filteredList;
                 })
                 .setSetItemContent((customRecycler, itemView, mediaSelectable) -> {
-                    itemView.setLayoutParams(new FrameLayout.LayoutParams(sizePx, sizePx));
-                    SelectMediaHelper.loadPathIntoImageView(mediaSelectable.content.getImagePath(), itemView, sizeDp);
+                    itemView.setLayoutParams(new FrameLayout.LayoutParams(recyclerMetrics.second, recyclerMetrics.second));
+                    SelectMediaHelper.loadPathIntoImageView(mediaSelectable.content.getImagePath(), itemView, recyclerMetrics.third);
 
                     itemView.findViewById(R.id.listItem_image_selected).setVisibility(mediaSelectable.isSelected() ? View.VISIBLE : View.GONE);
                     View fullScreenButton = itemView.findViewById(R.id.listItem_image_fullScreen);
@@ -640,7 +648,7 @@ public class MediaActivity extends AppCompatActivity {
                     selectHelper.startSelection(index);
                     customRecycler.getAdapter().notifyDataSetChanged();
                 })
-                .setRowOrColumnCount(columnCount)
+                .setRowOrColumnCount(recyclerMetrics.first)
                 .generate();
 
 
@@ -652,7 +660,7 @@ public class MediaActivity extends AppCompatActivity {
     }
 
     private int indexOfMedia(Media media) {
-        if (media ==null)
+        if (media == null)
             return -1;
         List<MultiSelectHelper.Selectable<Media>> list = mediaRecycler.getObjectList();
         Optional<MultiSelectHelper.Selectable<Media>> optional = list.stream().filter(mediaSelectable -> mediaSelectable.getContent() == media).findFirst();
@@ -660,7 +668,7 @@ public class MediaActivity extends AppCompatActivity {
             MultiSelectHelper.Selectable<Media> mediaSelectable = optional.get();
             return list.indexOf(mediaSelectable);
         }
-        return  -1;
+        return -1;
     }
     //  <------------------------- Recycler -------------------------
 
@@ -680,7 +688,7 @@ public class MediaActivity extends AppCompatActivity {
         CustomList<String> mediaCategoryIdList = CategoriesActivity.getCategoriesIntersection(newMedia, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY);
         CustomList<Media> subSelectionList = new CustomList<>();
 
-        String dialogTitle = "Mehrere " + plural + (isAdd ? " Hinzufügen" : " Bearbeiten");
+        String dialogTitle = (oldMedia != null && oldMedia.size() == 1 ? ("Ein " + singular) : ("Mehrere " + plural)) + (isAdd ? " Hinzufügen" : " Bearbeiten");
         return CustomDialog.Builder(this)
                 .setTitle(dialogTitle)
                 .setView(R.layout.dialog_edit_media)
@@ -1024,6 +1032,29 @@ public class MediaActivity extends AppCompatActivity {
                         });
             }
         });
+
+        View changeRotationButton = findViewById(R.id.scrollGalleryView_rotate);
+        applyChangeRotationButton(this, changeRotationButton);
+    }
+
+    public static void applyChangeRotationButton(AppCompatActivity activity, View changeRotationButton) {
+        Utility.GenericReturnOnlyInterface<Boolean> isAutoRotationOn = () -> android.provider.Settings.System.getInt(activity.getContentResolver(), android.provider.Settings.System.ACCELEROMETER_ROTATION, 0) == 1;
+        if (isAutoRotationOn.runGenericInterface())
+            changeRotationButton.setVisibility(View.GONE);
+        activity.getContentResolver().registerContentObserver(android.provider.Settings.System.getUriFor(android.provider.Settings.System.ACCELEROMETER_ROTATION),true,
+                new ContentObserver(new Handler(Looper.getMainLooper())) {
+                    @Override
+                    public void onChange(boolean selfChange) {
+                        changeRotationButton.setVisibility(isAutoRotationOn.runGenericInterface() ? View.GONE : View.VISIBLE);
+                        Toast.makeText(activity, "Change", Toast.LENGTH_SHORT).show();
+                    }
+                });
+        changeRotationButton.setOnClickListener(v -> {
+            if (Utility.isPortrait(activity)) {
+                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+            } else
+                activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        });
     }
 
     private void setCustomDescription(int index) {
@@ -1084,6 +1115,7 @@ public class MediaActivity extends AppCompatActivity {
             findViewById(R.id.thumbnails_scroll_view).setVisibility(View.VISIBLE);
             findViewById(R.id.customImageDescription).setVisibility(View.VISIBLE);
             findViewById(R.id.scrollGalleryView_edit).setVisibility(View.VISIBLE);
+            findViewById(R.id.scrollGalleryView_rotate).setVisibility(View.VISIBLE);
             Utility.reflectionSet(scrollGalleryView, "isThumbnailsHidden", false);
 //            try {
 //                Field field;
@@ -1101,7 +1133,6 @@ public class MediaActivity extends AppCompatActivity {
 
 
         LinearLayout thumbnailContainer = findViewById(R.id.thumbnails_container);
-        thumbnailContainer.setBackgroundColor(Color.argb(100, 0, 0, 0));
         HorizontalScrollView thumbnailScrollView = findViewById(R.id.thumbnails_scroll_view);
         thumbnailContainer.postDelayed(() -> {
             int[] thumbnailCoords = new int[2];
@@ -1148,6 +1179,7 @@ public class MediaActivity extends AppCompatActivity {
         TransitionManager.beginDelayedTransition((ViewGroup) view.getParent());
         view.setVisibility(visibility);
         activity.findViewById(R.id.scrollGalleryView_edit).setVisibility(visibility);
+        activity.findViewById(R.id.scrollGalleryView_rotate).setVisibility(visibility);
         if (parent != null && videoView.getVisibility() == View.VISIBLE)
             setVideoButtonVisibility.runGenericInterface(videoView);
     }
@@ -1271,16 +1303,20 @@ public class MediaActivity extends AppCompatActivity {
             if (checkAndRequestStoragePermission())
                 loadDatabase();
         } else if (requestCode == CustomVideoLoader.START_ACTIVITY_VIDEO_PLAYER) {
-            if (currentVideoPreview != null)
+            if (currentVideoPreview != null) {
                 currentVideoPreview.start();
+                currentVideoPreview.seekTo(Integer.parseInt(data.getExtras().getString(VideoPlayerActivity.EXTRA_TIME)));
+            }
         }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (currentVideoPreview != null)
+        if (currentVideoPreview != null) {
             currentVideoPreview.start();
+//            currentVideoPreview.seekTo(15000);
+        }
     }
 
     @Override
@@ -1301,6 +1337,15 @@ public class MediaActivity extends AppCompatActivity {
         if (scrollGalleryShown && onSwipeTouchListener != null)
             onSwipeTouchListener.onTouch(null, ev);
         return super.dispatchTouchEvent(ev);
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+
+        setRecyclerMetrics();
+        ((GridLayoutManager) mediaRecycler.getRecycler().getLayoutManager()).setSpanCount(recyclerMetrics.first);
+        reLoadRecycler();
     }
 }
 

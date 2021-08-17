@@ -889,7 +889,7 @@ public class VideoActivity extends AppCompatActivity {
                     else if (extraSearch.equals(UPCOMING_SEARCH))
                         mode = MODE.UPCOMING;
                     else {
-                        if (!advancedQueryHelper.wrapExtraSearch(extraSearchCategory, extraSearch)) {
+                        if (!advancedQueryHelper.wrapAndSetExtraSearch(extraSearchCategory, extraSearch)) {
                             videos_search.setQuery(extraSearch, false);
                             if (extraSearch.matches("\\w*?_[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}"))
                                 allVideoList.stream().filter(video -> video.getUuid().equals(extraSearch)).findFirst().ifPresent(video1 -> detailDialog = showDetailDialog(video1));

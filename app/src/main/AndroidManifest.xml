@@ -24,13 +24,19 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme.NoTitle"
         tools:ignore="GoogleAppIndexingWarning">
+        <activity android:name=".Activities.Content.Media.VideoPlayerActivity"
+            android:configChanges="orientation|screenSize"
+            android:theme="@style/AppTheme.NoTitle"
+            />
         <activity
-            android:name=".Activities.Content.MediaActivity"
+            android:name=".Activities.Content.Media.MediaActivity"
+            android:configChanges="orientation|screenSize"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:theme="@style/AppTheme.NoTitle"/>
+            android:theme="@style/AppTheme.NoTitle" />
         <activity
             android:name=".Activities.Main.DialogActivity"
             android:launchMode="singleTop"
+            android:configChanges="orientation|screenSize"
             android:noHistory="true"
             android:theme="@style/DialogActivityTheme" />
         <activity
@@ -46,6 +52,7 @@
         <activity
             android:name=".Activities.Content.Videos.VideoActivity"
             android:label="@string/VideoActivity_label"
+            android:configChanges="orientation|screenSize"
             android:parentActivityName=".Activities.Main.MainActivity"
             android:theme="@style/DialogActivityTheme.NoTitle">
             <intent-filter
@@ -60,15 +67,18 @@
         </activity>
         <activity
             android:name=".Activities.Content.Videos.CollectionActivity"
+            android:configChanges="orientation|screenSize"
             android:parentActivityName=".Activities.Main.MainActivity" />
         <activity
             android:name=".Activities.Content.ShowActivity"
             android:parentActivityName=".Activities.Main.MainActivity"
+            android:configChanges="orientation|screenSize"
             android:theme="@style/AppTheme.NoTitle" />
         <activity
             android:name=".Activities.Content.KnowledgeActivity"
             android:label="Wissen"
             android:parentActivityName=".Activities.Main.MainActivity"
+            android:configChanges="orientation|screenSize"
             android:theme="@style/DialogActivityTheme.NoTitle">
             <intent-filter
                 android:icon="@drawable/ic_knowledge"
@@ -83,12 +93,14 @@
         <activity
             android:name=".Activities.Content.OweActivity"
             android:label="Schulden"
+            android:configChanges="orientation|screenSize"
             android:parentActivityName=".Activities.Main.MainActivity"
             android:theme="@style/AppTheme.NoTitle" />
         <activity
             android:name=".Activities.Content.JokeActivity"
             android:label="Witze"
             android:parentActivityName=".Activities.Main.MainActivity"
+            android:configChanges="orientation|screenSize"
             android:theme="@style/DialogActivityTheme.NoTitle" />
         <activity
             android:name=".Activities.Main.CategoriesActivity"
@@ -98,10 +110,12 @@
             android:name=".Activities.Settings"
             android:label="Einstellungen"
             android:parentActivityName=".Activities.Main.MainActivity"
+            android:configChanges="orientation|screenSize"
             android:theme="@style/AppTheme.NoTitle" />
         <activity
             android:name=".Utilities.ActivityResultHelper"
             android:label="Dummy"
+            android:configChanges="orientation|screenSize"
             android:theme="@style/DialogActivityTheme.NoTitle" />
 
         <provider

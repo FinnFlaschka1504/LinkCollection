@@ -26,7 +26,6 @@
         tools:ignore="GoogleAppIndexingWarning">
         <activity android:name=".Activities.Content.Media.VideoPlayerActivity"
             android:configChanges="orientation|screenSize"
-            android:theme="@style/AppTheme.NoTitle"
             />
         <activity
             android:name=".Activities.Content.Media.MediaActivity"

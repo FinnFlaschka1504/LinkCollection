@@ -90,7 +90,6 @@ import java.util.stream.Collectors;
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
 public class MediaActivity extends AppCompatActivity {
-    public static final String ADVANCED_SEARCH__PERSON = "ADVANCED_SEARCH__PERSON";
     private final String ADVANCED_SEARCH_CRITERIA__PERSON = "p";
     private final String ADVANCED_SEARCH_CRITERIA__CATEGORY = "c";
 
@@ -752,6 +751,8 @@ public class MediaActivity extends AppCompatActivity {
                     }
                 })
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> saveMultipleMedia(customDialog, oldMedia, newMedia, mediaPersonIdList, mediaCategoryIdList))
+                .addOnDialogShown(customDialog -> editDialog = customDialog)
+                .addOnDialogDismiss(customDialog -> editDialog = null)
                 .show();
     }
 
@@ -1024,11 +1025,20 @@ public class MediaActivity extends AppCompatActivity {
 
         findViewById(R.id.scrollGalleryView_edit).setOnClickListener(v -> {
             int index = indexOfMedia(getCurrentGalleryMedia());
-            CustomDialog customDialog = showEditMultipleDialog(new CustomList<>(mediaRecycler.getObjectList().get(index).getContent()));
+            List<MultiSelectHelper.Selectable<Media>> objectList = mediaRecycler.getObjectList();
+            int previousSize = objectList.size();
+            CustomDialog customDialog = showEditMultipleDialog(new CustomList<>(objectList.get(index).getContent()));
+            if (currentVideoPreview != null)
+                currentVideoPreview.pause();
             if (customDialog != null) {
                 customDialog
                         .addOnDialogDismiss(customDialog1 -> {
+                            int nowSize = objectList.size();
+                            if (previousSize != nowSize)
+                                scrollGalleryView.removeMedia(index);
                             setCustomDescription(index);
+                            if (currentVideoPreview != null)
+                                currentVideoPreview.start();
                         });
             }
         });
@@ -1038,15 +1048,13 @@ public class MediaActivity extends AppCompatActivity {
     }
 
     public static void applyChangeRotationButton(AppCompatActivity activity, View changeRotationButton) {
-        Utility.GenericReturnOnlyInterface<Boolean> isAutoRotationOn = () -> android.provider.Settings.System.getInt(activity.getContentResolver(), android.provider.Settings.System.ACCELEROMETER_ROTATION, 0) == 1;
-        if (isAutoRotationOn.runGenericInterface())
+        if (isAutoRotationOn(activity))
             changeRotationButton.setVisibility(View.GONE);
         activity.getContentResolver().registerContentObserver(android.provider.Settings.System.getUriFor(android.provider.Settings.System.ACCELEROMETER_ROTATION),true,
                 new ContentObserver(new Handler(Looper.getMainLooper())) {
                     @Override
                     public void onChange(boolean selfChange) {
-                        changeRotationButton.setVisibility(isAutoRotationOn.runGenericInterface() ? View.GONE : View.VISIBLE);
-                        Toast.makeText(activity, "Change", Toast.LENGTH_SHORT).show();
+                        changeRotationButton.setVisibility(isAutoRotationOn(activity) ? View.GONE : View.VISIBLE);
                     }
                 });
         changeRotationButton.setOnClickListener(v -> {
@@ -1055,6 +1063,10 @@ public class MediaActivity extends AppCompatActivity {
             } else
                 activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         });
+    }
+
+    public static boolean isAutoRotationOn(AppCompatActivity activity) {
+        return android.provider.Settings.System.getInt(activity.getContentResolver(), android.provider.Settings.System.ACCELEROMETER_ROTATION, 0) == 1;
     }
 
     private void setCustomDescription(int index) {
@@ -1115,7 +1127,8 @@ public class MediaActivity extends AppCompatActivity {
             findViewById(R.id.thumbnails_scroll_view).setVisibility(View.VISIBLE);
             findViewById(R.id.customImageDescription).setVisibility(View.VISIBLE);
             findViewById(R.id.scrollGalleryView_edit).setVisibility(View.VISIBLE);
-            findViewById(R.id.scrollGalleryView_rotate).setVisibility(View.VISIBLE);
+            if (!isAutoRotationOn(this))
+                findViewById(R.id.scrollGalleryView_rotate).setVisibility(View.VISIBLE);
             Utility.reflectionSet(scrollGalleryView, "isThumbnailsHidden", false);
 //            try {
 //                Field field;
@@ -1179,7 +1192,8 @@ public class MediaActivity extends AppCompatActivity {
         TransitionManager.beginDelayedTransition((ViewGroup) view.getParent());
         view.setVisibility(visibility);
         activity.findViewById(R.id.scrollGalleryView_edit).setVisibility(visibility);
-        activity.findViewById(R.id.scrollGalleryView_rotate).setVisibility(visibility);
+        if (!isAutoRotationOn(activity))
+            activity.findViewById(R.id.scrollGalleryView_rotate).setVisibility(visibility);
         if (parent != null && videoView.getVisibility() == View.VISIBLE)
             setVideoButtonVisibility.runGenericInterface(videoView);
     }
@@ -1313,9 +1327,8 @@ public class MediaActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (currentVideoPreview != null) {
+        if (currentVideoPreview != null && editDialog == null) {
             currentVideoPreview.start();
-//            currentVideoPreview.seekTo(15000);
         }
     }
 

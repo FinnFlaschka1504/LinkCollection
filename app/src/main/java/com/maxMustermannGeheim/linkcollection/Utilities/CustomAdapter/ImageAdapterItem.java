@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 
 public class ImageAdapterItem {
     private String text;
+    private String alias;
     private Bitmap image;
     private String imagePath;
     private Object payload;
@@ -55,6 +56,15 @@ public class ImageAdapterItem {
 
     public ImageAdapterItem setPayload(Object payload) {
         this.payload = payload;
+        return this;
+    }
+
+    public String getAlias() {
+        return alias;
+    }
+
+    public ImageAdapterItem setAlias(String alias) {
+        this.alias = alias;
         return this;
     }
 }

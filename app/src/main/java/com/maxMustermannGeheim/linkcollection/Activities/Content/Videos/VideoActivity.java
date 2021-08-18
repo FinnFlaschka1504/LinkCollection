@@ -1242,7 +1242,7 @@ public class VideoActivity extends AppCompatActivity {
                 .setTitle(video.getName())
                 .setView(R.layout.dialog_detail_video)
                 .addOptionalModifications(customDialog -> {
-                    if (Utility.boolOr(Integer.parseInt(Settings.getSingleSetting(this, Settings.SETTING_VIDEO_SHOW_SEARCH)), 0, 1))
+                    if (Utility.boolOr(Integer.parseInt(Settings.getSingleSetting(this, Settings.SETTING_VIDEO_QUICK_SEARCH)), 0, 1))
                         customDialog
                                 .addButton(R.drawable.ic_search, customDialog1 -> showSearchDialog(video, null), false)
                                 .alignPreviousButtonsLeft();
@@ -1570,7 +1570,7 @@ public class VideoActivity extends AppCompatActivity {
                 .setTitle(video == null ? "Neu: " + singular : singular + " Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
                 .addOptionalModifications(customDialog -> {
-                    if (Utility.boolOr(Integer.parseInt(Settings.getSingleSetting(this, Settings.SETTING_VIDEO_SHOW_SEARCH)), 0, 2))
+                    if (Utility.boolOr(Integer.parseInt(Settings.getSingleSetting(this, Settings.SETTING_VIDEO_QUICK_SEARCH)), 0, 2))
                         customDialog
                                 .addButton(R.drawable.ic_search, customDialog1 -> showSearchDialog(editVideo[0], customDialog1), false)
                                 .alignPreviousButtonsLeft();
@@ -1584,6 +1584,7 @@ public class VideoActivity extends AppCompatActivity {
                     TextInputLayout dialog_editOrAddVideo_Title_layout = view.findViewById(R.id.dialog_editOrAddVideo_Title_layout);
                     TextInputLayout dialog_editOrAddVideo_Url_layout = view.findViewById(R.id.dialog_editOrAddVideo_url_layout);
 
+                    Boolean useTmdbSearch = Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_TMDB_SEARCH);
 
                     ImageView thumbnailButton = view.findViewById(R.id.dialog_editOrAddVideo_thumbnail_button);
                     thumbnailButton.setOnClickListener(v -> {
@@ -1755,7 +1756,7 @@ public class VideoActivity extends AppCompatActivity {
                                                 if (!value.isEmpty()) {
                                                     Toast.makeText(VideoActivity.this, value, Toast.LENGTH_SHORT).show();
                                                     dialog_editOrAddVideo_Title_layout.getEditText().setText(value);
-                                                    if (Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_AUTO_SEARCH))
+                                                    if (useTmdbSearch)
                                                         dialog_editOrAddVideo_Title_layout.getEditText().onEditorAction(Helpers.TextInputHelper.IME_ACTION.SEARCH.getCode());
                                                     customDialog1.dismiss();
                                                     parseTitleToDetails(video, editVideo, value);
@@ -1836,10 +1837,9 @@ public class VideoActivity extends AppCompatActivity {
                     });
 
                     CheckBox dialog_editOrAddVideo_watchLater = editDialog.findViewById(R.id.dialog_editOrAddVideo_watchLater);
-                    helper.defaultDialogValidation(editDialog).addValidator(dialog_editOrAddVideo_Title_layout, dialog_editOrAddVideo_Url_layout)
-                            .addActionListener(dialog_editOrAddVideo_Title_layout, (textInputHelper, textInputLayout, actionId, text) -> {
-                                apiSearchRequest(text, editDialog, editVideo[0]);
-                            }, com.finn.androidUtilities.Helpers.TextInputHelper.IME_ACTION.SEARCH)
+                    boolean warnEmptyUrl = Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_WARN_EMPTY_URL);
+                    helper.defaultDialogValidation(editDialog)
+                            .addValidator(dialog_editOrAddVideo_Title_layout, dialog_editOrAddVideo_Url_layout)
                             .setValidation(dialog_editOrAddVideo_Url_layout, (validator, text) -> {
                                 if (text.isEmpty() && (checked[0] || Utility.isUpcoming(editVideo[0].getRelease())))
                                     validator.setValid();
@@ -1851,10 +1851,19 @@ public class VideoActivity extends AppCompatActivity {
                                             validator.setValid();
                                     } else
                                         validator.setInvalid("Ungültige eingabe!");
-                                }
+                                } else if (!warnEmptyUrl)
+                                    validator.setValid();
                                 validator.asWhiteList();
-                            })
-                            .warnIfEmpty(dialog_editOrAddVideo_Url_layout);
+                            });
+                    if (warnEmptyUrl)
+                        helper.warnIfEmpty(dialog_editOrAddVideo_Url_layout);
+                    else
+                        helper.allowEmpty(dialog_editOrAddVideo_Url_layout);
+
+                    if (useTmdbSearch)
+                        helper.addActionListener(dialog_editOrAddVideo_Title_layout, (textInputHelper, textInputLayout, actionId, text) -> {
+                            apiSearchRequest(text, editDialog, editVideo[0]);
+                        }, com.finn.androidUtilities.Helpers.TextInputHelper.IME_ACTION.SEARCH);
 
 
                     dialog_editOrAddVideo_watchLater.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -2444,11 +2453,13 @@ public class VideoActivity extends AppCompatActivity {
 
                 CustomList<ImageAdapterItem> itemList = jsonObjectList.map(stringJSONObjectPair -> {
                     ImageAdapterItem adapterItem = new ImageAdapterItem(stringJSONObjectPair.first).setPayload(stringJSONObjectPair.second);
-                    if (stringJSONObjectPair.second.has("poster_path")) {
-                        try {
+                    try {
+                        if (stringJSONObjectPair.second.has("poster_path"))
                             adapterItem.setImagePath(stringJSONObjectPair.second.getString("poster_path"));
-                        } catch (JSONException ignored) {
-                        }
+                        if (stringJSONObjectPair.second.has("title"))
+                            adapterItem.setAlias(stringJSONObjectPair.second.getString("title"));
+
+                    } catch (JSONException ignored) {
                     }
                     return adapterItem;
                 });

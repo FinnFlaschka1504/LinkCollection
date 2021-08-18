@@ -3265,6 +3265,8 @@ public class Utility {
     // ---
 
     public static boolean containsIgnoreCase(String in, String query){
+        if (in == null || query == null)
+            return false;
         return in.toLowerCase().contains(query.toLowerCase());
     }
 

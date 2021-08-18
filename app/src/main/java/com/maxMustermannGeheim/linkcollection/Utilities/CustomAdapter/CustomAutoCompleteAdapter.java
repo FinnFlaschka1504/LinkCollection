@@ -55,7 +55,7 @@ public class CustomAutoCompleteAdapter extends ArrayAdapter<ImageAdapterItem> {
             textView.setText(Helpers.SpannableStringHelper.highlightText(searchQuery.toString(), item.getText()));
 
             if (imagesEnabled) {
-                if (CustomUtility.stringExists(item.getImagePath()))
+                if (!CustomUtility.stringExists(item.getImagePath()))
                     imageView.setVisibility(View.INVISIBLE);
                 else {
                     imageView.setVisibility(View.VISIBLE);
@@ -90,7 +90,13 @@ public class CustomAutoCompleteAdapter extends ArrayAdapter<ImageAdapterItem> {
                 suggestions.addAll(listFull);
             else {
                 String filterPattern = constraint.toString().toLowerCase().trim();
-                suggestions.addAll(listFull.stream().filter(imageAdapterItem -> imageAdapterItem.getText().toLowerCase().contains(filterPattern)).collect(Collectors.toList()));
+                suggestions.addAll(listFull.stream().filter(imageAdapterItem -> {
+                    if (imageAdapterItem.getText().toLowerCase().contains(filterPattern))
+                        return true;
+                    if (Utility.containsIgnoreCase(imageAdapterItem.getAlias(), filterPattern))
+                        return true;
+                    return false;
+                }).collect(Collectors.toList()));
             }
 
             results.values = suggestions;

@@ -133,6 +133,7 @@ public class JokeActivity extends AppCompatActivity {
                             jokeList.filterAnd(searchQuery.split("&"), (joke, s) -> Utility.containedInJoke(s.trim(), joke, filterTypeSet), true);
                     })
                     .addCriteria_defaultName()
+                    .enableColoration()
                     .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_CATEGORY, CategoriesActivity.CATEGORIES.JOKE_CATEGORIES, Joke::getCategoryIdList);
 
             loadRecycler();

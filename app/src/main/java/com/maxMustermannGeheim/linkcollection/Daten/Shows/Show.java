@@ -39,7 +39,7 @@ public class Show extends ParentClass {
     public static final String EMPTY_SEASON = "EMPTY_SEASON";
 
     public enum REQUEST_IMDB_ID_TYPE {
-        TMDB, TRAKT, SEASON, PREVIOUS;
+        TMDB, TRAKT, TVDB, SEASON, PREVIOUS;
 
         public static int indexOf(REQUEST_IMDB_ID_TYPE type) {
             return new com.finn.androidUtilities.CustomList<>(values()).indexOf(type);
@@ -564,6 +564,9 @@ public class Show extends ParentClass {
                         imdbId = s;
                         Utility.runRunnable(onFinished);
                     });
+                    break;
+                case TVDB:
+                    Toast.makeText(context, "Work in Progress", Toast.LENGTH_SHORT).show();
                     break;
                 case SEASON:
                     new Helpers.WebViewHelper(context, "https://www.imdb.com/title/" + show.getImdbId() + "/episodes?season=" + seasonNumber)

@@ -1303,7 +1303,7 @@ public class Utility {
 
 
     public static class OnSwipeTouchListener implements View.OnTouchListener {
-
+        private boolean isMultiTouch;
         private final GestureDetector gestureDetector;
 //        Runnable cancelTouch;
 
@@ -1319,7 +1319,10 @@ public class Utility {
 //                event.setAction(MotionEvent.ACTION_CANCEL);
 //                v.onTouchEvent(event);
 //            };
-            return gestureDetector.onTouchEvent(event);
+            if (event.getAction() == MotionEvent.ACTION_POINTER_2_DOWN) isMultiTouch = true;
+            boolean result = gestureDetector.onTouchEvent(event);
+            if (event.getAction() == MotionEvent.ACTION_UP) isMultiTouch = false;
+            return result;
         }
 
         private final class GestureListener extends GestureDetector.SimpleOnGestureListener {
@@ -1334,6 +1337,8 @@ public class Utility {
 
             @Override
             public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                if (isMultiTouch)
+                    return false;
                 boolean result = false;
                 try {
                     float diffY = e2.getRawY() - e1.getRawY();

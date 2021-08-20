@@ -58,6 +58,7 @@
     <string-array name="requestImdbIdType">
         <item>TMDB</item>
         <item>Trakt</item>
+        <item>TVDB</item>
         <item>Staffel</item>
         <item>Vorheriger</item>
     </string-array>

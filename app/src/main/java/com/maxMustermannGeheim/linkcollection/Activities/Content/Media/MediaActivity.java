@@ -40,6 +40,7 @@ import android.widget.VideoView;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
@@ -52,8 +53,10 @@ import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
+import com.github.chrisbanes.photoview.PhotoView;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
+import com.google.common.collect.ArrayListMultimap;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
@@ -206,8 +209,16 @@ public class MediaActivity extends AppCompatActivity {
             onSwipeTouchListener = new Utility.OnSwipeTouchListener(this) {
                 @Override
                 public boolean onSwipeBottom() {
-                    hideScrollGallery();
-                    return super.onSwipeBottom();
+                    View view = getCurrentViewFromViewPager(scrollGalleryView.getViewPager());
+                    if (view != null) {
+                        PhotoView photo = view.findViewById(R.id.photoView);
+                        float scale = photo.getScale();
+                        if (scale == 1)
+                            hideScrollGallery();
+                    } else
+                        hideScrollGallery();
+                    return false;
+//                    return super.onSwipeBottom();
                 }
             };
 
@@ -222,7 +233,7 @@ public class MediaActivity extends AppCompatActivity {
             setToolbarTitle = Utility.applyExpendableToolbar_recycler(this, findViewById(R.id.recycler), toolbar, appBarLayout, collapsingToolbarLayout, noItem, plural);
 
             media_search = findViewById(R.id.search);
-            removeFocusFromSearch();
+//            media_search.setQuery(new com.finn.androidUtilities.Helpers.SpannableStringHelper().appendColor("Test", Color.RED).appendBold(" Dick").appendItalic(" Schräg").get(), false);
 
             advancedQueryHelper = new Helpers.AdvancedQueryHelper<MultiSelectHelper.Selectable<Media>>(this, media_search)
                     .setRestFilter((searchQuery, selectableMediaList) -> {
@@ -233,6 +244,7 @@ public class MediaActivity extends AppCompatActivity {
                         }
                     })
                     .addCriteria_defaultName()
+                    .enableColoration()
                     .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA__PERSON, CategoriesActivity.CATEGORIES.MEDIA_PERSON, mediaSelectable -> mediaSelectable.getContent().getPersonIdList())
                     .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA__CATEGORY, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY, mediaSelectable -> mediaSelectable.getContent().getCategoryIdList());
 
@@ -249,48 +261,6 @@ public class MediaActivity extends AppCompatActivity {
                 @Override
                 public boolean onQueryTextChange(String s) {
                     searchQuery = s.trim();
-//                    if (!s.trim().equals("")) {
-//                        if (s.trim().equals(WATCH_LATER_SEARCH)) {
-//                            List<String> unableToFindList = new ArrayList<>();
-//                            for (String showUuid : database.watchLaterList) {
-//                                Show show = database.showMap.get(showUuid);
-//                                if (show == null)
-//                                    unableToFindList.add(showUuid);
-//                                else
-//                                    filterdShowList.add(show);
-//                            }
-//                            if (!unableToFindList.isEmpty()) {
-//                                CustomDialog.Builder(that)
-//                                        .setTitle("Problem beim Laden der Liste!")
-//                                        .setName((unableToFindList.size() == 1 ? "Ein " + singular + " konnte" : unableToFindList.size() + " " + plural + " konnten") + " nicht gefunden werden")
-//                                        .setObjectExtra(unableToFindList)
-//                                        .addButton("Ignorieren", null)
-//                                        .addButton("Entfernen", customDialog -> {
-//                                            database.watchLaterList.removeAll(((ArrayList<String>) customDialog.getObjectExtra()));
-//                                            Toast.makeText(that, "Entfernt", Toast.LENGTH_SHORT).show();
-//                                            Database.saveAll();
-//                                            setResult(RESULT_OK);
-//                                        })
-//                                        .show();
-//                            }
-//                            reLoadRecycler();
-//                            return true;
-//                        }
-////                        if (s.trim().equals(UPCOMING_SEARCH)) {
-////                            filterdShowList = allShowList.stream().filter(Show::isUpcoming).collect(Collectors.toList());
-////                            reLoadRecycler();
-////                            return true;
-////                        }
-//
-//                        for (String subQuery : s.split("\\|")) {
-//                            subQuery = subQuery.trim();
-//                            List<Show> subList = new ArrayList<>(filterdShowList);
-//                            for (Show show : subList) {
-//                                if (!Utility.containedInShow(subQuery, show, filterTypeSet))
-//                                    filterdShowList.remove(show);
-//                            }
-//                        }
-//                    }
                     reLoadRecycler();
                     return true;
                 }
@@ -299,7 +269,10 @@ public class MediaActivity extends AppCompatActivity {
 
 
             if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_SHORTCUT))
-                showEditMultipleDialog(null);
+                showEditMultipleDialog(null, false);
+
+            if (getIntent().getAction() != null && CustomUtility.boolOr(getIntent().getAction(), "android.intent.action.SEND" , "android.intent.action.SEND_MULTIPLE"))
+                handleIncomingShare();
 
 
             CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
@@ -334,55 +307,6 @@ public class MediaActivity extends AppCompatActivity {
     }
 
     private CustomList<MultiSelectHelper.Selectable<Media>> sortList(CustomList<MultiSelectHelper.Selectable<Media>> mediaSelectableList) {
-//        Map<Show, List<Show.Episode>> showEpisodeMap = mediaList.stream().collect(Collectors.toMap(show -> show, this::getEpisodeList));
-//
-//        new Helpers.SortHelper<>(mediaList)
-//                .setAllReversed(reverse)
-//                .addSorter(ShowActivity.SORT_TYPE.NAME, (show1, show2) -> show1.getName().compareTo(show2.getName()) * (reverse ? -1 : 1))
-//
-//                .addSorter(ShowActivity.SORT_TYPE.VIEWS)
-//                .changeType(show -> getViews(showEpisodeMap.get(show)))
-//                .enableReverseDefaultComparable()
-//
-//                .addSorter(ShowActivity.SORT_TYPE.RATING/*, (show1, show2) -> {
-//                    List<Show.Episode> episodeList1 = showEpisodeMap.get(show1);
-//                    List<Show.Episode> episodeList2 = showEpisodeMap.get(show2);
-//
-//                    double rating1 = getRating(episodeList1);
-//                    double rating2 = getRating(episodeList2);
-//
-//                    if (rating1 == rating2)
-//                        return show1.getName().compareTo(show2.getName());
-//                    else
-//                        return Double.compare(rating1, rating2) * (reverse ? 1 : -1);
-//                }*/)
-//                .changeType(show -> getRating(showEpisodeMap.get(show)))
-//                .enableReverseDefaultComparable()
-//
-//                .addSorter(ShowActivity.SORT_TYPE.LATEST/*, (show1, show2) -> {
-//                    List<Show.Episode> episodeList1 = showEpisodeMap.get(show1);
-//                    List<Show.Episode> episodeList2 = showEpisodeMap.get(show2);
-//
-//                    Date latest1 = getLatest(episodeList1);
-//                    Date latest2 = getLatest(episodeList2);
-//
-//                    if (latest1 == null && latest2 == null)
-//                        return show1.getName().compareTo(show2.getName());
-//                    else if (latest1 == null)
-//                        return reverse ? -1 : 1;
-//                    else if (latest2 == null)
-//                        return reverse ? 1 : -1;
-//
-//                    if (latest1.equals(latest2))
-//                        return show1.getName().compareTo(show2.getName());
-//                    else
-//                        return latest1.compareTo(latest2) * (reverse ? 1 : -1);
-//                }*/)
-//                .changeType(show -> getLatest(showEpisodeMap.get(show)))
-//                .enableReverseDefaultComparable()
-//
-//                .finish()
-//                .sort(() -> sort_type);
 
         mediaSelectableList.sort((media1, media2) -> {
             File file1 = new File(media1.getContent().getImagePath());
@@ -488,6 +412,7 @@ public class MediaActivity extends AppCompatActivity {
 //            defaultToolbar.setVisibility(View.GONE);
             toolBarMenu.findItem(R.id.taskBar_media_add).setVisible(false);
             toolBarMenu.findItem(R.id.taskBar_media_edit).setVisible(true);
+            toolBarMenu.findItem(R.id.taskBar_media_share).setVisible(true);
 
         }
 
@@ -501,6 +426,7 @@ public class MediaActivity extends AppCompatActivity {
 
             toolBarMenu.findItem(R.id.taskBar_media_add).setVisible(true);
             toolBarMenu.findItem(R.id.taskBar_media_edit).setVisible(false);
+            toolBarMenu.findItem(R.id.taskBar_media_share).setVisible(false);
 
             return allSelected;
         }
@@ -673,15 +599,15 @@ public class MediaActivity extends AppCompatActivity {
 
 
     //  ------------------------- Edit ------------------------->
-    private CustomDialog showEditMultipleDialog(CustomList<Media> oldMedia) {
+    private CustomDialog showEditMultipleDialog(CustomList<Media> oldMedia, boolean isShared) {
         if (!Utility.isOnline(this))
             return null;
 
         setResult(RESULT_OK);
         removeFocusFromSearch();
 
-        boolean isAdd = oldMedia == null || oldMedia.isEmpty();
-        CustomList<Media> newMedia = isAdd ? new CustomList<>() : oldMedia.stream().map(Media::clone).collect(Collectors.toCollection(CustomList::new));
+        boolean isAdd = oldMedia == null || oldMedia.isEmpty() || isShared;
+        CustomList<Media> newMedia = isAdd && !isShared ? new CustomList<>() : oldMedia.stream().map(Media::clone).collect(Collectors.toCollection(CustomList::new));
 
         CustomList<String> mediaPersonIdList = CategoriesActivity.getCategoriesIntersection(newMedia, CategoriesActivity.CATEGORIES.MEDIA_PERSON);
         CustomList<String> mediaCategoryIdList = CategoriesActivity.getCategoriesIntersection(newMedia, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY);
@@ -750,14 +676,14 @@ public class MediaActivity extends AppCompatActivity {
                                 });
                     }
                 })
-                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> saveMultipleMedia(customDialog, oldMedia, newMedia, mediaPersonIdList, mediaCategoryIdList))
+                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> saveMultipleMedia(customDialog, oldMedia, newMedia, mediaPersonIdList, mediaCategoryIdList, isShared))
                 .addOnDialogShown(customDialog -> editDialog = customDialog)
                 .addOnDialogDismiss(customDialog -> editDialog = null)
                 .show();
     }
 
-    private void saveMultipleMedia(CustomDialog editDialog, CustomList<Media> oldMedia, List<Media> newMedia, CustomList<String> mediaPersonIdList, CustomList<String> mediaCategoryIdList) {
-        boolean isAdd = oldMedia == null || oldMedia.isEmpty();
+    private void saveMultipleMedia(CustomDialog editDialog, CustomList<Media> oldMedia, List<Media> newMedia, CustomList<String> mediaPersonIdList, CustomList<String> mediaCategoryIdList, boolean isShared) {
+        boolean isAdd = oldMedia == null || oldMedia.isEmpty() || isShared;
         int size = newMedia.size();
 
         if (isAdd) {
@@ -915,7 +841,7 @@ public class MediaActivity extends AppCompatActivity {
                     .into(imageView);
 
             ImageView videoIndicator = view.findViewById(R.id.listItem_image_videoIndicator);
-            if (path.endsWith(".mp4"))
+            if (Media.isVideo(path))
                 videoIndicator.setVisibility(View.VISIBLE);
             else
                 videoIndicator.setVisibility(View.GONE);
@@ -1027,7 +953,7 @@ public class MediaActivity extends AppCompatActivity {
             int index = indexOfMedia(getCurrentGalleryMedia());
             List<MultiSelectHelper.Selectable<Media>> objectList = mediaRecycler.getObjectList();
             int previousSize = objectList.size();
-            CustomDialog customDialog = showEditMultipleDialog(new CustomList<>(objectList.get(index).getContent()));
+            CustomDialog customDialog = showEditMultipleDialog(new CustomList<>(objectList.get(index).getContent()), false);
             if (currentVideoPreview != null)
                 currentVideoPreview.pause();
             if (customDialog != null) {
@@ -1108,7 +1034,7 @@ public class MediaActivity extends AppCompatActivity {
     private void setMediaScrollGallery(List<Media> shownMediaList) {
         scrollGalleryView.addMedia(
                 shownMediaList.stream().map(media -> {
-                    if (media.getImagePath().endsWith(".mp4"))
+                    if (Media.isVideo(media))
                         return MediaInfo.mediaLoader(new CustomVideoLoader(media));
                     else
                         return MediaInfo.mediaLoader(new CustomGlideImageLoader(media));
@@ -1252,6 +1178,44 @@ public class MediaActivity extends AppCompatActivity {
     //  <------------------------- ScrollGallery -------------------------
 
 
+    /**  ------------------------- Share ------------------------->  */
+    private void handleIncomingShare() {
+        CustomList<Uri> sharedMediaUris = new CustomList<>();
+        if (getIntent().getAction().endsWith("SEND"))
+            sharedMediaUris.add(getIntent().getParcelableExtra(Intent.EXTRA_STREAM));
+        else
+            sharedMediaUris.addAll((ArrayList) getIntent().getParcelableArrayListExtra(Intent.EXTRA_STREAM));
+
+        CustomList<Media> sharedMedia = sharedMediaUris.map(uri -> new Media(ActivityResultHelper.getPath(this, uri)));
+
+        showEditMultipleDialog(sharedMedia, true);
+    }
+
+    private void shareMedia(CustomList<Media> mediaList) {
+
+        if (mediaList.isEmpty()) {
+            Toast.makeText(this, "Medien Auswählen", Toast.LENGTH_SHORT).show();
+        } else {
+            String type = new CustomList<>(
+                    mediaList.stream().anyMatch(media -> !Media.isVideo(media)) ? "image/*" : null,
+                    mediaList.stream().anyMatch(Media::isVideo) ? "video/*" : null
+            ).stream().filter(Objects::nonNull).collect(Collectors.joining(" "));
+
+            Intent shareIntent = new Intent().setType(type);
+            ArrayList<Uri> files = new ArrayList<>(mediaList.map(media -> FileProvider.getUriForFile(this,
+                    BuildConfig.APPLICATION_ID + ".provider", new File(media.getImagePath()))));
+            if (mediaList.size() == 1) {
+                shareIntent.setAction(Intent.ACTION_SEND);
+                shareIntent.putExtra(Intent.EXTRA_STREAM, files.get(0));
+            } else {
+                shareIntent.setAction(Intent.ACTION_SEND_MULTIPLE);
+                shareIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, files);
+            }
+            startActivity(Intent.createChooser(shareIntent, "Medien Teilen Mit..."));
+        }
+    }
+    /**  <------------------------- Share -------------------------  */
+
     //  ------------------------- ToolBar ------------------------->
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -1259,6 +1223,7 @@ public class MediaActivity extends AppCompatActivity {
         toolBarMenu = menu;
         selectHelper.toolBarMenu = toolBarMenu;
         menu.findItem(R.id.taskBar_media_edit).setIconTintList(new ColorStateList(new int[][]{new int[]{android.R.attr.state_enabled}}, new int[]{Color.WHITE}));
+//        menu.findItem(R.id.taskBar_media_share).setIconTintList(new ColorStateList(new int[][]{new int[]{android.R.attr.state_enabled}}, new int[]{Color.WHITE}));
 
 //        Menu subMenu = menu.findItem(R.id.taskBar_filter).getSubMenu();
 //        subMenu.findItem(R.id.taskBar_show_filterByName)
@@ -1275,12 +1240,14 @@ public class MediaActivity extends AppCompatActivity {
         int id = item.getItemId();
         switch (id) {
             case R.id.taskBar_media_add:
-                showEditMultipleDialog(null);
+                showEditMultipleDialog(null, false);
 //                SelectMediaHelper.Builder(this).showSelection();
                 break;
-
             case R.id.taskBar_media_edit:
-                showEditMultipleDialog(selectHelper.getAllSelectedContent());
+                showEditMultipleDialog(selectHelper.getAllSelectedContent(), false);
+                break;
+            case R.id.taskBar_media_share:
+                shareMedia(selectHelper.getAllSelectedContent());
                 break;
 
             case android.R.id.home:

@@ -154,6 +154,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                             oweList.filterAnd(searchQuery.split("&"), (owe, s) -> Utility.containedInOwe(s.trim(), owe, filterTypeSet), true);
                     })
                     .addCriteria_defaultName()
+                    .enableColoration()
                     .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_PERSON, CategoriesActivity.CATEGORIES.PERSON, owe -> owe.getItemList().stream().map(Owe.Item::getPersonId).collect(Collectors.toList()));
 
             CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);

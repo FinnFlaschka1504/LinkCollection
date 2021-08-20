@@ -206,6 +206,7 @@ public class ShowActivity extends AppCompatActivity {
                         }
                     })
                     .addCriteria_defaultName()
+                    .enableColoration()
                     .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_GENRE, CategoriesActivity.CATEGORIES.SHOW_GENRES, Show::getGenreIdList);
 
             loadRecycler();
@@ -1870,6 +1871,7 @@ public class ShowActivity extends AppCompatActivity {
                                             .setText(currentEpisode[0].getName())
                                             .addButton("TMDB", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.TMDB))
                                             .addButton("TRAKT", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.TRAKT))
+                                            .addButton("TVDB", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.TVDB))
                                             .addButton("Staffel", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.SEASON))
                                             .addButton("Vorheriger", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.PREVIOUS))
                                             .addOptionalModifications(customDialog -> {

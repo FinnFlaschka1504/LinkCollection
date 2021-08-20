@@ -83,6 +83,14 @@ public class Media extends ParentClass_Image {
         helper.appendItalic("D: ").append(Utility.formatDate("dd.MM.yyyy", new Date(new File(getImagePath()).lastModified())));
         return helper.get();
     }
+
+    public static boolean isVideo(Media media){
+        return media.getImagePath().endsWith(".mp4");
+    }
+
+    public static boolean isVideo(String path){
+        return path.endsWith(".mp4");
+    }
     //  <------------------------- Convenience -------------------------
     @Override
     public Media clone() {

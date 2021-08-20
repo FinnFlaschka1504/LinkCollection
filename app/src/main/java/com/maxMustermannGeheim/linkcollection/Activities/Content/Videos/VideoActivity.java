@@ -16,6 +16,7 @@ import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
+import android.text.style.BackgroundColorSpan;
 import android.text.style.ClickableSpan;
 import android.text.style.RelativeSizeSpan;
 import android.util.Pair;
@@ -310,6 +311,7 @@ public class VideoActivity extends AppCompatActivity {
                         }
                     })
                     .addCriteria_defaultName()
+                    .enableColoration()
                     .setDialogOptions(R.layout.dialog_advanced_search_video, null)
                     .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Float, Float>>(ADVANCED_SEARCH_CRITERIA_RATING, "(([0-4]((.|,)\\d{1,2})?)|5((.|,)00?)?)(-(([0-4]((\\4|\\6)(?<=[,.])\\d{1,2})?)|5((\\4|\\6)(?<=[,.])00?)?))?")
                             .setParser(sub -> {
@@ -415,7 +417,7 @@ public class VideoActivity extends AppCompatActivity {
                                         return null;
                                 };
                             }))
-                    .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Integer, Integer>>(ADVANCED_SEARCH_CRITERIA_LENGTH, "(\\d+)?-?(\\d+)?")
+                    .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Integer, Integer>>(ADVANCED_SEARCH_CRITERIA_LENGTH, "(((\\d+)?-?(\\d+))|((\\d+)-?(\\d+)?))")
                             .setParser(sub -> {
                                 String[] range = sub.split("-");
                                 int min = range.length > 0 ? Integer.parseInt(CustomUtility.isNotValueOrElse(range[0], "", "-1")) : -1;
@@ -787,18 +789,22 @@ public class VideoActivity extends AppCompatActivity {
                             .setParser(sub -> sub)
                             .setBuildPredicate(sub -> video -> Utility.containedInCollection(sub, video.getUuid(), true)));
 
+            loadVideoRecycler();
+
             textListener = new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String s) {
-//                    this.onQueryTextChange(s);
+                    this.onQueryTextChange(s);
                     return true;
                 }
 
                 @Override
                 public boolean onQueryTextChange(String query) {
 //                    videos_search.setOnQueryTextListener(null);
-//                    mSearchTextView.setText(new Helpers.SpannableStringHelper().appendColor(query, Color.RED).get());
+//                    videos_search.setQuery(new Helpers.SpannableStringHelper().appendColor(query, Color.RED).get(), true);
+//                    advancedQueryHelper.applyColoration();
 //                    videos_search.setOnQueryTextListener(this);
+
                     searchQuery = query;
                     reLoadVideoRecycler();
                     return true;
@@ -882,20 +888,23 @@ public class VideoActivity extends AppCompatActivity {
             if (extraSearchCategory != null) {
                 String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
                 if (extraSearch != null) {
-                    if (extraSearch.equals(SEEN_SEARCH))
+                    if (extraSearch.equals(SEEN_SEARCH)) {
                         mode = MODE.SEEN;
-                    else if (extraSearch.equals(WATCH_LATER_SEARCH))
+                        reLoadVideoRecycler();
+                    } else if (extraSearch.equals(WATCH_LATER_SEARCH)) {
                         mode = MODE.LATER;
-                    else if (extraSearch.equals(UPCOMING_SEARCH))
+                        reLoadVideoRecycler();
+                    } else if (extraSearch.equals(UPCOMING_SEARCH)) {
                         mode = MODE.UPCOMING;
-                    else {
+                        reLoadVideoRecycler();
+                    } else {
                         if (!advancedQueryHelper.wrapAndSetExtraSearch(extraSearchCategory, extraSearch)) {
-                            videos_search.setQuery(extraSearch, false);
+                            videos_search.setQuery(extraSearch, true);
                             if (extraSearch.matches("\\w*?_[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}"))
                                 allVideoList.stream().filter(video -> video.getUuid().equals(extraSearch)).findFirst().ifPresent(video1 -> detailDialog = showDetailDialog(video1));
                         }
                     }
-                    textListener.onQueryTextSubmit(videos_search.getQuery().toString());
+//                    textListener.onQueryTextSubmit(videos_search.getQuery().toString());
                 }
             }
             setSearchHint();
@@ -909,7 +918,6 @@ public class VideoActivity extends AppCompatActivity {
                     showRandomDialog();
             }
 
-            loadVideoRecycler();
         };
 
         if (database == null || !Database.isReady()) {
@@ -923,8 +931,7 @@ public class VideoActivity extends AppCompatActivity {
 
     private List<Video> filterList() {
         filteredVideoList = new com.finn.androidUtilities.CustomList<>(allVideoList);
-//        if (true)
-//            return filterdVideoList;
+
         if (mode.equals(MODE.SEEN)) {
             filteredVideoList = allVideoList.stream().filter(video -> !video.getDateList().isEmpty()).collect(Collectors.toCollection(CustomList::new));
         } else if (mode.equals(MODE.LATER)) {
@@ -933,68 +940,7 @@ public class VideoActivity extends AppCompatActivity {
             filteredVideoList = allVideoList.stream().filter(Video::isUpcoming).collect(Collectors.toCollection(CustomList::new));
         }
         if (!searchQuery.trim().equals("")) {
-
             advancedQueryHelper.filterFull(filteredVideoList);
-            /*
-            Utility.AdvancedQueryHelper advancedQueryHelper = Utility.AdvancedQueryHelper.getAdvancedQuery(searchQuery);
-            previousAdvancedQueryHelper = advancedQueryHelper;
-            String subQuery = advancedQueryHelper.restQuery;
-
-
-            if (advancedQueryHelper.hasAnyAdvancedQuery()) {
-                Predicate<Video> ratingVideoCheck = null;
-                Predicate<Video> dateVideoCheck = null;
-                Predicate<Video> lengthVideoCheck = null;
-
-                if (advancedQueryHelper.hasRatingSub()) {
-                    Pair<Float, Float> ratingMinMax = advancedQueryHelper.getRatingMinMax();
-                    ratingVideoCheck = video -> video.getRating() >= ratingMinMax.first && video.getRating() <= ratingMinMax.second;
-                }
-
-                if (advancedQueryHelper.hasDateOrDurationSub()) {
-                    Pair<Date, Date> dateMinMax = advancedQueryHelper.getDateOrDurationMinMax();
-                    Pair<Long, Long> dateMinMaxTime = Pair.create(dateMinMax.first.getTime(), dateMinMax.second.getTime());
-
-                    dateVideoCheck = video -> (
-                            video.getDateList().stream().anyMatch(date -> {
-                                        long time = CustomUtility.removeTime(date).getTime();
-                                        return time >= dateMinMaxTime.first && time <= dateMinMaxTime.second;
-                                    }
-                            )
-                    );
-                }
-
-                if (advancedQueryHelper.hasLengthSub()) {
-                    Pair<Integer, Integer> lengthMinMax = advancedQueryHelper.getLengthMinMax();
-                    lengthVideoCheck = video -> video.getLength() >= lengthMinMax.first && (lengthMinMax.second == -1 || video.getLength() <= lengthMinMax.second);
-                }
-
-                Predicate<Video> finalRatingVideoCheck = ratingVideoCheck;
-                Predicate<Video> finalDateVideoCheck = dateVideoCheck;
-                Predicate<Video> finalLengthVideoCheck = lengthVideoCheck;
-                filteredVideoList.filter(video -> {
-                    if (finalRatingVideoCheck != null && !finalRatingVideoCheck.test(video))
-                        return false;
-                    if (finalDateVideoCheck != null && !finalDateVideoCheck.test(video))
-                        return false;
-                    if (finalLengthVideoCheck != null && !finalLengthVideoCheck.test(video))
-                        return false;
-                    return true;
-                }, true);
-            }
-            */
-
-//            String subQuery = advancedQueryHelper.restQuery;
-
-//            if (CustomUtility.stringExists(subQuery)) {
-//                if (subQuery.contains("|")) {
-//                    filteredVideoList = filteredVideoList.filterOr(subQuery.split("\\|"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), true);
-//                } else {
-//                    filteredVideoList.filterAnd(subQuery.split("&"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), true);
-//                }
-//            }
-
-//            ((EditText) ((LinearLayout) ((LinearLayout) ((LinearLayout) videos_search.getChildAt(0)).getChildAt(2)).getChildAt(1)).getChildAt(0)).setText(new Helpers.SpannableStringHelper().appendColor(searchQuery, Color.RED).get());
         }
         return filteredVideoList;
     }
@@ -1272,7 +1218,6 @@ public class VideoActivity extends AppCompatActivity {
 
                     SpannableStringBuilder builder = new SpannableStringBuilder();
 
-                    String collectionNames;
                     database.collectionMap.values().stream().filter(collection -> collection.getFilmIdList().contains(video.getUuid())).map(com.finn.androidUtilities.ParentClass::getName)
                             .forEach(s -> {
                                 if (builder.length() != 0)
@@ -1291,8 +1236,7 @@ public class VideoActivity extends AppCompatActivity {
                                     }
                                 }, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             });
-//                            .collect(Collectors.joining(", "));
-                    if (builder.length() > 0/*Utility.stringExists(collectionNames)*/) {
+                    if (builder.length() > 0) {
                         TextView dialog_video_collection = (TextView) view.findViewById(R.id.dialog_video_collection);
                         dialog_video_collection.setText(builder);
                         dialog_video_collection.setMovementMethod(LinkMovementMethod.getInstance());
@@ -1315,9 +1259,7 @@ public class VideoActivity extends AppCompatActivity {
                     if (views[0] > 0) {
                         Date lastWatched = new CustomList<>(video.getDateList()).getBiggest();
                         viewsText = helper.append(String.valueOf(views[0])).append(
-                                String.format(Locale.getDefault(), "   (%s – %dd)",
-                                        new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(lastWatched),
-                                        Days.daysBetween(new LocalDate(lastWatched), new LocalDate(new Date())).getDays())
+                                String.format(Locale.getDefault(), "   (%s – %dd)", new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(lastWatched), Days.daysBetween(new LocalDate(lastWatched), new LocalDate(new Date())).getDays())
                                 , Helpers.SpannableStringHelper.SPAN_TYPE.ITALIC).get();
                     }
                     ((TextView) view.findViewById(R.id.dialog_video_views)).setText(viewsText);

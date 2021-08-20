@@ -153,6 +153,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                             knowledgeList.filterAnd(searchQuery.split("&"), (knowledge, s) -> Utility.containedInKnowledge(s.trim(), knowledge, filterTypeSet), true);
                     })
                     .addCriteria_defaultName()
+                    .enableColoration()
                     .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_CATEGORY, CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES, Knowledge::getCategoryIdList);
 
 

@@ -31,7 +31,23 @@
             android:name=".Activities.Content.Media.MediaActivity"
             android:configChanges="orientation|screenSize"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:theme="@style/AppTheme.NoTitle" />
+            android:theme="@style/AppTheme.NoTitle">
+<!--            <intent-filter-->
+<!--                android:icon="@drawable/ic_media"-->
+<!--                android:label="Medium hinzufügen">-->
+<!--                <action android:name="android.intent.action.SEND" />-->
+<!--                <category android:name="android.intent.category.DEFAULT" />-->
+<!--                <data android:mimeType="image/* video/*" />-->
+<!--            </intent-filter>-->
+            <intent-filter
+                android:icon="@drawable/ic_media"
+                android:label="Medien hinzufügen">
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/* video/*" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".Activities.Main.DialogActivity"
             android:launchMode="singleTop"

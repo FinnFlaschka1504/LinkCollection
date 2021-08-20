@@ -2,18 +2,24 @@ package com.maxMustermannGeheim.linkcollection.Utilities;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.content.res.Resources;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Handler;
 import android.text.Editable;
 import android.text.InputType;
+import android.text.ParcelableSpan;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextWatcher;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
+import android.text.style.TypefaceSpan;
 import android.text.style.UnderlineSpan;
 import android.util.Pair;
 import android.view.KeyEvent;
@@ -26,6 +32,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RatingBar;
@@ -35,6 +42,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.IdRes;
 import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
@@ -46,8 +54,6 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.pchmn.materialchips.ChipsInput;
-import com.pchmn.materialchips.model.Chip;
 import com.finn.androidUtilities.CustomList;
 
 import org.intellij.lang.annotations.Language;
@@ -56,24 +62,21 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import me.zhanghai.android.materialratingbar.MaterialRatingBar;
-
-import static com.maxMustermannGeheim.linkcollection.Utilities.Helpers.SpannableStringHelper.SPAN_TYPE.BOLD;
-import static com.maxMustermannGeheim.linkcollection.Utilities.Helpers.SpannableStringHelper.SPAN_TYPE.BOLD_ITALIC;
-import static com.maxMustermannGeheim.linkcollection.Utilities.Helpers.SpannableStringHelper.SPAN_TYPE.ITALIC;
-import static com.maxMustermannGeheim.linkcollection.Utilities.Helpers.SpannableStringHelper.SPAN_TYPE.STRIKE_THROUGH;
-import static com.maxMustermannGeheim.linkcollection.Utilities.Helpers.SpannableStringHelper.SPAN_TYPE.UNDERLINED;
 
 public class Helpers {
     //  ----- TextInput ----->
@@ -583,62 +586,138 @@ public class Helpers {
     //  --------------- SpannableString --------------->
     public static class SpannableStringHelper {
         public enum SPAN_TYPE {
-            BOLD(new StyleSpan(Typeface.BOLD)), ITALIC(new StyleSpan(Typeface.ITALIC)), BOLD_ITALIC(new StyleSpan(Typeface.BOLD_ITALIC)), STRIKE_THROUGH(new StrikethroughSpan()),
-            UNDERLINED(new UnderlineSpan()), NONE(null);
+            BOLD(o -> new StyleSpan(Typeface.BOLD)), ITALIC(o -> new StyleSpan(Typeface.ITALIC)), BOLD_ITALIC(o -> new StyleSpan(Typeface.BOLD_ITALIC)), STRIKE_THROUGH(o -> new StrikethroughSpan()),
+            UNDERLINED(o -> new UnderlineSpan()), COLOR(color -> new ForegroundColorSpan((Integer) color)), RELATIVE_SIZE(size -> new RelativeSizeSpan((Float) size)), NONE(o -> null);
 
-            Object what;
+            CustomUtility.GenericReturnInterface<Object, ParcelableSpan> what;
 
-            SPAN_TYPE(Object what) {
+            SPAN_TYPE(CustomUtility.GenericReturnInterface<Object, ParcelableSpan> what) {
                 this.what = what;
             }
 
-            public Object getWhat() {
-                return what;
+            public ParcelableSpan getWhat() {
+                return what.runGenericInterface(null);
+            }
+
+            public ParcelableSpan getWhat(Object o) {
+                return what.runGenericInterface(o);
+            }
+        }
+
+        public static class MultipleSpans {
+            Set<ParcelableSpan> spanSet = new HashSet<>();
+
+            public MultipleSpans bold() {
+                spanSet.add(SPAN_TYPE.BOLD.getWhat());
+                return this;
+            }
+
+            public MultipleSpans italic() {
+                spanSet.add(SPAN_TYPE.ITALIC.getWhat());
+                return this;
+            }
+
+            public MultipleSpans boldItalic() {
+                spanSet.add(SPAN_TYPE.BOLD_ITALIC.getWhat());
+                return this;
+            }
+
+            public MultipleSpans strikeThrough() {
+                spanSet.add(SPAN_TYPE.STRIKE_THROUGH.getWhat());
+                return this;
+            }
+
+            public MultipleSpans underlined() {
+                spanSet.add(SPAN_TYPE.UNDERLINED.getWhat());
+                return this;
+            }
+
+            public MultipleSpans color(@ColorInt int color) {
+                spanSet.add(SPAN_TYPE.COLOR.getWhat(color));
+                return this;
+            }
+
+            public MultipleSpans relativeSize(float size) {
+                spanSet.add(SPAN_TYPE.RELATIVE_SIZE.getWhat(size));
+                return this;
+            }
+
+            // ---------------
+
+            private void apply(CharSequence text, SpannableStringBuilder builder) {
+                int previousLength = builder.length();
+                int textLength = text.length();
+                builder.append(text);
+                for (ParcelableSpan span : spanSet) {
+                    builder.setSpan(span, previousLength, previousLength + textLength, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
             }
         }
 
         private SpannableStringBuilder builder = new SpannableStringBuilder();
 
-        public SpannableStringHelper append(String text) {
+
+        //  ------------------------- Append ------------------------->
+        public SpannableStringHelper append(CharSequence text) {
             builder.append(text);
             return this;
         }
 
-        public SpannableStringHelper append(String text, SPAN_TYPE span_type) {
-            builder.append(text, span_type.getWhat(), Spannable.SPAN_COMPOSING);
+        public SpannableStringHelper append(CharSequence text, SPAN_TYPE span) {
+            builder.append(text, span.getWhat(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             return this;
         }
 
-        public SpannableStringHelper appendBold(String text) {
-            builder.append(text, BOLD.getWhat(), Spannable.SPAN_COMPOSING);
+        public SpannableStringHelper append(CharSequence text, ParcelableSpan span) {
+            builder.append(text, span, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             return this;
         }
 
-        public SpannableStringHelper appendItalic(String text) {
-            builder.append(text, ITALIC.getWhat(), Spannable.SPAN_COMPOSING);
+        public SpannableStringHelper appendMultiple(CharSequence text, CustomUtility.GenericReturnInterface<MultipleSpans, MultipleSpans> multipleSpans) {
+            multipleSpans.runGenericInterface(new MultipleSpans()).apply(text, builder);
             return this;
         }
 
-        public SpannableStringHelper appendBoldItalic(String text) {
-            builder.append(text, BOLD_ITALIC.getWhat(), Spannable.SPAN_COMPOSING);
+        public SpannableStringHelper appendBold(CharSequence text) {
+            builder.append(text, SPAN_TYPE.BOLD.getWhat(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             return this;
         }
 
-        public SpannableStringHelper appendStrikeThrough(String text) {
-            builder.append(text, STRIKE_THROUGH.getWhat(), Spannable.SPAN_COMPOSING);
+        public SpannableStringHelper appendItalic(CharSequence text) {
+            builder.append(text, SPAN_TYPE.ITALIC.getWhat(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             return this;
         }
 
-        public SpannableStringHelper appendUnderlined(String text) {
-            builder.append(text, UNDERLINED.getWhat(), Spannable.SPAN_COMPOSING);
+        public SpannableStringHelper appendBoldItalic(CharSequence text) {
+            builder.append(text, SPAN_TYPE.BOLD_ITALIC.getWhat(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             return this;
         }
 
-
-        public SpannableStringHelper appendColor(String text, int color) {
-            builder.append(text, new ForegroundColorSpan(color), Spannable.SPAN_COMPOSING);
+        public SpannableStringHelper appendStrikeThrough(CharSequence text) {
+            builder.append(text, SPAN_TYPE.STRIKE_THROUGH.getWhat(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             return this;
         }
+
+        public SpannableStringHelper appendUnderlined(CharSequence text) {
+            builder.append(text, SPAN_TYPE.UNDERLINED.getWhat(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            return this;
+        }
+
+        public SpannableStringHelper appendColor(CharSequence text, @ColorInt int color) {
+            builder.append(text, SPAN_TYPE.COLOR.getWhat(color), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            return this;
+        }
+
+        public SpannableStringHelper appendRelativeSize(CharSequence text, float size) {
+            builder.append(text, SPAN_TYPE.RELATIVE_SIZE.getWhat(size), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+            return this;
+        }
+
+        public SpannableStringHelper appendCustom(CustomUtility.GenericInterface<SpannableStringBuilder> applyCustomSpan) {
+            applyCustomSpan.runGenericInterface(builder);
+            return this;
+        }
+        //  <------------------------- Append -------------------------
 
         public SpannableStringBuilder get() {
             return builder;
@@ -653,36 +732,46 @@ public class Helpers {
             return this;
         }
 
-        public SpannableStringBuilder quick(String text) {
+        public SpannableStringBuilder quick(CharSequence text) {
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(text);
             spannableStringBuilder.setSpan(quickWhat, 0, text.length(), 0);
             return spannableStringBuilder;
         }
 
-        public SpannableStringBuilder quick(String text, Object what) {
+        public SpannableStringBuilder quick(CharSequence text, Object what) {
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(text);
             spannableStringBuilder.setSpan(what, 0, text.length(), 0);
             return spannableStringBuilder;
         }
 
-        public SpannableStringBuilder quickBold(String text) {
+        public SpannableStringBuilder quickBold(CharSequence text) {
             SpannableStringBuilder spannableString = new SpannableStringBuilder(text);
-            spannableString.setSpan(BOLD.getWhat(), 0, text.length(), 0);
+            spannableString.setSpan(SPAN_TYPE.BOLD.getWhat(), 0, text.length(), 0);
             return spannableString;
         }
 
-        public SpannableStringBuilder quickItalic(String text) {
+        public SpannableStringBuilder quickItalic(CharSequence text) {
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(text);
             spannableStringBuilder.setSpan(SPAN_TYPE.ITALIC.getWhat(), 0, text.length(), 0);
             return spannableStringBuilder;
         }
 
-        public SpannableStringBuilder quickStrikeThrough(String text) {
+        public SpannableStringBuilder quickStrikeThrough(CharSequence text) {
             SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(text);
             spannableStringBuilder.setSpan(SPAN_TYPE.STRIKE_THROUGH.getWhat(), 0, text.length(), 0);
             return spannableStringBuilder;
         }
         //  <--------------- Quick... ---------------
+
+        //  ------------------------- Builder ------------------------->
+        public  interface SpannableStringHelperInterface {
+            SpannableStringHelper get(SpannableStringHelper spanBuilder);
+        }
+
+        public static SpannableStringBuilder Builder(SpannableStringHelperInterface spanBuilderInterface) {
+            return spanBuilderInterface.get(new SpannableStringHelper()).get();
+        }
+        //  <------------------------- Builder -------------------------
 
         public static CharSequence highlightText(String search, String originalText) {
             if (CustomUtility.stringExists(search) && CustomUtility.stringExists(originalText)) {
@@ -1491,7 +1580,7 @@ public class Helpers {
      * ------------------------- AdvancedSearch ------------------------->
      */
     public static class AdvancedQueryHelper<T> {
-        private static final Pattern advancedSearchPattern = Pattern.compile("\\{.*\\}");
+        private static final Pattern advancedQueryPattern = Pattern.compile("\\{.*\\}");
         private SearchView searchView;
         public String fullQuery, advancedQuery, restQuery;
         private CustomList<SearchCriteria> criteriaList = new CustomList<>();
@@ -1499,12 +1588,14 @@ public class Helpers {
         private int dialogLayoutId;
         private com.finn.androidUtilities.CustomDialog.OnDialogCallback optionalModifications;
         private AppCompatActivity context;
+        private EditText editText;
 
         /**
          * ------------------------- Constructor ------------------------->
          */
         public AdvancedQueryHelper(AppCompatActivity context, SearchView searchView) {
             this.searchView = searchView;
+            editText = searchView.findViewById(Resources.getSystem().getIdentifier("search_src_text", "id", "android"));
             this.context = context;
         }
         /**  <------------------------- Constructor -------------------------  */
@@ -1526,7 +1617,7 @@ public class Helpers {
         }
 
         public AdvancedQueryHelper<T> addCriteria_ParentClass(String key, CategoriesActivity.CATEGORIES category, Utility.GenericReturnInterface<T, List<String>> getList, @Nullable Context context, @Nullable @IdRes Integer textViewId, @Nullable @IdRes Integer spinnerId, @Nullable @IdRes Integer editButtonId) {
-            SearchCriteria<T, Pair<String, CustomList<ParentClass>>> criteria = new SearchCriteria<T, Pair<String, CustomList<ParentClass>>>(key, "([^|&]+?)([|&][^|&]+?)*")
+            SearchCriteria<T, Pair<String, CustomList<ParentClass>>> criteria = new SearchCriteria<T, Pair<String, CustomList<ParentClass>>>(key, "([^|&\\[\\]]+?)([|&][^|&\\[\\]]+?)*")
                     .setParser(sub -> {
                         CustomList<ParentClass> list = new CustomList<>();
                         if (sub.contains("|") || sub.contains("&")) {
@@ -1537,9 +1628,13 @@ public class Helpers {
                         } else
                             CustomUtility.ifNotNull(Utility.findObjectByName(category, sub.trim()), list::add);
 
+                        if (list.isEmpty())
+                            return null;
                         return Pair.create(sub.matches(".*(?<!\\\\)&.*") ? "&" : sub.matches(".*(?<!\\\\)\\|.*") ? "|" : "", list);
                     })
                     .setBuildPredicate(pair -> {
+                        if (pair == null)
+                            return null;
                         CustomList<String> idList = pair.second.map(com.finn.androidUtilities.ParentClass::getUuid);
                         return t -> {
                             switch (pair.first) {
@@ -1610,12 +1705,13 @@ public class Helpers {
             criteriaList.forEach(criteria -> {
                 criteria.sub = "";
                 criteria.predicate = null;
+                criteria.tempResult = null;
             });
             return this;
         }
 
         public static String removeAdvancedSearch(CharSequence fullQuery) {
-            return fullQuery.toString().replaceAll(advancedSearchPattern.pattern(), "").trim();
+            return fullQuery.toString().replaceAll(advancedQueryPattern.pattern(), "").trim();
         }
 
         public boolean istExtraSearch(String extraSearch) {
@@ -1694,7 +1790,7 @@ public class Helpers {
         public AdvancedQueryHelper<T> splitQuery() {
             fullQuery = getQuery();
             if (fullQuery.contains("{")) {
-                Matcher advancedQueryMatcher = advancedSearchPattern.matcher(fullQuery);
+                Matcher advancedQueryMatcher = advancedQueryPattern.matcher(fullQuery);
 
                 if (advancedQueryMatcher.find()) {
                     advancedQuery = advancedQueryMatcher.group(0);
@@ -1757,7 +1853,7 @@ public class Helpers {
                             return;
                         Object o;
                         if (CustomUtility.stringExists(criteria.sub))
-                            o = criteria.parser.runGenericInterface(criteria.sub);
+                            o = criteria.tempResult = criteria.parser.runGenericInterface(criteria.sub);
                         else
                             o = null;
                         onSaveList.add(criteria.applyDialog.runApplyDialog(customDialog, o, criteria));
@@ -1795,11 +1891,75 @@ public class Helpers {
          * <------------------------- Dialog -------------------------
          */
 
+
+        /**  ------------------------- Color ------------------------->  */
+        public AdvancedQueryHelper<T> enableColoration() {
+//            CharSequence query = searchView.getQuery();
+//            searchView.
+//            searchView.setQuery(new Helpers.SpannableStringHelper().appendColor(query, Color.RED).get(), true);
+//            searchView.
+//            advancedSearchPattern.matcher(query)
+
+//            EditText edit = searchView.findViewById(R.id.search_src_text);
+//            ((LinearLayout) ((LinearLayout) ((LinearLayout) searchView.getChildAt(0)).getChildAt(2)).getChildAt(1)).getChildAt(0);
+
+//            Utility.RecursiveGenericReturnInterface getEditText =
+            editText.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    String BREAKPOINT = null;
+                    applyColoration(s);
+                }
+            });
+            return this;
+        }
+
+        private void applyColoration(Editable editable) {
+            new CustomList<>(editable.getSpans(0, editable.length(), StyleSpan.class)).forEach(editable::removeSpan);
+            new CustomList<>(editable.getSpans(0, editable.length(), ForegroundColorSpan.class)).forEach(editable::removeSpan);
+
+            Matcher queryMatcher = advancedQueryPattern.matcher(editable);
+            if (queryMatcher.find()) {
+                MatchResult queryResult = queryMatcher.toMatchResult();
+                int queryStart = queryResult.start();
+                int queryEnd = queryResult.end();
+                editable.setSpan(new StyleSpan(Typeface.ITALIC), queryStart, queryEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+//                Matcher criteriaMatcher = Pattern.compile("\\[[^\\[]*?\\]").matcher(queryResult.group());
+//                while (criteriaMatcher.find()) {
+//                    MatchResult criteriaResult = criteriaMatcher.toMatchResult();
+                if ((queryEnd - 1) - (queryStart + 1) > 0)
+                    editable.setSpan(new ForegroundColorSpan(Color.RED), queryStart + 1, queryEnd - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+//                }
+                int normalTextColor = editText.getTextColors().getDefaultColor();
+                int incompleteTextColor = context.getColor(R.color.colorPrimary);
+
+                for (SearchCriteria criteria : criteriaList) {
+                    Matcher criteriaMatcher = Pattern.compile(String.format("\\[%s: ?%s\\s*\\]", criteria.key, criteria.regEx)).matcher(queryResult.group());
+                    if (criteriaMatcher.find()) {
+                        MatchResult criteriaResult = criteriaMatcher.toMatchResult();
+                        editable.setSpan(new ForegroundColorSpan(criteria.tempResult == null ? incompleteTextColor : normalTextColor), criteriaResult.start() + queryStart, criteriaResult.end() + queryStart, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    }
+                }
+            }
+        }
+        /**  <------------------------- Color -------------------------  */
+
         // ---------------
 
         public static class SearchCriteria<T, Result> {
+            public Result tempResult;
             public String key;
-            public Pattern pattern;
+            public String regEx;
             public String sub;
             private Utility.GenericReturnInterface<String, Result> parser;
             private Utility.GenericReturnInterface<Result, Predicate<T>> buildPredicate;
@@ -1811,9 +1971,9 @@ public class Helpers {
             /**
              * ------------------------- Constructor ------------------------->
              */
-            public SearchCriteria(String key, @Language("RegExp") String regex) {
+            public SearchCriteria(String key, @Language("RegExp") String regEx) {
                 this.key = key;
-                this.pattern = Pattern.compile(String.format("(?<=\\[%s: ?)%s(?=\\s*\\])", key, regex));
+                this.regEx = regEx;
             }
             /**  <------------------------- Constructor -------------------------  */
 
@@ -1857,9 +2017,13 @@ public class Helpers {
             /**
              * ------------------------- Convenience ------------------------->
              */
+            public Pattern getPattern() {
+                return Pattern.compile(String.format("(?<=\\[%s: ?)%s(?=\\s*\\])", key, regEx));
+            }
+
             public String matchQuery(String query) {
                 if (query.contains("[" + key + ":")) {
-                    Matcher ratingMatcher = pattern.matcher(query);
+                    Matcher ratingMatcher = getPattern().matcher(query);
                     if (ratingMatcher.find())
                         return sub = ratingMatcher.group(0);
                 }
@@ -1868,7 +2032,7 @@ public class Helpers {
 
             public SearchCriteria<T, Result> buildPredicate() {
                 if (CustomUtility.stringExists(sub) && parser != null && buildPredicate != null) {
-                    predicate = buildPredicate.runGenericInterface(parser.runGenericInterface(sub));
+                    predicate = buildPredicate.runGenericInterface(tempResult = parser.runGenericInterface(sub));
                 }
                 return this;
             }
@@ -1885,7 +2049,7 @@ public class Helpers {
 
             public Result parse() {
                 if (CustomUtility.stringExists(sub) && parser != null)
-                    return parser.runGenericInterface(sub);
+                    return tempResult = parser.runGenericInterface(sub);
                 else
                     return null;
             }

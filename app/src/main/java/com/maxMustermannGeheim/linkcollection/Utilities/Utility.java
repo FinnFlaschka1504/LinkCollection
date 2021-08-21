@@ -43,7 +43,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -90,6 +94,7 @@ import com.github.sundeepk.compactcalendarview.domain.Event;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.common.hash.Hashing;
@@ -124,21 +129,27 @@ import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.pixplicity.sharp.Sharp;
 
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.opengraph.OpenGraph;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -269,6 +280,268 @@ public class Utility {
         }
     }
     /**  <------------------------- isOnline -------------------------  */
+
+
+    /**  ------------------------- Internet Dialog ------------------------->  */
+    public static CustomDialog showInternetDialog(Context context, String url, @NonNull CustomDialog[] internetDialog, @Nullable DoubleGenericInterface<CustomDialog, String> onImageSelected, @Nullable DoubleGenericInterface<CustomDialog, String> onTextSelected) {
+        if (internetDialog[0] == null) {
+            internetDialog[0] = CustomDialog.Builder(context)
+                    .setView(R.layout.dialog_video_internet)
+                    .setSetViewContent((customDialog, view, reload) -> {
+                        WebView webView = view.findViewById(R.id.dialog_videoInternet_webView);
+                        webView.loadUrl(CustomUtility.stringExists(url) ? url : "https://www.google.de/");
+                        webView.setWebViewClient(new WebViewClient());
+                        WebSettings webSettings = webView.getSettings();
+                        webSettings.setJavaScriptEnabled(true);
+                        webSettings.setUserAgentString(com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper.USER_AGENT);
+                        webSettings.setUseWideViewPort(true);
+                        webSettings.setLoadWithOverviewMode(true);
+
+                        webSettings.setSupportZoom(true);
+                        webSettings.setBuiltInZoomControls(true);
+                        webSettings.setDisplayZoomControls(false);
+
+                        // ---------------
+
+                        FloatingActionButton dialog_videoInternet_getThumbnails = view.findViewById(R.id.dialog_videoInternet_getThumbnails);
+                        if (onImageSelected != null) {
+                            dialog_videoInternet_getThumbnails.setVisibility(View.VISIBLE);
+                            dialog_videoInternet_getThumbnails.setOnClickListener(v1 -> {
+                                showSelectThumbnailDialog(context, webView, null, s -> onImageSelected.run(customDialog, s));
+                            });
+                        } else
+                            dialog_videoInternet_getThumbnails.setVisibility(View.GONE);
+
+                        // ---------------
+
+                        FloatingActionButton dialog_videoInternet_getSelection = view.findViewById(R.id.dialog_videoInternet_getSelection);
+                        if (onTextSelected != null) {
+                            dialog_videoInternet_getSelection.setVisibility(View.VISIBLE);
+                            dialog_videoInternet_getSelection.setOnClickListener(v1 -> {
+                                webView.evaluateJavascript("(function(){return window.getSelection().toString()})()", value -> {
+                                    value = Utility.subString(value, 1, -1);
+                                    onTextSelected.run(customDialog, value);
+                                });
+                            });
+
+                        } else
+                            dialog_videoInternet_getSelection.setVisibility(View.GONE);
+
+                        // ---------------
+
+                        TextInputLayout dialog_videoInternet_url_layout = customDialog.findViewById(R.id.dialog_videoInternet_url_layout);
+                        ImageView dialog_videoInternet_goButton = customDialog.findViewById(R.id.dialog_videoInternet_goButton);
+                        TextInputEditText dialog_videoInternet_url = (TextInputEditText) dialog_videoInternet_url_layout.getEditText();
+                        dialog_videoInternet_url.setOnEditorActionListener((v12, actionId, event) -> {
+                            if (actionId == EditorInfo.IME_ACTION_GO) {
+                                dialog_videoInternet_goButton.callOnClick();
+                                CustomUtility.changeWindowKeyboard(context, dialog_videoInternet_url, false);
+                                dialog_videoInternet_url.requestFocus();
+                                return true;
+                            }
+                            return false;
+                        });
+                        dialog_videoInternet_url.setText(webView.getUrl());
+
+                        dialog_videoInternet_goButton.setOnClickListener(v1 -> {
+                            String urlOrSearch = dialog_videoInternet_url.getText().toString();
+                            if (CustomUtility.stringExists(urlOrSearch)) {
+                                if (CustomUtility.isUrl(urlOrSearch)) {
+                                    webView.loadUrl(urlOrSearch);
+                                } else {
+                                    try {
+                                        urlOrSearch = URLEncoder.encode(urlOrSearch, "UTF-8");
+                                    } catch (UnsupportedEncodingException ignored) {
+                                    }
+                                    webView.loadUrl("https://www.google.de/search?q=" + urlOrSearch);
+                                }
+                            }
+                        });
+
+                        customDialog.findViewById(R.id.dialog_videoInternet_close).setOnClickListener(v1 -> customDialog.dismiss());
+
+                        webView.setWebViewClient(new WebViewClient() {
+                            @Override
+                            public void onPageFinished(WebView view, String url) {
+                                dialog_videoInternet_url.setText(url);
+                            }
+                        });
+
+                    })
+                    .setOnBackPressedListener(customDialog -> {
+                        WebView webView = customDialog.findViewById(R.id.dialog_videoInternet_webView);
+                        if (webView != null && webView.canGoBack()) {
+                            webView.goBack();
+                            return true;
+                        }
+                        return false;
+                    })
+                    .disableScroll()
+                    .setDimensions(true, true)
+                    .show();
+        } else {
+            internetDialog[0].show();
+            WebView webView = internetDialog[0].findViewById(R.id.dialog_videoInternet_webView);
+            if (CustomUtility.stringExists(url) && !Objects.equals(webView.getOriginalUrl(), url))
+                webView.loadUrl(CustomUtility.stringExists(url) ? url : "https://www.google.de/");
+        }
+        return internetDialog[0];
+    }
+
+    private static void showSelectThumbnailDialog(Context context, @Nullable WebView webView, @Nullable String text, GenericInterface<String> onImageSelected) {
+        final int[] count = {3};
+        CustomList<String> imageUrlList = new CustomList<>();
+        CustomList<String> imageFromUrlParser = new CustomList<>();
+        CustomList<String> imageFromOpenGraph = new CustomList<>();
+        CustomList<String> imagesFromText = new CustomList<>();
+
+        Runnable showDialog = () -> {
+            showSelectImageDialog(context, imageUrlList, onImageSelected);
+        };
+
+        Runnable connectLists = () -> {
+            imageUrlList.addAll(imageFromUrlParser);
+            imageUrlList.addAll(imageFromOpenGraph);
+            imageUrlList.addAll(imagesFromText);
+            imageUrlList.replaceAll(path -> path.startsWith("//") ? "https:" + path : path);
+            showDialog.run();
+        };
+
+        Runnable lowerCount = () -> {
+            count[0]--;
+            if (count[0] <= 0)
+                connectLists.run();
+        };
+
+        if (webView != null) {
+            String url = webView.getUrl();
+
+            //       -------------------- Getter -------------------->
+            Runnable getFromUrlParser = () -> {
+                Utility.ifNotNull(UrlParser.getMatchingParser(url), urlParser -> {
+                    String script = urlParser.getThumbnailCode();
+                    if (!Utility.stringExists(script)) {
+                        lowerCount.run();
+                        return;
+                    }
+                    if (script.startsWith("{") && script.endsWith("}")) {
+                        script = "(function() " + script + ")();";
+
+                    } else {
+                        if (!script.endsWith(";"))
+                            script += ";";
+                    }
+                    webView.evaluateJavascript(script, s -> {
+                        if (s.startsWith("\"") && s.endsWith("\""))
+                            s = Utility.subString(s, 1, -1);
+
+                        if (s.matches(CategoriesActivity.pictureRegex))
+                            imageFromUrlParser.add(s);
+                        lowerCount.run();
+
+                    });
+                }, lowerCount);
+            };
+
+            Runnable getFromOpenGraph = () -> {
+                Utility.getOpenGraphFromWebsite(url, openGraph -> {
+                    String path;
+                    if (openGraph != null && (path = openGraph.getContent("image")) != null && path.matches(CategoriesActivity.pictureRegex)) {
+                        imageFromOpenGraph.add(path);
+                    }
+
+                    lowerCount.run();
+
+                });
+            };
+
+            final int[] htmlTries = {3};
+            Runnable[] getFromHtml = {null};
+            getFromHtml[0] = () -> {
+                webView.evaluateJavascript(CustomUtility.SwitchExpression.setInput(htmlTries[0])
+                        .addCase(3, "document.getElementsByTagName('html')[0].innerHTML;")
+                        .addCase(2, "$('html').html();")
+                        .addCase(1, "$('html').innerHTML;")
+                        .addCase(0, "$('html').outerHTML;").evaluate(), value -> {
+                    if (!value.equals("null") || htmlTries[0] <= 0) {
+                        imagesFromText.addAll(Utility.getImageUrlsFromText(value));
+                        lowerCount.run();
+                    } else {
+                        htmlTries[0]--;
+                        getFromHtml[0].run();
+                    }
+                });
+            };
+            //       <-------------------- Getter --------------------
+
+            getFromUrlParser.run();
+            getFromOpenGraph.run();
+            getFromHtml[0].run();
+        } else if (text != null) {
+            imagesFromText.addAll(Utility.getImageUrlsFromText(text));
+            connectLists.run();
+        }
+    }
+
+    public static void showSelectImageDialog(Context context, CustomList<String> imageUrlList, GenericInterface<String> onImageSelected) {
+        CustomDialog.Builder(context)
+                .setTitle("Bild Auswählen")
+                .enableTitleBackButton()
+                .setView(customDialog -> new CustomRecycler<String>((AppCompatActivity) context)
+                        .setItemLayout(R.layout.list_item_select_thumbnail)
+                        .setObjectList(imageUrlList)
+                        .setSetItemContent((customRecycler, itemView, s) -> {
+                            ImageView thumbnail = itemView.findViewById(R.id.listItem_selectThumbnail_thumbnail);
+                            thumbnail.setVisibility(View.VISIBLE);
+                            View editUrlLayout = itemView.findViewById(R.id.listItem_selectThumbnail_editLayout);
+                            editUrlLayout.setVisibility(View.GONE);
+                            TextInputLayout listItem_selectThumbnail_url_layout = itemView.findViewById(R.id.listItem_selectThumbnail_url_layout);
+                            EditText listItem_selectThumbnail_url = listItem_selectThumbnail_url_layout.getEditText();
+                            listItem_selectThumbnail_url.setText(s);
+                            Button listItem_selectThumbnail_test = itemView.findViewById(R.id.listItem_selectThumbnail_test);
+
+                            Utility.loadUrlIntoImageView(context, thumbnail, s, null, () -> {
+                                thumbnail.setVisibility(View.GONE);
+                                editUrlLayout.setVisibility(View.VISIBLE);
+                                new Helpers.TextInputHelper(listItem_selectThumbnail_test::setEnabled, listItem_selectThumbnail_url_layout)
+                                        .setValidation(listItem_selectThumbnail_url_layout, (validator, text1) -> validator.setRegEx(CategoriesActivity.pictureRegex));
+
+                            });
+
+                            listItem_selectThumbnail_test.setOnClickListener(v2 -> {
+                                String newUrl = listItem_selectThumbnail_url.getText().toString().trim();
+                                int position = customRecycler.getRecycler().getChildAdapterPosition(itemView);
+                                imageUrlList.remove(position);
+                                imageUrlList.add(position, newUrl);
+                                customRecycler.update(position);
+                            });
+                        })
+                        .addSubOnClickListener(R.id.listItem_selectThumbnail_thumbnail, (customRecycler, itemView, s, index) -> {
+                            String result = ((EditText) itemView.findViewById(R.id.listItem_selectThumbnail_url)).getText().toString().trim();
+                            onImageSelected.runGenericInterface(result);
+                            customDialog.dismiss();
+                        })
+                        .addSubOnLongClickListener(R.id.listItem_selectThumbnail_thumbnail, (customRecycler, itemView, s, index) -> {
+                            ImageView thumbnail = itemView.findViewById(R.id.listItem_selectThumbnail_thumbnail);
+                            thumbnail.setVisibility(View.GONE);
+                            View editUrlLayout = itemView.findViewById(R.id.listItem_selectThumbnail_editLayout);
+                            editUrlLayout.setVisibility(View.VISIBLE);
+                        })
+                        .generateRecyclerView())
+                .setDimensionsFullscreen()
+                .disableScroll()
+                .show();
+    }
+
+    public static CustomList<String> getImageUrlsFromText(String text) {
+        Matcher matcher = Pattern.compile(CategoriesActivity.pictureRegex).matcher(text);
+        CustomList<String> urlList = new CustomList<>();
+        while (matcher.find()) {
+            urlList.add(matcher.group());
+        }
+        return urlList;
+    }
+    /**  <------------------------- Internet Dialog -------------------------  */
 
 
     public static void openFileChooser(AppCompatActivity activity, String imeType, int... requestCode) {
@@ -752,6 +1025,7 @@ public class Utility {
     }
     /**  <------------------------- watchLater -------------------------  */
 
+
     /**  ------------------------- Copy ------------------------->  */
     public static <T> T deepCopy(T t) {
         Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
@@ -802,6 +1076,7 @@ public class Utility {
         boolean runInterceptOnClick(View view);
     }
     /**  <------------------------- OnClickListener -------------------------  */
+
 
     /**  ------------------------- Filter ------------------------->  */
     /**  ------------------------- ... in Videos ------------------------->  */
@@ -1387,8 +1662,9 @@ public class Utility {
 
 
     /**  ------------------------- Checks ------------------------->  */
+    public static final String urlPattern = "(?i)^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?!(?:10|127)(?:\\.\\d{1,3}){3})(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?(?:[/?#]\\S*)?$";
     public static boolean isUrl(String text) {
-        return text.matches("(?i)^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?!(?:10|127)(?:\\.\\d{1,3}){3})(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?(?:[/?#]\\S*)?$");
+        return text.matches(urlPattern);
     }
 
     public static boolean isImdbId(String imdbId) {
@@ -1523,6 +1799,24 @@ public class Utility {
 
         return format;
     }
+
+    @NotNull
+    public static StringBuffer getTextFromUri(AppCompatActivity activity, Uri uri) {
+        StringBuffer buf = new StringBuffer();
+        try {
+            String str = "";
+            InputStream inputStream = activity.getContentResolver().openInputStream(uri);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+            if (inputStream != null) {
+                while ((str = reader.readLine()) != null) {
+                    buf.append(str + "\n" );
+                }
+            }
+        } catch (IOException e) {
+            Toast.makeText(activity, "Fehler", Toast.LENGTH_SHORT).show();
+        }
+        return buf;
+    }
     /**  <------------------------- Text -------------------------  */
 
 
@@ -1579,6 +1873,7 @@ public class Utility {
         toast.show();
     }
     /**  <------------------------- Toast -------------------------  */
+
 
     /**  ------------------------- EditItem ------------------------->  */
     public static CustomDialog showEditItemDialog(Context context, List<String> preSelectedUuidList, CategoriesActivity.CATEGORIES category, DoubleGenericInterface<CustomDialog, List<String>> onSaved) {
@@ -3720,18 +4015,6 @@ public class Utility {
         return (!imagePath.matches("\\/\\w+\\.\\w+") ? "" : "https://image.tmdb.org/t/p/" + (original ? "original" : "w92") + "/") + imagePath;
     }
     /**  <------------------------- ImageView -------------------------  */
-
-
-    /**  ------------------------- GetImageUrlsFromText ------------------------->  */
-    public static CustomList<String> getImageUrlsFromText(String html) {
-        Matcher matcher = Pattern.compile(CategoriesActivity.pictureRegex).matcher(html);
-        CustomList<String> urlList = new CustomList<>();
-        while (matcher.find()) {
-            urlList.add(matcher.group(0));
-        }
-        return urlList;
-    }
-    /**  <------------------------- GetImageUrlsFromText -------------------------  */
 
 
     /**  ------------------------- GetOpenGraphFromWebsite ------------------------->  */

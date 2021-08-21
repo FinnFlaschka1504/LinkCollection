@@ -15,6 +15,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 import android.util.Pair;
+import android.view.ContextThemeWrapper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -80,12 +81,8 @@ import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.maxMustermannGeheim.linkcollection.Utilities.VersionControl;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -259,7 +256,7 @@ public class Settings extends AppCompatActivity {
                 })
                 .setAssociatedClasses(Video.class, Darsteller.class, Studio.class, Genre.class, UrlParser.class)
                 .setSettingsDialog(new Utility.Triple<>(R.layout.dialog_settings_video, (customDialog, view, space) -> {
-                    Context settingsContext = customDialog.getDialog().getContext();
+                    AppCompatActivity settingsContext = (AppCompatActivity) ((ContextThemeWrapper) customDialog.getDialog().getContext()).getBaseContext();
 
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_overview_images)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_IMAGES));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_overview_scroll)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SCROLL));
@@ -274,13 +271,46 @@ public class Settings extends AppCompatActivity {
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_more_showCollections)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_COLLECTIONS));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_warnEmptyURL)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_WARN_EMPTY_URL));
 
-                    view.findViewById(R.id.dialogSettingsVideo_edit_importGenres).setOnClickListener(v -> {
-                        Utility.importTmdbGenre(settingsContext, false, true);
-                        context.setResult(RESULT_OK);
+                    view.findViewById(R.id.dialogSettingsVideo_more_findImages).setOnClickListener(v -> {
+                        Utility.GenericInterface<String> showResult = s -> {
+                            CustomDialog.Builder(settingsContext)
+                                    .setTitle("Ergebnis")
+                                    .setEdit(new CustomDialog.EditBuilder().setHint("Ergebnis-Url").setText(s))
+                                    .show();
+                        };
+
+                        CustomDialog.Builder(settingsContext)
+                                .setTitle("Bilder Finden")
+                                .addButton("Auf Webseite", customDialog1 -> {
+                                    CustomDialog[] internetDialog = {null};
+                                    CustomDialog.Builder(settingsContext)
+                                            .setTitle("Webseiten URL Eingeben")
+                                            .setEdit(new CustomDialog.EditBuilder().setHint("URL").setRegEx(Utility.urlPattern))
+                                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                                            .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog2 -> {
+                                                String url = customDialog2.getEditText();
+                                                Utility.showInternetDialog(settingsContext, url, internetDialog, (customDialog3, s) -> {
+//                                                    Toast.makeText(settingsContext, s, Toast.LENGTH_SHORT).show();
+                                                    showResult.runGenericInterface(s);
+                                                }, null);
+                                            }, false)
+                                            .disableLastAddedButton()
+                                            .show();
+                                })
+                                .addButton("In Datei", customDialog1 -> {
+                                    ActivityResultHelper.addFileChooserRequest(settingsContext, "text/*", intent -> {
+                                        String text = Utility.getTextFromUri(settingsContext, intent.getData()).toString();
+                                        CustomList<String> list = Utility.getImageUrlsFromText(text);
+                                        Utility.showSelectImageDialog(settingsContext, list, showResult);
+                                    });
+                                })
+                                .enableStackButtons()
+                                .show();
+
                     });
 
                     ((TextView) view.findViewById(R.id.dialogSettingsVideo_edit_parseUrl_added)).setText(database.urlParserMap.values().stream().map(UrlParser::getName).collect(Collectors.joining(", ")));
-                    view.findViewById(R.id.dialogSettingsVideo_edit_parseUrl_select).setOnClickListener(v -> {
+                    view.findViewById(R.id.dialogSettingsVideo_more_parseUrl_select).setOnClickListener(v -> {
 
                         CustomRecycler<CustomRecycler.Expandable<UrlParser>> customRecycler = new CustomRecycler<CustomRecycler.Expandable<UrlParser>>(context)
                                 .setExpandableHelper(customRecycler1 -> customRecycler1.new ExpandableHelper<UrlParser>(R.layout.list_item_url_parser, (customRecycler2, itemView, urlParser, expanded) -> {
@@ -327,6 +357,11 @@ public class Settings extends AppCompatActivity {
                                 .setView(customRecycler.generateRecyclerView())
                                 .setOnDialogDismiss(customDialog1 -> UrlParser.webViewMap.clear())
                                 .show();
+                    });
+
+                    view.findViewById(R.id.dialogSettingsVideo_more_importGenres).setOnClickListener(v -> {
+                        Utility.importTmdbGenre(settingsContext, false, true);
+                        context.setResult(RESULT_OK);
                     });
 
                     view.findViewById(R.id.dialogSettingsVideo_more_refreshVideos).setOnClickListener(v -> {
@@ -1587,19 +1622,7 @@ public class Settings extends AppCompatActivity {
             return;
         }
 
-        StringBuffer buf = new StringBuffer();
-        try {
-            String str = "";
-            InputStream inputStream = getContentResolver().openInputStream(uri);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-            if (inputStream != null) {
-                while ((str = reader.readLine()) != null) {
-                    buf.append(str + "\n" );
-                }
-            }
-        } catch (IOException e) {
-            Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
-        }
+        StringBuffer buf = Utility.getTextFromUri(this, uri);
 
         HashMap<String, String> importedMap = new Gson().fromJson(buf.toString(), TypeToken.getParameterized(HashMap.class, String.class, String.class).getType());
         for (String key : settingsMap.keySet()) {

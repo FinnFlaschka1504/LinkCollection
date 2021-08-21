@@ -63,6 +63,8 @@ import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.unnamed.b.atv.model.TreeNode;
 import com.unnamed.b.atv.view.AndroidTreeView;
 
+import org.intellij.lang.annotations.Language;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -79,10 +81,10 @@ public class CategoriesActivity extends AppCompatActivity {
     public static final int START_CATEGORY_SEARCH = 001;
     public static final String EXTRA_SEARCH_CATEGORY = "EXTRA_SEARCH_CATEGORY";
     public static final String EXTRA_SEARCH = "EXTRA_SEARCH";
-    public static String pictureRegex = "((https:)|\\/)([^\\s\\\\]|(?<=\\S) (?=\\S))+?\\.(?:jpe?g|png|svg)";//"((https:)|/)[^\\n]+?\\.(?:jpe?g|png|svg)";
+    @Language("RegExp") public static String pictureRegex = "(https?:|\\/)(([\\w$\\-_.+!*'(),/]|(?<=\\S)\\s(?=\\S))+?)\\.(jpe?g|png|svg)"; //"(https?:|\\/)(([^\\s\\\\<>{}]|(?<=\\S)\\s(?=\\S))+?)\\.(jpe?g|png|svg)";//"((https:)|/)[^\\n]+?\\.(?:jpe?g|png|svg)";
     //    public static String pictureRegex = "((https:)|/)([,+%&?=()/|.|\\w|\\s|-])+\\.(?:jpe?g|png|svg)";
     public static String pictureRegexAll = pictureRegex.split("\\\\\\.")[0];
-    public static final String uuidRegex = "\\b([a-zA-Z]+_)?[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b";
+    @Language("RegExp") public static final String uuidRegex = "\\b([a-zA-Z]+_)?[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b";
     private Helpers.SortHelper<Pair<ParentClass, Integer>> sortHelper;
     private boolean reverse = false;
     private Menu toolBarMenu;

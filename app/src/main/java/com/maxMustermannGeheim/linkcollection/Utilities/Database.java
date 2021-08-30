@@ -25,7 +25,9 @@ import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaCategory;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaEvent;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaPerson;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaTag;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Person;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
@@ -48,6 +50,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import javax.annotation.CheckForNull;
 
 public class Database {
     private static final String TAG = "Database";
@@ -127,9 +131,13 @@ public class Database {
     public static final String MEDIA_MAP = "MEDIA_MAP";
     public static final String MEDIA_PERSON_MAP = "MEDIA_PERSON_MAP";
     public static final String MEDIA_CATEGORY_MAP = "MEDIA_CATEGORY_MAP";
-    public Map<String, Media> mediaMap = new HashMap<>();;
-    public Map<String, MediaPerson> mediaPersonMap = new HashMap<>();;
-    public Map<String, MediaCategory> mediaCategoryMap = new HashMap<>();;
+    public static final String MEDIA_TAG_MAP = "MEDIA_TAG_MAP";
+    public static final String MEDIA_EVENT_MAP = "MEDIA_EVENT_MAP";
+    public Map<String, Media> mediaMap = new HashMap<>();
+    public Map<String, MediaPerson> mediaPersonMap = new HashMap<>();
+    public Map<String, MediaCategory> mediaCategoryMap = new HashMap<>();
+    public Map<String, MediaTag> mediaTagMap = new HashMap<>();
+    public Map<String, MediaEvent> mediaEventMap = new HashMap<>();
 
     private List<Content> contentList;
 
@@ -159,7 +167,9 @@ public class Database {
 
                 new Content<Map, Media>(Media.class, mediaMap, databaseCode_content, MEDIA, MEDIA_MAP),
                 new Content<Map, MediaPerson>(MediaPerson.class, mediaPersonMap, databaseCode_content, MEDIA, MEDIA_PERSON_MAP),
-                new Content<Map, MediaCategory>(MediaCategory.class, mediaCategoryMap, databaseCode_content, MEDIA, MEDIA_CATEGORY_MAP)
+                new Content<Map, MediaCategory>(MediaCategory.class, mediaCategoryMap, databaseCode_content, MEDIA, MEDIA_CATEGORY_MAP),
+                new Content<Map, MediaTag>(MediaTag.class, mediaTagMap, databaseCode_content, MEDIA, MEDIA_TAG_MAP),
+                new Content<Map, MediaEvent>(MediaEvent.class, mediaEventMap, databaseCode_content, MEDIA, MEDIA_EVENT_MAP)
         );
     }
     //  <----- Content deklaration -----
@@ -473,14 +483,23 @@ public class Database {
         return aBoolean;
     }
 
-    public static Boolean saveAll() { // ToDo: alle if abfragen für null rückgabe verbessern
+    public static Boolean saveAll_simple(Context context) {
+        Boolean aBoolean = saveAll(context);
+        if (aBoolean == null)
+            return false;
+        return aBoolean;
+    }
+
+    @CheckForNull public static Boolean saveAll() { // ToDo: alle if abfragen für null rückgabe verbessern
         return saveAll(false);
     }
 
-    public static Boolean saveAll(boolean forceAll) {
+    @CheckForNull public static Boolean saveAll(boolean forceAll) {
         Log.d(TAG, "saveAll: ");
 
-        if (!Database.isReady() || !database.isOnline() || (!forceAll && !Database.hasChanges()))
+        if (!Database.isReady() || !database.isOnline())
+            return null;
+        else if (!forceAll && !Database.hasChanges())
             return false;
 
         // ToDo: speicherung darf bereits vorhandene Objekte nicht verändern
@@ -502,14 +521,51 @@ public class Database {
         return true;
     }
 
-    public static Boolean saveAll(@Nullable Runnable onSaved, @Nullable Runnable onNothing, @Nullable Runnable onFailed) {
+    @CheckForNull public static Boolean saveAll(@Nullable Runnable... onSavedNothingFailed) {
         Boolean result = saveAll();
-        if (result != null && result && onSaved != null)
-            onSaved.run();
-        else if (result != null && !result && onNothing != null)
-            onNothing.run();
-        else if (result == null && onFailed != null)
-            onFailed.run();
+        if (onSavedNothingFailed != null && onSavedNothingFailed.length > 0) {
+            if (result != null && result)
+                Utility.runVarArgRunnable(0, onSavedNothingFailed);
+            else if (result != null && !result)
+                Utility.runVarArgRunnable(1, onSavedNothingFailed);
+            else if (result == null)
+                Utility.runVarArgRunnable(2, onSavedNothingFailed);
+        }
+        return result;
+    }
+
+    @CheckForNull public static Boolean saveAll(Context context, @Nullable Runnable... onSavedNothingFailed) {
+        return saveAllTextOnly(context, saveAll(onSavedNothingFailed));
+    }
+
+    @CheckForNull public static Boolean saveAll(Context context, @Nullable Utility.Triple<String, String, String> textSavedNothingFailed, @Nullable Runnable... onSavedNothingFailed){
+        Boolean result = saveAll(onSavedNothingFailed);
+        if (textSavedNothingFailed != null)
+            saveAllTextOnly(context, result, textSavedNothingFailed.first, textSavedNothingFailed.second, textSavedNothingFailed.third);
+        else
+            saveAllTextOnly(context, result);
+        return result;
+    }
+
+//    public static Boolean saveAll(Context context, @Nullable String... textSavedNothingFailed){
+//        return saveAllTextOnly(context, saveAll(), textSavedNothingFailed);
+//    }
+
+    @CheckForNull private static Boolean saveAllTextOnly(Context context, Boolean result, @Nullable String... textSavedNothingFailed){
+        String text = "Err.";
+
+        if (result != null && result) {
+            if ((text = Utility.easyVarArgsOrElse(0, null, textSavedNothingFailed)) == null)
+                text = "Gespeichert";
+        } else if (result != null && !result) {
+            if ((text = Utility.easyVarArgsOrElse(1, null, textSavedNothingFailed)) == null)
+                text = "Nichts Gespeichert";
+        } else if (result == null) {
+            if ((text = Utility.easyVarArgsOrElse(2, null, textSavedNothingFailed)) == null)
+                text = "Speichern Fehlgeschlagen";
+        }
+
+        Toast.makeText(context, text, Toast.LENGTH_SHORT).show();
         return result;
     }
 

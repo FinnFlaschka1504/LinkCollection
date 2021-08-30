@@ -66,6 +66,7 @@
         android:layout_gravity="bottom"
         android:layout_marginStart="16dp"
         android:layout_marginBottom="95dp"
+        android:gravity="start|bottom"
         android:orientation="vertical" />
 
     <HorizontalScrollView

@@ -29,11 +29,13 @@ import com.google.common.hash.Hashing;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Media.MediaActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.Media.MediaEventActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.CollectionActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaEvent;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomInternetHelper;
@@ -87,6 +89,8 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     public static final int START_MEDIA = ++count;
     public static final int START_MEDIA_PERSON = ++count;
     public static final int START_MEDIA_CATEGORY = ++count;
+    public static final int START_MEDIA_TAG = ++count;
+    public static final int START_MEDIA_EVENT = ++count;
 
     private static Database database;
     private static SharedPreferences mySPR_daten;
@@ -273,6 +277,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //                .setView(imageView)
 //                .setDimensions(true, true)
 //                .show();
+
     }
 
     void loadDatabase(boolean createNew) {
@@ -787,6 +792,22 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         Intent intent = new Intent(this, CategoriesActivity.class);
         intent.putExtra(EXTRA_CATEGORY, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY);
         startActivityForResult(intent, START_MEDIA_CATEGORY);
+    }
+
+    public void openMediaTagActivity(View view) {
+        if (!Database.isReady())
+            return;
+        Intent intent = new Intent(this, CategoriesActivity.class);
+        intent.putExtra(EXTRA_CATEGORY, CategoriesActivity.CATEGORIES.MEDIA_TAG);
+        startActivityForResult(intent, START_MEDIA_TAG);
+    }
+
+    public void openMediaEventActivity(View view) {
+        if (!Database.isReady())
+            return;
+        Intent intent = new Intent(this, MediaEventActivity.class);
+        intent.putExtra(EXTRA_CATEGORY, CategoriesActivity.CATEGORIES.MEDIA_EVENT);
+        startActivityForResult(intent, START_MEDIA_EVENT);
     }
     //  <------------------------- Media -------------------------
 

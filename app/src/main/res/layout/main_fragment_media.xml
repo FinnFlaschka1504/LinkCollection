@@ -95,6 +95,73 @@
                     android:elevation="3dp"
                     android:foreground="@drawable/ripple"
                     android:gravity="center"
+                    android:onClick="openMediaEventActivity"
+                    android:orientation="vertical">
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <ImageView
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:alpha="0.075"
+                            android:src="@drawable/ic_event"
+                            android:layout_margin="8dp"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginEnd="8dp"
+                            android:layout_marginBottom="8dp"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="8dp"
+                                android:text="Events"
+                                android:textSize="24sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/main_media_eventCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="–" />
+                        </LinearLayout>
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                </com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_margin="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/tile_background"
+                    android:clickable="true"
+                    android:elevation="3dp"
+                    android:foreground="@drawable/ripple"
+                    android:gravity="center"
                     android:onClick="openMediaPersonActivity"
                     android:orientation="vertical">
 
@@ -145,6 +212,64 @@
 
                 </com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout>
 
+                <com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_margin="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/tile_background"
+                    android:clickable="true"
+                    android:elevation="3dp"
+                    android:foreground="@drawable/ripple"
+                    android:gravity="center"
+                    android:onClick="openMediaTagActivity"
+                    android:orientation="vertical">
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <ImageView
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:alpha="0.075"
+                            android:src="@drawable/ic_categories"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginEnd="8dp"
+                            android:layout_marginBottom="8dp"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="8dp"
+                                android:text="Tags"
+                                android:textSize="24sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/main_media_tagCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="–" />
+                        </LinearLayout>
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                </com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout>
             </LinearLayout>
 
             <LinearLayout
@@ -221,9 +346,9 @@
                     android:elevation="3dp"
                     android:foreground="@drawable/ripple"
                     android:gravity="center"
-                    android:onClick="openGenreActivity"
-                    android:orientation="vertical"
-                    android:visibility="invisible">
+                    android:onClick="openMediaTagActivity"
+                    android:visibility="invisible"
+                    android:orientation="vertical">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="match_parent"
@@ -233,7 +358,7 @@
                             android:layout_width="0dp"
                             android:layout_height="0dp"
                             android:alpha="0.075"
-                            android:src="@drawable/ic_genre"
+                            android:src="@drawable/ic_categories"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
@@ -257,12 +382,12 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginBottom="8dp"
-                                android:text="Genre"
+                                android:text="Tags"
                                 android:textSize="24sp"
                                 android:textStyle="bold" />
 
                             <TextView
-                                android:id="@+id/main_genreCount"
+                                android:id="@+id/main_media_tagCount"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="–" />

@@ -10,7 +10,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:orientation="horizontal" />
+        android:orientation="horizontal"
+        android:paddingHorizontal="6dp"
+        android:clipToPadding = "false"/>
 
     <ImageView
         android:id="@+id/fragment_selectMediaHelper_selection_add"

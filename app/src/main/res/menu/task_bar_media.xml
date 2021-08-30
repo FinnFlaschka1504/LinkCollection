@@ -26,4 +26,13 @@
         android:visible="false"
         tools:visible="true"
         app:showAsAction="always" />
+
+    <item
+        android:id="@+id/taskBar_media_confirm"
+        android:icon="@drawable/ic_check"
+        android:iconTint="#FFFFFF"
+        android:title="Bestätigen"
+        android:visible="false"
+        tools:visible="true"
+        app:showAsAction="always" />
 </menu>

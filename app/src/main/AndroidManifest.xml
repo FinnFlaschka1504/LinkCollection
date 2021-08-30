@@ -24,34 +24,38 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme.NoTitle"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".Activities.Content.Media.VideoPlayerActivity"
-            android:configChanges="orientation|screenSize"
-            />
+        <activity android:name=".Activities.Content.Media.MediaEventActivity"></activity>
+        <activity
+            android:name=".Activities.Content.Media.VideoPlayerActivity"
+            android:configChanges="orientation|screenSize" />
         <activity
             android:name=".Activities.Content.Media.MediaActivity"
             android:configChanges="orientation|screenSize"
             android:parentActivityName=".Activities.Main.MainActivity"
             android:theme="@style/AppTheme.NoTitle">
-<!--            <intent-filter-->
-<!--                android:icon="@drawable/ic_media"-->
-<!--                android:label="Medium hinzufügen">-->
-<!--                <action android:name="android.intent.action.SEND" />-->
-<!--                <category android:name="android.intent.category.DEFAULT" />-->
-<!--                <data android:mimeType="image/* video/*" />-->
-<!--            </intent-filter>-->
+
+            <!-- <intent-filter -->
+            <!-- android:icon="@drawable/ic_media" -->
+            <!-- android:label="Medium hinzufügen"> -->
+            <!-- <action android:name="android.intent.action.SEND" /> -->
+            <!-- <category android:name="android.intent.category.DEFAULT" /> -->
+            <!-- <data android:mimeType="image/* video/*" /> -->
+            <!-- </intent-filter> -->
             <intent-filter
                 android:icon="@drawable/ic_media"
                 android:label="Medien hinzufügen">
                 <action android:name="android.intent.action.SEND" />
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
+
                 <category android:name="android.intent.category.DEFAULT" />
+
                 <data android:mimeType="image/* video/*" />
             </intent-filter>
         </activity>
         <activity
             android:name=".Activities.Main.DialogActivity"
-            android:launchMode="singleTop"
             android:configChanges="orientation|screenSize"
+            android:launchMode="singleTop"
             android:noHistory="true"
             android:theme="@style/DialogActivityTheme" />
         <activity
@@ -66,8 +70,8 @@
         </activity>
         <activity
             android:name=".Activities.Content.Videos.VideoActivity"
-            android:label="@string/VideoActivity_label"
             android:configChanges="orientation|screenSize"
+            android:label="@string/VideoActivity_label"
             android:parentActivityName=".Activities.Main.MainActivity"
             android:theme="@style/DialogActivityTheme.NoTitle">
             <intent-filter
@@ -86,14 +90,14 @@
             android:parentActivityName=".Activities.Main.MainActivity" />
         <activity
             android:name=".Activities.Content.ShowActivity"
-            android:parentActivityName=".Activities.Main.MainActivity"
             android:configChanges="orientation|screenSize"
+            android:parentActivityName=".Activities.Main.MainActivity"
             android:theme="@style/AppTheme.NoTitle" />
         <activity
             android:name=".Activities.Content.KnowledgeActivity"
+            android:configChanges="orientation|screenSize"
             android:label="Wissen"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:configChanges="orientation|screenSize"
             android:theme="@style/DialogActivityTheme.NoTitle">
             <intent-filter
                 android:icon="@drawable/ic_knowledge"
@@ -107,15 +111,15 @@
         </activity>
         <activity
             android:name=".Activities.Content.OweActivity"
-            android:label="Schulden"
             android:configChanges="orientation|screenSize"
+            android:label="Schulden"
             android:parentActivityName=".Activities.Main.MainActivity"
             android:theme="@style/AppTheme.NoTitle" />
         <activity
             android:name=".Activities.Content.JokeActivity"
+            android:configChanges="orientation|screenSize"
             android:label="Witze"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:configChanges="orientation|screenSize"
             android:theme="@style/DialogActivityTheme.NoTitle" />
         <activity
             android:name=".Activities.Main.CategoriesActivity"
@@ -123,14 +127,14 @@
             android:theme="@style/AppTheme.NoTitle" />
         <activity
             android:name=".Activities.Settings"
+            android:configChanges="orientation|screenSize"
             android:label="Einstellungen"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:configChanges="orientation|screenSize"
             android:theme="@style/AppTheme.NoTitle" />
         <activity
             android:name=".Utilities.ActivityResultHelper"
-            android:label="Dummy"
             android:configChanges="orientation|screenSize"
+            android:label="Dummy"
             android:theme="@style/DialogActivityTheme.NoTitle" />
 
         <provider

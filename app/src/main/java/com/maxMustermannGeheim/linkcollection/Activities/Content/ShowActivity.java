@@ -752,6 +752,14 @@ public class ShowActivity extends AppCompatActivity {
 
                         })
                         .setOnClickListener((customRecycler, itemView, episode, index) -> showEpisodeDetailDialog(null, episode, true))
+                        .setOnLongClickListener((customRecycler, itemView, episode, index) -> {
+                            int seasonNumber = episode.getSeasonNumber();
+                            getTempSeason(show, seasonNumber, stringEpisodeMap -> {
+                                CustomRecycler<Show.Season> seasonRecycler = showSeasonDialog(show);
+                                CustomRecycler<Show.Episode> episodeRecycler = showEpisodeDialog(show.getSeasonList().get(seasonNumber), stringEpisodeMap, seasonRecycler).goTo(episode);
+                                showEpisodeDetailDialog(episodeRecycler, episode, false);
+                            });
+                        })
                         .generateRecyclerView())
                 .setDimensionsFullscreen()
                 .enableTitleBackButton()
@@ -2280,6 +2288,17 @@ public class ShowActivity extends AppCompatActivity {
 
         requestQueue.add(jsonArrayRequest);
 
+    }
+
+    private void getTempSeason(Show show, int seasonNumber, Utility.GenericInterface<Map<String, Show.Episode>> onTempSeason) {
+        Map<String, Show.Episode> episodeMap;
+        Map<Integer, Map<String, Show.Episode>> seasonEpisodeMap;
+        if ((seasonEpisodeMap = database.tempShowSeasonEpisodeMap.get(show)) != null && (episodeMap = seasonEpisodeMap.get(seasonNumber)) != null)
+            onTempSeason.runGenericInterface(episodeMap);
+        else
+            apiSeasonRequest(show, seasonNumber, () -> {
+                onTempSeason.runGenericInterface(database.tempShowSeasonEpisodeMap.get(show).get(seasonNumber));
+            });
     }
 
     private static Show.Episode jsonToEpisode(Show show, @Nullable Map<String, Show.Episode> episodeMap, JSONObject episode_json) {

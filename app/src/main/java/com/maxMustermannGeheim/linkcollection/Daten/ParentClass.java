@@ -5,6 +5,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaPerson;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaTag;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
@@ -70,6 +71,8 @@ public class ParentClass extends com.finn.androidUtilities.ParentClass implement
                 return new MediaPerson(name);
             case MEDIA_CATEGORY:
                 return new MediaCategory(name);
+            case MEDIA_TAG:
+                return new MediaTag(name);
         }
         return null;
     }

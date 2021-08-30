@@ -117,6 +117,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaPerson;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaTag;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
@@ -1851,6 +1852,10 @@ public class Utility {
             return false;
         return new Date().before(date);
     }
+
+    public static long getTimezoneOffsetMillis(){
+        return Calendar.getInstance().get(Calendar.ZONE_OFFSET) + Calendar.getInstance().get(Calendar.DST_OFFSET);
+    }
     /**  <------------------------- Time -------------------------  */
 
 
@@ -1953,6 +1958,9 @@ public class Utility {
                                                     break;
                                                 case MEDIA_PERSON:
                                                     database.mediaPersonMap.put(newParentClass.getUuid(), (MediaPerson) newParentClass);
+                                                    break;
+                                                case MEDIA_TAG:
+                                                    database.mediaTagMap.put(newParentClass.getUuid(), (MediaTag) newParentClass);
                                                     break;
                                             }
                                             selectedUuidList.add(newParentClass.getUuid());
@@ -2264,6 +2272,8 @@ public class Utility {
     }
     /**  <------------------------- EditItem -------------------------  */
 
+
+    /**  <------------------------- Objects from Database -------------------------  */
     public static ParentClass getObjectFromDatabase(CategoriesActivity.CATEGORIES category, String uuid) {
         switch (category) {
             case MEDIA_CATEGORY:
@@ -2302,6 +2312,8 @@ public class Utility {
                 return database.mediaPersonMap;
             case MEDIA_CATEGORY:
                 return database.mediaCategoryMap;
+            case MEDIA_TAG:
+                return database.mediaTagMap;
         }
         return null;
     }
@@ -2323,6 +2335,11 @@ public class Utility {
                 return getMapFromDatabase(category).values().stream().filter(parentClass -> parentClass.getUuid().equals(id)).findFirst().orElse(null);
         }
     }
+
+    public static com.finn.androidUtilities.CustomList<? extends ParentClass> idToParentClassList(CategoriesActivity.CATEGORIES category, List<String> idList){
+        return idList.stream().map(id -> findObjectById(category, id)).collect(Collectors.toCollection(com.finn.androidUtilities.CustomList::new));
+    }
+    /**  ------------------------- Objects from Database ------------------------->  */
 
     public static class Triple<A, B, C> {
         public A first;
@@ -3183,7 +3200,7 @@ public class Utility {
     /**  ------------------------- Date & String ------------------------->  */
     public static Date getDateFromJsonString(String key, JSONObject jsonObject) {
         try {
-            return new SimpleDateFormat("yyyy-MM-dd", Locale.GERMANY).parse(jsonObject.getString(key));
+            return new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(jsonObject.getString(key));
         } catch (ParseException | JSONException e) {
             return null;
         }
@@ -3191,6 +3208,20 @@ public class Utility {
 
     public static String formatDate(String format, Date date) {
         return new SimpleDateFormat(format, Locale.getDefault()).format(date);
+    }
+
+    public enum DateFormat {
+        DATE_DASH("dd-MM-yyyy"), DATE_DOT("dd.MM.yyyy"), DATE_DASH_REVERSE("yyyy-MM-dd"), DATE_DOT_REVERSE("yyyy.MM.dd"), DATE_TIME_DASH("mm:hh 'Uhr' dd-MM-yyyy"), DATE_TIME_DOT("mm:hh 'Uhr' dd.MM.yyyy"), ;
+
+        public final String format;
+
+        DateFormat(String format) {
+            this.format = format;
+        }
+    }
+
+    public static String formatDate(DateFormat format, Date date) {
+        return new SimpleDateFormat(format.format, Locale.getDefault()).format(date);
     }
     /**  <------------------------- Date & String -------------------------  */
 
@@ -3755,6 +3786,28 @@ public class Utility {
             return true;
         }
         return false;
+    }
+
+    public static boolean runVarArgRunnable(int index, Runnable... varArg){
+        if (varArg != null && index >= 0) {
+            if (varArg.length > index && varArg[index] != null)
+                varArg[index].run();
+            else
+                return false;
+        } else
+            return false;
+        return true;
+    }
+
+    public static <T> boolean runVarArgGenericInterface(int index, T input, GenericInterface<T>... varArg){
+        if (varArg != null && index >= 0) {
+            if (varArg.length > index && varArg[index] != null)
+                varArg[index].runGenericInterface(input);
+            else
+                return false;
+        } else
+            return false;
+        return true;
     }
 
     // --------------- Recursion
@@ -4437,14 +4490,16 @@ public class Utility {
 //        return false;
 //    }
 //
-//    public static <T> T easyVarArgsOrElse(int index, CustomUtility.GenericReturnOnlyInterface<T> orElse, T... varArg) {
-//        if (varArg.length >= (index + 1)) {
-//            T t;
-//            if ((t = varArg[index]) != null)
-//                return t;
-//        }
-//        return orElse.runGenericInterface();
-//    }
+    public static <T> T easyVarArgsOrElse(int index, @Nullable CustomUtility.GenericReturnOnlyInterface<T> orElse, T... varArg) {
+        if (varArg != null) {
+            if (varArg.length > index) {
+                T t;
+                if ((t = varArg[index]) != null)
+                    return t;
+            }
+        }
+        return orElse == null ? null : orElse.runGenericInterface();
+    }
     /**  <------------------------- Arrays -------------------------  */
 
     /**  ------------------------- Maps ------------------------->  */

@@ -9,7 +9,7 @@
         android:id="@+id/listItem_image_imgaeView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_margin="3dp"
+        android:layout_margin="2dp"
         android:adjustViewBounds="true"
         tools:srcCompat="@drawable/simpsons_movie_poster" />
 
@@ -47,7 +47,7 @@
         <ImageView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_margin="3dp"
+            android:layout_margin="2dp"
             app:srcCompat="@drawable/border" />
 
         <ImageView

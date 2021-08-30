@@ -503,8 +503,10 @@ public class Settings extends AppCompatActivity {
                 .setKey(Database.MEDIA)
                 .setSetLayout((space, view) -> {
                     ((TextView) view.findViewById(R.id.main_media_count)).setText("" + database.mediaMap.size());
+                    ((TextView) view.findViewById(R.id.main_media_eventCount)).setText("" + database.mediaEventMap.size());
                     ((TextView) view.findViewById(R.id.main_media_personCount)).setText("" + database.mediaPersonMap.size());
                     ((TextView) view.findViewById(R.id.main_media_categoryCount)).setText("" + ParentClass_Tree.getAllCount(CategoriesActivity.CATEGORIES.MEDIA_CATEGORY));
+                    ((TextView) view.findViewById(R.id.main_media_tagCount)).setText("" + database.mediaTagMap.size());
                 })
                 .setAssociatedClasses(Media.class, MediaPerson.class)
                 .setSettingsDialog(null));

@@ -87,5 +87,36 @@
                 android:padding="5dp"
                 app:srcCompat="@android:drawable/ic_menu_edit" />
         </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/TextButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="8dp"
+                android:enabled="false"
+                android:text="Tags:"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/dialog_editMedia_tags"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:id="@+id/dialog_editMedia_editTags"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:foreground="@drawable/ripple"
+                android:padding="5dp"
+                app:srcCompat="@android:drawable/ic_menu_edit" />
+        </LinearLayout>
     </LinearLayout>
 </LinearLayout>

@@ -81,7 +81,7 @@ public class CategoriesActivity extends AppCompatActivity {
     public static final int START_CATEGORY_SEARCH = 001;
     public static final String EXTRA_SEARCH_CATEGORY = "EXTRA_SEARCH_CATEGORY";
     public static final String EXTRA_SEARCH = "EXTRA_SEARCH";
-    @Language("RegExp") public static String pictureRegex = "(https?:|\\/)(([\\w$\\-_.+!*'(),/]|(?<=\\S)\\s(?=\\S))+?)\\.(jpe?g|png|svg)"; //"(https?:|\\/)(([^\\s\\\\<>{}]|(?<=\\S)\\s(?=\\S))+?)\\.(jpe?g|png|svg)";//"((https:)|/)[^\\n]+?\\.(?:jpe?g|png|svg)";
+    @Language("RegExp") public static String pictureRegex = "(https?:|\\/)(([\\w$\\-_.+!*'(),/?=]|(?<=\\S)\\s(?=\\S))+?)\\.(jpe?g|png|svg)"; //"(https?:|\\/)(([^\\s\\\\<>{}]|(?<=\\S)\\s(?=\\S))+?)\\.(jpe?g|png|svg)";//"((https:)|/)[^\\n]+?\\.(?:jpe?g|png|svg)";
     //    public static String pictureRegex = "((https:)|/)([,+%&?=()/|.|\\w|\\s|-])+\\.(?:jpe?g|png|svg)";
     public static String pictureRegexAll = pictureRegex.split("\\\\\\.")[0];
     @Language("RegExp") public static final String uuidRegex = "\\b([a-zA-Z]+_)?[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b";
@@ -98,7 +98,7 @@ public class CategoriesActivity extends AppCompatActivity {
         GENRE("Genre", "Genres", VideoActivity.class), COLLECTION("Sammlung", "Sammlungen", VideoActivity.class), KNOWLEDGE_CATEGORIES("Kategorie", "Kategorien", KnowledgeActivity.class),
         PERSON("Person", "Personen", OweActivity.class), JOKE_CATEGORIES("Witz", "Witze", JokeActivity.class), SHOW_GENRES("Genre", "Genres", ShowActivity.class),
         SHOW("Serie", "Serien", ShowActivity.class), EPISODE("Episode", "Episoden", ShowActivity.class), MEDIA("Medium", "Medien", MediaActivity.class), MEDIA_PERSON("Person", "Personen", MediaActivity.class),
-        MEDIA_CATEGORY("Kategorie", "Kategorien", MediaActivity.class);
+        MEDIA_CATEGORY("Kategorie", "Kategorien", MediaActivity.class), MEDIA_TAG("Tag", "Tags", MediaActivity.class), MEDIA_EVENT("Event", "Events", MediaActivity.class);
 
         private String singular;
         private String plural;
@@ -386,8 +386,19 @@ public class CategoriesActivity extends AppCompatActivity {
                         pairList.add(new Pair<>(parentClass, count));
                     }
                     break;
+                case MEDIA_TAG:
+                    for (ParentClass parentClass : database.mediaTagMap.values()) {
+                        int count = 0;
+                        for (Media media : database.mediaMap.values()) {
+                            if (media.getTagIdList().contains(parentClass.getUuid()))
+                                count++;
+                        }
+                        pairList.add(new Pair<>(parentClass, count));
+                    }
+                    break;
 
             }
+            // ToDo: Abstrahieren ^^
             allDatenObjektPairList = pairList;
         }
     }
@@ -765,7 +776,14 @@ public class CategoriesActivity extends AppCompatActivity {
                     media.getCategoryIdList().remove(parentClass.getUuid());
                 }
                 break;
+            case MEDIA_TAG:
+                database.mediaTagMap.remove(parentClass.getUuid());
+                for (Media media : database.mediaMap.values()) {
+                    media.getTagIdList().remove(parentClass.getUuid());
+                }
+                break;
         }
+        // ToDo: abstrahieren
         Database.saveAll();
         setResult(RESULT_OK);
         reLoadRecycler();
@@ -818,6 +836,9 @@ public class CategoriesActivity extends AppCompatActivity {
                     break;
                 case MEDIA_CATEGORY:
                     getCategoryList = t -> ((Media) t).getCategoryIdList();
+                    break;
+                case MEDIA_TAG:
+                    getCategoryList = t -> ((Media) t).getTagIdList();
                     break;
             }
             intersectionList = new com.finn.androidUtilities.CustomList<>(getCategoryList.runGenericInterface(list.get(0)));

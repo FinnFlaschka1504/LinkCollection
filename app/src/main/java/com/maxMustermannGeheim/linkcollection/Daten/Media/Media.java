@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 public class Media extends ParentClass_Image {
     private List<String> personIdList = new CustomList<>();
     private List<String> categoryIdList = new CustomList<>();
+    private List<String> tagIdList = new CustomList<>();
 
 
     //  ------------------------- Constructor ------------------------->
@@ -50,6 +51,15 @@ public class Media extends ParentClass_Image {
 
     public Media setCategoryIdList(List<String> categoryIdList) {
         this.categoryIdList = categoryIdList;
+        return this;
+    }
+
+    public List<String> getTagIdList() {
+        return tagIdList;
+    }
+
+    public Media setTagIdList(List<String> tagIdList) {
+        this.tagIdList = tagIdList;
         return this;
     }
     //  <------------------------- Getter & Setter -------------------------

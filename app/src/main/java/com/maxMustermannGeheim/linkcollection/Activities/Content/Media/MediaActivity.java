@@ -28,10 +28,12 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -53,6 +55,7 @@ import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
+import com.finn.androidUtilities.ParentClass;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
@@ -75,6 +78,8 @@ import com.veinhorn.scrollgalleryview.MediaInfo;
 import com.veinhorn.scrollgalleryview.ScrollGalleryView;
 import com.veinhorn.scrollgalleryview.loader.MediaLoader;
 
+import org.apmem.tools.layouts.FlowLayout;
+
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -88,13 +93,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
 public class MediaActivity extends AppCompatActivity {
+    public static final String EXTRA_SELECT_MODE = "EXTRA_SELECT_MODE";
     private final String ADVANCED_SEARCH_CRITERIA__PERSON = "p";
     private final String ADVANCED_SEARCH_CRITERIA__CATEGORY = "c";
+    private final String ADVANCED_SEARCH_CRITERIA__TAG = "t";
 
 
     public enum FILTER_TYPE {
@@ -131,6 +139,7 @@ public class MediaActivity extends AppCompatActivity {
     private SearchView.OnQueryTextListener textListener;
     private CustomRecycler<MultiSelectHelper.Selectable<Media>> mediaRecycler;
     private MultiSelectHelper<Media> selectHelper;
+    private boolean selectMode;
     private Menu toolBarMenu;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.PERSON, FILTER_TYPE.CATEGORY));
     private VideoView currentVideoPreview;
@@ -202,6 +211,8 @@ public class MediaActivity extends AppCompatActivity {
     private void loadDatabase() {
         @SuppressLint("RestrictedApi") Runnable whenLoaded = () -> {
 
+            selectMode = getIntent().hasExtra(EXTRA_SELECT_MODE);
+
             setContentView(R.layout.activity_media);
 
             setupScrollGalleryView();
@@ -246,7 +257,8 @@ public class MediaActivity extends AppCompatActivity {
                     .addCriteria_defaultName()
                     .enableColoration()
                     .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA__PERSON, CategoriesActivity.CATEGORIES.MEDIA_PERSON, mediaSelectable -> mediaSelectable.getContent().getPersonIdList())
-                    .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA__CATEGORY, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY, mediaSelectable -> mediaSelectable.getContent().getCategoryIdList());
+                    .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA__CATEGORY, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY, mediaSelectable -> mediaSelectable.getContent().getCategoryIdList())
+                    .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA__TAG, CategoriesActivity.CATEGORIES.MEDIA_TAG, mediaSelectable -> mediaSelectable.getContent().getTagIdList());
 
             loadRecycler();
 
@@ -271,7 +283,7 @@ public class MediaActivity extends AppCompatActivity {
             if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_SHORTCUT))
                 showEditMultipleDialog(null, false);
 
-            if (getIntent().getAction() != null && CustomUtility.boolOr(getIntent().getAction(), "android.intent.action.SEND" , "android.intent.action.SEND_MULTIPLE"))
+            if (getIntent().getAction() != null && CustomUtility.boolOr(getIntent().getAction(), "android.intent.action.SEND", "android.intent.action.SEND_MULTIPLE"))
                 handleIncomingShare();
 
 
@@ -350,6 +362,9 @@ public class MediaActivity extends AppCompatActivity {
         DragSelectTouchListener dragSelectTouchListener;
         MediaActivity context;
         Menu toolBarMenu;
+        boolean allowEmpty;
+        CustomUtility.GenericInterface<Boolean> onChangeSelectionStatus;
+        Utility.DoubleGenericInterface<MultiSelectHelper<T>, CustomList<Selectable<T>>> applyInitialSelection;
 
         //  ------------------------- Constructor ------------------------->
         public MultiSelectHelper(MediaActivity context) {
@@ -385,6 +400,7 @@ public class MediaActivity extends AppCompatActivity {
 
             if (contentList == null) {
                 contentList = customList;
+                Utility.runDoubleGenericInterface(applyInitialSelection, this, contentList);
                 return this;
             }
 
@@ -400,35 +416,40 @@ public class MediaActivity extends AppCompatActivity {
 
         public void startSelection(int index) {
             activeSelection = true;
-            dragSelectTouchListener.setIsActive(true, index);
+            if (index != -1)
+                dragSelectTouchListener.setIsActive(true, index);
 
-            ((CollapsingToolbarLayout) context.findViewById(R.id.collapsingToolbarLayout)).setTitleEnabled(false);
-//            Toolbar toolbar = context.findViewById(R.id.media_selectionToolbar);
-//            context.setSupportActionBar(toolbar);
-//            toolbar.setVisibility(View.VISIBLE);
-//
-//            Toolbar defaultToolbar = (Toolbar) context.findViewById(R.id.toolbar);
-//            defaultToolbar.inflateMenu(R.menu.task_bar_joke);
-//            defaultToolbar.setVisibility(View.GONE);
-            toolBarMenu.findItem(R.id.taskBar_media_add).setVisible(false);
-            toolBarMenu.findItem(R.id.taskBar_media_edit).setVisible(true);
-            toolBarMenu.findItem(R.id.taskBar_media_share).setVisible(true);
+            CustomUtility.runGenericInterface(onChangeSelectionStatus, true);
 
+            customRecycler.getAdapter().notifyDataSetChanged();
         }
 
         public CustomList<Selectable<T>> stopSelection() {
             activeSelection = false;
             CustomList<Selectable<T>> allSelected = getAllSelected();
-            contentList.forEach(tSelectable -> tSelectable.selected = false);
+            allSelected.forEach(tSelectable -> tSelectable.selected = false);
+
+            CustomUtility.runGenericInterface(onChangeSelectionStatus, false);
+
             customRecycler.getAdapter().notifyDataSetChanged();
-
-            ((CollapsingToolbarLayout) context.findViewById(R.id.collapsingToolbarLayout)).setTitleEnabled(true);
-
-            toolBarMenu.findItem(R.id.taskBar_media_add).setVisible(true);
-            toolBarMenu.findItem(R.id.taskBar_media_edit).setVisible(false);
-            toolBarMenu.findItem(R.id.taskBar_media_share).setVisible(false);
-
             return allSelected;
+        }
+
+        public MultiSelectHelper<T> clearSelection() {
+            contentList.forEach(tSelectable -> tSelectable.setSelected(false));
+            customRecycler.getAdapter().notifyDataSetChanged();
+            updateToolbarTitle();
+            return this;
+        }
+
+        public MultiSelectHelper<T> resetSelection() {
+            if (applyInitialSelection != null) {
+                applyInitialSelection.run(this, contentList);
+                customRecycler.getAdapter().notifyDataSetChanged();
+                updateToolbarTitle();
+            } else
+                clearSelection();
+            return this;
         }
 
         public CustomList<Selectable<T>> getAllSelected() {
@@ -462,7 +483,7 @@ public class MediaActivity extends AppCompatActivity {
         }
 
         public boolean checkSelectionStatusAndUpdateToolbarTitle() {
-            if (getAllSelected().isEmpty()) {
+            if (!allowEmpty && getAllSelected().isEmpty()) {
                 stopSelection();
                 return false;
             }
@@ -470,7 +491,7 @@ public class MediaActivity extends AppCompatActivity {
             return true;
         }
 
-        private void updateToolbarTitle() {
+        public void updateToolbarTitle() {
             ((Toolbar) context.findViewById(R.id.toolbar)).setTitle(String.format(Locale.getDefault(), "Auswählen (%d)", getAllSelectedCount()));
         }
         //  <------------------------- Convenience -------------------------
@@ -517,7 +538,7 @@ public class MediaActivity extends AppCompatActivity {
 
     private void setRecyclerMetrics() {
         boolean isPortrait = Utility.isPortrait(this);
-        int width = Utility.getScreenSize(this).first - (isPortrait ? 0 : 100);
+        int width = Utility.getScreenSize(this).first - (isPortrait ? 0 : 100) - Utility.dpToPx(4);
         int columnCount = isPortrait ? 3 : 5;
         int sizePx = width / columnCount;
         int sizeDp = CustomUtility.pxToDp(sizePx);
@@ -532,6 +553,25 @@ public class MediaActivity extends AppCompatActivity {
         DragSelectTouchListener dragSelectTouchListener = DragSelectTouchListener.Companion.create(this, new MyDragSelectReceiver(), null);
         selectHelper = new MultiSelectHelper<>(this);
         selectHelper.dragSelectTouchListener = dragSelectTouchListener;
+        selectHelper.allowEmpty = selectMode;
+        selectHelper.onChangeSelectionStatus = select -> {
+            ((CollapsingToolbarLayout) findViewById(R.id.collapsingToolbarLayout)).setTitleEnabled(!select);
+            toolBarMenu.findItem(R.id.taskBar_media_add).setVisible(!select);
+
+            if (selectMode) {
+                toolBarMenu.findItem(R.id.taskBar_media_confirm).setVisible(select);
+            } else {
+                toolBarMenu.findItem(R.id.taskBar_media_edit).setVisible(select);
+                toolBarMenu.findItem(R.id.taskBar_media_share).setVisible(select);
+            }
+        };
+        selectHelper.applyInitialSelection = (mediaMultiSelectHelper, selectables) -> {
+            ArrayList<String> selectedIds = getIntent().getStringArrayListExtra(EXTRA_SELECT_MODE);
+            if (selectedIds != null && !selectedIds.isEmpty()) {
+                selectables.forEach(mediaSelectable -> mediaSelectable.setSelected(selectedIds.contains(mediaSelectable.getContent().getUuid())));
+            } else
+                selectables.forEach(mediaSelectable -> mediaSelectable.setSelected(false));
+        };
 
         mediaRecycler = new CustomRecycler<MultiSelectHelper.Selectable<Media>>(this, recyclerView)
                 .addOptionalModifications(customRecycler -> selectHelper.customRecycler = customRecycler)
@@ -569,10 +609,7 @@ public class MediaActivity extends AppCompatActivity {
                         setMediaScrollGalleryAndShow(customRecycler.getObjectList().stream().map(MultiSelectHelper.Selectable::getContent).collect(Collectors.toList()), index);
                     }
                 })
-                .setOnLongClickListener((customRecycler, view, mediaSelectable, index) -> {
-                    selectHelper.startSelection(index);
-                    customRecycler.getAdapter().notifyDataSetChanged();
-                })
+                .setOnLongClickListener((customRecycler, view, mediaSelectable, index) -> selectHelper.startSelection(index))
                 .setRowOrColumnCount(recyclerMetrics.first)
                 .generate();
 
@@ -611,6 +648,7 @@ public class MediaActivity extends AppCompatActivity {
 
         CustomList<String> mediaPersonIdList = CategoriesActivity.getCategoriesIntersection(newMedia, CategoriesActivity.CATEGORIES.MEDIA_PERSON);
         CustomList<String> mediaCategoryIdList = CategoriesActivity.getCategoriesIntersection(newMedia, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY);
+        CustomList<String> mediaTagIdList = CategoriesActivity.getCategoriesIntersection(newMedia, CategoriesActivity.CATEGORIES.MEDIA_TAG);
         CustomList<Media> subSelectionList = new CustomList<>();
 
         String dialogTitle = (oldMedia != null && oldMedia.size() == 1 ? ("Ein " + singular) : ("Mehrere " + plural)) + (isAdd ? " Hinzufügen" : " Bearbeiten");
@@ -636,25 +674,34 @@ public class MediaActivity extends AppCompatActivity {
                     view.findViewById(R.id.dialog_editMedia_editCategories).setOnClickListener(v -> {
                         Utility.showEditTreeItemDialog(this, mediaCategoryIdList, newList -> {
                             mediaCategoryIdList.replaceWith(newList);
-                            ((TextView) view.findViewById(R.id.dialog_editMedia_categories)).setText(String.join(", ", mediaCategoryIdList.map(id -> MediaCategory.findObjectById(id).getName())));
+                            customDialog.reloadView();
+//                            ((TextView) view.findViewById(R.id.dialog_editMedia_categories)).setText(String.join(", ", mediaCategoryIdList.map(id -> MediaCategory.findObjectById(id).getName())));
                         }, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY);
                     });
-
-                    view.findViewById(R.id.dialog_editMedia_editCategories).setOnLongClickListener(v -> {
-                        MediaCategory freizeit = new MediaCategory("Freizeit");
-                        freizeit.addChildren(Arrays.asList(new MediaCategory("Sport"), new MediaCategory("Spiele"), new MediaCategory("Werken")));
-                        MediaCategory feiern = new MediaCategory("Feiern");
-                        feiern.addChildren(Arrays.asList(new MediaCategory("Geburtstag"), new MediaCategory("Firma"), new MediaCategory("Silvester"), new MediaCategory("Vatertag")));
-                        MediaCategory reisen = new MediaCategory("Reisen");
-                        database.mediaCategoryMap.put(freizeit.getUuid(), freizeit);
-                        database.mediaCategoryMap.put(feiern.getUuid(), feiern);
-                        database.mediaCategoryMap.put(reisen.getUuid(), reisen);
-                        Database.saveAll();
-                        return true;
+                    view.findViewById(R.id.dialog_editMedia_editTags).setOnClickListener(v -> {
+                        Utility.showEditItemDialog(this, mediaTagIdList, CategoriesActivity.CATEGORIES.MEDIA_TAG, (customDialog1, selectedIds) -> {
+                            mediaTagIdList.replaceWith(selectedIds);
+                            customDialog.reloadView();
+                        });
                     });
 
-                    ((TextView) view.findViewById(R.id.dialog_editMedia_persons)).setText(String.join(", ", mediaPersonIdList.map(id -> database.mediaPersonMap.get(id).getName())));
-                    ((TextView) view.findViewById(R.id.dialog_editMedia_categories)).setText(String.join(", ", mediaCategoryIdList.map(id -> MediaCategory.findObjectById(id).getName())));
+//                    view.findViewById(R.id.dialog_editMedia_editCategories).setOnLongClickListener(v -> {
+//                        MediaCategory freizeit = new MediaCategory("Freizeit");
+//                        freizeit.addChildren(Arrays.asList(new MediaCategory("Sport"), new MediaCategory("Spiele"), new MediaCategory("Werken")));
+//                        MediaCategory feiern = new MediaCategory("Feiern");
+//                        feiern.addChildren(Arrays.asList(new MediaCategory("Geburtstag"), new MediaCategory("Firma"), new MediaCategory("Silvester"), new MediaCategory("Vatertag")));
+//                        MediaCategory reisen = new MediaCategory("Reisen");
+//                        database.mediaCategoryMap.put(freizeit.getUuid(), freizeit);
+//                        database.mediaCategoryMap.put(feiern.getUuid(), feiern);
+//                        database.mediaCategoryMap.put(reisen.getUuid(), reisen);
+//                        Database.saveAll();
+//                        return true;
+//                    });
+
+
+                    ((TextView) view.findViewById(R.id.dialog_editMedia_persons)).setText(CategoriesActivity.joinCategoriesIds(mediaPersonIdList, CategoriesActivity.CATEGORIES.MEDIA_PERSON));
+                    ((TextView) view.findViewById(R.id.dialog_editMedia_categories)).setText(CategoriesActivity.joinCategoriesIds(mediaCategoryIdList, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY));
+                    ((TextView) view.findViewById(R.id.dialog_editMedia_tags)).setText(CategoriesActivity.joinCategoriesIds(mediaTagIdList, CategoriesActivity.CATEGORIES.MEDIA_TAG));
                 })
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .addOptionalModifications(customDialog -> {
@@ -676,19 +723,32 @@ public class MediaActivity extends AppCompatActivity {
                                 });
                     }
                 })
-                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> saveMultipleMedia(customDialog, oldMedia, newMedia, mediaPersonIdList, mediaCategoryIdList, isShared))
+                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> saveMultipleMedia(customDialog, oldMedia, newMedia, mediaPersonIdList, mediaCategoryIdList, mediaTagIdList, isShared))
                 .addOnDialogShown(customDialog -> editDialog = customDialog)
                 .addOnDialogDismiss(customDialog -> editDialog = null)
+                .enableDoubleClickOutsideToDismiss(customDialog -> {
+                    if (isAdd)
+                        return !newMedia.isEmpty() || !mediaPersonIdList.isEmpty() || !mediaCategoryIdList.isEmpty() || !mediaTagIdList.isEmpty();
+                    else {
+                        CustomList<String> originalMediaPersonIdList = CategoriesActivity.getCategoriesIntersection(newMedia, CategoriesActivity.CATEGORIES.MEDIA_PERSON);
+                        CustomList<String> originalMediaCategoryIdList = CategoriesActivity.getCategoriesIntersection(newMedia, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY);
+                        CustomList<String> originalMediaTagIdList = CategoriesActivity.getCategoriesIntersection(newMedia, CategoriesActivity.CATEGORIES.MEDIA_TAG);
+                        return !originalMediaPersonIdList.equals(mediaPersonIdList) || !originalMediaCategoryIdList.equals(mediaCategoryIdList) || !originalMediaTagIdList.equals(mediaTagIdList);
+                    }
+
+                })
+                // ToDo: ^^
                 .show();
     }
 
-    private void saveMultipleMedia(CustomDialog editDialog, CustomList<Media> oldMedia, List<Media> newMedia, CustomList<String> mediaPersonIdList, CustomList<String> mediaCategoryIdList, boolean isShared) {
+    private void saveMultipleMedia(CustomDialog editDialog, CustomList<Media> oldMedia, List<Media> newMedia, CustomList<String> mediaPersonIdList, CustomList<String> mediaCategoryIdList, CustomList<String> mediaTagIdList, boolean isShared) {
         boolean isAdd = oldMedia == null || oldMedia.isEmpty() || isShared;
         int size = newMedia.size();
 
         if (isAdd) {
             newMedia.forEach(media -> media.getPersonIdList().addAll(mediaPersonIdList));
             newMedia.forEach(media -> media.getCategoryIdList().addAll(mediaCategoryIdList));
+            newMedia.forEach(media -> media.getTagIdList().addAll(mediaTagIdList));
 
             newMedia.removeIf(media -> {
                 Optional<Media> first = database.mediaMap.values().stream().filter(media1 -> media.getImagePath().equals(media1.getImagePath())).findFirst();
@@ -706,6 +766,7 @@ public class MediaActivity extends AppCompatActivity {
             // ToDo: Hier ansetzen
             applyNewIdList(newMedia, mediaPersonIdList, CategoriesActivity.CATEGORIES.MEDIA_PERSON);
             applyNewIdList(newMedia, mediaCategoryIdList, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY);
+            applyNewIdList(newMedia, mediaTagIdList, CategoriesActivity.CATEGORIES.MEDIA_TAG);
 
             oldMedia.forEachCount((media, count) -> {
                 media.getChangesFrom(newMedia.get(count));
@@ -735,6 +796,9 @@ public class MediaActivity extends AppCompatActivity {
             case MEDIA_CATEGORY:
                 getCategoryList = Media::getCategoryIdList;
                 break;
+            case MEDIA_TAG:
+                getCategoryList = Media::getTagIdList;
+                break;
         }
 
         CustomList<String> originalIdList = CategoriesActivity.getCategoriesIntersection(newMedia, category);
@@ -754,7 +818,7 @@ public class MediaActivity extends AppCompatActivity {
 
     // --------------- SelectMediaHelper
 
-    static class SelectMediaHelper {
+    public static class SelectMediaHelper {
         private AppCompatActivity context;
         private ViewGroup parentView;
         private CustomList<Media> selectedMedia;
@@ -762,6 +826,7 @@ public class MediaActivity extends AppCompatActivity {
         private CustomUtility.GenericInterface<CustomList<Media>> onSubSelectionChanged;
         private CustomRecycler<Media> selectedRecycler;
         private boolean hideAddButton;
+        private OverrideSelectionDialog overrideSelectionDialog;
 
         //  ------------------------- Constructor ------------------------->
         public SelectMediaHelper(AppCompatActivity context, CustomList<Media> selectedMedia) {
@@ -795,6 +860,11 @@ public class MediaActivity extends AppCompatActivity {
 
         public SelectMediaHelper enableHideAddButton() {
             hideAddButton = true;
+            return this;
+        }
+
+        public SelectMediaHelper setOverrideSelectionDialog(OverrideSelectionDialog overrideSelectionDialog) {
+            this.overrideSelectionDialog = overrideSelectionDialog;
             return this;
         }
         //  <------------------------- Getter & Setter -------------------------
@@ -901,14 +971,33 @@ public class MediaActivity extends AppCompatActivity {
             if (hideAddButton)
                 view.findViewById(R.id.fragment_selectMediaHelper_selection_add).setVisibility(View.GONE);
             else {
-                view.findViewById(R.id.fragment_selectMediaHelper_selection_add).setOnClickListener(v -> showSelectDialog(false));
+                view.findViewById(R.id.fragment_selectMediaHelper_selection_add).setOnClickListener(v -> {
+                    if (overrideSelectionDialog != null) {
+                        overrideSelectionDialog.run(this, selectedMedia, false, () -> {
+                            if (selectedRecycler != null)
+                                selectedRecycler.reload();
+                        });
+                    } else
+                        showSelectDialog(false);
+                });
                 view.findViewById(R.id.fragment_selectMediaHelper_selection_add).setOnLongClickListener(v -> {
-                    showSelectDialog(true);
+                    if (overrideSelectionDialog != null) {
+                        overrideSelectionDialog.run(this, selectedMedia, true,() -> {
+                            if (selectedRecycler != null)
+                                selectedRecycler.reload();
+                        });
+                    } else
+                        showSelectDialog(true);
                     return true;
                 });
             }
         }
         //  <------------------------- Builder -------------------------
+
+
+        public interface OverrideSelectionDialog {
+            void run(SelectMediaHelper helper, CustomList<Media> selectedMedia, boolean override, Runnable onSelected);
+        }
     }
     //  <------------------------- Edit -------------------------
 
@@ -976,7 +1065,7 @@ public class MediaActivity extends AppCompatActivity {
     public static void applyChangeRotationButton(AppCompatActivity activity, View changeRotationButton) {
         if (isAutoRotationOn(activity))
             changeRotationButton.setVisibility(View.GONE);
-        activity.getContentResolver().registerContentObserver(android.provider.Settings.System.getUriFor(android.provider.Settings.System.ACCELEROMETER_ROTATION),true,
+        activity.getContentResolver().registerContentObserver(android.provider.Settings.System.getUriFor(android.provider.Settings.System.ACCELEROMETER_ROTATION), true,
                 new ContentObserver(new Handler(Looper.getMainLooper())) {
                     @Override
                     public void onChange(boolean selfChange) {
@@ -998,6 +1087,7 @@ public class MediaActivity extends AppCompatActivity {
     private void setCustomDescription(int index) {
         Media media = mediaRecycler.getObjectList().get(index).getContent();
         LinearLayout linearLayout = findViewById(R.id.customImageDescription);
+        List<TextView> textViewList = new ArrayList<>();
 
         linearLayout.removeAllViews();
 
@@ -1006,7 +1096,7 @@ public class MediaActivity extends AppCompatActivity {
             textView.setTypeface(Typeface.DEFAULT_BOLD);
             Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.MEDIA_PERSON, textView, media.getPersonIdList());
             textView.setText(new SpannableStringBuilder().append("P: ", new StyleSpan(Typeface.ITALIC), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE).append(textView.getText()));
-            linearLayout.addView(textView);
+            textViewList.add(textView);
         }
 
         if (!media.getCategoryIdList().isEmpty()) {
@@ -1014,7 +1104,15 @@ public class MediaActivity extends AppCompatActivity {
             textView.setTypeface(Typeface.DEFAULT_BOLD);
             Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY, textView, media.getCategoryIdList());
             textView.setText(new SpannableStringBuilder().append("K: ", new StyleSpan(Typeface.ITALIC), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE).append(textView.getText()));
-            linearLayout.addView(textView);
+            textViewList.add(textView);
+        }
+
+        if (!media.getTagIdList().isEmpty()) {
+            TextView textView = new TextView(new ContextThemeWrapper(this, R.style.TextWithShadow));
+            textView.setTypeface(Typeface.DEFAULT_BOLD);
+            Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.MEDIA_TAG, textView, media.getTagIdList());
+            textView.setText(new SpannableStringBuilder().append("T: ", new StyleSpan(Typeface.ITALIC), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE).append(textView.getText()));
+            textViewList.add(textView);
         }
 
         long lastModified = new File(media.getImagePath()).lastModified();
@@ -1022,7 +1120,31 @@ public class MediaActivity extends AppCompatActivity {
             TextView textView = new TextView(new ContextThemeWrapper(this, R.style.TextWithShadow));
             textView.setTypeface(Typeface.DEFAULT_BOLD);
             textView.setText(new SpannableStringBuilder().append("D: ", new StyleSpan(Typeface.ITALIC), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE).append(Utility.formatDate("dd.MM.yyyy", new Date(lastModified))));
-            linearLayout.addView(textView);
+            if (textViewList.size() <= 2)
+                textViewList.add(textView);
+            else
+                textViewList.add(textViewList.size() == 3 ? 1 : 2, textView);
+        }
+
+        if (textViewList.size() <= 3) {
+            textViewList.forEach(linearLayout::addView);
+            linearLayout.setOrientation(LinearLayout.VERTICAL);
+        } else {
+            linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+            LinearLayout childLeft = new LinearLayout(this);
+            CustomUtility.setPadding(childLeft, 0, 0, 5, 0);
+            childLeft.setOrientation(LinearLayout.VERTICAL);
+            LinearLayout childRight = new LinearLayout(this);
+            childRight.setOrientation(LinearLayout.VERTICAL);
+            if (textViewList.size() == 4) {
+                textViewList.subList(0, 2).forEach(childLeft::addView);
+                textViewList.subList(2, 4).forEach(childRight::addView);
+            } else {
+                textViewList.subList(0, 3).forEach(childLeft::addView);
+                textViewList.subList(3, 5).forEach(childRight::addView);
+            }
+            linearLayout.addView(childLeft);
+            linearLayout.addView(childRight);
         }
     }
 
@@ -1178,7 +1300,9 @@ public class MediaActivity extends AppCompatActivity {
     //  <------------------------- ScrollGallery -------------------------
 
 
-    /**  ------------------------- Share ------------------------->  */
+    /**
+     * ------------------------- Share ------------------------->
+     */
     private void handleIncomingShare() {
         CustomList<Uri> sharedMediaUris = new CustomList<>();
         if (getIntent().getAction().endsWith("SEND"))
@@ -1214,7 +1338,10 @@ public class MediaActivity extends AppCompatActivity {
             startActivity(Intent.createChooser(shareIntent, "Medien Teilen Mit..."));
         }
     }
-    /**  <------------------------- Share -------------------------  */
+
+    /**
+     * <------------------------- Share -------------------------
+     */
 
     //  ------------------------- ToolBar ------------------------->
     @Override
@@ -1223,14 +1350,13 @@ public class MediaActivity extends AppCompatActivity {
         toolBarMenu = menu;
         selectHelper.toolBarMenu = toolBarMenu;
         menu.findItem(R.id.taskBar_media_edit).setIconTintList(new ColorStateList(new int[][]{new int[]{android.R.attr.state_enabled}}, new int[]{Color.WHITE}));
-//        menu.findItem(R.id.taskBar_media_share).setIconTintList(new ColorStateList(new int[][]{new int[]{android.R.attr.state_enabled}}, new int[]{Color.WHITE}));
 
-//        Menu subMenu = menu.findItem(R.id.taskBar_filter).getSubMenu();
-//        subMenu.findItem(R.id.taskBar_show_filterByName)
-//                .setChecked(filterTypeSet.contains(ShowActivity.FILTER_TYPE.NAME));
-//        subMenu.findItem(R.id.taskBar_show_filterByGenre)
-//                .setChecked(filterTypeSet.contains(ShowActivity.FILTER_TYPE.GENRE));
-//
+        if (selectMode) {
+            selectHelper.startSelection(-1);
+            selectHelper.updateToolbarTitle();
+        }
+
+
         if (setToolbarTitle != null) setToolbarTitle.run();
         return true;
     }
@@ -1249,10 +1375,20 @@ public class MediaActivity extends AppCompatActivity {
             case R.id.taskBar_media_share:
                 shareMedia(selectHelper.getAllSelectedContent());
                 break;
+            case R.id.taskBar_media_confirm:
+//                if (selectHelper.getAllSelectedCount() > 0)
+                    setResult(RESULT_OK, new Intent().putExtra(EXTRA_SELECT_MODE, selectHelper.getAllSelectedContent().map(ParentClass::getUuid)));
+//                else
+//                    setResult(RESULT_CANCELED);
+                finish();
+                break;
 
             case android.R.id.home:
                 if (selectHelper.isActiveSelection()) {
-                    selectHelper.stopSelection();
+                    if (selectMode)
+                        finish();
+                    else
+                        selectHelper.stopSelection();
                 } else {
                     if (getCallingActivity() == null)
                         startActivity(new Intent(this, MainActivity.class));
@@ -1306,7 +1442,16 @@ public class MediaActivity extends AppCompatActivity {
         } else if (advancedQueryHelper.handleBackPress(this)) {
             return;
         } else if (selectHelper.isActiveSelection()) {
-            selectHelper.stopSelection();
+            if (selectMode) {
+                CustomList<MultiSelectHelper.Selectable<Media>> allSelected = selectHelper.getAllSelected();
+                if (allSelected.size() > 0) {
+                    selectHelper.resetSelection();
+                    if (Objects.equals(allSelected, selectHelper.getAllSelected()))
+                        finish();
+                } else
+                    finish();
+            } else
+                selectHelper.stopSelection();
         } else
             super.onBackPressed();
     }

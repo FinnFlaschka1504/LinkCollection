@@ -66,6 +66,8 @@ import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.BuildConfig;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaCategory;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaEvent;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tree;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomScrollGallary.CustomGlideImageLoader;
@@ -103,6 +105,7 @@ public class MediaActivity extends AppCompatActivity {
     private final String ADVANCED_SEARCH_CRITERIA__PERSON = "p";
     private final String ADVANCED_SEARCH_CRITERIA__CATEGORY = "c";
     private final String ADVANCED_SEARCH_CRITERIA__TAG = "t";
+    private final String ADVANCED_SEARCH_CRITERIA__EVENT = "e";
 
 
     public enum FILTER_TYPE {
@@ -256,6 +259,14 @@ public class MediaActivity extends AppCompatActivity {
                     })
                     .addCriteria_defaultName()
                     .enableColoration()
+                    .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<MultiSelectHelper.Selectable<Media>, MediaEvent>(ADVANCED_SEARCH_CRITERIA__EVENT, Helpers.AdvancedQueryHelper.PARENT_CLASS_PATTERN)
+                            .setCategory(CategoriesActivity.CATEGORIES.MEDIA_EVENT)
+                            .setParser(sub -> (MediaEvent) ParentClass_Tree.findObjectByName(CategoriesActivity.CATEGORIES.MEDIA_EVENT, sub))
+                            .setBuildPredicate(mediaEvent -> {
+                                if (mediaEvent == null)
+                                    return null;
+                                return mediaSelectable -> mediaEvent.getMediaIdList().contains(mediaSelectable.getContent().getUuid());
+                            }))
                     .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA__PERSON, CategoriesActivity.CATEGORIES.MEDIA_PERSON, mediaSelectable -> mediaSelectable.getContent().getPersonIdList())
                     .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA__CATEGORY, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY, mediaSelectable -> mediaSelectable.getContent().getCategoryIdList())
                     .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA__TAG, CategoriesActivity.CATEGORIES.MEDIA_TAG, mediaSelectable -> mediaSelectable.getContent().getTagIdList());
@@ -1112,6 +1123,15 @@ public class MediaActivity extends AppCompatActivity {
             textView.setTypeface(Typeface.DEFAULT_BOLD);
             Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.MEDIA_TAG, textView, media.getTagIdList());
             textView.setText(new SpannableStringBuilder().append("T: ", new StyleSpan(Typeface.ITALIC), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE).append(textView.getText()));
+            textViewList.add(textView);
+        }
+
+        List<String> mediaEventIdList = MediaEventActivity.getEventsContaining(media).map(ParentClass::getUuid);
+        if (!mediaEventIdList.isEmpty()) {
+            TextView textView = new TextView(new ContextThemeWrapper(this, R.style.TextWithShadow));
+            textView.setTypeface(Typeface.DEFAULT_BOLD);
+            Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.MEDIA_EVENT, textView, mediaEventIdList);
+            textView.setText(new SpannableStringBuilder().append("E: ", new StyleSpan(Typeface.ITALIC), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE).append(textView.getText()));
             textViewList.add(textView);
         }
 

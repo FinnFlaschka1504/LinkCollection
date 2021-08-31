@@ -8,6 +8,7 @@ import android.widget.TextView;
 
 import com.allyants.draggabletreeview.SimpleTreeViewAdapter;
 import com.allyants.draggabletreeview.TreeNode;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tree;
 
 public class CustomTreeViewAdapter extends SimpleTreeViewAdapter {
@@ -20,7 +21,7 @@ public class CustomTreeViewAdapter extends SimpleTreeViewAdapter {
         LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(-1, -2);
         view.setLayoutParams(layoutParams);
         TextView textView = (TextView)view.findViewById(com.allyants.draggabletreeview.R.id.textView);
-        textView.setText(((ParentClass_Tree) data).getName());
+        textView.setText(((ParentClass) data).getName());
         return view;
     }
 }

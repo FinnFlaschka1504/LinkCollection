@@ -5,35 +5,35 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:layout_margin="8dp"
-        android:background="#F44336">
+<!--    <FrameLayout-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="200dp"-->
+<!--        android:layout_margin="8dp"-->
+<!--        android:background="#F44336">-->
 
-        <!--        <ScrollView-->
-        <!--            android:layout_width="match_parent"-->
-        <!--            android:layout_height="match_parent">-->
+<!--        &lt;!&ndash;        <ScrollView&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;            android:layout_height="match_parent">&ndash;&gt;-->
 
-        <!--            <ScrollView-->
-        <!--                android:layout_width="match_parent"-->
-        <!--                android:layout_height="wrap_content">-->
+<!--        &lt;!&ndash;            <ScrollView&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;                android:layout_height="wrap_content">&ndash;&gt;-->
 
-        <!--                <LinearLayout-->
-        <!--                    android:layout_width="match_parent"-->
-        <!--                    android:layout_height="match_parent"-->
-        <!--                    android:background="#9C27B0"-->
-        <!--                    android:orientation="vertical">-->
+<!--        &lt;!&ndash;                <LinearLayout&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:layout_height="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:background="#9C27B0"&ndash;&gt;-->
+<!--        &lt;!&ndash;                    android:orientation="vertical">&ndash;&gt;-->
 
-        <!--                    <FrameLayout-->
-        <!--                        android:layout_width="match_parent"-->
-        <!--                        android:layout_height="500dp"-->
-        <!--                        android:background="#E91E63">-->
+<!--        &lt;!&ndash;                    <FrameLayout&ndash;&gt;-->
+<!--        &lt;!&ndash;                        android:layout_width="match_parent"&ndash;&gt;-->
+<!--        &lt;!&ndash;                        android:layout_height="500dp"&ndash;&gt;-->
+<!--        &lt;!&ndash;                        android:background="#E91E63">&ndash;&gt;-->
 
-        <!--                    </FrameLayout>-->
-        <!--                </LinearLayout>-->
-        <!--            </ScrollView>-->
-        <!--        </ScrollView>-->
+<!--        &lt;!&ndash;                    </FrameLayout>&ndash;&gt;-->
+<!--        &lt;!&ndash;                </LinearLayout>&ndash;&gt;-->
+<!--        &lt;!&ndash;            </ScrollView>&ndash;&gt;-->
+<!--        &lt;!&ndash;        </ScrollView>&ndash;&gt;-->
 
-    </FrameLayout>
+<!--    </FrameLayout>-->
 </LinearLayout>

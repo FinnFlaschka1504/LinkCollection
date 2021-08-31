@@ -1,18 +1,22 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Media;
 
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tree;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-public class MediaEvent extends ParentClass {
+public class MediaEvent extends ParentClass implements ParentClass_Tree {
+    private List<MediaEvent> children = new ArrayList<>();
+    private String parentId;
     private Date beginning;
     private Date end;
     private List<String> mediaIdList = new ArrayList<>();
     private String description;
-    private List<MediaEvent> children = new ArrayList<>();
+    private boolean dummy;
+    private List<String> personIdList = new ArrayList<>();
 
 
     /**  <------------------------- Constructor -------------------------  */
@@ -63,13 +67,32 @@ public class MediaEvent extends ParentClass {
         return this;
     }
 
-    public List<MediaEvent> getChildren() {
-        return children;
-    }
+//    public List<MediaEvent> getChildren() {
+//        return children;
+//    }
+//
+//    public MediaEvent setChildren(List<MediaEvent> children) {
+//        this.children = children;
+//        return this;
+//    }
 
-    public MediaEvent setChildren(List<MediaEvent> children) {
-        this.children = children;
+    public MediaEvent _enableDummy() {
+        dummy = true;
         return this;
     }
+
+    public boolean _isDummy() {
+        return dummy;
+    }
+
+    public List<String> getPersonIdList() {
+        return personIdList;
+    }
+
+    public MediaEvent setPersonIdList(List<String> personIdList) {
+        this.personIdList = personIdList;
+        return this;
+    }
+
     /**  <------------------------- Getter & Setter -------------------------  */
 }

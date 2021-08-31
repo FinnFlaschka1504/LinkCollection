@@ -13,6 +13,7 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 
 import com.finn.androidUtilities.CustomUtility;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tree;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.unnamed.b.atv.model.TreeNode;
@@ -59,7 +60,7 @@ public class CustomTreeNodeHolder extends TreeNode.BaseNodeViewHolder<ParentClas
             });
         }
 
-        String name = parentClass.getName();
+        String name = ((ParentClass) parentClass).getName();
         ((TextView) view.findViewById(R.id.customTreeNode_text_main)).setText(name);
 
         CheckBox checkBox = view.findViewById(R.id.customTreeNode_checked);

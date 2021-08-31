@@ -1580,6 +1580,7 @@ public class Helpers {
      * ------------------------- AdvancedSearch ------------------------->
      */
     public static class AdvancedQueryHelper<T> {
+        @Language("RegExp") public static final String PARENT_CLASS_PATTERN = "([^|&\\[\\]]+?)([|&][^|&\\[\\]]+?)*";
         private static final Pattern advancedQueryPattern = Pattern.compile("\\{.*\\}");
         private SearchView searchView;
         public String fullQuery, advancedQuery, restQuery;
@@ -1617,7 +1618,7 @@ public class Helpers {
         }
 
         public AdvancedQueryHelper<T> addCriteria_ParentClass(String key, CategoriesActivity.CATEGORIES category, Utility.GenericReturnInterface<T, List<String>> getList, @Nullable Context context, @Nullable @IdRes Integer textViewId, @Nullable @IdRes Integer spinnerId, @Nullable @IdRes Integer editButtonId) {
-            SearchCriteria<T, Pair<String, CustomList<ParentClass>>> criteria = new SearchCriteria<T, Pair<String, CustomList<ParentClass>>>(key, "([^|&\\[\\]]+?)([|&][^|&\\[\\]]+?)*")
+            SearchCriteria<T, Pair<String, CustomList<ParentClass>>> criteria = new SearchCriteria<T, Pair<String, CustomList<ParentClass>>>(key, PARENT_CLASS_PATTERN)
                     .setParser(sub -> {
                         CustomList<ParentClass> list = new CustomList<>();
                         if (sub.contains("|") || sub.contains("&")) {

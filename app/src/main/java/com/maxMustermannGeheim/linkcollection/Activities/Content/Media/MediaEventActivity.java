@@ -12,20 +12,27 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.RelativeSizeSpan;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.DatePicker;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.afollestad.dragselectrecyclerview.DragSelectTouchListener;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.DrawableImageViewTarget;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomList;
@@ -42,6 +49,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaEvent;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tree;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -68,6 +76,10 @@ import java.util.stream.Collectors;
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
 public class MediaEventActivity extends AppCompatActivity {
+    public static final int START_SEARCH_MEDIA_EVENT = 1234;
+    public static final int START_OPEN_MEDIA_EVENT = 7891;
+    private final String ADVANCED_SEARCH_CRITERIA__EVENT = "e";
+
     public enum FILTER_TYPE {
         ;
 
@@ -99,6 +111,7 @@ public class MediaEventActivity extends AppCompatActivity {
     private SearchView.OnQueryTextListener textListener;
     private Helpers.AdvancedQueryHelper<MediaEvent> advancedQueryHelper;
     private CustomRecycler<MediaEvent> eventRecycler;
+    private MediaEvent parent;
 
     private TextView elementCount;
     private SearchView searchView;
@@ -151,6 +164,17 @@ public class MediaEventActivity extends AppCompatActivity {
 //                        }
                         mediaEventList.filter(mediaEvent -> mediaEvent.getName().contains(searchQuery), true);
                     })
+                    .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<MediaEvent, MediaEvent>(ADVANCED_SEARCH_CRITERIA__EVENT, Helpers.AdvancedQueryHelper.PARENT_CLASS_PATTERN)
+                            .setCategory(CategoriesActivity.CATEGORIES.MEDIA_EVENT)
+                            .setParser(sub -> (MediaEvent) ParentClass_Tree.findObjectByName(CategoriesActivity.CATEGORIES.MEDIA_EVENT, sub))
+                            .setBuildPredicate(mediaEvent -> {
+                                if (mediaEvent == null) {
+                                    parent = null;
+                                    return null;
+                                }
+                                parent = mediaEvent;
+                                return mediaSelectable -> true;
+                            }))
                     .addCriteria_defaultName()
                     .enableColoration();
 //                    .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA__PERSON, CategoriesActivity.CATEGORIES.MEDIA_PERSON, mediaSelectable -> mediaSelectable.getContent().getPersonIdList())
@@ -200,32 +224,49 @@ public class MediaEventActivity extends AppCompatActivity {
     /**  ------------------------- Start ------------------------->  */
 
 
+
     /**
      * ------------------------- Recycler ------------------------->
      */
-    private CustomList<MediaEvent> filterList(CustomList<MediaEvent> selectableMediaList) {
+    private CustomList<MediaEvent> filterList(CustomList<MediaEvent> mediaEventList) {
         if (!searchQuery.isEmpty()) {
-            advancedQueryHelper.filterFull(selectableMediaList);
+            advancedQueryHelper.filterFull(mediaEventList);
         }
-        return selectableMediaList;
+        return mediaEventList;
     }
 
-    private CustomList<MediaEvent> sortList(CustomList<MediaEvent> mediaSelectableList) {
+    private CustomList<MediaEvent> sortList(CustomList<MediaEvent> mediaEventList) {
 
-        mediaSelectableList.sort((media1, media2) -> {
+        mediaEventList.sort((media1, media2) -> {
 //            File file1 = new File(media1.getContent().getImagePath());
 //            File file2 = new File(media2.getContent().getImagePath());
 //            return Long.compare(file1.lastModified(), file2.lastModified()) * -1;
             return 0;
         });
-        return mediaSelectableList;
+        return mediaEventList;
     }
 
     private void loadRecycler() {
         eventRecycler = new CustomRecycler<MediaEvent>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_media_event)
                 .setGetActiveObjectList(customRecycler -> {
+                    CustomList<MediaEvent> list;
                     CustomList<MediaEvent> filteredList = sortList(filterList(new CustomList<>(database.mediaEventMap.values())));
+
+                    if (parent == null) {
+
+                    } else {
+                        filteredList = new CustomList<>();
+                        CustomList<MediaEvent> finalFilteredList = filteredList;
+                        parent.getChildren().forEach(parentClass_tree -> finalFilteredList.add((MediaEvent) parentClass_tree));
+                        if (!parent.getMediaIdList().isEmpty())
+                            filteredList.add(new MediaEvent("Sonstige: " + parent.getName())
+                                    ._enableDummy()
+                                    .setDescription(parent.getDescription())
+                                    .setBeginning(parent.getBeginning())
+                                    .setEnd(parent.getEnd())
+                                    .setMediaIdList(parent.getMediaIdList()));
+                    }
 
                     TextView noItem = findViewById(R.id.no_item);
                     String text = searchView.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche";
@@ -257,15 +298,71 @@ public class MediaEventActivity extends AppCompatActivity {
                         descriptionTextView.setVisibility(View.GONE);
 
 
+
+                    Utility.GenericReturnInterface<MediaEvent, List<ParentClass>> flattenMediaEvent = event -> {
+                        List<ParentClass> list = new ArrayList<>();
+                        if (!event.getChildren().isEmpty())
+                            event.getChildren().forEach(parentClass_tree -> list.add((ParentClass) parentClass_tree));
+                        if (!event.getMediaIdList().isEmpty())
+                            list.addAll(Utility.idToParentClassList(CategoriesActivity.CATEGORIES.MEDIA, event.getMediaIdList()));
+                        return list;
+                    };
+
+                    Utility.TripleGenericInterface<ImageView, ParentClass,Pair<Integer,Integer>> applyImage = (imageView, parentClass, dimensions) -> {
+                        String imagePath = "";
+                        if (parentClass instanceof Media)
+                            imagePath = ((Media) parentClass).getImagePath();
+
+                        RequestOptions myOptions = new RequestOptions()
+                                .override(CustomUtility.dpToPx(dimensions.first), CustomUtility.dpToPx(dimensions.second))
+                                .centerCrop();
+
+                        Glide.with(imageView.getContext())
+                                .load(Uri.fromFile(new File(imagePath)))
+                                .error(R.drawable.ic_broken_image)
+                                .apply(myOptions)
+                                .into(imageView);
+
+                    };
+
                     RecyclerView contentRecycler = itemView.findViewById(R.id.listItem_mediaEvent_content);
                     new CustomRecycler<ParentClass>(this, contentRecycler)
-                            .setItemLayout(true ? R.layout.list_item_image : 0)
-                            .setObjectList(true ? (Collection<ParentClass>) Utility.idToParentClassList(CategoriesActivity.CATEGORIES.MEDIA, mediaEvent.getMediaIdList()) : new CustomList<>())
+                            .setItemLayout(R.layout.empty_layout)
+                            .setObjectList(flattenMediaEvent.runGenericInterface(mediaEvent))
                             .setSetItemContent((customRecycler1, itemView1, parentClass) -> {
+                                View view = null;
                                 if (parentClass instanceof Media) {
+                                    view = LayoutInflater.from(this).inflate(R.layout.list_item_image, (ViewGroup) itemView1, false);
                                     Media media = (Media) parentClass;
-                                    MediaActivity.SelectMediaHelper.loadPathIntoImageView(media.getImagePath(), itemView1, 100);
+                                    MediaActivity.SelectMediaHelper.loadPathIntoImageView(media.getImagePath(), view, 100);
+                                } else if (parentClass instanceof MediaEvent) {
+                                    view = LayoutInflater.from(this).inflate(R.layout.list_item_media_event_compact, (ViewGroup) itemView1, false);
+                                    List<ParentClass> list = flattenMediaEvent.runGenericInterface((MediaEvent) parentClass);
+                                    switch (list.size()) {
+                                        case 1:
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(100, 100));
+                                            break;
+                                        case 2:
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(50, 100));
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image2), list.get(1), Pair.create(50, 100));
+                                            break;
+                                        case 3:
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(50, 50));
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image2), list.get(1), Pair.create(50, 50));
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image3), list.get(2), Pair.create(100, 50));
+                                            break;
+                                        default:
+                                        case 4:
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(50, 50));
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image2), list.get(1), Pair.create(50, 50));
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image3), list.get(2), Pair.create(50, 50));
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image4), list.get(3), Pair.create(50, 50));
+                                            break;
+                                    }
                                 }
+                                itemView1.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                                view.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                                ((LinearLayout) itemView1).addView(view);
                             })
                             .addOptionalModifications(customRecycler1 -> {
                                 try {
@@ -296,24 +393,22 @@ public class MediaEventActivity extends AppCompatActivity {
                             })
                             .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
                             .generate();
-
-                    String BREAKPOINT = null;
-
-//                    contentRecycler.setOnTouchListener((v, event) -> {
-//                        String BREAKPOINT = null;
-////                        return false;
-//                        itemView.onTouchEvent(event);
-//                        return false;
-//                    });
-//                    itemView.setLayoutParams(new FrameLayout.LayoutParams(recyclerMetrics.second, recyclerMetrics.second));
-//                    MediaActivity.SelectMediaHelper.loadPathIntoImageView(mediaSelectable.content.getImagePath(), itemView, recyclerMetrics.third);
-//
-//                    itemView.findViewById(R.id.listItem_image_selected).setVisibility(mediaSelectable.isSelected() ? View.VISIBLE : View.GONE);
-//                    View fullScreenButton = itemView.findViewById(R.id.listItem_image_fullScreen);
-//                    fullScreenButton.setVisibility(selectHelper.isActiveSelection() ? View.VISIBLE : View.GONE);
-//                    fullScreenButton.setOnClickListener(v -> setMediaScrollGalleryAndShow(Arrays.asList(mediaSelectable.getContent()), mediaRecycler.getObjectList().indexOf(mediaSelectable) * -1));
                 })
-                .setOnClickListener((customRecycler, itemView, mediaEvent, index) -> {})
+                .setOnClickListener((customRecycler, itemView, mediaEvent, index) -> {
+                    if (mediaEvent.getChildren().isEmpty()) {
+                        if (mediaEvent._isDummy() && parent != null)
+                            mediaEvent = parent;
+                        startActivityForResult(new Intent(this, MediaActivity.class)
+                                        .putExtra(CategoriesActivity.EXTRA_SEARCH, CategoriesActivity.escapeForSearchExtra(mediaEvent.getName()))
+                                        .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.MEDIA_EVENT),
+                                START_SEARCH_MEDIA_EVENT);
+                    } else {
+                        startActivityForResult(new Intent(this, MediaEventActivity.class)
+                                        .putExtra(CategoriesActivity.EXTRA_SEARCH, CategoriesActivity.escapeForSearchExtra(mediaEvent.getName()))
+                                        .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.MEDIA_EVENT),
+                                START_OPEN_MEDIA_EVENT);
+                    }
+                })
                 .setOnLongClickListener((customRecycler, view, mediaEvent, index) -> showEditDialog(mediaEvent))
                 .generate();
     }
@@ -322,6 +417,7 @@ public class MediaEventActivity extends AppCompatActivity {
         eventRecycler.reload();
     }
     /**  <------------------------- Recycler -------------------------  */
+
 
 
     /**  ------------------------- Edit ------------------------->  */
@@ -351,6 +447,7 @@ public class MediaEventActivity extends AppCompatActivity {
                 .setView(R.layout.dialog_edit_media_event)
                 .setSetViewContent((customDialog, view, reload) -> {
                     TextInputLayout editTitleLayout = view.findViewById(R.id.dialog_editMediaEvent_title_layout);
+                    // ToDo: Überprüfen ob schon vorhanden
                     TextInputLayout editDescriptionLayout = view.findViewById(R.id.dialog_editMediaEvent_description_layout);
 
                     if (!isAdd) {
@@ -393,6 +490,7 @@ public class MediaEventActivity extends AppCompatActivity {
                             .build();
 
                     // ---------------
+
                     TextView dateText = customDialog.findViewById(R.id.dialog_editMediaEvent_date_text);
                     Runnable setDateRangeTextView = () -> {
                         if (from[0] != null && to[0] != null) {
@@ -431,6 +529,7 @@ public class MediaEventActivity extends AppCompatActivity {
                 })
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .addOptionalModifications(customDialog -> {
+                    // ToDo: Auch möglich machen Kinder zu löschen (nicht wenn selbst kinder)
                     if (!isAdd) {
                         customDialog
                                 .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog1 -> {
@@ -498,6 +597,22 @@ public class MediaEventActivity extends AppCompatActivity {
     /**  <------------------------- Edit -------------------------  */
 
 
+
+    /**  ------------------------- Convenience ------------------------->  */
+    public static CustomList<MediaEvent> getEventsContaining(Media media) {
+        CustomList<MediaEvent> list = new CustomList<>();
+        Utility.RecursiveGenericInterface<MediaEvent> recursiveInterface = (mediaEvent, childRecursiveInterface) -> {
+            if (mediaEvent.getMediaIdList().contains(media.getUuid()))
+                list.add(mediaEvent);
+            mediaEvent.getChildren().forEach(child -> childRecursiveInterface.run((MediaEvent) child, childRecursiveInterface));
+        };
+        Database.getInstance().mediaEventMap.values().forEach(child -> recursiveInterface.run(child, recursiveInterface));
+        return list;
+    }
+    /**  <------------------------- Convenience -------------------------  */
+
+
+
     /**
      * ------------------------- Toolbar ------------------------->
      */
@@ -551,7 +666,6 @@ public class MediaEventActivity extends AppCompatActivity {
     private void removeFocusFromSearch() {
         searchView.clearFocus();
     }
-
     /**
      * <------------------------- Toolbar -------------------------
      */

@@ -13,13 +13,13 @@ import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomUtility;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
-import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaCategory;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomTreeNodeHolder;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.unnamed.b.atv.model.TreeNode;
 import com.unnamed.b.atv.view.AndroidTreeView;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -28,31 +28,31 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class ParentClass_Tree extends ParentClass {
-//    private int tempLevel;
-    private List<ParentClass_Tree> children = new ArrayList<>();
+public interface ParentClass_Tree {
+    /*
+    private List<? extends ParentClass_Tree> children = new ArrayList<>();
     private String parentId;
-
+    */
     //  ------------------------- Tree ------------------------->
-    public ParentClass_Tree addChild(ParentClass_Tree child) {
-        child.parentId = uuid;
-        children.add(child);
+    default ParentClass_Tree addChild(ParentClass_Tree child) {
+        child.setParentId(((ParentClass) this).getUuid());
+        getChildren().add(child);
         return this;
     }
 
-    public ParentClass_Tree addChildren(List<ParentClass_Tree> children) {
-        children.forEach(child -> child.parentId = uuid);
-        this.children.addAll(children);
+    default ParentClass_Tree addChildren(List<ParentClass_Tree> children) {
+        children.forEach(child -> child.setParentId(((ParentClass) this).getUuid()));
+        this.getChildren().addAll(children);
         return this;
     }
     
-    public static TreeNode getFilteredCompleteTree(Context context, CategoriesActivity.CATEGORIES category, String searchQuery, 
-                                                   @Nullable CustomList<String> selectedIds, AndroidTreeView tView, Comparator<ParentClass_Tree> comparator, 
-                                                   @Nullable Utility.DoubleGenericInterface<ViewGroup,TreeNode> customLayoutAdjustments){
+    static TreeNode getFilteredCompleteTree(Context context, CategoriesActivity.CATEGORIES category, String searchQuery,
+                                            @Nullable CustomList<String> selectedIds, AndroidTreeView tView, Comparator<ParentClass> comparator,
+                                            @Nullable Utility.DoubleGenericInterface<ViewGroup, TreeNode> customLayoutAdjustments){
         TreeNode root = TreeNode.root();
 
-        for (ParentClass_Tree parentClass : new CustomList<>(((Map<String, ParentClass_Tree>) Utility.getMapFromDatabase(category)).values()).sorted(comparator)) {
-            TreeNode childNode = parentClass._getRecursiveTree(context, searchQuery, selectedIds, tView, comparator, customLayoutAdjustments);
+        for (ParentClass parentClass : new CustomList<>(((Map<String, ParentClass>) Utility.getMapFromDatabase(category)).values()).sorted(comparator)) {
+            TreeNode childNode = ((ParentClass_Tree) parentClass)._getRecursiveTree(context, searchQuery, selectedIds, tView, comparator, customLayoutAdjustments);
             if (childNode != null)
                 root.addChild(childNode);
         }
@@ -60,20 +60,20 @@ public class ParentClass_Tree extends ParentClass {
         return root;
     }
 
-    public TreeNode _getRecursiveTree(Context context, String searchQuery, 
-                                      @Nullable CustomList<String> selectedIds, AndroidTreeView tView, Comparator<ParentClass_Tree> comparator, 
-                                      @Nullable Utility.DoubleGenericInterface<ViewGroup,TreeNode> customLayoutAdjustments) {
+    default TreeNode _getRecursiveTree(Context context, String searchQuery,
+                                       @Nullable CustomList<String> selectedIds, AndroidTreeView tView, Comparator<ParentClass> comparator,
+                                       @Nullable Utility.DoubleGenericInterface<ViewGroup, TreeNode> customLayoutAdjustments) {
         boolean matches = true;
         TreeNode treeNode = new TreeNode(this)
                 .setViewHolder(new CustomTreeNodeHolder(context, tView, customLayoutAdjustments));
         if (CustomUtility.stringExists(searchQuery)) {
-            matches = name.toLowerCase().contains(searchQuery.toLowerCase());
-            if (children.isEmpty() && !matches)
+            matches = ((ParentClass) this).getName().toLowerCase().contains(searchQuery.toLowerCase());
+            if (getChildren().isEmpty() && !matches)
                 return null;
-            else if (!children.isEmpty()) {
-                List<TreeNode> list = children
+            else if (!getChildren().isEmpty()) {
+                List<TreeNode> list = getChildren()
                         .stream()
-                        .sorted(comparator)
+                        .sorted((o1, o2) -> comparator.compare((ParentClass) o1, (ParentClass) o2))
                         .map(parentClass_tree -> parentClass_tree._getRecursiveTree(context, searchQuery, selectedIds, tView, comparator, customLayoutAdjustments))
                         .filter(obj -> !Objects.isNull(obj))
                         .collect(Collectors.toList());
@@ -87,27 +87,27 @@ public class ParentClass_Tree extends ParentClass {
 
         } else {
             treeNode
-                    .addChildren(children
+                    .addChildren(getChildren()
                             .stream()
                             .map(parentClass_tree -> parentClass_tree._getRecursiveTree(context, searchQuery, selectedIds, tView, comparator, customLayoutAdjustments))
                             .collect(Collectors.toList()));
         }
         treeNode.setSelectable(selectedIds != null && matches);
-        treeNode.setSelected(selectedIds != null && selectedIds.contains(uuid));
+        treeNode.setSelected(selectedIds != null && selectedIds.contains(((ParentClass) this).getUuid()));
         return treeNode;
     }
 
-    public static CustomUtility.Triple<AndroidTreeView, View,TreeNode> buildTreeView(ViewGroup container, CategoriesActivity.CATEGORIES category,
-                                                                         @Nullable CustomList<String> selectedIds, String searchQuery,
-                                                                         @Nullable Runnable updateSelectedRecycler, Comparator<ParentClass_Tree> comparator, TextView emptyTextView,
-                                                                         @Nullable Pair<TreeNode.TreeNodeClickListener, TreeNode.TreeNodeLongClickListener> clickListenerPair,
-                                                                         @Nullable Utility.DoubleGenericInterface<ViewGroup,TreeNode> customLayoutAdjustments) {
+    static CustomUtility.Triple<AndroidTreeView, View,TreeNode> buildTreeView(ViewGroup container, CategoriesActivity.CATEGORIES category,
+                                                                              @Nullable CustomList<String> selectedIds, String searchQuery,
+                                                                              @Nullable Runnable updateSelectedRecycler, Comparator<ParentClass> comparator, TextView emptyTextView,
+                                                                              @Nullable Pair<TreeNode.TreeNodeClickListener, TreeNode.TreeNodeLongClickListener> clickListenerPair,
+                                                                              @Nullable Utility.DoubleGenericInterface<ViewGroup, TreeNode> customLayoutAdjustments) {
         Context context = container.getContext();
         container.removeAllViews();
 
         AndroidTreeView tView = new AndroidTreeView(context);
         tView.setUseAutoToggle(false);
-        TreeNode completeTree = MediaCategory.getFilteredCompleteTree(context, category, searchQuery, selectedIds, tView, comparator, customLayoutAdjustments);
+        TreeNode completeTree = getFilteredCompleteTree(context, category, searchQuery, selectedIds, tView, comparator, customLayoutAdjustments);
         tView.setRoot(completeTree);
 
         if (completeTree.getChildren().isEmpty()) {
@@ -117,7 +117,7 @@ public class ParentClass_Tree extends ParentClass {
             emptyTextView.setVisibility(View.GONE);
 
         Utility.GenericInterface<TreeNode> updateSelectedList = treeNode -> {
-            String uuid = ((ParentClass_Tree) treeNode.getValue()).getUuid();
+            String uuid = ((ParentClass) treeNode.getValue()).getUuid();
             if (treeNode.isSelected())
                 selectedIds.add(uuid);
             else
@@ -189,14 +189,14 @@ public class ParentClass_Tree extends ParentClass {
         return CustomUtility.Triple.create(tView, view, completeTree);
     }
 
-    public static void addNew(Context context, @Nullable ParentClass_Tree parent, String name, CategoriesActivity.CATEGORIES category, Utility.GenericInterface<ParentClass_Tree> onAdded) {
+    static void addNew(Context context, @Nullable ParentClass_Tree parent, String name, CategoriesActivity.CATEGORIES category, Utility.GenericInterface<ParentClass_Tree> onAdded) {
         CustomDialog.Builder(context)
                 .setTitle(category.getSingular() + " Hinzufügen")
                 .addOptionalModifications(customDialog -> {
                     if (parent == null)
                         customDialog.setText("Mit langem Klicken auf eine Kategorie können Unterkategorien hinzugefügt werden.");
                     else
-                        customDialog.setText("Neue Subkategorie zu " + parent.getName() + " hinzufügen");
+                        customDialog.setText("Neue Subkategorie zu " + ((ParentClass) parent).getName() + " hinzufügen");
                 })
                 .setEdit(new CustomDialog.EditBuilder().setHint(category.getSingular() + " Name").setText(name))
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
@@ -206,7 +206,7 @@ public class ParentClass_Tree extends ParentClass {
                     if (parent != null) {
                         parent.addChild(newObject);
                     } else {
-                        ((Map<String, ParentClass>) Utility.getMapFromDatabase(category)).put(newObject.getUuid(), newObject);
+                        ((Map<String, ParentClass>) Utility.getMapFromDatabase(category)).put(((ParentClass) newObject).getUuid(), (ParentClass) newObject);
                     }
                     Toast.makeText(context, (Database.saveAll_simple() ? "" : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
                     onAdded.runGenericInterface(newObject);
@@ -216,7 +216,7 @@ public class ParentClass_Tree extends ParentClass {
 
     }
 
-    private boolean manageSelection(TreeNode root, TreeNode selected, Utility.GenericInterface<TreeNode> changedSelection) {
+    default boolean manageSelection(TreeNode root, TreeNode selected, Utility.GenericInterface<TreeNode> changedSelection) {
         if (selected == root) {
             if (!isChildSelected(root)) {
                 selected.setSelected(true);
@@ -241,13 +241,13 @@ public class ParentClass_Tree extends ParentClass {
         }
     }
 
-    private boolean isChildSelected(TreeNode root) {
+    default boolean isChildSelected(TreeNode root) {
         if (root.isSelected())
             return true;
         return root.getChildren().stream().anyMatch(this::isChildSelected);
     }
 
-    public static void updateAll(TreeNode root){
+    static void updateAll(TreeNode root){
         if (root.getViewHolder() instanceof CustomTreeNodeHolder)
             ((CustomTreeNodeHolder) root.getViewHolder()).update();
         root.getChildren().forEach(ParentClass_Tree::updateAll);
@@ -255,7 +255,7 @@ public class ParentClass_Tree extends ParentClass {
 
     // ---------------
 
-    public static void rebuildMap(CategoriesActivity.CATEGORIES category, com.allyants.draggabletreeview.TreeNode root) {
+    static void rebuildMap(CategoriesActivity.CATEGORIES category, com.allyants.draggabletreeview.TreeNode root) {
         Map<String, ParentClass> map = (Map<String, ParentClass>) Utility.getMapFromDatabase(category);
         getAll(category).forEach(parentClass_tree -> {
             parentClass_tree.setParentId(null);
@@ -265,7 +265,7 @@ public class ParentClass_Tree extends ParentClass {
 
         for (com.allyants.draggabletreeview.TreeNode baseChild : root.getChildren()) {
             ParentClass_Tree data = (ParentClass_Tree) baseChild.getData();
-            map.put(data.getUuid(), data);
+            map.put(((ParentClass) data).getUuid(), (ParentClass) data);
             Utility.runRecursiveGenericInterface(baseChild, (parentNode, recursiveInterface) -> {
                 ArrayList<com.allyants.draggabletreeview.TreeNode> children = parentNode.getChildren();
                 if (children.isEmpty())
@@ -283,29 +283,102 @@ public class ParentClass_Tree extends ParentClass {
 
 
     //  ------------------------- Getter & Setter ------------------------->
-    public List<ParentClass_Tree> getChildren() {
-        return children;
+    default List<ParentClass_Tree> getChildren() {
+        try {
+            Field children = getClass().getDeclaredField("children");
+            children.setAccessible(true);
+            return (List<ParentClass_Tree>) children.get(this);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+        }
+        return null;
     }
 
-    public ParentClass_Tree setChildren(List<ParentClass_Tree> children) {
-        this.children = children;
+    default ParentClass_Tree setChildren(List<? extends ParentClass_Tree> children) {
+        try {
+            Field field = getClass().getDeclaredField("children");
+            field.setAccessible(true);
+            field.set(this, children);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+        }
         return this;
     }
 
-    public String getParentId() {
-        return parentId;
+    default String getParentId() {
+        try {
+            Field children = getClass().getDeclaredField("parentId");
+            children.setAccessible(true);
+            return (String) children.get(this);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+        }
+        return null;
     }
 
-    public ParentClass_Tree setParentId(String parentId) {
-        this.parentId = parentId;
+    default ParentClass_Tree setParentId(String parentId) {
+        try {
+            Field field = getClass().getDeclaredField("parentId");
+            field.setAccessible(true);
+            field.set(this, parentId);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+        }
         return this;
     }
+
+//    static public String getName(ParentClass_Tree parentClass_tree) {
+//        try {
+//            Field children = parentClass_tree.getClass().getDeclaredField("name");
+//            children.setAccessible(true);
+//            return (String) children.get(parentClass_tree);
+//        } catch (NoSuchFieldException | IllegalAccessException e) {
+//        }
+//        return null;
+//    }
+//
+//    static public ParentClass_Tree setName(ParentClass_Tree parentClass_tree, String parentId) {
+//        try {
+//            Field field = parentClass_tree.getClass().getDeclaredField("name");
+//            field.setAccessible(true);
+//            field.set(parentClass_tree, parentId);
+//        } catch (NoSuchFieldException | IllegalAccessException e) {
+//        }
+//        return parentClass_tree;
+//    }
+//
+//    default public String getUuid() {
+//        try {
+//            Field children = getClass().getDeclaredField("uuid");
+//            children.setAccessible(true);
+//            return (String) children.get(this);
+//        } catch (NoSuchFieldException | IllegalAccessException e) {
+//        }
+//        return null;
+//    }
+//
+//    default public ParentClass_Tree setUuid(String parentId) {
+//        try {
+//            Field field = getClass().getDeclaredField("uuid");
+//            field.setAccessible(true);
+//            field.set(this, parentId);
+//        } catch (NoSuchFieldException | IllegalAccessException e) {
+//        }
+//        return this;
+//    }
     //  <------------------------- Getter & Setter -------------------------
 
     //  ------------------------- Convenience ------------------------->
-    public static ParentClass_Tree findObjectById(CategoriesActivity.CATEGORIES category, String id) {
-        Collection<ParentClass_Tree> values = (Collection<ParentClass_Tree>) Utility.getMapFromDatabase(category).values();
-        for (ParentClass_Tree parentClass : values) {
+    static ParentClass findObjectById(CategoriesActivity.CATEGORIES category, String id) {
+        Collection<ParentClass> values = (Collection<ParentClass>) Utility.getMapFromDatabase(category).values();
+        for (ParentClass parentClass : values) {
+            ParentClass_Tree child;
+            if ((child = ((ParentClass_Tree) parentClass).findObjectById(id)) != null)
+                return (ParentClass) child;
+        }
+        return null;
+    }
+
+    default ParentClass_Tree findObjectById(String id) {
+        if (((ParentClass) this).getUuid().equals(id))
+            return this;
+        for (ParentClass_Tree parentClass : getChildren()) {
             ParentClass_Tree child;
             if ((child = parentClass.findObjectById(id)) != null)
                 return child;
@@ -313,31 +386,20 @@ public class ParentClass_Tree extends ParentClass {
         return null;
     }
 
-    private ParentClass_Tree findObjectById(String id) {
-        if (uuid.equals(id))
-            return this;
-        for (ParentClass_Tree parentClass : children) {
+    static ParentClass_Tree findObjectByName(CategoriesActivity.CATEGORIES category, String name) {
+        Collection<ParentClass> values = (Collection<ParentClass>) Utility.getMapFromDatabase(category).values();
+        for (ParentClass parentClass : values) {
             ParentClass_Tree child;
-            if ((child = parentClass.findObjectById(id)) != null)
+            if ((child = ((ParentClass_Tree) parentClass).findObjectByName(name)) != null)
                 return child;
         }
         return null;
     }
 
-    public static ParentClass_Tree findObjectByName(CategoriesActivity.CATEGORIES category, String name) {
-        Collection<ParentClass_Tree> values = (Collection<ParentClass_Tree>) Utility.getMapFromDatabase(category).values();
-        for (ParentClass_Tree parentClass : values) {
-            ParentClass_Tree child;
-            if ((child = parentClass.findObjectByName(name)) != null)
-                return child;
-        }
-        return null;
-    }
-
-    private ParentClass_Tree findObjectByName(String name) {
-        if (this.name.equals(name))
+    default ParentClass_Tree findObjectByName(String name) {
+        if (((ParentClass) this).getName().equals(name))
             return this;
-        for (ParentClass_Tree parentClass : children) {
+        for (ParentClass_Tree parentClass : getChildren()) {
             ParentClass_Tree child;
             if ((child = parentClass.findObjectByName(name)) != null)
                 return child;
@@ -347,30 +409,30 @@ public class ParentClass_Tree extends ParentClass {
 
     // ---------------
 
-    public static int getAllCount(TreeNode root, String searchQuery){
-        int nodeValue = root.isRoot() || (CustomUtility.stringExists(searchQuery) && !Utility.containsIgnoreCase(((ParentClass_Tree) root.getValue()).getName(), searchQuery)) ? 0 : 1;
+    static int getAllCount(TreeNode root, String searchQuery){
+        int nodeValue = root.isRoot() || (CustomUtility.stringExists(searchQuery) && !Utility.containsIgnoreCase(((ParentClass) root.getValue()).getName(), searchQuery)) ? 0 : 1;
         return root.getChildren().stream().mapToInt(treeNode -> getAllCount(treeNode, searchQuery)).sum() + nodeValue;
     }
 
-    public static int getAllCount(CategoriesActivity.CATEGORIES category){
-        Collection<ParentClass_Tree> values = (Collection<ParentClass_Tree>) Utility.getMapFromDatabase(category).values();
-        return values.stream().mapToInt(ParentClass_Tree::_getAllCount).sum();
+    static int getAllCount(CategoriesActivity.CATEGORIES category){
+        Collection<ParentClass> values = (Collection<ParentClass>) Utility.getMapFromDatabase(category).values();
+        return values.stream().mapToInt(value -> ((ParentClass_Tree) value)._getAllCount()).sum();
     }
 
-    public int _getAllCount() {
-        return children.stream().mapToInt(ParentClass_Tree::_getAllCount).sum() + 1;
+    default int _getAllCount() {
+        return getChildren().stream().mapToInt(ParentClass_Tree::_getAllCount).sum() + 1;
     }
 
     // ---------------
 
-    public static List<ParentClass_Tree> getAll(CategoriesActivity.CATEGORIES category) {
-        Collection<ParentClass_Tree> values = (Collection<ParentClass_Tree>) Utility.getMapFromDatabase(category).values();
-        List<ParentClass_Tree> list = CustomUtility.concatenateCollections(values.stream().map(ParentClass_Tree::_getAll).collect(Collectors.toList()));
+    static List<ParentClass_Tree> getAll(CategoriesActivity.CATEGORIES category) {
+        Collection<ParentClass> values = (Collection<ParentClass>) Utility.getMapFromDatabase(category).values();
+        List<ParentClass_Tree> list = CustomUtility.concatenateCollections(values.stream().map(parentClass -> ((ParentClass_Tree) parentClass)._getAll()).collect(Collectors.toList()));
         return list;
     }
 
-    public List<ParentClass_Tree> _getAll() {
-        List<ParentClass_Tree> list = CustomUtility.concatenateCollections(children.stream().map(ParentClass_Tree::_getAll).collect(Collectors.toCollection(CustomList::new)));
+    default List<ParentClass_Tree> _getAll() {
+        List<ParentClass_Tree> list = CustomUtility.concatenateCollections(getChildren().stream().map(ParentClass_Tree::_getAll).collect(Collectors.toCollection(CustomList::new)));
         list.add(this);
         return list;
     }

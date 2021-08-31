@@ -303,7 +303,7 @@ public class CategoriesActivity extends AppCompatActivity {
             }
 
             List<ParentClass_Tree> allTreeObjects = ParentClass_Tree.getAll(category);
-            treeObjectCountMap = allTreeObjects.stream().collect(Collectors.toMap(com.finn.androidUtilities.ParentClass::getUuid, object -> (int) parentObjects.stream().filter(o -> getList.runGenericInterface(o).contains(object.getUuid())).count()));
+            treeObjectCountMap = allTreeObjects.stream().collect(Collectors.toMap(parentClass_tree -> ((ParentClass) parentClass_tree).getUuid(), object -> (int) parentObjects.stream().filter(o -> getList.runGenericInterface(o).contains(((ParentClass) object).getUuid())).count()));
         } else {
             List<Pair<ParentClass, Integer>> pairList = new ArrayList<>();
             switch (category) {
@@ -506,7 +506,7 @@ public class CategoriesActivity extends AppCompatActivity {
                 .setSetItemContent((customRecycler1, itemView, parentClassIntegerPair) -> {
                     Pair<TreeNode.TreeNodeClickListener, TreeNode.TreeNodeLongClickListener> clickListenerPair = Pair.create((node, value) -> {
                         startActivityForResult(new Intent(this, category.getSearchIn())
-                                        .putExtra(EXTRA_SEARCH, escapeForSearchExtra(((ParentClass_Tree) value).getName()))
+                                        .putExtra(EXTRA_SEARCH, escapeForSearchExtra(((ParentClass) value).getName()))
                                         .putExtra(EXTRA_SEARCH_CATEGORY, category),
                                 START_CATEGORY_SEARCH);
                     }, (node, value) -> {
@@ -531,7 +531,7 @@ public class CategoriesActivity extends AppCompatActivity {
                             }, findViewById(R.id.no_item), (multiSelectMode ? null : clickListenerPair),
                             (viewGroup, node) -> {
                                 TextView textSecondary = viewGroup.findViewById(R.id.customTreeNode_text_secondary);
-                                ParentClass_Tree value = (ParentClass_Tree) node.getValue();
+                                ParentClass value = (ParentClass) node.getValue();
                                 if (!CustomUtility.stringExists(searchQuery) || Utility.containsIgnoreCase(value.getName(), searchQuery)) {
                                     textSecondary.setVisibility(View.VISIBLE);
 //                                    ((LinearLayout) textSecondary.getParent().getParent()).setClickable(true);
@@ -693,7 +693,7 @@ public class CategoriesActivity extends AppCompatActivity {
                             pair.first.addChild(childNode);
                             if (!pair.second.getChildren().isEmpty())
                                 pair.second.getChildren()
-                                        .stream().sorted((o1, o2) -> o1.getName().compareTo(o2.getName()))
+                                        .stream().sorted((o1, o2) -> ((ParentClass) o1).getName().compareTo(((ParentClass) o2).getName()))
                                         .forEach(childObject -> recursiveInterface.run(Pair.create(childNode, childObject), recursiveInterface));
                         });
                     }
@@ -768,7 +768,7 @@ public class CategoriesActivity extends AppCompatActivity {
             case MEDIA_CATEGORY:
                 String parentId = ((ParentClass_Tree) parentClass).getParentId();
                 if (CustomUtility.stringExists(parentId)) {
-                    ParentClass_Tree.findObjectById(category, parentId).getChildren().remove(parentClass);
+                    ((ParentClass_Tree) ParentClass_Tree.findObjectById(category, parentId)).getChildren().remove(parentClass);
                 } else
                     database.mediaCategoryMap.remove(parentClass.getUuid());
 
@@ -893,7 +893,7 @@ public class CategoriesActivity extends AppCompatActivity {
                     reLoadRecycler();
                 } else {
                     if (!selectedTreeList.isEmpty())
-                        selectedList.replaceWith(selectedTreeList.map(uuid -> ParentClass_Tree.findObjectById(category, uuid)));
+                        selectedList.replaceWith(selectedTreeList.map(uuid -> (ParentClass) ParentClass_Tree.findObjectById(category, uuid)));
                     if (selectedList.size() == 1) {
                         startActivityForResult(new Intent(this, category.getSearchIn())
                                         .putExtra(EXTRA_SEARCH, escapeForSearchExtra(selectedList.get(0).getName()))

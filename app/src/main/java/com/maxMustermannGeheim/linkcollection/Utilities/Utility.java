@@ -622,9 +622,9 @@ public class Utility {
                 list = idList.stream().map(map::get).collect(Collectors.toCollection(CustomList::new));
                 break;
             case MEDIA_CATEGORY:
-                list = idList.stream().map(id -> ParentClass_Tree.findObjectById(category, id)).collect(Collectors.toCollection(CustomList::new));
+            case MEDIA_EVENT:
+                list = idList.stream().map(id -> (ParentClass) ParentClass_Tree.findObjectById(category, id)).collect(Collectors.toCollection(CustomList::new));
                 break;
-
         }
 
 
@@ -2211,7 +2211,7 @@ public class Utility {
                         view.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(selectedIds.isEmpty() ? View.VISIBLE : View.GONE);
                         selectedRecycler.reload();
                     };
-                    Comparator<ParentClass_Tree> treeComparator = (parentClass1, parentClass2) -> parentClass1.getName().compareTo(parentClass2.getName());
+                    Comparator<ParentClass> treeComparator = (parentClass1, parentClass2) -> ((ParentClass) parentClass1).getName().compareTo(((ParentClass) parentClass2).getName());
 
                     selectedRecycler
                             .setItemLayout(R.layout.list_item_bubble)
@@ -2256,7 +2256,7 @@ public class Utility {
                     customDialog.getButtonByIcon(R.drawable.ic_add)
                             .getButton().setOnClickListener(v -> {
                         ParentClass_Tree.addNew(context, null, searchQuery[0], category, newObject -> {
-                            selectedIds.add(newObject.getUuid());
+                            selectedIds.add(((ParentClass) newObject).getUuid());
                             updateSelectedRecycler.run();
                             ParentClass_Tree.buildTreeView(editCategoryLayout, category, selectedIds, searchQuery[0], updateSelectedRecycler, treeComparator, emptyTextView, null, null);
                         });
@@ -2277,7 +2277,7 @@ public class Utility {
     public static ParentClass getObjectFromDatabase(CategoriesActivity.CATEGORIES category, String uuid) {
         switch (category) {
             case MEDIA_CATEGORY:
-                return ParentClass_Tree.findObjectById(category, uuid);
+                return (ParentClass) ParentClass_Tree.findObjectById(category, uuid);
             default:
                 return getMapFromDatabase(category).get(uuid);
         }
@@ -2314,6 +2314,8 @@ public class Utility {
                 return database.mediaCategoryMap;
             case MEDIA_TAG:
                 return database.mediaTagMap;
+            case MEDIA_EVENT:
+                return database.mediaEventMap;
         }
         return null;
     }
@@ -2321,7 +2323,7 @@ public class Utility {
     public static ParentClass findObjectByName(CategoriesActivity.CATEGORIES category, String name) {
         switch (category) {
             case MEDIA_CATEGORY:
-                return ParentClass_Tree.findObjectByName(category, name);
+                return (ParentClass) ParentClass_Tree.findObjectByName(category, name);
             default:
                 return getMapFromDatabase(category).values().stream().filter(parentClass -> parentClass.getName().equals(name)).findFirst().orElse(null);
         }
@@ -2330,7 +2332,7 @@ public class Utility {
     public static ParentClass findObjectById(CategoriesActivity.CATEGORIES category, String id) {
         switch (category) {
             case MEDIA_CATEGORY:
-                return ParentClass_Tree.findObjectById(category, id);
+                return (ParentClass) ParentClass_Tree.findObjectById(category, id);
             default:
                 return getMapFromDatabase(category).values().stream().filter(parentClass -> parentClass.getUuid().equals(id)).findFirst().orElse(null);
         }
@@ -3760,6 +3762,14 @@ public class Utility {
         R run(T t, T2 t2);
     }
 
+    public interface TripleGenericInterface<T, T2, T3> {
+        void run(T t, T2 t2, T3 t3);
+    }
+
+    public interface TripleGenericReturnInterface<T, T2, T3, R> {
+        R run(T t, T2 t2, T3 t3);
+    }
+
     public interface GenericReturnOnlyInterface<T> {
         T runGenericInterface();
     }
@@ -3775,6 +3785,14 @@ public class Utility {
     public static <T,T2> boolean runDoubleGenericInterface(DoubleGenericInterface<T,T2> genericInterface, T parameter, T2 parameter2) {
         if (genericInterface != null) {
             genericInterface.run(parameter, parameter2);
+            return true;
+        }
+        return false;
+    }
+
+    public static <T,T2, T3> boolean runDoubleGenericInterface(TripleGenericInterface<T,T2, T3> genericInterface, T parameter, T2 parameter2, T3 parameter3) {
+        if (genericInterface != null) {
+            genericInterface.run(parameter, parameter2, parameter3);
             return true;
         }
         return false;

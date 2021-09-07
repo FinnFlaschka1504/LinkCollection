@@ -171,11 +171,11 @@ public class UrlParser extends ParentClass {
                 if (resultO == null) {
                     if (context != null)
                         Toast.makeText(context, "Kein Ergebnis", Toast.LENGTH_SHORT).show();
-                    onParseNameResult.runGenericInterface("");
+                    onParseNameResult.run("");
                     return "";
                 }
                 String result = resultO.toString();
-                onParseNameResult.runGenericInterface(result);
+                onParseNameResult.run(result);
                 return result;
 
             } catch (EvalError evalError) {
@@ -257,11 +257,11 @@ public class UrlParser extends ParentClass {
                         if (resultO == null) {
                             if (context != null)
                                 Toast.makeText(context, "Kein Ergebnis", Toast.LENGTH_SHORT).show();
-                            onParseNameResult.runGenericInterface("");
+                            onParseNameResult.run("");
                             return;
                         }
                         String result = resultO.toString();
-                        onParseNameResult.runGenericInterface(result);
+                        onParseNameResult.run(result);
 
                     } catch (EvalError evalError) {
                         if (context != null)
@@ -299,7 +299,7 @@ public class UrlParser extends ParentClass {
                 Handler handler = new Handler();
                 handler.postDelayed(() -> evaluateJavaScript(isName, onParseResult, tryCount + 1), 100);
             } else {
-                onParseResult.runGenericInterface(t + (tryCount < 50 ? "" : " (" + tryCount + ")"));
+                onParseResult.run(t + (tryCount < 50 ? "" : " (" + tryCount + ")"));
                 if (openJs <= 1 && !debug) {
                     openJs--;
                     webViewMap.get(name).destroy();

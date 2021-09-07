@@ -4,10 +4,10 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.util.Pair;
+import androidx.core.widget.ImageViewCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.annotation.SuppressLint;
-import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
@@ -22,7 +22,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.DatePicker;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -30,15 +29,12 @@ import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.afollestad.dragselectrecyclerview.DragSelectTouchListener;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
-import com.bumptech.glide.request.target.DrawableImageViewTarget;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
-import com.github.chrisbanes.photoview.PhotoView;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.datepicker.MaterialDatePicker;
@@ -58,19 +54,12 @@ import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
 import java.io.File;
 import java.lang.reflect.Field;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
@@ -112,6 +101,7 @@ public class MediaEventActivity extends AppCompatActivity {
     private Helpers.AdvancedQueryHelper<MediaEvent> advancedQueryHelper;
     private CustomRecycler<MediaEvent> eventRecycler;
     private MediaEvent parent;
+    private Menu menu;
 
     private TextView elementCount;
     private SearchView searchView;
@@ -166,7 +156,7 @@ public class MediaEventActivity extends AppCompatActivity {
                     })
                     .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<MediaEvent, MediaEvent>(ADVANCED_SEARCH_CRITERIA__EVENT, Helpers.AdvancedQueryHelper.PARENT_CLASS_PATTERN)
                             .setCategory(CategoriesActivity.CATEGORIES.MEDIA_EVENT)
-                            .setParser(sub -> (MediaEvent) ParentClass_Tree.findObjectByName(CategoriesActivity.CATEGORIES.MEDIA_EVENT, sub))
+                            .setParser(sub -> (MediaEvent) ParentClass_Tree.findObjectByName(CategoriesActivity.CATEGORIES.MEDIA_EVENT, sub, false))
                             .setBuildPredicate(mediaEvent -> {
                                 if (mediaEvent == null) {
                                     parent = null;
@@ -250,15 +240,17 @@ public class MediaEventActivity extends AppCompatActivity {
         eventRecycler = new CustomRecycler<MediaEvent>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_media_event)
                 .setGetActiveObjectList(customRecycler -> {
-                    CustomList<MediaEvent> list;
-                    CustomList<MediaEvent> filteredList = sortList(filterList(new CustomList<>(database.mediaEventMap.values())));
+                    CustomList<MediaEvent> filteredList = filterList(new CustomList<>(database.mediaEventMap.values()));
 
                     if (parent == null) {
-
+                        sortList(filteredList);
+                        setToolbarButtons();
                     } else {
+                        setToolbarButtons();
                         filteredList = new CustomList<>();
                         CustomList<MediaEvent> finalFilteredList = filteredList;
                         parent.getChildren().forEach(parentClass_tree -> finalFilteredList.add((MediaEvent) parentClass_tree));
+                        sortList(filteredList);
                         if (!parent.getMediaIdList().isEmpty())
                             filteredList.add(new MediaEvent("Sonstige: " + parent.getName())
                                     ._enableDummy()
@@ -309,13 +301,25 @@ public class MediaEventActivity extends AppCompatActivity {
                     };
 
                     Utility.TripleGenericInterface<ImageView, ParentClass,Pair<Integer,Integer>> applyImage = (imageView, parentClass, dimensions) -> {
-                        String imagePath = "";
-                        if (parentClass instanceof Media)
-                            imagePath = ((Media) parentClass).getImagePath();
-
+                        imageView.setVisibility(View.VISIBLE);
                         RequestOptions myOptions = new RequestOptions()
                                 .override(CustomUtility.dpToPx(dimensions.first), CustomUtility.dpToPx(dimensions.second))
                                 .centerCrop();
+                        String imagePath = "";
+                        if (parentClass instanceof Media)
+                            imagePath = ((Media) parentClass).getImagePath();
+                        else if (parentClass instanceof MediaEvent) {
+                            imagePath = ((MediaEvent) parentClass)._getThumbnailPath();
+                        } else {
+                            Glide.with(imageView.getContext())
+                                    .load(R.drawable.ic_no_image)
+                                    .error(R.drawable.ic_broken_image)
+                                    .apply(myOptions)
+                                    .into(imageView);
+                            ImageViewCompat.setImageTintList(imageView, ColorStateList.valueOf(Color.WHITE));
+                            return;
+                        }
+
 
                         Glide.with(imageView.getContext())
                                 .load(Uri.fromFile(new File(imagePath)))
@@ -326,42 +330,56 @@ public class MediaEventActivity extends AppCompatActivity {
                     };
 
                     RecyclerView contentRecycler = itemView.findViewById(R.id.listItem_mediaEvent_content);
+                    contentRecycler.setNestedScrollingEnabled(false);
                     new CustomRecycler<ParentClass>(this, contentRecycler)
                             .setItemLayout(R.layout.empty_layout)
-                            .setObjectList(flattenMediaEvent.runGenericInterface(mediaEvent))
+                            .setObjectList(flattenMediaEvent.run(mediaEvent))
                             .setSetItemContent((customRecycler1, itemView1, parentClass) -> {
                                 View view = null;
                                 if (parentClass instanceof Media) {
                                     view = LayoutInflater.from(this).inflate(R.layout.list_item_image, (ViewGroup) itemView1, false);
                                     Media media = (Media) parentClass;
-                                    MediaActivity.SelectMediaHelper.loadPathIntoImageView(media.getImagePath(), view, 100);
+                                    MediaActivity.SelectMediaHelper.loadPathIntoImageView(media.getImagePath(), view, 99);
                                 } else if (parentClass instanceof MediaEvent) {
                                     view = LayoutInflater.from(this).inflate(R.layout.list_item_media_event_compact, (ViewGroup) itemView1, false);
-                                    List<ParentClass> list = flattenMediaEvent.runGenericInterface((MediaEvent) parentClass);
+                                    List<ParentClass> list = flattenMediaEvent.run((MediaEvent) parentClass);
                                     switch (list.size()) {
+                                        case 0:
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), null, Pair.create(95, 95));
+                                            view.findViewById(R.id.listItem_mediaEventCompact_image2).setVisibility(View.GONE);
+                                            view.findViewById(R.id.listItem_mediaEventCompact_image3).setVisibility(View.GONE);
+                                            view.findViewById(R.id.listItem_mediaEventCompact_image4).setVisibility(View.GONE);
+                                            break;
                                         case 1:
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(100, 100));
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(95, 95));
+                                            view.findViewById(R.id.listItem_mediaEventCompact_image2).setVisibility(View.GONE);
+                                            view.findViewById(R.id.listItem_mediaEventCompact_image3).setVisibility(View.GONE);
+                                            view.findViewById(R.id.listItem_mediaEventCompact_image4).setVisibility(View.GONE);
                                             break;
                                         case 2:
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(50, 100));
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image2), list.get(1), Pair.create(50, 100));
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(46, 95));
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image2), list.get(1), Pair.create(46, 95));
+                                            view.findViewById(R.id.listItem_mediaEventCompact_image3).setVisibility(View.GONE);
+                                            view.findViewById(R.id.listItem_mediaEventCompact_image4).setVisibility(View.GONE);
                                             break;
                                         case 3:
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(50, 50));
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image2), list.get(1), Pair.create(50, 50));
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image3), list.get(2), Pair.create(100, 50));
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(46, 46));
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image2), list.get(1), Pair.create(46, 46));
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image3), list.get(2), Pair.create(95, 46));
+                                            view.findViewById(R.id.listItem_mediaEventCompact_image4).setVisibility(View.GONE);
                                             break;
                                         default:
                                         case 4:
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(50, 50));
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image2), list.get(1), Pair.create(50, 50));
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image3), list.get(2), Pair.create(50, 50));
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image4), list.get(3), Pair.create(50, 50));
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(46, 46));
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image2), list.get(1), Pair.create(46, 46));
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image3), list.get(2), Pair.create(46, 46));
+                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image4), list.get(3), Pair.create(46, 46));
                                             break;
                                     }
                                 }
                                 itemView1.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                                 view.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                                ((LinearLayout) itemView1).removeAllViews();
                                 ((LinearLayout) itemView1).addView(view);
                             })
                             .addOptionalModifications(customRecycler1 -> {
@@ -409,7 +427,7 @@ public class MediaEventActivity extends AppCompatActivity {
                                 START_OPEN_MEDIA_EVENT);
                     }
                 })
-                .setOnLongClickListener((customRecycler, view, mediaEvent, index) -> showEditDialog(mediaEvent))
+                .setOnLongClickListener((customRecycler, view, mediaEvent, index) -> showEditDialog(mediaEvent._isDummy() ? parent : mediaEvent))
                 .generate();
     }
 
@@ -425,12 +443,7 @@ public class MediaEventActivity extends AppCompatActivity {
         if (!Utility.isOnline(this))
             return null;
 
-        setResult(RESULT_OK);
         removeFocusFromSearch();
-
-
-//        if (true)
-//            return null;
 
         boolean isAdd = oldEvent == null;
         MediaEvent newEvent = isAdd ? new MediaEvent("") : (MediaEvent) oldEvent.clone();
@@ -447,7 +460,6 @@ public class MediaEventActivity extends AppCompatActivity {
                 .setView(R.layout.dialog_edit_media_event)
                 .setSetViewContent((customDialog, view, reload) -> {
                     TextInputLayout editTitleLayout = view.findViewById(R.id.dialog_editMediaEvent_title_layout);
-                    // ToDo: Überprüfen ob schon vorhanden
                     TextInputLayout editDescriptionLayout = view.findViewById(R.id.dialog_editMediaEvent_description_layout);
 
                     if (!isAdd) {
@@ -456,21 +468,28 @@ public class MediaEventActivity extends AppCompatActivity {
                     }
 
                     Toast toast = Utility.centeredToast(this, "");
-                    com.finn.androidUtilities.Helpers.TextInputHelper helper = new com.finn.androidUtilities.Helpers.TextInputHelper(result -> {
-                        customDialog.getActionButton().setEnabled(!selectedMediaList.isEmpty() && result);
-                    }, editTitleLayout, editDescriptionLayout)
-                            .warnIfEmpty(editDescriptionLayout);
-                    helper
-                            .interceptDialogActionForValidation(customDialog, () -> {
-                                toast.setText("Warnung: " + helper.getMessage(editDescriptionLayout).get(0) + "\n(Doppel-Click zum Fortfahren)");
+//                    CustomList<MediaEvent> mediaEvents = new CustomList<>(database.mediaEventMap.values());
+//                    if (oldEvent != null)
+//                        mediaEvents.remove(oldEvent);
+                    com.finn.androidUtilities.Helpers.TextInputHelper helper = new com.finn.androidUtilities.Helpers.TextInputHelper()
+                            .defaultDialogValidation(customDialog)
+                            .addValidator(editTitleLayout, editDescriptionLayout)
+                            .setValidation(editTitleLayout, (validator, text) -> {
+                                ParentClass_Tree object = ParentClass_Tree.findObjectByName(CategoriesActivity.CATEGORIES.MEDIA_EVENT, text, true);
+                                if (object != null && object != oldEvent)
+                                    validator.setInvalid("Event mit diesem Namen bereits vorhanden");
+                            })
+                            .warnIfEmpty(editDescriptionLayout)
+                            .interceptDialogActionForValidation(customDialog, true, (inputHelper) -> {
+                                toast.setText("Warnung: " + inputHelper.getMessage(editDescriptionLayout).get(0) + "\n(Doppel-Click zum Fortfahren)");
                                 toast.show();
-                            }, toast::cancel)
+                            }, t -> toast.cancel());
+                    helper
                             .validate(new TextInputLayout[]{null});
 
                     FrameLayout selectedMediaParent = view.findViewById(R.id.dialog_editMediaEvent_selectParent);
                     MediaActivity.SelectMediaHelper.Builder(this, selectedMediaList)
                             .setParentView(selectedMediaParent)
-//                            .setHideAddButton(!isAdd)
                             .setOverrideSelectionDialog((helper1, selectedMedia, override, onSelected) -> {
                                 ActivityResultHelper.addGenericRequest(this, activity -> {
                                     Intent intent = new Intent(activity, MediaActivity.class).putExtra(MediaActivity.EXTRA_SELECT_MODE, override ? null : selectedMedia.map(ParentClass::getUuid));
@@ -533,9 +552,16 @@ public class MediaEventActivity extends AppCompatActivity {
                     if (!isAdd) {
                         customDialog
                                 .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog1 -> {
-                                    database.mediaEventMap.remove(oldEvent.getUuid());
+                                    if (parent == null)
+                                        database.mediaEventMap.remove(oldEvent.getUuid());
+                                    else
+                                        parent.getChildren().remove(oldEvent);
                                     reLoadRecycler();
-                                    Toast.makeText(this, (Database.saveAll_simple() ? plural : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
+                                    setResult(RESULT_OK);
+                                    Database.saveAll(this, CustomUtility.Triple.create("Event Gelöscht", null, "Löschen Fehlgeschlagen"));
+                                })
+                                .addOnDisabledClickToLastAddedButton(customDialog1 -> {
+                                    Toast.makeText(this, "Events mit Kindern können nicht gelöscht werden", Toast.LENGTH_SHORT).show();
                                 })
                                 .alignPreviousButtonsLeft()
                                 .transformPreviousButtonToImageButton()
@@ -544,6 +570,10 @@ public class MediaEventActivity extends AppCompatActivity {
                                             .setTitle(singular + " Löschen")
                                             .setText(new Helpers.SpannableStringHelper().append("Möchstest du wirklich '").appendBold(oldEvent.getName()).append("' löschen?").get());
                                 });
+                        if (!oldEvent.getChildren().isEmpty()) {
+//                            Toast.makeText(this, "Ein Event mit Kindern kann nicht gelöscht werden", Toast.LENGTH_SHORT).show();
+                            customDialog.disableLastAddedButton();
+                        }
                     }
                 })
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> saveMultipleMedia(customDialog, isAdd, oldEvent, newEvent, selectedMediaList, Pair.create(from[0], to[0])), false)
@@ -577,19 +607,16 @@ public class MediaEventActivity extends AppCompatActivity {
         newEvent.setEnd(beginningEnd.second);
 
         if (isAdd) {
-            database.mediaEventMap.put(newEvent.getUuid(), newEvent);
+            if (parent == null)
+                database.mediaEventMap.put(newEvent.getUuid(), newEvent);
+            else
+                parent.addChild(newEvent);
         } else {
             oldEvent.getChangesFrom(newEvent);
         }
 
-//        Boolean aBoolean = Database.saveAll();
-
-        ;
-
-//        Toast.makeText(this, CustomUtility.isNullReturnOrElse(Database.saveAll(), "Speichern Fehlgeschlagen", aBoolean -> (aBoolean ? "" : "Nichts ") + "Gespeichert"), Toast.LENGTH_SHORT).show();
-//        Toast.makeText(this, (aBoolean ? "" : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
-
         if (Database.saveAll_simple(this)) {
+            setResult(RESULT_OK);
             editDialog.dismiss();
             reLoadRecycler();
         }
@@ -618,15 +645,11 @@ public class MediaEventActivity extends AppCompatActivity {
      */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.task_bar_media_event, menu);
-//        menu.findItem(R.id.taskBar_media_share).setIconTintList(new ColorStateList(new int[][]{new int[]{android.R.attr.state_enabled}}, new int[]{Color.WHITE}));
+        this.menu = menu;
+        getMenuInflater().inflate(R.menu.task_bar_media_event, this.menu);
+        Utility.colorMenuItemIcon(menu, R.id.taskBar_mediaEvent_edit, Color.WHITE);
+        setToolbarButtons();
 
-//        Menu subMenu = menu.findItem(R.id.taskBar_filter).getSubMenu();
-//        subMenu.findItem(R.id.taskBar_show_filterByName)
-//                .setChecked(filterTypeSet.contains(ShowActivity.FILTER_TYPE.NAME));
-//        subMenu.findItem(R.id.taskBar_show_filterByGenre)
-//                .setChecked(filterTypeSet.contains(ShowActivity.FILTER_TYPE.GENRE));
-//
         if (setToolbarTitle != null) setToolbarTitle.run();
         return true;
     }
@@ -635,16 +658,15 @@ public class MediaEventActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         switch (id) {
+            case R.id.taskBar_mediaEvent_edit:
+                showEditDialog(parent);
+                break;
             case R.id.taskBar_mediaEvent_add:
                 showEditDialog(null);
-//                SelectMediaHelper.Builder(this).showSelection();
                 break;
-//            case R.id.taskBar_media_edit:
-//                showEditMultipleDialog(selectHelper.getAllSelectedContent(), false);
-//                break;
-//            case R.id.taskBar_media_share:
-//                shareMedia(selectHelper.getAllSelectedContent());
-//                break;
+            case R.id.taskBar_mediaEvent_sortTree:
+                ParentClass_Tree.showReorderTreeDialog(this, CategoriesActivity.CATEGORIES.MEDIA_EVENT, customDialog -> reLoadRecycler());
+                break;
 
             case android.R.id.home:
                 if (getCallingActivity() == null)
@@ -653,6 +675,14 @@ public class MediaEventActivity extends AppCompatActivity {
                 break;
         }
         return true;
+    }
+
+    private void setToolbarButtons() {
+        boolean hasParent = parent != null;
+        if (menu != null) {
+            menu.findItem(R.id.taskBar_mediaEvent_edit).setVisible(hasParent);
+            menu.findItem(R.id.taskBar_mediaEvent_sortTree).setVisible(!hasParent);
+        }
     }
 
     // --------------- Search
@@ -673,5 +703,8 @@ public class MediaEventActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+//        if (requestCode == START_OPEN_MEDIA_EVENT || requestCode == START_OPEN_MEDIA_EVENT)
+        if (resultCode == RESULT_OK)
+            reLoadRecycler();
     }
 }

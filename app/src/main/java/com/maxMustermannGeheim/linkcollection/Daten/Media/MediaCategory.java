@@ -20,7 +20,12 @@ public class MediaCategory extends ParentClass implements ParentClass_Tree {
         this.name = name;
     }
 
-//    public static ParentClass_Tree findObjectById(String id) {
+//    @Override
+//    public List<MediaCategory> getChildren() {
+//        return (List<MediaCategory>) ParentClass_Tree.super.getChildren();
+//    }
+
+    //    public static ParentClass_Tree findObjectById(String id) {
 //        return findObjectById(CategoriesActivity.CATEGORIES.MEDIA_CATEGORY, id);
 //    }
 }

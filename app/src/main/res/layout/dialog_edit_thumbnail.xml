@@ -20,7 +20,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="TMDb-Pfad, oder Bild-Url (https:...(.jpg / .png / .svg / ...))"
+            android:hint="TMDb-Pfad, oder Bild-Url (https:...(.jpg / .png / .svg / .gif / ...))"
             app:errorEnabled="true">
 
             <EditText

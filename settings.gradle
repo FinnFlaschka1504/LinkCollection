@@ -1,1 +1,3 @@
 include ':app'
+include ':AndroidUtilities'
+project(':AndroidUtilities').projectDir = file('C:\\Users\\flas008\\AndroidStudioProjects\\AndroidUtilities\\androidUtilities')

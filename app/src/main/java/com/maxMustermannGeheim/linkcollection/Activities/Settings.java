@@ -291,7 +291,7 @@ public class Settings extends AppCompatActivity {
                                                 String url = customDialog2.getEditText();
                                                 Utility.showInternetDialog(settingsContext, url, internetDialog, (customDialog3, s) -> {
 //                                                    Toast.makeText(settingsContext, s, Toast.LENGTH_SHORT).show();
-                                                    showResult.runGenericInterface(s);
+                                                    showResult.run(s);
                                                 }, null);
                                             }, false)
                                             .disableLastAddedButton()

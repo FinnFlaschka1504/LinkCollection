@@ -82,6 +82,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -1109,8 +1110,8 @@ public class ShowActivity extends AppCompatActivity {
                         };
                         CustomDialog.Builder(this)
                                 .setTitle("EpisodenDetails Aktualisieren")
-                                .addButton("Alle", customDialog1 -> updateEpisodes.runGenericInterface(true))
-                                .addButton("Wo Nötig", customDialog1 -> updateEpisodes.runGenericInterface(false))
+                                .addButton("Alle", customDialog1 -> updateEpisodes.run(true))
+                                .addButton("Wo Nötig", customDialog1 -> updateEpisodes.run(false))
                                 .markLastAddedButtonAsActionButton()
                                 .enableExpandButtons()
                                 .show();
@@ -1170,13 +1171,16 @@ public class ShowActivity extends AppCompatActivity {
                 }, false)
                 .disableLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {
+                    CustomList<Show> shows = new CustomList<>(database.showMap.values());
+                    if (show != null)
+                        shows.remove(show);
                     TextInputLayout dialog_editOrAdd_show_Title_layout = view.findViewById(R.id.dialog_editOrAdd_show_Title_layout);
                     new Helpers.TextInputHelper().defaultDialogValidation(customDialog).addValidator(dialog_editOrAdd_show_Title_layout)
                             .addActionListener(dialog_editOrAdd_show_Title_layout, (textInputHelper, textInputLayout, actionId, text) -> {
                                 apiSearchRequest(text, customDialog, editShow);
                             }, Helpers.TextInputHelper.IME_ACTION.SEARCH)
                             .setValidation(dialog_editOrAdd_show_Title_layout, (validator, text) -> {
-                                if (show == null && database.showMap.values().stream().anyMatch(show1 -> show1.getName().toLowerCase().equals(text.toLowerCase())))
+                                if (shows.stream().anyMatch(show1 -> show1.getName().equalsIgnoreCase(text)))
                                     validator.setInvalid("Gleiche Serie schon vorhanden!");
                             });
                     AutoCompleteTextView dialog_editOrAdd_show_title = view.findViewById(R.id.dialog_editOrAdd_show_title);
@@ -2294,10 +2298,10 @@ public class ShowActivity extends AppCompatActivity {
         Map<String, Show.Episode> episodeMap;
         Map<Integer, Map<String, Show.Episode>> seasonEpisodeMap;
         if ((seasonEpisodeMap = database.tempShowSeasonEpisodeMap.get(show)) != null && (episodeMap = seasonEpisodeMap.get(seasonNumber)) != null)
-            onTempSeason.runGenericInterface(episodeMap);
+            onTempSeason.run(episodeMap);
         else
             apiSeasonRequest(show, seasonNumber, () -> {
-                onTempSeason.runGenericInterface(database.tempShowSeasonEpisodeMap.get(show).get(seasonNumber));
+                onTempSeason.run(database.tempShowSeasonEpisodeMap.get(show).get(seasonNumber));
             });
     }
 

@@ -1,7 +1,9 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Media;
 
+import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tree;
+import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -95,4 +97,24 @@ public class MediaEvent extends ParentClass implements ParentClass_Tree {
     }
 
     /**  <------------------------- Getter & Setter -------------------------  */
+
+    /**
+     * ------------------------- Convenience ------------------------->
+     */
+    public String _getThumbnailPath() {
+        String thumbnailId = null;
+        if (!mediaIdList.isEmpty())
+            thumbnailId = mediaIdList.get(0);
+        else if (!children.isEmpty()) {
+            for (MediaEvent child : children) {
+                if ((thumbnailId = child._getThumbnailPath()) != null)
+                    break;
+            }
+        }
+        if (thumbnailId == null)
+            return null;
+        else
+            return ((Media) Utility.findObjectById(CategoriesActivity.CATEGORIES.MEDIA, thumbnailId)).getImagePath();
+    }
+    /**  <------------------------- Convenience -------------------------  */
 }

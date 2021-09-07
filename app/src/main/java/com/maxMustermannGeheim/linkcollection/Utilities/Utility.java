@@ -7,6 +7,7 @@ import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -25,6 +26,10 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsicBlur;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.SpannableStringBuilder;
@@ -35,9 +40,12 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.util.Pair;
+import android.view.ActionMode;
 import android.view.Display;
 import android.view.GestureDetector;
 import android.view.Gravity;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -61,6 +69,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -81,6 +90,8 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestBuilder;
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool;
+import com.bumptech.glide.load.resource.bitmap.BitmapTransformation;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.DrawableImageViewTarget;
 import com.bumptech.glide.request.target.Target;
@@ -151,7 +162,9 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -281,6 +294,7 @@ public class Utility {
         }
     }
     /**  <------------------------- isOnline -------------------------  */
+
 
 
     /**  ------------------------- Internet Dialog ------------------------->  */
@@ -519,7 +533,7 @@ public class Utility {
                         })
                         .addSubOnClickListener(R.id.listItem_selectThumbnail_thumbnail, (customRecycler, itemView, s, index) -> {
                             String result = ((EditText) itemView.findViewById(R.id.listItem_selectThumbnail_url)).getText().toString().trim();
-                            onImageSelected.runGenericInterface(result);
+                            onImageSelected.run(result);
                             customDialog.dismiss();
                         })
                         .addSubOnLongClickListener(R.id.listItem_selectThumbnail_thumbnail, (customRecycler, itemView, s, index) -> {
@@ -704,6 +718,102 @@ public class Utility {
 //                activity.getResources().getColorStateList(R.color.clickable_text_color, null));
     }
 
+    public static void addSelectionMenuItem(TextView textView, String itemName, Utility.GenericInterface<CharSequence> onClick) {
+        if (textView == null)
+            return;
+
+        textView.setTextIsSelectable(true);
+        textView.setCustomSelectionActionModeCallback(new ActionMode.Callback() {
+            @Override
+            public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                menu.add(itemName);
+                return true;
+            }
+
+            @Override
+            public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                return true;
+            }
+
+            @Override
+            public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                if (item.getTitle().equals(itemName)) {
+                    int min = 0;
+                    int max = textView.getText().length();
+                    if (textView.isFocused()) {
+                        final int selStart = textView.getSelectionStart();
+                        final int selEnd = textView.getSelectionEnd();
+
+                        min = Math.max(0, Math.min(selStart, selEnd));
+                        max = Math.max(0, Math.max(selStart, selEnd));
+                    }
+                    final CharSequence selectedText = textView.getText().subSequence(min, max);
+                    onClick.run(selectedText);
+                    mode.finish();
+                    return true;
+                }
+                return false;
+            }
+
+            @Override
+            public void onDestroyActionMode(ActionMode mode) {
+                String BREAKPOINT = null;
+            }
+        });
+    }
+
+    public static void searchQueryOnInternet(AppCompatActivity activity, CharSequence query) {
+        try {
+            query = URLEncoder.encode(query.toString(), "UTF-8");
+        } catch (UnsupportedEncodingException ignored) {
+        }
+        String url = "https://www.google.de/search?q=" + query;
+
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setData(Uri.parse(url));
+        Intent chooser = Intent.createChooser(intent, "Suchen mit...");
+        if (chooser.resolveActivity(activity.getPackageManager()) != null)
+            activity.startActivity(chooser);
+        else
+            Toast.makeText(activity, "Fehler", Toast.LENGTH_SHORT).show();
+    }
+
+    public static void applySelectionSearch(CategoriesActivity.CATEGORIES category, CustomDialog customDialog) {
+        List<TextView> list = new ArrayList<>();
+        if (CustomUtility.stringExists(customDialog.getTitle()))
+            list.add(customDialog.getTitleTextView());
+        if (CustomUtility.stringExists(customDialog.getText()))
+            list.add(customDialog.getTextTextView());
+        if (customDialog.isShowEdit())
+            list.add(customDialog.getEditLayout().getEditText());
+
+        applySelectionSearch((AppCompatActivity) customDialog.getContext(), category, list.toArray(new TextView[0]));
+    }
+
+    public static void applySelectionSearch(AppCompatActivity context, CategoriesActivity.CATEGORIES category, TextView... textViews) {
+        GenericInterface<CharSequence> onSelection = charSequence -> {
+            CustomDialog.Builder(context)
+                    .setTitle("Text Suchen")
+                    .setText(com.maxMustermannGeheim.linkcollection.Utilities.Helpers.SpannableStringHelper.Builder(spanBuilder -> spanBuilder.appendBold("Text: ").append(charSequence)))
+                    .addButton("Websuche", customDialog1 -> {
+                        Utility.searchQueryOnInternet(context, charSequence);
+                    })
+                    .addButton("Lokal", customDialog1 -> {
+                        context.startActivity(new Intent(context, category.getSearchIn())
+                                .putExtra(CategoriesActivity.EXTRA_SEARCH, CategoriesActivity.escapeForSearchExtra(charSequence.toString()))
+                                .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, category));
+                    })
+                    .enableStackButtons()
+                    .show();
+        };
+        for (TextView textView : textViews)
+            Utility.addSelectionMenuItem(textView, "Suche", onSelection);
+    }
+
+    public static void colorMenuItemIcon(Menu menu, @IdRes int id, int color){
+        menu.findItem(id).setIconTintList(new ColorStateList(new int[][]{new int[]{android.R.attr.state_enabled}}, new int[]{color}));
+    }
+
 
     /**  ------------------------- Api ------------------------->  */
     public static void importTmdbGenre(Context context, boolean direct, boolean isVideo) {
@@ -807,14 +917,14 @@ public class Utility {
         JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, requestUrl, null, response -> {
             try {
                 String string = response.getJSONObject(0).getJSONObject(type).getJSONObject("ids").getString("imdb");
-                onResult.runGenericInterface(Utility.stringExists(string) && !string.equals("null") ? string : null);
+                onResult.run(Utility.stringExists(string) && !string.equals("null") ? string : null);
             } catch (JSONException ignored) {
-                onResult.runGenericInterface(null);
+                onResult.run(null);
             }
 
         }, error -> {
             Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show();
-            onResult.runGenericInterface(null);
+            onResult.run(null);
         }) {
             @Override
             public Map<String, String> getHeaders() {
@@ -835,7 +945,7 @@ public class Utility {
 
         Request request = null;
         if (JSONArray.class.equals(returnClass)) {
-            request = new JsonArrayRequest(Request.Method.GET, url, null, response -> onResult.runGenericInterface((T) response), error -> Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show()) {
+            request = new JsonArrayRequest(Request.Method.GET, url, null, response -> onResult.run((T) response), error -> Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show()) {
                 @Override
                 public Map<String, String> getHeaders() {
                     Map<String, String> headers = new HashMap<>();
@@ -846,7 +956,7 @@ public class Utility {
                 }
             };
         } else if (JSONObject.class.equals(returnClass)) {
-            request = new JsonObjectRequest(Request.Method.GET, url, null, response -> onResult.runGenericInterface((T) response), error -> Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show()) {
+            request = new JsonObjectRequest(Request.Method.GET, url, null, response -> onResult.run((T) response), error -> Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show()) {
                 @Override
                 public Map<String, String> getHeaders() {
                     Map<String, String> headers = new HashMap<>();
@@ -1012,6 +1122,7 @@ public class Utility {
     /**  <------------------------- Api -------------------------  */
 
 
+
     /**  ------------------------- watchLater ------------------------->  */
     public static List<String> getWatchLaterList_uuid() {
         return getWatchLaterList().stream().map(ParentClass::getUuid).collect(Collectors.toList());
@@ -1027,12 +1138,14 @@ public class Utility {
     /**  <------------------------- watchLater -------------------------  */
 
 
+
     /**  ------------------------- Copy ------------------------->  */
     public static <T> T deepCopy(T t) {
         Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
         return (T) gson.fromJson(gson.toJson(t), t.getClass());
     }
     /**  <------------------------- Copy -------------------------  */
+
 
 
     /**  ------------------------- OnClickListener ------------------------->  */
@@ -1077,6 +1190,7 @@ public class Utility {
         boolean runInterceptOnClick(View view);
     }
     /**  <------------------------- OnClickListener -------------------------  */
+
 
 
     /**  ------------------------- Filter ------------------------->  */
@@ -1492,6 +1606,8 @@ public class Utility {
     }
     /**  <------------------------- EpisodeCalender -------------------------  */
 
+
+
     private static void loadVideoList(List<Event> eventList, FrameLayout layout, CustomRecycler<Event> customRecycler) {
         eventList = new ArrayList<>(eventList);
         eventList.sort((o1, o2) -> Long.compare(o1.getTimeInMillis(), o2.getTimeInMillis()));
@@ -1662,6 +1778,7 @@ public class Utility {
     }
 
 
+
     /**  ------------------------- Checks ------------------------->  */
     public static final String urlPattern = "(?i)^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?!(?:10|127)(?:\\.\\d{1,3}){3})(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?(?:[/?#]\\S*)?$";
     public static boolean isUrl(String text) {
@@ -1680,6 +1797,7 @@ public class Utility {
         return activity.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
     }
     /**  <------------------------- Checks -------------------------  */
+
 
 
     /**  ------------------------- Text ------------------------->  */
@@ -1752,8 +1870,8 @@ public class Utility {
 
     public static String formatDuration(Duration duration, @Nullable String format) {
         if (format == null)
-            format = "'%w% Woche§n§~, ~''%d% Tag§e§~, ~''%h% Stunde§n§~, ~''%m% Minute§n§~, ~''%s% Sekunde§n§~, ~'";
-        com.finn.androidUtilities.CustomList<Pair<String, Integer>> patternList = new com.finn.androidUtilities.CustomList<>(Pair.create("%w%", 604800), Pair.create("%d%", 86400), Pair.create("%h%", 3600), Pair.create("%m%", 60), Pair.create("%s%", 1));
+            format = "'%j% Jahr§e§~, ~''%w% Woche§n§~, ~''%d% Tag§e§~, ~''%h% Stunde§n§~, ~''%m% Minute§n§~, ~''%s% Sekunde§n§~, ~'";
+        com.finn.androidUtilities.CustomList<Pair<String, Integer>> patternList = new com.finn.androidUtilities.CustomList<>(Pair.create("%j%", 31557600), Pair.create("%w%", 604800), Pair.create("%d%", 86400), Pair.create("%h%", 3600), Pair.create("%m%", 60), Pair.create("%s%", 1));
         int seconds = (int) (duration.toMillis() / 1000);
         while (true) {
             Matcher segments = Pattern.compile("'.+?'").matcher(format);
@@ -1821,6 +1939,7 @@ public class Utility {
     /**  <------------------------- Text -------------------------  */
 
 
+
     /**  ------------------------- Time ------------------------->  */
     public static Date removeTime(Date date) {
         Calendar cal = Calendar.getInstance();
@@ -1859,6 +1978,7 @@ public class Utility {
     /**  <------------------------- Time -------------------------  */
 
 
+
     /**  ------------------------- Toast ------------------------->  */
     public static Toast centeredToast(Context context, String text) {
         Toast toast = Toast.makeText(context, text, Toast.LENGTH_SHORT);
@@ -1878,6 +1998,7 @@ public class Utility {
         toast.show();
     }
     /**  <------------------------- Toast -------------------------  */
+
 
 
     /**  ------------------------- EditItem ------------------------->  */
@@ -2266,11 +2387,12 @@ public class Utility {
                 .transformPreviousButtonToImageButton()
                 .alignPreviousButtonsLeft()
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
-                    onSaved.runGenericInterface(selectedIds);
+                    onSaved.run(selectedIds);
                 })
                 .show();
     }
     /**  <------------------------- EditItem -------------------------  */
+
 
 
     /**  <------------------------- Objects from Database -------------------------  */
@@ -2323,7 +2445,7 @@ public class Utility {
     public static ParentClass findObjectByName(CategoriesActivity.CATEGORIES category, String name) {
         switch (category) {
             case MEDIA_CATEGORY:
-                return (ParentClass) ParentClass_Tree.findObjectByName(category, name);
+                return (ParentClass) ParentClass_Tree.findObjectByName(category, name, false);
             default:
                 return getMapFromDatabase(category).values().stream().filter(parentClass -> parentClass.getName().equals(name)).findFirst().orElse(null);
         }
@@ -2342,6 +2464,8 @@ public class Utility {
         return idList.stream().map(id -> findObjectById(category, id)).collect(Collectors.toCollection(com.finn.androidUtilities.CustomList::new));
     }
     /**  ------------------------- Objects from Database ------------------------->  */
+
+
 
     public static class Triple<A, B, C> {
         public A first;
@@ -2433,6 +2557,7 @@ public class Utility {
     }
 
 
+
     /**  ------------------------- Pixels ------------------------->  */
     public static int pxToDp(int px) {
         return (int) (px / Resources.getSystem().getDisplayMetrics().density);
@@ -2459,6 +2584,7 @@ public class Utility {
         return Pair.create(width, height);
     }
     /**  <------------------------- Pixels -------------------------  */
+
 
 
     /**  ------------------------- Advanced Search ------------------------->  */
@@ -2554,7 +2680,7 @@ public class Utility {
                         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                             if (fromUser) {
                                 rangeBar.setMinThumbValue(progress);
-                                setText.runGenericInterface(Pair.create(progress, progress));
+                                setText.run(Pair.create(progress, progress));
                             }
                         }
 
@@ -2575,12 +2701,12 @@ public class Utility {
                         }
                         singleMode[0] = !singleMode[0];
                         rangeBar.setVisibility(singleMode[0] ? View.INVISIBLE : View.VISIBLE);
-                        setText.runGenericInterface(Pair.create(rangeBar.getMinThumbValue(), rangeBar.getMaxThumbValue()));
+                        setText.run(Pair.create(rangeBar.getMinThumbValue(), rangeBar.getMaxThumbValue()));
                     });
                     singleBar.setProgress(min[0]);
                     rangeBar.setMaxThumbValue(max[0]);
                     rangeBar.setMinThumbValue(min[0]);
-                    setText.runGenericInterface(Pair.create(min[0], max[0]));
+                    setText.run(Pair.create(min[0], max[0]));
 
                     rangeBar.setSeekBarChangeListener(new RangeSeekBar.SeekBarChangeListener() {
                         @Override
@@ -2594,7 +2720,7 @@ public class Utility {
 
                         @Override
                         public void onValueChanged(int min, int max) {
-                            setText.runGenericInterface(Pair.create(min, max));
+                            setText.run(Pair.create(min, max));
                             singleBar.setProgress(min);
                         }
                     });
@@ -3096,9 +3222,9 @@ public class Utility {
                         return s;
                 };
                 SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-                min = dateFormat.parse(expandYear.runGenericInterface(range[0]));
+                min = dateFormat.parse(expandYear.run(range[0]));
                 if (range.length > 1)
-                    max = dateFormat.parse(expandYear.runGenericInterface(range[1]));
+                    max = dateFormat.parse(expandYear.run(range[1]));
             } catch (ParseException ignored) {
             }
 
@@ -3228,6 +3354,7 @@ public class Utility {
     /**  <------------------------- Date & String -------------------------  */
 
 
+
     /**  ------------------------- SetDimensions ------------------------->  */
     public static void setDimensions(View view, boolean width, boolean height) {
         ViewGroup.LayoutParams lp = view.getLayoutParams();
@@ -3247,6 +3374,7 @@ public class Utility {
         view.setLayoutParams(lp);
     }
     /**  <------------------------- SetDimensions -------------------------  */
+
 
 
     /**  ------------------------- getViews ------------------------->  */
@@ -3295,7 +3423,12 @@ public class Utility {
     public interface TransferState<S, T> {
         void runTransferState(S source, T target);
     }
+
+    public static EditText getEditTextFromSearchView(SearchView searchView){
+        return searchView.findViewById(Resources.getSystem().getIdentifier("search_src_text", "id", "android"));
+    }
     /**  <------------------------- getViews -------------------------  */
+
 
 
     /**  ------------------------- SquareView ------------------------->  */
@@ -3525,7 +3658,7 @@ public class Utility {
             throw new NoArgumentException(NoArgumentException.DEFAULT_MESSAGE);
 
         for (T o : to) {
-            if (what.runGenericInterface(o))
+            if (what.run(o))
                 return true;
         }
         return false;
@@ -3549,7 +3682,7 @@ public class Utility {
 
         boolean found = false;
         for (T o : to) {
-            if (what.runGenericInterface(o)) {
+            if (what.run(o)) {
                 if (found)
                     return false;
                 found = true;
@@ -3589,7 +3722,7 @@ public class Utility {
             throw new NoArgumentException(NoArgumentException.DEFAULT_MESSAGE);
 
         for (T o : to) {
-            if (!what.runGenericInterface(o))
+            if (!what.run(o))
                 return false;
         }
         return true;
@@ -3618,7 +3751,7 @@ public class Utility {
     }
 
     public static <T> T isNotNullOrElse(T input, GenericReturnOnlyInterface<T> orElse) {
-        return input != null ? input : orElse.runGenericInterface();
+        return input != null ? input : orElse.run();
     }
 
     public static <T> T isNotValueOrElse(T input, T value, T orElse) {
@@ -3626,7 +3759,7 @@ public class Utility {
     }
 
     public static <T> T isNotValueOrElse(T input, T value, GenericReturnOnlyInterface<T> orElse) {
-        return !Objects.equals(input, value) ? input : orElse.runGenericInterface();
+        return !Objects.equals(input, value) ? input : orElse.run();
     }
 
     public static <T> T isValueOrElse(T input, T value, T orElse) {
@@ -3634,29 +3767,29 @@ public class Utility {
     }
 
     public static <T> T isValueOrElse(T input, T value, GenericReturnOnlyInterface<T> orElse) {
-        return Objects.equals(input, value) ? input : orElse.runGenericInterface();
+        return Objects.equals(input, value) ? input : orElse.run();
     }
 
     public static <T, R> R isNotValueReturnOrElse(T input, T value, GenericReturnInterface<T, R> returnValue, @Nullable GenericReturnOnlyInterface<R> orElse) {
-        return !Objects.equals(input, value) ? returnValue.runGenericInterface(input) : orElse != null ? orElse.runGenericInterface() : (R) input;
+        return !Objects.equals(input, value) ? returnValue.run(input) : orElse != null ? orElse.run() : (R) input;
     }
 
     public static <T, R> R isValueReturnOrElse(T input, T value, GenericReturnInterface<T, R> returnValue, GenericReturnOnlyInterface<R> orElse) {
-        return Objects.equals(input, value) ? returnValue.runGenericInterface(input) : orElse.runGenericInterface();
+        return Objects.equals(input, value) ? returnValue.run(input) : orElse.run();
     }
 
     public static <T, R> R isNullReturnOrElse(T input, R returnValue, GenericReturnInterface<T, R> orElse) {
-        return Objects.equals(input, null) ? returnValue : orElse.runGenericInterface(input);
+        return Objects.equals(input, null) ? returnValue : orElse.run(input);
     }
 
     public static <T, R> R isCheckReturnOrElse(T input, CustomUtility.GenericReturnInterface<T, Boolean> check, @Nullable CustomUtility.GenericReturnInterface<T, R> returnValue, CustomUtility.GenericReturnInterface<T, R> orElse) {
-        if (check.runGenericInterface(input)) {
+        if (check.run(input)) {
             if (returnValue == null)
                 return (R) input;
             else
-                return returnValue.runGenericInterface(input);
+                return returnValue.run(input);
         } else
-            return orElse.runGenericInterface(input);
+            return orElse.run(input);
     }
     /**  <------------------------- EasyLogic -------------------------  */
 
@@ -3747,11 +3880,11 @@ public class Utility {
 
     /**  ------------------------- Interfaces ------------------------->  */
     public interface GenericInterface<T> {
-        void runGenericInterface(T t);
+        void run(T t);
     }
 
     public interface GenericReturnInterface<T, R> {
-        R runGenericInterface(T t);
+        R run(T t);
     }
 
     public interface DoubleGenericInterface<T, T2> {
@@ -3771,12 +3904,12 @@ public class Utility {
     }
 
     public interface GenericReturnOnlyInterface<T> {
-        T runGenericInterface();
+        T run();
     }
 
     public static <T> boolean runGenericInterface(GenericInterface<T> genericInterface, T parameter) {
         if (genericInterface != null) {
-            genericInterface.runGenericInterface(parameter);
+            genericInterface.run(parameter);
             return true;
         }
         return false;
@@ -3790,7 +3923,7 @@ public class Utility {
         return false;
     }
 
-    public static <T,T2, T3> boolean runDoubleGenericInterface(TripleGenericInterface<T,T2, T3> genericInterface, T parameter, T2 parameter2, T3 parameter3) {
+    public static <T,T2, T3> boolean runTripleGenericInterface(TripleGenericInterface<T,T2, T3> genericInterface, T parameter, T2 parameter2, T3 parameter3) {
         if (genericInterface != null) {
             genericInterface.run(parameter, parameter2, parameter3);
             return true;
@@ -3820,7 +3953,7 @@ public class Utility {
     public static <T> boolean runVarArgGenericInterface(int index, T input, GenericInterface<T>... varArg){
         if (varArg != null && index >= 0) {
             if (varArg.length > index && varArg[index] != null)
-                varArg[index].runGenericInterface(input);
+                varArg[index].run(input);
             else
                 return false;
         } else
@@ -4078,6 +4211,142 @@ public class Utility {
         imageView.setImageBitmap(ImageHelper.getRoundedCornerBitmap(oldBitmap, radius));
     }
 
+    public static class CustomCropTransformation extends BitmapTransformation {
+        private static final String TAG = "CustomCropTransformation";
+        private ImageCrop crop;
+
+        public CustomCropTransformation(ImageCrop crop) {
+            this.crop = crop;
+        }
+
+        @Override
+        protected Bitmap transform(@NonNull BitmapPool pool, @NonNull Bitmap toTransform, int outWidth, int outHeight) {
+            Log.d(TAG, String.format("transform: x:%d, y:%d, w:%d, h:%d", crop.getX(), crop.getY(), crop.getHeight(), crop.getHeight()));
+
+            Date start = new Date();
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(crop.getPathName(), options);
+            double width = options.outWidth;
+            double height = options.outHeight;
+            Date end = new Date();
+            Log.d(TAG, "transform: " + (end.getTime() - start.getTime()));
+
+            double xScale = toTransform.getWidth() / width;
+            double yScale = toTransform.getHeight() / height;
+
+            return Bitmap.createBitmap(
+                    toTransform,
+                    (int) (crop.getX() * xScale),
+                    (int) (crop.getY() * yScale),
+                    (int) (crop.getWidth() * xScale),
+                    (int) (crop.getHeight() * yScale));
+        }
+
+        @Override
+        public void updateDiskCacheKey(@NonNull MessageDigest messageDigest) {
+            messageDigest.update(("crop" + crop.getX() + crop.getY() + crop.getHeight() + crop.getHeight()).getBytes());
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            CustomCropTransformation that = (CustomCropTransformation) o;
+            return Objects.equals(crop, that.crop);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(crop);
+        }
+    }
+
+    public static class ImageCrop {
+        String pathName;
+        int x;
+        int y;
+        int width;
+        int height;
+
+        /**  ------------------------- Constructor ------------------------->  */
+        public ImageCrop(String pathName, int x, int y, int width, int height) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            this.pathName = pathName;
+        }
+        /**  <------------------------- Constructor -------------------------  */
+
+
+        /**  ------------------------- Getter & Setter ------------------------->  */
+        public int getX() {
+            return x;
+        }
+
+        public ImageCrop setX(int x) {
+            this.x = x;
+            return this;
+        }
+
+        public int getY() {
+            return y;
+        }
+
+        public ImageCrop setY(int y) {
+            this.y = y;
+            return this;
+        }
+
+        public int getWidth() {
+            return width;
+        }
+
+        public ImageCrop setWidth(int width) {
+            this.width = width;
+            return this;
+        }
+
+        public int getHeight() {
+            return height;
+        }
+
+        public ImageCrop setHeight(int height) {
+            this.height = height;
+            return this;
+        }
+
+        public String getPathName() {
+            return pathName;
+        }
+
+        public ImageCrop setPathName(String pathName) {
+            this.pathName = pathName;
+            return this;
+        }
+        /**  <------------------------- Getter & Setter -------------------------  */
+
+
+
+        /**  ------------------------- Equals & Hash ------------------------->  */
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ImageCrop imageCrop = (ImageCrop) o;
+            return getX() == imageCrop.getX() &&
+                    getY() == imageCrop.getY() &&
+                    getWidth() == imageCrop.getWidth() &&
+                    getHeight() == imageCrop.getHeight();
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(getX(), getY(), getWidth(), getHeight());
+        }
+        /**  <------------------------- Equals & Hash -------------------------  */
+    }
     // ---------------
 
     public static String getTmdbImagePath_ifNecessary(String imagePath, boolean original) {
@@ -4110,7 +4379,7 @@ public class Utility {
             @Override
             protected void onPostExecute(OpenGraph openGraph) {
                 if (onResult != null) {
-                    onResult.runGenericInterface(openGraph);
+                    onResult.run(openGraph);
                 }
             }
         };
@@ -4501,7 +4770,7 @@ public class Utility {
 //        if (varArg.length >= (index + 1)) {
 //            T t;
 //            if ((t = varArg[index]) != null) {
-//                ifExists.runGenericInterface(t);
+//                ifExists.run(t);
 //                return true;
 //            }
 //        }
@@ -4516,7 +4785,7 @@ public class Utility {
                     return t;
             }
         }
-        return orElse == null ? null : orElse.runGenericInterface();
+        return orElse == null ? null : orElse.run();
     }
     /**  <------------------------- Arrays -------------------------  */
 

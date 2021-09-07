@@ -9,11 +9,15 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
+import com.allyants.draggabletreeview.DraggableTreeView;
+import com.allyants.draggabletreeview.SimpleTreeViewAdapter;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomUtility;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
+import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomTreeNodeHolder;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomTreeViewAdapter;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.unnamed.b.atv.model.TreeNode;
@@ -142,7 +146,7 @@ public interface ParentClass_Tree {
                     if (node.isSelected()) {
                         node.setSelected(false);
                         ((CustomTreeNodeHolder) node.getViewHolder()).update();
-                        updateSelectedList.runGenericInterface(node);
+                        updateSelectedList.run(node);
                     } else
                         manageSelection.run(completeTree, node);
 
@@ -209,7 +213,7 @@ public interface ParentClass_Tree {
                         ((Map<String, ParentClass>) Utility.getMapFromDatabase(category)).put(((ParentClass) newObject).getUuid(), (ParentClass) newObject);
                     }
                     Toast.makeText(context, (Database.saveAll_simple() ? "" : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
-                    onAdded.runGenericInterface(newObject);
+                    onAdded.run(newObject);
                 })
                 .disableLastAddedButton()
                 .show();
@@ -221,7 +225,7 @@ public interface ParentClass_Tree {
             if (!isChildSelected(root)) {
                 selected.setSelected(true);
                 ((CustomTreeNodeHolder) selected.getViewHolder()).update();
-                changedSelection.runGenericInterface(selected);
+                changedSelection.run(selected);
             }
             return true;
         } else if (root.isLeaf()) {
@@ -232,7 +236,7 @@ public interface ParentClass_Tree {
                     if (root.isSelected()) {
                         root.setSelected(false);
                         ((CustomTreeNodeHolder) root.getViewHolder()).update();
-                        changedSelection.runGenericInterface(root);
+                        changedSelection.run(root);
                     }
                     return true;
                 }
@@ -278,6 +282,53 @@ public interface ParentClass_Tree {
                 }
             });
         }
+    }
+
+    static void showReorderTreeDialog(Context context, CategoriesActivity.CATEGORIES category, @Nullable CustomUtility.GenericInterface<CustomDialog> onSaved) {
+        // ToDo: herausfinden warum Elemente verschwinden wenn ganz am Rand losgelassen
+        CustomDialog.Builder(context)
+                .setTitle(category.getSingular() + " Baum Bearbeiten")
+                .setView(R.layout.dialog_edit_tree)
+                .setDimensionsFullscreen()
+                .disableScroll()
+                .setSetViewContent((customDialog, view, reload) -> {
+                    DraggableTreeView treeView = view.findViewById(R.id.dialog_editTree_treeView);
+                    try {
+                        Field sideMargin = DraggableTreeView.class.getDeclaredField("sideMargin");
+                        sideMargin.setAccessible(true);
+                        sideMargin.set(treeView, 35);
+                    } catch (NoSuchFieldException | IllegalAccessException ignored) {}
+
+                    com.maxMustermannGeheim.linkcollection.Utilities.CustomList<? extends ParentClass> list = new com.maxMustermannGeheim.linkcollection.Utilities.CustomList<>(Utility.getMapFromDatabase(category).values()).sorted((o1, o2) ->  o1.getName().compareTo(o2.getName()));
+
+                    com.allyants.draggabletreeview.TreeNode root = new com.allyants.draggabletreeview.TreeNode(context);
+                    customDialog.setPayload(root);
+
+                    for (ParentClass object : list) {
+                        Utility.runRecursiveGenericInterface(Pair.create(root, (ParentClass_Tree) object), (pair, recursiveInterface) -> {
+                            com.allyants.draggabletreeview.TreeNode childNode = new com.allyants.draggabletreeview.TreeNode(pair.second);
+                            pair.first.addChild(childNode);
+                            if (!pair.second.getChildren().isEmpty())
+                                pair.second.getChildren()
+                                        .stream().sorted((o1, o2) -> ((ParentClass) o1).getName().compareTo(((ParentClass) o2).getName()))
+                                        .forEach(childObject -> recursiveInterface.run(Pair.create(childNode, childObject), recursiveInterface));
+                        });
+                    }
+
+                    SimpleTreeViewAdapter adapter = new CustomTreeViewAdapter(context, root);
+//                    TextView textView = new TextView(context);
+//                    textView.setText("Test");
+//                    adapter.setPlaceholder(textView);
+                    treeView.setAdapter(adapter);
+                })
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
+                    com.allyants.draggabletreeview.TreeNode root = (com.allyants.draggabletreeview.TreeNode) customDialog.getPayload();
+                    ParentClass_Tree.rebuildMap(category, root);
+                    Database.saveAll(context);
+                    CustomUtility.runGenericInterface(onSaved, customDialog);
+                })
+                .show();
     }
     //  <------------------------- Tree -------------------------
 
@@ -386,22 +437,22 @@ public interface ParentClass_Tree {
         return null;
     }
 
-    static ParentClass_Tree findObjectByName(CategoriesActivity.CATEGORIES category, String name) {
+    static ParentClass_Tree findObjectByName(CategoriesActivity.CATEGORIES category, String name, boolean ignoreCase) {
         Collection<ParentClass> values = (Collection<ParentClass>) Utility.getMapFromDatabase(category).values();
         for (ParentClass parentClass : values) {
             ParentClass_Tree child;
-            if ((child = ((ParentClass_Tree) parentClass).findObjectByName(name)) != null)
+            if ((child = ((ParentClass_Tree) parentClass).findObjectByName(name, ignoreCase)) != null)
                 return child;
         }
         return null;
     }
 
-    default ParentClass_Tree findObjectByName(String name) {
-        if (((ParentClass) this).getName().equals(name))
+    default ParentClass_Tree findObjectByName(String name, boolean ignoreCase) {
+        if (ignoreCase ? (((ParentClass) this).getName().equalsIgnoreCase(name)) : (((ParentClass) this).getName().equals(name)))
             return this;
         for (ParentClass_Tree parentClass : getChildren()) {
             ParentClass_Tree child;
-            if ((child = parentClass.findObjectByName(name)) != null)
+            if ((child = parentClass.findObjectByName(name, ignoreCase)) != null)
                 return child;
         }
         return null;

@@ -19,7 +19,6 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
-import android.text.style.TypefaceSpan;
 import android.text.style.UnderlineSpan;
 import android.util.Pair;
 import android.view.KeyEvent;
@@ -596,11 +595,11 @@ public class Helpers {
             }
 
             public ParcelableSpan getWhat() {
-                return what.runGenericInterface(null);
+                return what.run(null);
             }
 
             public ParcelableSpan getWhat(Object o) {
-                return what.runGenericInterface(o);
+                return what.run(o);
             }
         }
 
@@ -674,7 +673,7 @@ public class Helpers {
         }
 
         public SpannableStringHelper appendMultiple(CharSequence text, CustomUtility.GenericReturnInterface<MultipleSpans, MultipleSpans> multipleSpans) {
-            multipleSpans.runGenericInterface(new MultipleSpans()).apply(text, builder);
+            multipleSpans.run(new MultipleSpans()).apply(text, builder);
             return this;
         }
 
@@ -714,7 +713,7 @@ public class Helpers {
         }
 
         public SpannableStringHelper appendCustom(CustomUtility.GenericInterface<SpannableStringBuilder> applyCustomSpan) {
-            applyCustomSpan.runGenericInterface(builder);
+            applyCustomSpan.run(builder);
             return this;
         }
         //  <------------------------- Append -------------------------
@@ -776,7 +775,7 @@ public class Helpers {
         public static CharSequence highlightText(String search, String originalText) {
             if (CustomUtility.stringExists(search) && CustomUtility.stringExists(originalText)) {
                 search = search.toLowerCase();
-                String normalizedText = Normalizer.normalize(originalText, Normalizer.Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", "").toLowerCase();
+                String normalizedText = originalText.toLowerCase(); //Normalizer.normalize(originalText, Normalizer.Form.NFD).replaceAll("\\p{InCombiningDiacriticalMarks}+", "").toLowerCase();
                 int start = normalizedText.indexOf(search);
                 if (start < 0) {
                     return originalText;
@@ -1370,7 +1369,7 @@ public class Helpers {
                     if (t.matches("null") && tryCount < 50) {
                         new Handler().postDelayed(() -> evaluateJavaScript(rawScript, onParseResult, onComplete, tryCount + 1), 100);
                     } else {
-                        onParseResult.runGenericInterface(t + (tryCount < 50 ? "" : " (" + tryCount + ")"));
+                        onParseResult.run(t + (tryCount < 50 ? "" : " (" + tryCount + ")"));
                         onSuccess.run();
                     }
                 } else
@@ -1568,7 +1567,7 @@ public class Helpers {
 
         //  ------------------------- Convenience ------------------------->
         public WebViewHelper addOptional(Utility.GenericInterface<WebViewHelper> addOptional) {
-            addOptional.runGenericInterface(this);
+            addOptional.run(this);
             return this;
         }
         //  <------------------------- Convenience -------------------------
@@ -1580,6 +1579,7 @@ public class Helpers {
      * ------------------------- AdvancedSearch ------------------------->
      */
     public static class AdvancedQueryHelper<T> {
+        public static final String ADVANCED_SEARCH_CRITERIA_NAME = "n";
         @Language("RegExp") public static final String PARENT_CLASS_PATTERN = "([^|&\\[\\]]+?)([|&][^|&\\[\\]]+?)*";
         private static final Pattern advancedQueryPattern = Pattern.compile("\\{.*\\}");
         private SearchView searchView;
@@ -1606,14 +1606,29 @@ public class Helpers {
          * ------------------------- Getter & Setter ------------------------->
          */
         public <Result> AdvancedQueryHelper<T> addCriteria(Utility.GenericReturnInterface<AdvancedQueryHelper<T>, SearchCriteria<T, Result>> getCriteria) {
-            criteriaList.add(getCriteria.runGenericInterface(this));
+            criteriaList.add(getCriteria.run(this));
             return this;
         }
 
         public AdvancedQueryHelper<T> addCriteria_defaultName() {
-            criteriaList.add(new Helpers.AdvancedQueryHelper.SearchCriteria<T, String>("n", "[^]]+?")
+            return addCriteria_defaultName(null);
+        }
+
+        public AdvancedQueryHelper<T> addCriteria_defaultName(@Nullable @IdRes Integer editTextId) {
+            SearchCriteria<T, String> criteria = new SearchCriteria<T, String>(ADVANCED_SEARCH_CRITERIA_NAME, "[^]]+?")
                     .setParser(String::toLowerCase)
-                    .setBuildPredicate(sub -> t -> ((ParentClass) t).getName().toLowerCase().contains(sub)));
+                    .setBuildPredicate(sub -> t -> ((ParentClass) t).getName().toLowerCase().contains(sub));
+            if (editTextId != null) {
+                criteria.setApplyDialog((customDialog, s, criteria1) -> {
+                    EditText editText = customDialog.findViewById(editTextId);
+                    if (editText != null) {
+                        editText.setText(s);
+                        return customDialog1 -> ADVANCED_SEARCH_CRITERIA_NAME + ":" + editText.getText().toString();
+                    }
+                    return null;
+                });
+            }
+            criteriaList.add(criteria);
             return this;
         }
 
@@ -1640,10 +1655,10 @@ public class Helpers {
                         return t -> {
                             switch (pair.first) {
                                 case "|":
-                                    return getList.runGenericInterface(t).stream().anyMatch(idList::contains);
+                                    return getList.run(t).stream().anyMatch(idList::contains);
                                 default:
                                 case "&":
-                                    return getList.runGenericInterface(t).containsAll(idList);
+                                    return getList.run(t).containsAll(idList);
                             }
                         };
                     });
@@ -1854,10 +1869,12 @@ public class Helpers {
                             return;
                         Object o;
                         if (CustomUtility.stringExists(criteria.sub))
-                            o = criteria.tempResult = criteria.parser.runGenericInterface(criteria.sub);
+                            o = criteria.tempResult = criteria.parser.run(criteria.sub);
                         else
                             o = null;
-                        onSaveList.add(criteria.applyDialog.runApplyDialog(customDialog, o, criteria));
+                        Utility.GenericReturnInterface onSave = criteria.applyDialog.runApplyDialog(customDialog, o, criteria);
+                        if (onSave != null)
+                            onSaveList.add(onSave);
                     }))
                     .addOptionalModifications(customDialog -> {
                         if (preSelected) {
@@ -1873,7 +1890,7 @@ public class Helpers {
                     .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                     .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
                         String restQuery = removeAdvancedSearch(getQuery());
-                        CustomList<String> filterList = onSaveList.map(onSave -> onSave.runGenericInterface(customDialog)).filter(Objects::nonNull, true).map(s -> "[" + s + "]");
+                        CustomList<String> filterList = onSaveList.map(onSave -> onSave.run(customDialog)).filter(Objects::nonNull, true).map(s -> "[" + s + "]");
                         String newQuery = Utility.isNotValueReturnOrElse(restQuery, "", s -> s + " ", null);
                         newQuery += filterList.isEmpty() ? "" : String.format("{%s}", String.join(" ", filterList));
                         searchView.setQuery(newQuery, false);
@@ -2033,7 +2050,7 @@ public class Helpers {
 
             public SearchCriteria<T, Result> buildPredicate() {
                 if (CustomUtility.stringExists(sub) && parser != null && buildPredicate != null) {
-                    predicate = buildPredicate.runGenericInterface(tempResult = parser.runGenericInterface(sub));
+                    predicate = buildPredicate.run(tempResult = parser.run(sub));
                 }
                 return this;
             }
@@ -2048,9 +2065,13 @@ public class Helpers {
                 return CustomUtility.stringExists(sub);
             }
 
+            public String getSub() {
+                return sub;
+            }
+
             public Result parse() {
                 if (CustomUtility.stringExists(sub) && parser != null)
-                    return tempResult = parser.runGenericInterface(sub);
+                    return tempResult = parser.run(sub);
                 else
                     return null;
             }

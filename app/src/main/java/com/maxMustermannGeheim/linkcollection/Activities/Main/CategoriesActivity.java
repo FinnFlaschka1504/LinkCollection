@@ -81,7 +81,7 @@ public class CategoriesActivity extends AppCompatActivity {
     public static final int START_CATEGORY_SEARCH = 001;
     public static final String EXTRA_SEARCH_CATEGORY = "EXTRA_SEARCH_CATEGORY";
     public static final String EXTRA_SEARCH = "EXTRA_SEARCH";
-    @Language("RegExp") public static String pictureRegex = "(https?:|\\/)(([\\w$\\-_.+!*'(),/?=]|(?<=\\S)\\s(?=\\S))+?)\\.(jpe?g|png|svg)"; //"(https?:|\\/)(([^\\s\\\\<>{}]|(?<=\\S)\\s(?=\\S))+?)\\.(jpe?g|png|svg)";//"((https:)|/)[^\\n]+?\\.(?:jpe?g|png|svg)";
+    @Language("RegExp") public static String pictureRegex = "(https?:|\\/)(([\\w$\\-_.+!*'(),/?=&@:%#]|(?<=\\S)\\s(?=\\S))+?)\\.(jpe?g|png|svg|gif)"; //"(https?:|\\/)(([^\\s\\\\<>{}]|(?<=\\S)\\s(?=\\S))+?)\\.(jpe?g|png|svg)";//"((https:)|/)[^\\n]+?\\.(?:jpe?g|png|svg)";
     //    public static String pictureRegex = "((https:)|/)([,+%&?=()/|.|\\w|\\s|-])+\\.(?:jpe?g|png|svg)";
     public static String pictureRegexAll = pictureRegex.split("\\\\\\.")[0];
     @Language("RegExp") public static final String uuidRegex = "\\b([a-zA-Z]+_)?[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b";
@@ -303,7 +303,7 @@ public class CategoriesActivity extends AppCompatActivity {
             }
 
             List<ParentClass_Tree> allTreeObjects = ParentClass_Tree.getAll(category);
-            treeObjectCountMap = allTreeObjects.stream().collect(Collectors.toMap(parentClass_tree -> ((ParentClass) parentClass_tree).getUuid(), object -> (int) parentObjects.stream().filter(o -> getList.runGenericInterface(o).contains(((ParentClass) object).getUuid())).count()));
+            treeObjectCountMap = allTreeObjects.stream().collect(Collectors.toMap(parentClass_tree -> ((ParentClass) parentClass_tree).getUuid(), object -> (int) parentObjects.stream().filter(o -> getList.run(o).contains(((ParentClass) object).getUuid())).count()));
         } else {
             List<Pair<ParentClass, Integer>> pairList = new ArrayList<>();
             switch (category) {
@@ -666,53 +666,6 @@ public class CategoriesActivity extends AppCompatActivity {
                 .show();
     }
 
-    private void showReorderTreeDialog() {
-        CustomDialog.Builder(this)
-                .setTitle(category.getSingular() + " Baum Bearbeiten")
-                .setView(R.layout.dialog_edit_tree)
-                .setDimensionsFullscreen()
-                .disableScroll()
-                .setSetViewContent((customDialog, view, reload) -> {
-                    DraggableTreeView treeView = view.findViewById(R.id.dialog_editTree_treeView);
-                    try {
-                        Field sideMargin = DraggableTreeView.class.getDeclaredField("sideMargin");
-                        sideMargin.setAccessible(true);
-                        sideMargin.set(treeView, 35);
-                    } catch (NoSuchFieldException | IllegalAccessException ignored) {
-
-                    }
-
-                    CustomList<? extends ParentClass> list = new CustomList<>(Utility.getMapFromDatabase(category).values()).sorted((o1, o2) ->  o1.getName().compareTo(o2.getName()));
-
-                    com.allyants.draggabletreeview.TreeNode root = new com.allyants.draggabletreeview.TreeNode(this);
-                    customDialog.setPayload(root);
-
-                    for (ParentClass object : list) {
-                        Utility.runRecursiveGenericInterface(Pair.create(root, (ParentClass_Tree) object), (pair, recursiveInterface) -> {
-                            com.allyants.draggabletreeview.TreeNode childNode = new com.allyants.draggabletreeview.TreeNode(pair.second);
-                            pair.first.addChild(childNode);
-                            if (!pair.second.getChildren().isEmpty())
-                                pair.second.getChildren()
-                                        .stream().sorted((o1, o2) -> ((ParentClass) o1).getName().compareTo(((ParentClass) o2).getName()))
-                                        .forEach(childObject -> recursiveInterface.run(Pair.create(childNode, childObject), recursiveInterface));
-                        });
-                    }
-
-                    SimpleTreeViewAdapter adapter = new CustomTreeViewAdapter(this, root);
-                    TextView textView = new TextView(this);
-                    textView.setText("Test");
-                    adapter.setPlaceholder(textView);
-                    treeView.setAdapter(adapter);
-                })
-                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
-                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
-                    com.allyants.draggabletreeview.TreeNode root = (com.allyants.draggabletreeview.TreeNode) customDialog.getPayload();
-                    ParentClass_Tree.rebuildMap(category, root);
-                    reLoadRecycler();
-                    Toast.makeText(this, (Database.saveAll_simple() ? "" : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
-                })
-                .show();
-    }
 
     private void removeCategory(ParentClass parentClass) {
         allDatenObjektPairList.removeIf(pair -> Objects.equals(pair.first, parentClass));
@@ -841,9 +794,9 @@ public class CategoriesActivity extends AppCompatActivity {
                     getCategoryList = t -> ((Media) t).getTagIdList();
                     break;
             }
-            intersectionList = new com.finn.androidUtilities.CustomList<>(getCategoryList.runGenericInterface(list.get(0)));
+            intersectionList = new com.finn.androidUtilities.CustomList<>(getCategoryList.run(list.get(0)));
             if (list.size() > 1)
-                list.forEach(media -> intersectionList.retainAll(getCategoryList.runGenericInterface(media)));
+                list.forEach(media -> intersectionList.retainAll(getCategoryList.run(media)));
             return intersectionList;
         }
     }
@@ -966,7 +919,7 @@ public class CategoriesActivity extends AppCompatActivity {
                 break;
 
             case R.id.taskBar_category_sortTree:
-                showReorderTreeDialog();
+                ParentClass_Tree.showReorderTreeDialog(this, category, customDialog -> reLoadRecycler());
                 break;
             case android.R.id.home:
                 finish();

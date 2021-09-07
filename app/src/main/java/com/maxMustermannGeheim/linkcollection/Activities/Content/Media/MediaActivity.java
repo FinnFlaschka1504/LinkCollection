@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
-import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
 import android.graphics.Color;
@@ -28,12 +27,10 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RatingBar;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -59,13 +56,11 @@ import com.finn.androidUtilities.ParentClass;
 import com.github.chrisbanes.photoview.PhotoView;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
-import com.google.common.collect.ArrayListMultimap;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.BuildConfig;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
-import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaEvent;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tree;
 import com.maxMustermannGeheim.linkcollection.R;
@@ -80,8 +75,6 @@ import com.veinhorn.scrollgalleryview.MediaInfo;
 import com.veinhorn.scrollgalleryview.ScrollGalleryView;
 import com.veinhorn.scrollgalleryview.loader.MediaLoader;
 
-import org.apmem.tools.layouts.FlowLayout;
-
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -95,7 +88,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
@@ -261,7 +253,7 @@ public class MediaActivity extends AppCompatActivity {
                     .enableColoration()
                     .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<MultiSelectHelper.Selectable<Media>, MediaEvent>(ADVANCED_SEARCH_CRITERIA__EVENT, Helpers.AdvancedQueryHelper.PARENT_CLASS_PATTERN)
                             .setCategory(CategoriesActivity.CATEGORIES.MEDIA_EVENT)
-                            .setParser(sub -> (MediaEvent) ParentClass_Tree.findObjectByName(CategoriesActivity.CATEGORIES.MEDIA_EVENT, sub))
+                            .setParser(sub -> (MediaEvent) ParentClass_Tree.findObjectByName(CategoriesActivity.CATEGORIES.MEDIA_EVENT, sub, false))
                             .setBuildPredicate(mediaEvent -> {
                                 if (mediaEvent == null)
                                     return null;
@@ -819,7 +811,7 @@ public class MediaActivity extends AppCompatActivity {
         addedPersonsIds.removeAll(originalIdList);
 
         newMedia.forEach(media -> {
-            List<String> idList = getCategoryList.runGenericInterface(media);
+            List<String> idList = getCategoryList.run(media);
             idList.removeAll(deletedPersonsIds);
             CustomList<String> customList = new CustomList<>(idList).addAllDistinct(addedPersonsIds);
             idList.clear();
@@ -962,7 +954,7 @@ public class MediaActivity extends AppCompatActivity {
                         selectedMedia.remove(media);
                         if (subSelectedMedia != null) {
                             subSelectedMedia.remove(media);
-                            onSubSelectionChanged.runGenericInterface(subSelectedMedia);
+                            onSubSelectionChanged.run(subSelectedMedia);
                         }
                     }, true, false)
                     .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
@@ -973,7 +965,7 @@ public class MediaActivity extends AppCompatActivity {
                                         if (!subSelectedMedia.remove(media))
                                             subSelectedMedia.add(media);
                                         customRecycler.getAdapter().notifyItemChanged(index);
-                                        onSubSelectionChanged.runGenericInterface(subSelectedMedia);
+                                        onSubSelectionChanged.run(subSelectedMedia);
                                     });
                         }
                     })
@@ -1252,8 +1244,8 @@ public class MediaActivity extends AppCompatActivity {
             videoView = parent.findViewById(R.id.imageFragment_video);
             keySet.remove(videoView);
         }
-        new Handler(Looper.getMainLooper()).postDelayed(() -> keySet.forEach(setVideoButtonVisibility::runGenericInterface), 100);
-//        keySet.forEach(setVideoButtonVisibility::runGenericInterface);
+        new Handler(Looper.getMainLooper()).postDelayed(() -> keySet.forEach(setVideoButtonVisibility::run), 100);
+//        keySet.forEach(setVideoButtonVisibility::run);
 
         View view = activity.findViewById(R.id.customImageDescription);
 //        TransitionManager.beginDelayedTransition(activity.findViewById(R.id.scrollGalleryView_root));
@@ -1263,7 +1255,7 @@ public class MediaActivity extends AppCompatActivity {
         if (!isAutoRotationOn(activity))
             activity.findViewById(R.id.scrollGalleryView_rotate).setVisibility(visibility);
         if (parent != null && videoView.getVisibility() == View.VISIBLE)
-            setVideoButtonVisibility.runGenericInterface(videoView);
+            setVideoButtonVisibility.run(videoView);
     }
 
     public static void shouldVideoPreviewStart(MediaActivity activity, VideoView videoView, Media media) {
@@ -1369,7 +1361,7 @@ public class MediaActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.task_bar_media, menu);
         toolBarMenu = menu;
         selectHelper.toolBarMenu = toolBarMenu;
-        menu.findItem(R.id.taskBar_media_edit).setIconTintList(new ColorStateList(new int[][]{new int[]{android.R.attr.state_enabled}}, new int[]{Color.WHITE}));
+        Utility.colorMenuItemIcon(menu, R.id.taskBar_media_edit, Color.WHITE);
 
         if (selectMode) {
             selectHelper.startSelection(-1);

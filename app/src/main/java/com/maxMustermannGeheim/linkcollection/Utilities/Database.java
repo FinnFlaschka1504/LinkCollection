@@ -538,7 +538,7 @@ public class Database {
         return saveAllTextOnly(context, saveAll(onSavedNothingFailed));
     }
 
-    @CheckForNull public static Boolean saveAll(Context context, @Nullable Utility.Triple<String, String, String> textSavedNothingFailed, @Nullable Runnable... onSavedNothingFailed){
+    @CheckForNull public static Boolean saveAll(Context context, @Nullable CustomUtility.Triple<String, String, String> textSavedNothingFailed, @Nullable Runnable... onSavedNothingFailed){
         Boolean result = saveAll(onSavedNothingFailed);
         if (textSavedNothingFailed != null)
             saveAllTextOnly(context, result, textSavedNothingFailed.first, textSavedNothingFailed.second, textSavedNothingFailed.third);

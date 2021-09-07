@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Rect;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
@@ -16,7 +15,6 @@ import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
-import android.text.style.BackgroundColorSpan;
 import android.text.style.ClickableSpan;
 import android.text.style.RelativeSizeSpan;
 import android.util.Pair;
@@ -24,13 +22,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewStub;
-import android.view.inputmethod.EditorInfo;
-import android.webkit.WebSettings;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.AdapterView;
 import android.widget.AutoCompleteTextView;
-import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -93,8 +86,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -299,6 +290,7 @@ public class VideoActivity extends AppCompatActivity {
             setToolbarTitle = Utility.applyExpendableToolbar_recycler(this, findViewById(R.id.recycler), toolbar, appBarLayout, collapsingToolbarLayout, noItem, plural);
 
             videos_search = findViewById(R.id.search);
+            Utility.applySelectionSearch(this, CategoriesActivity.CATEGORIES.VIDEO, Utility.getEditTextFromSearchView(videos_search));
 
             advancedQueryHelper = new Helpers.AdvancedQueryHelper<Video>(this, videos_search)
                     .setRestFilter((restQuery, videos) -> {
@@ -308,7 +300,7 @@ public class VideoActivity extends AppCompatActivity {
                             filteredVideoList.filterAnd(restQuery.split("&"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), true);
                         }
                     })
-                    .addCriteria_defaultName()
+                    .addCriteria_defaultName(R.id.dialog_advancedSearch_video_name)
                     .enableColoration()
                     .setDialogOptions(R.layout.dialog_advanced_search_video, null)
                     .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Float, Float>>(ADVANCED_SEARCH_CRITERIA_RATING, "(([0-4]((.|,)\\d{1,2})?)|5((.|,)00?)?)(-(([0-4]((\\4|\\6)(?<=[,.])\\d{1,2})?)|5((\\4|\\6)(?<=[,.])00?)?))?")
@@ -351,7 +343,7 @@ public class VideoActivity extends AppCompatActivity {
                                     public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                                         if (fromUser) {
                                             rangeBar.setMinThumbValue(progress);
-                                            setText.runGenericInterface(Pair.create(progress, progress));
+                                            setText.run(Pair.create(progress, progress));
                                         }
                                     }
 
@@ -372,12 +364,12 @@ public class VideoActivity extends AppCompatActivity {
                                     }
                                     singleMode[0] = !singleMode[0];
                                     rangeBar.setVisibility(singleMode[0] ? View.INVISIBLE : View.VISIBLE);
-                                    setText.runGenericInterface(Pair.create(rangeBar.getMinThumbValue(), rangeBar.getMaxThumbValue()));
+                                    setText.run(Pair.create(rangeBar.getMinThumbValue(), rangeBar.getMaxThumbValue()));
                                 });
                                 singleBar.setProgress(min[0]);
                                 rangeBar.setMaxThumbValue(max[0]);
                                 rangeBar.setMinThumbValue(min[0]);
-                                setText.runGenericInterface(Pair.create(min[0], max[0]));
+                                setText.run(Pair.create(min[0], max[0]));
 
                                 rangeBar.setSeekBarChangeListener(new RangeSeekBar.SeekBarChangeListener() {
                                     @Override
@@ -391,7 +383,7 @@ public class VideoActivity extends AppCompatActivity {
 
                                     @Override
                                     public void onValueChanged(int min, int max) {
-                                        setText.runGenericInterface(Pair.create(min, max));
+                                        setText.run(Pair.create(min, max));
                                         singleBar.setProgress(min);
                                     }
                                 });
@@ -478,9 +470,9 @@ public class VideoActivity extends AppCompatActivity {
                                             return s;
                                     };
                                     SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-                                    min = dateFormat.parse(expandYear.runGenericInterface(range[0]));
+                                    min = dateFormat.parse(expandYear.run(range[0]));
                                     if (range.length > 1)
-                                        max = dateFormat.parse(expandYear.runGenericInterface(range[1]));
+                                        max = dateFormat.parse(expandYear.run(range[1]));
                                 } catch (ParseException ignored) {
                                 }
 
@@ -916,6 +908,12 @@ public class VideoActivity extends AppCompatActivity {
                     showRandomDialog();
             }
 
+
+//            String collect = database.videoMap.values().stream().filter(s -> s.getImagePath() != null && !s.getImagePath().matches(CategoriesActivity.pictureRegexAll)).map(video -> video.getName() + ":  " + video.getImagePath()).collect(Collectors.joining("\n\n"));
+//            CustomDialog.Builder(this)
+//                    .setText(collect)
+//                    .show();
+
         };
 
         if (database == null || !Database.isReady()) {
@@ -1099,7 +1097,8 @@ public class VideoActivity extends AppCompatActivity {
 
 
                     String searchQuery = Helpers.AdvancedQueryHelper.removeAdvancedSearch(this.searchQuery).toLowerCase();
-                    ((TextView) itemView.findViewById(R.id.listItem_video_Titel)).setText(Helpers.SpannableStringHelper.highlightText(searchQuery, video.getName()));
+                    String titleSub = advancedQueryHelper.getSearchCriteriaByKey(Helpers.AdvancedQueryHelper.ADVANCED_SEARCH_CRITERIA_NAME).getSub();
+                    ((TextView) itemView.findViewById(R.id.listItem_video_Titel)).setText(Helpers.SpannableStringHelper.highlightText(CustomUtility.stringExistsOrElse(titleSub, searchQuery), video.getName()));
                     if (!video.getDateList().isEmpty()) {
                         itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.VISIBLE);
                         ((TextView) itemView.findViewById(R.id.listItem_video_Views)).setText(String.valueOf(video.getDateList().size()));
@@ -1117,7 +1116,8 @@ public class VideoActivity extends AppCompatActivity {
                     };
 
                     String darstellerNames = video.getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).sorted(containsComparator).collect(Collectors.joining(", "));
-                    ((TextView) itemView.findViewById(R.id.listItem_video_Darsteller)).setText(Helpers.SpannableStringHelper.highlightText(searchQuery, darstellerNames));
+                    String actorSub = advancedQueryHelper.getSearchCriteriaByKey(ADVANCED_SEARCH_CRITERIA_ACTOR).getSub();
+                    ((TextView) itemView.findViewById(R.id.listItem_video_Darsteller)).setText(Helpers.SpannableStringHelper.highlightText(CustomUtility.stringExistsOrElse(actorSub, searchQuery), darstellerNames));
                     itemView.findViewById(R.id.listItem_video_Darsteller).setSelected(scrolling);
 
                     if (video.getRating() > 0) {
@@ -1127,11 +1127,13 @@ public class VideoActivity extends AppCompatActivity {
                         itemView.findViewById(R.id.listItem_video_rating_layout).setVisibility(View.GONE);
 
                     String studioNames = video.getStudioList().stream().map(uuid -> database.studioMap.get(uuid).getName()).sorted(containsComparator).collect(Collectors.joining(", "));
-                    ((TextView) itemView.findViewById(R.id.listItem_video_Studio)).setText(Helpers.SpannableStringHelper.highlightText(searchQuery, studioNames));
+                    String studioSub = advancedQueryHelper.getSearchCriteriaByKey(ADVANCED_SEARCH_CRITERIA_STUDIO).getSub();
+                    ((TextView) itemView.findViewById(R.id.listItem_video_Studio)).setText(Helpers.SpannableStringHelper.highlightText(studioSub, studioNames));
                     itemView.findViewById(R.id.listItem_video_Studio).setSelected(scrolling);
 
                     String genreNames = video.getGenreList().stream().map(uuid -> database.genreMap.get(uuid).getName()).sorted(containsComparator).collect(Collectors.joining(", "));
-                    ((TextView) itemView.findViewById(R.id.listItem_video_Genre)).setText(Helpers.SpannableStringHelper.highlightText(searchQuery, genreNames));
+                    String genreSub = advancedQueryHelper.getSearchCriteriaByKey(ADVANCED_SEARCH_CRITERIA_GENRE).getSub();
+                    ((TextView) itemView.findViewById(R.id.listItem_video_Genre)).setText(Helpers.SpannableStringHelper.highlightText(genreSub, genreNames));
                     itemView.findViewById(R.id.listItem_video_Genre).setSelected(scrolling);
 
                     int clickMode = Settings.getSingleSetting_int(this, Settings.SETTING_VIDEO_CLICK_MODE);
@@ -1252,15 +1254,28 @@ public class VideoActivity extends AppCompatActivity {
                     } else
                         urlTextView.setClickable(true);
 
-                    Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
-                    SpannableStringBuilder viewsText = helper.quickItalic("Keine Ansichten");
+                    TextView viewsTextView = view.findViewById(R.id.dialog_video_views);
+                    Runnable setViewsText = () -> {
+                        Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
+                        SpannableStringBuilder viewsText = helper.quickItalic("Keine Ansichten");
+                        if (views[0] > 0) {
+                            Date lastWatched = new CustomList<>(video.getDateList()).getBiggest();
+                            helper.append(String.valueOf(views[0]));
+                            long days = Days.daysBetween(new LocalDate(lastWatched), new LocalDate(new Date())).getDays();
+                            if (viewsTextView.getText().toString().contains("–")) {
+                                viewsText = helper.appendItalic(String.format(Locale.getDefault(), "   (%s)", Utility.formatDuration(Duration.ofDays(days), "'%j% Jahr§e§~, ~''%w% Woche§n§~, ~''%d% Tag§e§~, ~'"))).get();
+                            } else {
+                                viewsText = helper.appendItalic(String.format(Locale.getDefault(), "   (%s – %dd)", new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(lastWatched), days)).get();
+                            }
+                        }
+                        viewsTextView.setText(viewsText);
+                    };
+                    setViewsText.run();
                     if (views[0] > 0) {
-                        Date lastWatched = new CustomList<>(video.getDateList()).getBiggest();
-                        viewsText = helper.append(String.valueOf(views[0])).append(
-                                String.format(Locale.getDefault(), "   (%s – %dd)", new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(lastWatched), Days.daysBetween(new LocalDate(lastWatched), new LocalDate(new Date())).getDays())
-                                , Helpers.SpannableStringHelper.SPAN_TYPE.ITALIC).get();
-                    }
-                    ((TextView) view.findViewById(R.id.dialog_video_views)).setText(viewsText);
+                        viewsTextView.setOnClickListener(v -> setViewsText.run());
+                        viewsTextView.setClickable(true);
+                    } else
+                        viewsTextView.setClickable(false);
 
                     if (Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_SHOW_RELEASE))
                         ((TextView) view.findViewById(R.id.dialog_video_release)).setText(video.getRelease() != null ? new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(video.getRelease()) : "");
@@ -1341,7 +1356,7 @@ public class VideoActivity extends AppCompatActivity {
                     else
                         dialog_video_internet.setVisibility(View.GONE);
 
-//                    customDialog.getButton(openWithButtonId).setEnabled(Utility.stringExists(video.getUrl()));
+                    Utility.applySelectionSearch(this, CategoriesActivity.CATEGORIES.VIDEO, customDialog.getTitleTextView());
                 })
                 .setOnDialogDismiss(customDialog -> {
                     detailDialog = null;
@@ -1448,19 +1463,7 @@ public class VideoActivity extends AppCompatActivity {
                     }
 
                     String query = String.join(", ", searchList);
-                    try {
-                        query = URLEncoder.encode(query, "UTF-8");
-                    } catch (UnsupportedEncodingException ignored) {
-                    }
-                    String url = "https://www.google.de/search?q=" + query;
-
-                    Intent intent = new Intent(Intent.ACTION_VIEW);
-                    intent.setData(Uri.parse(url));
-                    Intent chooser = Intent.createChooser(intent, "Suchen mit...");
-                    if (chooser.resolveActivity(getPackageManager()) != null)
-                        startActivity(chooser);
-                    else
-                        Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
+                    Utility.searchQueryOnInternet(this, query);
 
                 }, false)
                 .colorLastAddedButton()
@@ -1522,6 +1525,7 @@ public class VideoActivity extends AppCompatActivity {
                 .setSetViewContent((editDialog, view, reload) -> {
                     final CustomDialog[] internetDialog = {null};
                     TextInputLayout dialog_editOrAddVideo_Title_layout = view.findViewById(R.id.dialog_editOrAddVideo_Title_layout);
+                    Utility.applySelectionSearch(this, CategoriesActivity.CATEGORIES.VIDEO, dialog_editOrAddVideo_Title_layout.getEditText());
                     TextInputLayout dialog_editOrAddVideo_Url_layout = view.findViewById(R.id.dialog_editOrAddVideo_url_layout);
 
                     Boolean useTmdbSearch = Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_TMDB_SEARCH);
@@ -1626,7 +1630,8 @@ public class VideoActivity extends AppCompatActivity {
 
                                     view1.findViewById(R.id.dialog_editThumbnail_localStorage).setOnClickListener(v1 -> {
                                         ActivityResultHelper.addFileChooserRequest(this, "image/*", o -> {
-                                            editText.setText(((Intent) o).getData().toString());
+                                            editText.setText(ActivityResultHelper.getPath(this, ((Intent) o).getData()));
+                                            customDialog1.getButton(showButtonId).click();
                                         });
                                     });
 
@@ -1787,19 +1792,20 @@ public class VideoActivity extends AppCompatActivity {
                         return true;
                     });
 
-                    if (video == null || isShared)
-                        helper.setValidation(dialog_editOrAddVideo_Title_layout, (validator, text) -> {
-                            if (database.videoMap.values().stream().anyMatch(video1 -> video1.getName().toLowerCase().equals(text.toLowerCase()) || (editVideo[0].getTmdbId() != 0 && editVideo[0].getTmdbId() == video1.getTmdbId()))) {
-                                dialog_editOrAddVideo_title_label.setOnClickListener(switchToSimilarVideo);
-                                dialog_editOrAddVideo_title_label.setTextColor(getColorStateList(R.color.clickable_text_color));
-                                validator.setInvalid("Schon vorhanden! (Klicke auf das Label)");
-                            } else {
-                                dialog_editOrAddVideo_title_label.setOnClickListener(v -> {
-                                });
-                                dialog_editOrAddVideo_title_label.setTextColor(getColorStateList(R.color.clickable_text_color_normal));
-                            }
-                        });
+                    CustomList<Video> videos = new CustomList<>(database.videoMap.values());
+                    if (video != null)
+                        videos.remove(video);
+                    helper.setValidation(dialog_editOrAddVideo_Title_layout, (validator, text) -> {
 
+                        if (videos.stream().anyMatch(video1 -> video1.getName().equalsIgnoreCase(text) || (editVideo[0].getTmdbId() != 0 && editVideo[0].getTmdbId() == video1.getTmdbId()))) {
+                            dialog_editOrAddVideo_title_label.setOnClickListener(switchToSimilarVideo);
+                            dialog_editOrAddVideo_title_label.setTextColor(getColorStateList(R.color.clickable_text_color));
+                            validator.setInvalid("Schon vorhanden! (Klicke auf das Label)");
+                        } else {
+                            dialog_editOrAddVideo_title_label.setOnClickListener(v -> {});
+                            dialog_editOrAddVideo_title_label.setTextColor(getColorStateList(R.color.clickable_text_color_normal));
+                        }
+                    });
 
                     if (Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_LOAD_CAST_AND_STUDIOS)) {
                         TextView dialog_editOrAddVideo_actor_label = view.findViewById(R.id.dialog_editOrAddVideo_actor_label);
@@ -1925,10 +1931,10 @@ public class VideoActivity extends AppCompatActivity {
                 })
                 .setOnDialogShown(customDialog -> {
                     Toast toast = Utility.centeredToast(this, "");
-                    helper.interceptDialogActionForValidation(customDialog, () -> {
+                    helper.interceptDialogActionForValidation(customDialog, true, inputHelper -> {
                         toast.setText("Warnung: " + helper.getMessage().get(0) + "\n(Doppel-Click zum Fortfahren)");
                         toast.show();
-                    }, toast::cancel);
+                    }, t -> toast.cancel());
                 })
                 .setOnDialogDismiss(customDialog -> isShared = false)
                 .enableDoubleClickOutsideToDismiss(customDialog -> {
@@ -2029,7 +2035,7 @@ public class VideoActivity extends AppCompatActivity {
                 if (title == null)
                     title = openGraph.getContent("description");
                 if (title != null)
-                    applyName.runGenericInterface(title);
+                    applyName.run(title);
             }
         });
 
@@ -2037,7 +2043,7 @@ public class VideoActivity extends AppCompatActivity {
             urlParser.parseUrl(this, url, name -> {
                 if (!Utility.stringExists(name))
                     return;
-                applyName.runGenericInterface(name);
+                applyName.run(name);
             }, s -> {
                 if (editVideo[0] != null) {
                     editVideo[0].setImagePath(s);
@@ -2853,15 +2859,21 @@ public class VideoActivity extends AppCompatActivity {
                 }, nextButtonId, false)
                 .colorLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {
+                    if (!reload)
+                        Utility.applySelectionSearch(this, CategoriesActivity.CATEGORIES.VIDEO, customDialog.getTitleTextView());
+
                     if (reload)
                         customDialog.setTitle(randomVideo.getName());
-                    ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(
-                            randomVideo.getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
-                    ((TextView) view.findViewById(R.id.dialog_video_Studio)).setText(
-                            randomVideo.getStudioList().stream().map(uuid -> database.studioMap.get(uuid).getName()).collect(Collectors.joining(", ")));
-                    ((TextView) view.findViewById(R.id.dialog_video_Genre)).setText(
-                            randomVideo.getGenreList().stream().map(uuid -> database.genreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
-                    view.findViewById(R.id.dialog_video_Darsteller).setSelected(true);
+                    Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.DARSTELLER, view.findViewById(R.id.dialog_video_Darsteller), randomVideo.getDarstellerList());
+                    Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.STUDIOS, view.findViewById(R.id.dialog_video_Studio), randomVideo.getStudioList());
+                    Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.GENRE, view.findViewById(R.id.dialog_video_Genre), randomVideo.getGenreList());
+//                    ((TextView) view.findViewById(R.id.dialog_video_Darsteller)).setText(
+//                            randomVideo.getDarstellerList().stream().map(uuid -> database.darstellerMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+//                    ((TextView) view.findViewById(R.id.dialog_video_Studio)).setText(
+//                            randomVideo.getStudioList().stream().map(uuid -> database.studioMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+//                    ((TextView) view.findViewById(R.id.dialog_video_Genre)).setText(
+//                            randomVideo.getGenreList().stream().map(uuid -> database.genreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
+//                    view.findViewById(R.id.dialog_video_Darsteller).setSelected(true);
 
                     String imagePath = randomVideo.getImagePath();
                     if (imagePath != null && !imagePath.isEmpty()) {

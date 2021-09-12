@@ -1,23 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android" >
     <item
-        android:right="25dp">
-
-        <!-- Insert your shape here: -->
-        <shape xmlns:android="http://schemas.android.com/apk/res/android"
-            android:shape="rectangle">
-            <padding android:top="70dp"/>
-            <padding android:bottom="70dp"/>
+        android:right="15dp">
+        <shape android:shape="rectangle">
+            <padding android:top="15dp"/>
+            <padding android:bottom="15dp"/>
             <corners android:radius="40dp" />
             <solid android:color="@color/colorPrimary" />
         </shape>
     </item>
 
     <item
-        android:right="25dp">
-        <vector xmlns:android="http://schemas.android.com/apk/res/android"
-            android:width="70dp"
-            android:height="70dp"
+        android:right="15dp">
+        <vector
+            android:width="15dp"
+            android:height="15dp"
             android:viewportWidth="24"
             android:viewportHeight="24">
             <path

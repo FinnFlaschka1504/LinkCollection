@@ -40,6 +40,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -106,6 +107,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import me.zhanghai.android.fastscroll.FastScrollerBuilder;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
@@ -1016,7 +1019,8 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     private void loadVideoRecycler() {
-        customRecycler_VideoList = new CustomRecycler<Video>(this, findViewById(R.id.recycler))
+        RecyclerView recycler = findViewById(R.id.recycler);
+        customRecycler_VideoList = new CustomRecycler<Video>(this, recycler)
                 .setItemLayout(R.layout.list_item_video)
                 .setGetActiveObjectList(() -> {
                     List<Video> filteredList = sortList(filterList());
@@ -1172,6 +1176,16 @@ public class VideoActivity extends AppCompatActivity {
                 })
                 .hideDivider()
                 .generate();
+
+        new FastScrollerBuilder(recycler)
+                .setThumbDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_thumb)))
+                .setTrackDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_track)))
+                .setPadding(0, 20, 0, 50)
+                .build();
+
+//        View trackView = findViewById(R.id.trackView);
+//        if (trackView != null)
+//            trackView.setOnTouchListener((v, event) -> recycler.onTouchEvent(event));
     }
 
     private void reLoadVideoRecycler() {

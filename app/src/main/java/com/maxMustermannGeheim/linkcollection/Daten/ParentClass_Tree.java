@@ -202,7 +202,10 @@ public interface ParentClass_Tree {
                     else
                         customDialog.setText("Neue Subkategorie zu " + ((ParentClass) parent).getName() + " hinzufügen");
                 })
-                .setEdit(new CustomDialog.EditBuilder().setHint(category.getSingular() + " Name").setText(name))
+                .setEdit(new CustomDialog.EditBuilder().setHint(category.getSingular() + " Name").setText(name).setValidation((validator, text) -> {
+                    if (Utility.findObjectByName(category, text) != null)
+                        validator.setInvalid(category.getSingular() + " bereits vorhanden");
+                }))
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     String text = customDialog.getEditText();

@@ -98,9 +98,7 @@ public class MediaEvent extends ParentClass implements ParentClass_Tree {
 
     /**  <------------------------- Getter & Setter -------------------------  */
 
-    /**
-     * ------------------------- Convenience ------------------------->
-     */
+    /**  ------------------------- Convenience ------------------------->  */
     public String _getThumbnailPath() {
         String thumbnailId = null;
         if (!mediaIdList.isEmpty())
@@ -115,6 +113,21 @@ public class MediaEvent extends ParentClass implements ParentClass_Tree {
             return null;
         else
             return ((Media) Utility.findObjectById(CategoriesActivity.CATEGORIES.MEDIA, thumbnailId)).getImagePath();
+    }
+
+    public boolean hasContent() {
+        return !mediaIdList.isEmpty() || !children.isEmpty();
+    }
+
+    public int _getHeight() {
+        if (!hasContent() && description == null)
+            return 143 + 35;
+        else if (!hasContent())
+            return 202 + 35;
+        else if (description == null)
+            return 503 + 35;
+        else
+            return 562 + 35;
     }
     /**  <------------------------- Convenience -------------------------  */
 }

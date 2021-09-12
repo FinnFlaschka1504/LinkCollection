@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
@@ -31,6 +32,7 @@ import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.CustomTarget;
 import com.bumptech.glide.request.target.DrawableImageViewTarget;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.bumptech.glide.request.target.SizeReadyCallback;
@@ -61,10 +63,12 @@ import com.maxMustermannGeheim.linkcollection.Utilities.CustomInternetHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomPopupWindow;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.ImageCropUtility;
 import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.maxMustermannGeheim.linkcollection.Utilities.VersionControl;
 import com.theartofdev.edmodo.cropper.CropImage;
+import com.theartofdev.edmodo.cropper.CropImageView;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -415,7 +419,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 return false;
             }
         } else if (Settings.Space.nextMoreSpace != null) {
-            selectedSpace =  Settings.Space.nextMoreSpace;
+            selectedSpace = Settings.Space.nextMoreSpace;
             menuItem.setTitle(selectedSpace.getPlural());
             Settings.Space.nextMoreSpace = null;
         }
@@ -936,7 +940,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 pickIntent.setType("image/*");
 
                 Intent chooserIntent = Intent.createChooser(i, "Select Image");
-                chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[] {pickIntent});
+                chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{pickIntent});
 
                 startActivityForResult(chooserIntent, 1);
                 break;
@@ -951,71 +955,6 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        if (requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE) {
-            CropImage.ActivityResult result = CropImage.getActivityResult(data);
-            if (resultCode == RESULT_OK) {
-                Rect cropRect = CropImage.getActivityResult(data).getCropRect();
-//                CustomDialog.Builder(this)
-//                        .setTitle("Crop Result")
-//                        .setText(cropRect.toString())
-//                        .show();
-                CustomDialog.Builder(this)
-                        .setTitle("Custom Crop Test")
-                        .setView(customDialog -> {
-                            ImageView imageView = new PhotoView(this);
-                            imageView.setAdjustViewBounds(true);
-                            Log.d("MainActivity", String.format("onActivityResult: x:%S, y:%S, w:%S, h:%S", cropRect.left, cropRect.top, cropRect.width(), cropRect.height()));
-                            Glide.with(this)
-                                    .load(new File(pathname))
-//                                  // TODO remove after transformation is done
-                                    .diskCacheStrategy(DiskCacheStrategy.NONE) // override default RESULT cache and apply transform always
-                                    .skipMemoryCache(true) // do not reuse the transformed result while running
-                                    .addListener(new RequestListener<Drawable>() {
-                                        @Override
-                                        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
-//                                            if (onFail_onSuccess_onFullscreen.length > 0 && onFail_onSuccess_onFullscreen[0] != null)
-//                                                onFail_onSuccess_onFullscreen[0].run();
-                                            return false;
-                                        }
-
-                                        @Override
-                                        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
-                                            return false;
-                                        }
-
-                                    })
-                                    .transform(new Utility.CustomCropTransformation(new Utility.ImageCrop(pathname, cropRect.left, cropRect.top, cropRect.width(), cropRect.height())))
-//                                            CustomUtility.randomInteger(50, 400),
-//                                            CustomUtility.randomInteger(50, 400),
-//                                            CustomUtility.randomInteger(50, 400),
-//                                            CustomUtility.randomInteger(50, 400))))
-//                                    .override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL)
-//                                    .into(new DrawableImageViewTarget(imageView) {
-//                                        @Override
-//                                        protected void setResource(@Nullable Drawable resource) {
-//                                            if (resource == null)
-//                                                return;
-//                                            super.setResource(resource);
-//                                        }
-//                                    });
-                                    .into(imageView);//.getSize(new SizeReadyCallback() {
-//                                @Override
-//                                public void onSizeReady(int width, int height) {
-////                                    mEditDeskLayout.setImageSize(width,height);
-//                                    String BREAKPOINT = null;
-//                                }
-//                            });
-                            return imageView;
-                        })
-                        .setDimensionsFullscreen()
-                        .show();
-
-                Uri resultUri = result.getUri();
-            } else if (resultCode == CropImage.CROP_IMAGE_ACTIVITY_RESULT_ERROR_CODE) {
-                Exception error = result.getError();
-            }
-            return;
-        }
         if (resultCode == RESULT_OK /*&& requestCode == START_VIDEOS*/) {
             if (requestCode == START_VIDEO_FROM_CALENDER) {
                 calenderDialog.dismiss();

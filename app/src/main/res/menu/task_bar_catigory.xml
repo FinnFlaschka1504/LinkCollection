@@ -3,14 +3,15 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+        android:id="@+id/taskBar_category_add"
+        android:icon="@drawable/ic_add"
+        android:title="Hinzufügen"
+        app:showAsAction="always" />
+
+    <item
         android:id="@+id/taskBar_category_multiSelect"
         android:icon="@drawable/ic_multi_select"
         android:title="Mehrere Auswählen"
-        app:showAsAction="always" />
-    <item
-        android:id="@+id/taskBar_category_random"
-        android:icon="@drawable/ic_random"
-        android:title="Zufall"
         app:showAsAction="always" />
     <item
         android:id="@+id/taskBar_category_sort"
@@ -37,13 +38,16 @@
         </menu>
     </item>
     <item
-        android:id="@+id/taskBar_category_showAs"
-        android:icon="@drawable/ic_show_as_list"
-        android:title="Anzeigen Als"
-        app:showAsAction="always" />
-    <item
         android:id="@+id/taskBar_category_sortTree"
         android:icon="@drawable/ic_sort_tree"
         android:title="Baum neu Sortieren"
         app:showAsAction="always" />
+    <item
+        android:id="@+id/taskBar_category_random"
+        android:icon="@drawable/ic_random"
+        android:title="Zufall" />
+    <item
+        android:id="@+id/taskBar_category_showAs"
+        android:icon="@drawable/ic_show_as_list"
+        android:title="Ansicht ändern" />
 </menu>

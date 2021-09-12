@@ -86,6 +86,15 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <ImageView
+                android:id="@+id/dialog_editTmdbCategory_crop"
+                style="@style/ImageButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                tools:visibility="visible"
+                app:srcCompat="@drawable/ic_crop" />
+
+            <ImageView
                 android:id="@+id/dialog_editTmdbCategory_localStorage"
                 style="@style/ImageButtonStyle"
                 android:layout_width="wrap_content"
@@ -94,15 +103,29 @@
 
         </LinearLayout>
 
-        <ImageView
-            android:id="@+id/dialog_editTmdbCategory_preview"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="gone"
-            tools:srcCompat="@drawable/ic_app_logo"
             android:layout_marginHorizontal="16dp"
             android:layout_marginBottom="16dp"
-            tools:visibility="visible" />
+            >
+
+            <ImageView
+                android:id="@+id/dialog_editTmdbCategory_preview"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                tools:srcCompat="@drawable/ic_app_logo"
+                tools:visibility="visible" />
+            <View
+                android:id="@+id/dialog_editTmdbCategory_previewCrop"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/crop_border"
+                android:visibility="gone"
+                tools:visibility="visible"/>
+
+        </FrameLayout>
 
     </LinearLayout>
 

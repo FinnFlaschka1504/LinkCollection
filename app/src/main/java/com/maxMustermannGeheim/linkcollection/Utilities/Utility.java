@@ -26,10 +26,6 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
-import android.renderscript.Allocation;
-import android.renderscript.Element;
-import android.renderscript.RenderScript;
-import android.renderscript.ScriptIntrinsicBlur;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.SpannableStringBuilder;
@@ -90,8 +86,6 @@ import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestBuilder;
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.GlideException;
-import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool;
-import com.bumptech.glide.load.resource.bitmap.BitmapTransformation;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.DrawableImageViewTarget;
 import com.bumptech.glide.request.target.Target;
@@ -162,9 +156,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -2097,11 +2089,19 @@ public class Utility {
                                             dialog_editTmdbCategory_name_layout.setHint(editType_string + "-Name");
                                             String searchText = ((SearchView) customDialog.findViewById(R.id.dialogEditCategory_search)).getQuery().toString();
                                             EditText dialog_editTmdbCategory_name = dialog_editTmdbCategory_name_layout.getEditText();
-                                            dialog_editTmdbCategory_name.requestFocus();
+
+                                            Helpers.TextInputHelper helper = new Helpers.TextInputHelper(dialog_editTmdbCategory_name_layout)
+                                                    .defaultDialogValidation(customDialog1)
+                                                    .setValidation(dialog_editTmdbCategory_name_layout, (validator, text) -> {
+                                                        if (Utility.findObjectByName(category, text) != null)
+                                                            validator.setInvalid(category.getSingular() + " bereits vorhanden");
+                                                    });
+//                                            helper.validate();
                                             if (CustomUtility.stringExists(searchText))
                                                 dialog_editTmdbCategory_name.setText(searchText);
-
-                                            Helpers.TextInputHelper helper = new Helpers.TextInputHelper((Button) customDialog1.getActionButton().getButton(), dialog_editTmdbCategory_name_layout);
+                                            else
+                                                helper.validate((TextInputLayout[]) null);
+                                            dialog_editTmdbCategory_name.requestFocus();
 
                                             if (newParentClass instanceof ParentClass_Alias)
                                                 dialog_editTmdbCategory_name.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_CLASS_TEXT);
@@ -2128,7 +2128,6 @@ public class Utility {
 
                                             }
                                         })
-                                        .enableDynamicWrapHeight(((AppCompatActivity) context).findViewById(android.R.id.content).getRootView())
                                         .show();
 
                             }, false)
@@ -2197,7 +2196,7 @@ public class Utility {
                     ParentClass parentClass = getObjectFromDatabase(category, uuid);
                     if (parentClass instanceof ParentClass_Image && CustomUtility.stringExists(((ParentClass_Image) parentClass).getImagePath())) {
                         ImageView imageView = itemView.findViewById(R.id.list_bubble_image);
-                        loadUrlIntoImageView(context, imageView, getTmdbImagePath_ifNecessary(((ParentClass_Image) parentClass).getImagePath(), false), null, null, () -> Utility.roundImageView(imageView, 3));
+                        loadUrlIntoImageView(context, imageView, ImageCropUtility.applyCropTransformation(parentClass), getTmdbImagePath_ifNecessary(((ParentClass_Image) parentClass).getImagePath(), false), null, null, () -> Utility.roundImageView(imageView, 3));
                         imageView.setVisibility(View.VISIBLE);
                     } else
                         itemView.findViewById(R.id.list_bubble_image).setVisibility(View.GONE);
@@ -2250,21 +2249,17 @@ public class Utility {
                 .enableDivider()
                 .setSetItemContent((customRecycler, itemView, parentClass) -> {
                     ImageView thumbnail = itemView.findViewById(R.id.selectList_thumbnail);
-                    String imagePath;
-
-                    try {
-                        Method getImagePath = parentClass.getClass().getMethod("getImagePath");
-                        imagePath = (String) getImagePath.invoke(parentClass);
+                    if (parentClass instanceof ParentClass_Image) {
+                        String imagePath = ((ParentClass_Image) parentClass).getImagePath();
                         if (Utility.stringExists(imagePath)) {
-                            Utility.loadUrlIntoImageView(context, thumbnail, getTmdbImagePath_ifNecessary(imagePath, false),
+                            Utility.loadUrlIntoImageView(context, thumbnail, ImageCropUtility.applyCropTransformation(parentClass), getTmdbImagePath_ifNecessary(imagePath, false),
                                     getTmdbImagePath_ifNecessary(imagePath, true), null, () -> roundImageView(thumbnail, 4), searchView::clearFocus);
                             thumbnail.setVisibility(View.VISIBLE);
                         } else
                             thumbnail.setVisibility(View.GONE);
 
-                    } catch (Exception e) {
+                    } else
                         thumbnail.setVisibility(View.GONE);
-                    }
 
                     ((TextView) itemView.findViewById(R.id.selectList_name)).setText(parentClass.getName());
 
@@ -2310,8 +2305,6 @@ public class Utility {
     }
 
     public static CustomDialog showEditTreeItemDialog(Context context, List<String> preSelectedIdList, GenericInterface<List<String>> onSaved, CategoriesActivity.CATEGORIES category) {
-        // ToDo: Vielleicht Durch https://github.com/jakebonk/DraggableTreeView ersetzen
-        Database database = Database.getInstance();
         com.finn.androidUtilities.CustomList<String> selectedIds = new com.finn.androidUtilities.CustomList<>(preSelectedIdList);
         String categoryName = category.getPlural();
         String[] searchQuery = {""};
@@ -2374,7 +2367,7 @@ public class Utility {
                     });
 
                     // vvvvvvvvvvvvvvv Add
-                    customDialog.getButtonByIcon(R.drawable.ic_add)
+                    customDialog.getButtonByType(CustomDialog.BUTTON_TYPE.ADD_BUTTON)
                             .getButton().setOnClickListener(v -> {
                         ParentClass_Tree.addNew(context, null, searchQuery[0], category, newObject -> {
                             selectedIds.add(((ParentClass) newObject).getUuid());
@@ -4019,6 +4012,10 @@ public class Utility {
     }
 
     public static void loadUrlIntoImageView(Context context, ImageView imageView, String imagePath, @Nullable String fullScreenPath, Runnable... onFail_onSuccess_onFullscreen) {
+        loadUrlIntoImageView(context, imageView, null, imagePath, fullScreenPath, onFail_onSuccess_onFullscreen);
+    }
+
+    public static void loadUrlIntoImageView(Context context, ImageView imageView, @Nullable GenericInterface<RequestBuilder<Drawable>> requestModifications, String imagePath, @Nullable String fullScreenPath, Runnable... onFail_onSuccess_onFullscreen) {
 //        if (imagePath.matches(ActivityResultHelper.uriRegex)) {
 ////            CustomUtility.ifNotNull(getBitmapFromUri(Uri.parse(imagePath), context), imageView::setImageBitmap);
 //            Uri uri = Uri.parse(imagePath);
@@ -4034,6 +4031,8 @@ public class Utility {
                 requestBuilder = Glide.with(context).load(imageUri);
             } else
                 requestBuilder = Glide.with(context).load(imagePath);
+            if (requestModifications != null)
+                requestModifications.run(requestBuilder);
             requestBuilder
                     .addListener(new RequestListener<Drawable>() {
                         @Override
@@ -4088,6 +4087,8 @@ public class Utility {
                                 requestBuilder = Glide.with(context).load(imageUri);
                             } else
                                 requestBuilder = Glide.with(context).load(fullScreenPath);
+                            if (requestModifications != null)
+                                requestModifications.run(requestBuilder);
                             requestBuilder
                                     .error(R.drawable.ic_broken_image)
                                     .placeholder(R.drawable.ic_download)
@@ -4211,142 +4212,6 @@ public class Utility {
         imageView.setImageBitmap(ImageHelper.getRoundedCornerBitmap(oldBitmap, radius));
     }
 
-    public static class CustomCropTransformation extends BitmapTransformation {
-        private static final String TAG = "CustomCropTransformation";
-        private ImageCrop crop;
-
-        public CustomCropTransformation(ImageCrop crop) {
-            this.crop = crop;
-        }
-
-        @Override
-        protected Bitmap transform(@NonNull BitmapPool pool, @NonNull Bitmap toTransform, int outWidth, int outHeight) {
-            Log.d(TAG, String.format("transform: x:%d, y:%d, w:%d, h:%d", crop.getX(), crop.getY(), crop.getHeight(), crop.getHeight()));
-
-            Date start = new Date();
-            BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inJustDecodeBounds = true;
-            BitmapFactory.decodeFile(crop.getPathName(), options);
-            double width = options.outWidth;
-            double height = options.outHeight;
-            Date end = new Date();
-            Log.d(TAG, "transform: " + (end.getTime() - start.getTime()));
-
-            double xScale = toTransform.getWidth() / width;
-            double yScale = toTransform.getHeight() / height;
-
-            return Bitmap.createBitmap(
-                    toTransform,
-                    (int) (crop.getX() * xScale),
-                    (int) (crop.getY() * yScale),
-                    (int) (crop.getWidth() * xScale),
-                    (int) (crop.getHeight() * yScale));
-        }
-
-        @Override
-        public void updateDiskCacheKey(@NonNull MessageDigest messageDigest) {
-            messageDigest.update(("crop" + crop.getX() + crop.getY() + crop.getHeight() + crop.getHeight()).getBytes());
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            CustomCropTransformation that = (CustomCropTransformation) o;
-            return Objects.equals(crop, that.crop);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(crop);
-        }
-    }
-
-    public static class ImageCrop {
-        String pathName;
-        int x;
-        int y;
-        int width;
-        int height;
-
-        /**  ------------------------- Constructor ------------------------->  */
-        public ImageCrop(String pathName, int x, int y, int width, int height) {
-            this.x = x;
-            this.y = y;
-            this.width = width;
-            this.height = height;
-            this.pathName = pathName;
-        }
-        /**  <------------------------- Constructor -------------------------  */
-
-
-        /**  ------------------------- Getter & Setter ------------------------->  */
-        public int getX() {
-            return x;
-        }
-
-        public ImageCrop setX(int x) {
-            this.x = x;
-            return this;
-        }
-
-        public int getY() {
-            return y;
-        }
-
-        public ImageCrop setY(int y) {
-            this.y = y;
-            return this;
-        }
-
-        public int getWidth() {
-            return width;
-        }
-
-        public ImageCrop setWidth(int width) {
-            this.width = width;
-            return this;
-        }
-
-        public int getHeight() {
-            return height;
-        }
-
-        public ImageCrop setHeight(int height) {
-            this.height = height;
-            return this;
-        }
-
-        public String getPathName() {
-            return pathName;
-        }
-
-        public ImageCrop setPathName(String pathName) {
-            this.pathName = pathName;
-            return this;
-        }
-        /**  <------------------------- Getter & Setter -------------------------  */
-
-
-
-        /**  ------------------------- Equals & Hash ------------------------->  */
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            ImageCrop imageCrop = (ImageCrop) o;
-            return getX() == imageCrop.getX() &&
-                    getY() == imageCrop.getY() &&
-                    getWidth() == imageCrop.getWidth() &&
-                    getHeight() == imageCrop.getHeight();
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(getX(), getY(), getWidth(), getHeight());
-        }
-        /**  <------------------------- Equals & Hash -------------------------  */
-    }
     // ---------------
 
     public static String getTmdbImagePath_ifNecessary(String imagePath, boolean original) {

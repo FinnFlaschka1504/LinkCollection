@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.RelativeSizeSpan;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -50,6 +51,7 @@ import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
+import com.maxMustermannGeheim.linkcollection.Utilities.FastScrollRecyclerViewHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
 import java.io.File;
@@ -62,9 +64,13 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import me.zhanghai.android.fastscroll.FastScroller;
+import me.zhanghai.android.fastscroll.FastScrollerBuilder;
+
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
 public class MediaEventActivity extends AppCompatActivity {
+    private static final String TAG = "MediaEventActivity";
     public static final int START_SEARCH_MEDIA_EVENT = 1234;
     public static final int START_OPEN_MEDIA_EVENT = 7891;
     private final String ADVANCED_SEARCH_CRITERIA__EVENT = "e";
@@ -231,13 +237,19 @@ public class MediaEventActivity extends AppCompatActivity {
 //            File file1 = new File(media1.getContent().getImagePath());
 //            File file2 = new File(media2.getContent().getImagePath());
 //            return Long.compare(file1.lastModified(), file2.lastModified()) * -1;
-            return 0;
+            return media1.getName().compareTo(media2.getName());
         });
         return mediaEventList;
     }
 
     private void loadRecycler() {
-        eventRecycler = new CustomRecycler<MediaEvent>(this, findViewById(R.id.recycler))
+        // ToDo: Versuchen Recycler diskret zu scrollen
+        RecyclerView recyclerView = findViewById(R.id.recycler);
+
+        final List<Integer>[] heightList = new List[]{new ArrayList<>()};
+        final int[] scrollRange = {0};
+
+        eventRecycler = new CustomRecycler<MediaEvent>(this, recyclerView)
                 .setItemLayout(R.layout.list_item_media_event)
                 .setGetActiveObjectList(customRecycler -> {
                     CustomList<MediaEvent> filteredList = filterList(new CustomList<>(database.mediaEventMap.values()));
@@ -270,6 +282,9 @@ public class MediaEventActivity extends AppCompatActivity {
                     SpannableStringBuilder builder = new SpannableStringBuilder().append(elementCountText).append("\n", new RelativeSizeSpan(0.5f), Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
                     elementCount.setText(builder);
 
+                    heightList[0] = filteredList.stream().map(MediaEvent::_getHeight).collect(Collectors.toList());
+                    scrollRange[0] = heightList[0].stream().mapToInt(Integer::intValue).sum();
+                    Log.d(TAG, "loadRecycler: " + scrollRange[0]);
                     return filteredList;
                 })
                 .setSetItemContent((customRecycler, itemView, mediaEvent) -> {
@@ -429,6 +444,44 @@ public class MediaEventActivity extends AppCompatActivity {
                 })
                 .setOnLongClickListener((customRecycler, view, mediaEvent, index) -> showEditDialog(mediaEvent._isDummy() ? parent : mediaEvent))
                 .generate();
+
+        FastScroller[] fastScroller = {null};
+        fastScroller[0] = new FastScrollerBuilder(recyclerView)
+                .setThumbDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_thumb)))
+                .setTrackDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_track)))
+                .setPadding(0, 20, 0, 50)
+                .setViewHelper(new FastScrollRecyclerViewHelper(recyclerView, fastScroller, null) {
+                    @Override
+                    public int getScrollRange() {
+                        return scrollRange[0];
+                    }
+
+                    @Override
+                    public int getScrollOffset() {
+                        int position = eventRecycler.getLayoutManager().findFirstVisibleItemPosition();
+                        int firstItemPosition = getFirstItemPosition();
+                        if (firstItemPosition == RecyclerView.NO_POSITION) {
+                            return 0;
+                        }
+                        int firstItemTop = getFirstItemOffset();
+                        int sum = heightList[0].subList(0, position).stream().mapToInt(Integer::intValue).sum();
+                        return recyclerView.getPaddingTop() + sum - firstItemTop;
+                    }
+
+                    @Override
+                    public void scrollTo(int offset) {
+                        int i = 0;
+                        for (; i < heightList[0].size(); i++) {
+                            if (offset - heightList[0].get(i) < 0)
+                                break;
+                            else
+                                offset -= heightList[0].get(i);
+                        }
+                        eventRecycler.getLayoutManager().scrollToPositionWithOffset(i, -offset);
+                    }
+                })
+                .build();
+
     }
 
     private void reLoadRecycler() {
@@ -601,7 +654,7 @@ public class MediaEventActivity extends AppCompatActivity {
 
         String title = ((TextInputLayout) editDialog.findViewById(R.id.dialog_editMediaEvent_title_layout)).getEditText().getText().toString().trim();
         String description = ((TextInputLayout) editDialog.findViewById(R.id.dialog_editMediaEvent_description_layout)).getEditText().getText().toString().trim();
-        newEvent.setDescription(description).setName(title);
+        newEvent.setDescription(CustomUtility.stringExistsOrElse(description, null)).setName(title);
         newEvent.setMediaIdList(selectedMediaList.map(ParentClass::getUuid));
         newEvent.setBeginning(beginningEnd.first);
         newEvent.setEnd(beginningEnd.second);

@@ -41,6 +41,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
@@ -70,6 +71,7 @@ import com.maxMustermannGeheim.linkcollection.Utilities.CustomScrollGallary.Cust
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
+import com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller;
 import com.veinhorn.scrollgalleryview.HackyViewPager;
 import com.veinhorn.scrollgalleryview.MediaInfo;
 import com.veinhorn.scrollgalleryview.ScrollGalleryView;
@@ -89,6 +91,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import me.zhanghai.android.fastscroll.FastScrollerBuilder;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
@@ -576,6 +580,14 @@ public class MediaActivity extends AppCompatActivity {
                 selectables.forEach(mediaSelectable -> mediaSelectable.setSelected(false));
         };
 
+//        new RecyclerViewFastScroller(this)
+//                .set
+        new FastScrollerBuilder(recyclerView)
+                .setThumbDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_thumb)))
+                .setTrackDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_track)))
+                .setPadding(0, 20, 0, 50)
+                .build();
+
         mediaRecycler = new CustomRecycler<MultiSelectHelper.Selectable<Media>>(this, recyclerView)
                 .addOptionalModifications(customRecycler -> selectHelper.customRecycler = customRecycler)
                 .setItemLayout(R.layout.list_item_image)
@@ -1061,7 +1073,9 @@ public class MediaActivity extends AppCompatActivity {
             }
         });
 
-        View changeRotationButton = findViewById(R.id.scrollGalleryView_rotate);
+        findViewById(R.id.scrollGalleryView_share).setOnClickListener(v -> shareMedia(new CustomList<>(getCurrentGalleryMedia())));
+
+            View changeRotationButton = findViewById(R.id.scrollGalleryView_rotate);
         applyChangeRotationButton(this, changeRotationButton);
     }
 
@@ -1187,6 +1201,7 @@ public class MediaActivity extends AppCompatActivity {
             findViewById(R.id.thumbnails_scroll_view).setVisibility(View.VISIBLE);
             findViewById(R.id.customImageDescription).setVisibility(View.VISIBLE);
             findViewById(R.id.scrollGalleryView_edit).setVisibility(View.VISIBLE);
+            findViewById(R.id.scrollGalleryView_share).setVisibility(View.VISIBLE);
             if (!isAutoRotationOn(this))
                 findViewById(R.id.scrollGalleryView_rotate).setVisibility(View.VISIBLE);
             Utility.reflectionSet(scrollGalleryView, "isThumbnailsHidden", false);
@@ -1252,6 +1267,7 @@ public class MediaActivity extends AppCompatActivity {
         TransitionManager.beginDelayedTransition((ViewGroup) view.getParent());
         view.setVisibility(visibility);
         activity.findViewById(R.id.scrollGalleryView_edit).setVisibility(visibility);
+        activity.findViewById(R.id.scrollGalleryView_share).setVisibility(visibility);
         if (!isAutoRotationOn(activity))
             activity.findViewById(R.id.scrollGalleryView_rotate).setVisibility(visibility);
         if (parent != null && videoView.getVisibility() == View.VISIBLE)

@@ -3,14 +3,17 @@ package com.maxMustermannGeheim.linkcollection.Daten.Videos;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
+import com.maxMustermannGeheim.linkcollection.Utilities.ImageCropUtility;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.scottyab.aescrypt.AESCrypt;
 
 import java.security.GeneralSecurityException;
 import java.util.UUID;
 
-public class Darsteller extends ParentClass_Tmdb implements ParentClass_Alias {
+public class Darsteller extends ParentClass_Tmdb implements ParentClass_Alias, ImageCropUtility {
     private String nameAliases;
+    private ImageCropUtility.ImageCrop imageCrop;
+
     public Darsteller(String name) {
         uuid = "darsteller_" + UUID.randomUUID().toString();
         this.name = name;

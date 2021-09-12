@@ -1,15 +1,18 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Main;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.InputType;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
+import android.util.Log;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -18,6 +21,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.SearchView;
 import android.widget.TextView;
@@ -30,9 +34,12 @@ import androidx.core.content.ContextCompat;
 
 import com.allyants.draggabletreeview.DraggableTreeView;
 import com.allyants.draggabletreeview.SimpleTreeViewAdapter;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.RequestBuilder;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
+import com.github.chrisbanes.photoview.PhotoView;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.textfield.TextInputLayout;
@@ -59,12 +66,14 @@ import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomTreeViewAdapter;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
+import com.maxMustermannGeheim.linkcollection.Utilities.ImageCropUtility;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.unnamed.b.atv.model.TreeNode;
 import com.unnamed.b.atv.view.AndroidTreeView;
 
 import org.intellij.lang.annotations.Language;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -81,10 +90,12 @@ public class CategoriesActivity extends AppCompatActivity {
     public static final int START_CATEGORY_SEARCH = 001;
     public static final String EXTRA_SEARCH_CATEGORY = "EXTRA_SEARCH_CATEGORY";
     public static final String EXTRA_SEARCH = "EXTRA_SEARCH";
-    @Language("RegExp") public static String pictureRegex = "(https?:|\\/)(([\\w$\\-_.+!*'(),/?=&@:%#]|(?<=\\S)\\s(?=\\S))+?)\\.(jpe?g|png|svg|gif)"; //"(https?:|\\/)(([^\\s\\\\<>{}]|(?<=\\S)\\s(?=\\S))+?)\\.(jpe?g|png|svg)";//"((https:)|/)[^\\n]+?\\.(?:jpe?g|png|svg)";
+    @Language("RegExp")
+    public static String pictureRegex = "(https?:|\\/)(([\\w$\\-_.+!*'(),/?=&@:%#]|(?<=\\S)\\s(?=\\S))+?)\\.(jpe?g|png|svg|gif)"; //"(https?:|\\/)(([^\\s\\\\<>{}]|(?<=\\S)\\s(?=\\S))+?)\\.(jpe?g|png|svg)";//"((https:)|/)[^\\n]+?\\.(?:jpe?g|png|svg)";
     //    public static String pictureRegex = "((https:)|/)([,+%&?=()/|.|\\w|\\s|-])+\\.(?:jpe?g|png|svg)";
     public static String pictureRegexAll = pictureRegex.split("\\\\\\.")[0];
-    @Language("RegExp") public static final String uuidRegex = "\\b([a-zA-Z]+_)?[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b";
+    @Language("RegExp")
+    public static final String uuidRegex = "\\b([a-zA-Z]+_)?[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b";
     private Helpers.SortHelper<Pair<ParentClass, Integer>> sortHelper;
     private boolean reverse = false;
     private Menu toolBarMenu;
@@ -422,14 +433,15 @@ public class CategoriesActivity extends AppCompatActivity {
 
                 })
                 .setSetItemContent((customRecycler, itemView, parentClassIntegerPair) -> {
-                    ((TextView) itemView.findViewById(R.id.listItem_catigoryItem_name)).setText(parentClassIntegerPair.first.getName());
+                    ParentClass parentClass = parentClassIntegerPair.first;
+                    ((TextView) itemView.findViewById(R.id.listItem_catigoryItem_name)).setText(parentClass.getName());
 
                     if (category == CATEGORIES.PERSON) {
                         final double[] allOwn = {0};
                         final double[] allOther = {0};
                         database.oweMap.values().forEach(owe -> owe.getItemList().forEach(item -> {
                             if (item.isOpen()) {
-                                if (item.getPersonId().equals(parentClassIntegerPair.first.getUuid())) {
+                                if (item.getPersonId().equals(parentClass.getUuid())) {
                                     if (owe.getOwnOrOther() == Owe.OWN_OR_OTHER.OWN)
                                         allOwn[0] += item.getAmount();
                                     else
@@ -453,14 +465,14 @@ public class CategoriesActivity extends AppCompatActivity {
                         ((TextView) itemView.findViewById(R.id.userlistItem_catigoryItem_count)).setText(String.valueOf(parentClassIntegerPair.second));
 
                     ImageView listItem_categoryItem_image = itemView.findViewById(R.id.listItem_categoryItem_image);
-                    if (parentClassIntegerPair.first instanceof ParentClass_Image && Utility.stringExists(((ParentClass_Image) parentClassIntegerPair.first).getImagePath())) {
+                    if (parentClass instanceof ParentClass_Image && Utility.stringExists(((ParentClass_Image) parentClass).getImagePath())) {
                         listItem_categoryItem_image.setVisibility(View.VISIBLE);
-                        String imagePath = ((ParentClass_Image) parentClassIntegerPair.first).getImagePath();
-                        Utility.loadUrlIntoImageView(this, listItem_categoryItem_image, Utility.getTmdbImagePath_ifNecessary(imagePath, false),
+                        String imagePath = ((ParentClass_Image) parentClass).getImagePath();
+                        Utility.loadUrlIntoImageView(this, listItem_categoryItem_image, ImageCropUtility.applyCropTransformation(parentClass), Utility.getTmdbImagePath_ifNecessary(imagePath, false),
                                 Utility.getTmdbImagePath_ifNecessary(imagePath, true),
                                 () -> {
-                                    if (parentClassIntegerPair.first instanceof ParentClass_Tmdb)
-                                        ((ParentClass_Tmdb) parentClassIntegerPair.first).tryUpdateData(this, () ->
+                                    if (parentClass instanceof ParentClass_Tmdb)
+                                        ((ParentClass_Tmdb) parentClass).tryUpdateData(this, () ->
                                                 customRecycler.update(customRecycler.getRecycler().getChildAdapterPosition(itemView)));
                                 },
                                 () -> Utility.roundImageView(listItem_categoryItem_image, 4), this::removeFocusFromSearch);
@@ -469,7 +481,7 @@ public class CategoriesActivity extends AppCompatActivity {
 
                     CheckBox userListItem_categoryItem_check = itemView.findViewById(R.id.userlistItem_catigoryItem_ckeck);
                     userListItem_categoryItem_check.setVisibility(multiSelectMode ? View.VISIBLE : View.GONE);
-                    userListItem_categoryItem_check.setChecked(selectedList.contains(parentClassIntegerPair.first));
+                    userListItem_categoryItem_check.setChecked(selectedList.contains(parentClass));
                 })
                 .setRowOrColumnCount(columnCount)
                 .setOnClickListener((customRecycler, view, parentClassIntegerPair, index) -> {
@@ -498,6 +510,7 @@ public class CategoriesActivity extends AppCompatActivity {
 
     }
 
+
     private void loadTreeRecycler() {
         // ToDo: Löschen doppelt bestätigen wenn Kinder noch vorhanden
         customRecycler = new CustomRecycler<Pair<ParentClass, Integer>>(this, findViewById(R.id.recycler))
@@ -517,7 +530,7 @@ public class CategoriesActivity extends AppCompatActivity {
                         showEditCategoryDialog(parentClass);
                         return true;
                     });
-                    CustomUtility.Triple<AndroidTreeView, View,TreeNode> triple = ParentClass_Tree.buildTreeView((ViewGroup) itemView, category,
+                    CustomUtility.Triple<AndroidTreeView, View, TreeNode> triple = ParentClass_Tree.buildTreeView((ViewGroup) itemView, category,
                             (multiSelectMode ? selectedTreeList : null), searchQuery, null,
                             (o1, o2) -> {
                                 switch (sort_type) {
@@ -557,42 +570,70 @@ public class CategoriesActivity extends AppCompatActivity {
 
 
     //  ------------------------- Edit ------------------------->
-    private void showEditCategoryDialog(ParentClass parentClass) {
+    private void showEditCategoryDialog(@Nullable ParentClass oldObject) {
+        if (!CustomUtility.isOnline(this))
+            return;
+
+        boolean isEdit = oldObject != null;
+        ParentClass editObject = isEdit ? (ParentClass) oldObject.clone() : ParentClass.newCategory(category, "");
+
         removeFocusFromSearch();
 
+        Utility.GenericInterface<CustomDialog> setPreviewCrop = (customDialog) -> {
+            View preview = customDialog.findViewById(R.id.dialog_editTmdbCategory_preview);
+            View previewCrop = customDialog.findViewById(R.id.dialog_editTmdbCategory_previewCrop);
+            ImageCropUtility.ImageCrop imageCrop;
+            if (editObject instanceof ImageCropUtility && (imageCrop = ((ImageCropUtility) editObject).getImageCrop()) != null && customDialog.findViewById(R.id.dialog_editTmdbCategory_preview).getVisibility() == View.VISIBLE) {
+                previewCrop.setVisibility(View.VISIBLE);
+                int width = preview.getWidth();
+                int height = (int) (((double) imageCrop.getFullHeight() / imageCrop.getFullWidth()) * preview.getWidth());
+                FrameLayout.LayoutParams params = new FrameLayout.LayoutParams((int) (width * imageCrop.getWidth()), (int) (height * imageCrop.getHeight()));
+                params.setMargins((int) (width * imageCrop.getX()), (int) (height * imageCrop.getY()), 0, 0);
+                previewCrop.setLayoutParams(params);
+            } else
+                previewCrop.setVisibility(View.GONE);
+        };
+
         CustomDialog.Builder(this)
-                .setTitle(category.getSingular() + " Umbenennen, oder Löschen")
+                .setTitle(category.getSingular() + (isEdit ? " Bearbeiten, oder Löschen" : " Hinzufügen"))
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
-                .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
-                    if (isTreeCategory && !((ParentClass_Tree) parentClass).getChildren().isEmpty()) {
-                        Toast.makeText(this, "Kategorie mit Unterkategorien kann noch nicht gelöscht werden", Toast.LENGTH_LONG).show();
-                        return;
-                    }
-                    CustomDialog.Builder(this)
-                            .setTitle("Löschen")
-                            .setText("Wirklich '" + parentClass.getName() + "' löschen?")
-                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
-                            .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
-                                customDialog.dismiss();
-                                removeCategory(parentClass);
-                            })
-                            .show();
-                }, false)
-                .transformPreviousButtonToImageButton()
+                .addOptionalModifications(customDialog -> {
+                    if (isEdit)
+                        customDialog
+                                .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog1 -> {
+                                    if (isTreeCategory && !((ParentClass_Tree) editObject).getChildren().isEmpty()) {
+                                        Toast.makeText(this, "Kategorie mit Unterkategorien kann noch nicht gelöscht werden", Toast.LENGTH_LONG).show();
+                                        return;
+                                    }
+                                    CustomDialog.Builder(this)
+                                            .setTitle("Löschen")
+                                            .setText("Wirklich '" + editObject.getName() + "' löschen?")
+                                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                            .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog2 -> {
+                                                customDialog1.dismiss();
+                                                removeCategory(oldObject);
+                                            })
+                                            .show();
+                                }, false)
+                                .transformPreviousButtonToImageButton();
+                })
                 .enableDynamicWrapHeight(this)
                 .enableAutoUpdateDynamicWrapHeight()
-                .addOptionalModifications(customDialog1 -> {
-                    if (parentClass instanceof ParentClass_Image) {
-                        customDialog1
-                                .addButton("Testen", customDialog2 -> {
-                                    String url = ((EditText) customDialog2.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
-                                    ImageView preview = customDialog2.findViewById(R.id.dialog_editTmdbCategory_preview);
+                .addOptionalModifications(customDialog -> {
+                    if (editObject instanceof ParentClass_Image) {
+                        customDialog
+                                .addButton("Testen", customDialog1 -> {
+                                    String url = ((EditText) customDialog1.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
+                                    ImageView preview = customDialog1.findViewById(R.id.dialog_editTmdbCategory_preview);
                                     if (CustomUtility.stringExists(url)) {
-                                        Utility.loadUrlIntoImageView(this, preview, Utility.getTmdbImagePath_ifNecessary(url, true), null);
+                                        Utility.loadUrlIntoImageView(this, preview, Utility.getTmdbImagePath_ifNecessary(url, true), null, null, () -> {
+                                            setPreviewCrop.run(customDialog);
+                                        });
                                         preview.setVisibility(View.VISIBLE);
                                     } else {
                                         Toast.makeText(this, "Nichts eingegeben", Toast.LENGTH_SHORT).show();
                                         preview.setVisibility(View.GONE);
+                                        setPreviewCrop.run(customDialog);
                                     }
                                 }, false);
                     }
@@ -601,10 +642,19 @@ public class CategoriesActivity extends AppCompatActivity {
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     if (!Utility.isOnline(this))
                         return;
-                    ParentClass_Alias.applyNameAndAlias(parentClass, ((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim());
-                    if (parentClass instanceof ParentClass_Image) {
+                    ParentClass_Alias.applyNameAndAlias(editObject, ((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim());
+                    if (editObject instanceof ParentClass_Image) {
                         String url = ((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
-                        ((ParentClass_Image) parentClass).setImagePath(CustomUtility.stringExists(url) ? url : null);
+                        ((ParentClass_Image) editObject).setImagePath(CustomUtility.stringExistsOrElse(url, null));
+                    }
+                    if (isEdit)
+                        oldObject.getChangesFrom(editObject);
+                    else {
+                        ((Map<String, ParentClass>) Utility.getMapFromDatabase(category)).put(editObject.getUuid(), editObject);
+                        if (editObject instanceof ParentClass_Tree)
+                            treeObjectCountMap.put(editObject.getUuid(), 0);
+                        else
+                            allDatenObjektPairList.add(new Pair<>(editObject, 0));
                     }
                     reLoadRecycler();
                     Toast.makeText(this, (Database.saveAll_simple() ? "" : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
@@ -613,21 +663,26 @@ public class CategoriesActivity extends AppCompatActivity {
                 .setView(R.layout.dialog_edit_tmdb_category)
                 .setSetViewContent((customDialog, view1, reload) -> {
                     TextInputLayout dialog_editTmdbCategory_name_layout = view1.findViewById(R.id.dialog_editTmdbCategory_name_layout);
-                    dialog_editTmdbCategory_name_layout.getEditText().setText(ParentClass_Alias.combineNameAndAlias(parentClass));
+                    dialog_editTmdbCategory_name_layout.getEditText().setText(ParentClass_Alias.combineNameAndAlias(editObject));
 
                     com.finn.androidUtilities.Helpers.TextInputHelper helper =
-                            new com.finn.androidUtilities.Helpers.TextInputHelper((Button) customDialog.getActionButton().getButton(), dialog_editTmdbCategory_name_layout);
+                            new com.finn.androidUtilities.Helpers.TextInputHelper(dialog_editTmdbCategory_name_layout)
+                            .defaultDialogValidation(customDialog)
+                            .setValidation(dialog_editTmdbCategory_name_layout, (validator, text) -> {
+                                if (Utility.findObjectByName(category, text) != null)
+                                    validator.setInvalid(category.singular + " bereits vorhanden");
+                            });
 
-                    if (parentClass instanceof ParentClass_Alias) {
+                    if (editObject instanceof ParentClass_Alias) {
 //                                    helper.setInputType(dialog_editTmdbCategory_name_layout, com.finn.androidUtilities.Helpers.TextInputHelper.INPUT_TYPE.MULTI_LINE);
                         dialog_editTmdbCategory_name_layout.getEditText().setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_CLASS_TEXT);
                     }
 
-                    if (parentClass instanceof ParentClass_Image) {
-                        if (parentClass instanceof ParentClass_Tmdb) {
+                    if (editObject instanceof ParentClass_Image) {
+                        if (editObject instanceof ParentClass_Tmdb) {
                             ImageView dialog_editTmdbCategory_internet = view1.findViewById(R.id.dialog_editTmdbCategory_internet);
-                            if (((ParentClass_Tmdb) parentClass).getTmdbId() != 0) {
-                                dialog_editTmdbCategory_internet.setOnClickListener(v -> Utility.openUrl(this, "https://www.themoviedb.org/person/" + ((ParentClass_Tmdb) parentClass).getTmdbId(), true));
+                            if (((ParentClass_Tmdb) editObject).getTmdbId() != 0) {
+                                dialog_editTmdbCategory_internet.setOnClickListener(v -> Utility.openUrl(this, "https://www.themoviedb.org/person/" + ((ParentClass_Tmdb) editObject).getTmdbId(), true));
                                 dialog_editTmdbCategory_internet.setVisibility(View.VISIBLE);
                             }
                         }
@@ -635,12 +690,15 @@ public class CategoriesActivity extends AppCompatActivity {
                         CustomUtility.setMargins(view1.findViewById(R.id.dialog_editTmdbCategory_nameLayout), -1, -1, -1, 0);
                         view1.findViewById(R.id.dialog_editTmdbCategory_urlLayout).setVisibility(View.VISIBLE);
                         TextInputLayout dialog_editTmdbCategory_url_layout = view1.findViewById(R.id.dialog_editTmdbCategory_url_layout);
-                        String url = ((ParentClass_Image) parentClass).getImagePath();
-                        dialog_editTmdbCategory_url_layout.getEditText().setText(url);
+                        String imagePath = ((ParentClass_Image) editObject).getImagePath();
+                        dialog_editTmdbCategory_url_layout.getEditText().setText(imagePath);
                         ImageView preview = customDialog.findViewById(R.id.dialog_editTmdbCategory_preview);
-                        if (CustomUtility.stringExists(url)) {
-                            Utility.loadUrlIntoImageView(this, preview, Utility.getTmdbImagePath_ifNecessary(url, true), null);
+                        if (CustomUtility.stringExists(imagePath)) {
+                            Utility.loadUrlIntoImageView(this, preview, Utility.getTmdbImagePath_ifNecessary(imagePath, true), null, null, () -> {
+                                setPreviewCrop.run(customDialog);
+                            });
                             preview.setVisibility(View.VISIBLE);
+//                            setPreviewCrop.run(customDialog);
                         }
                         helper.addValidator(dialog_editTmdbCategory_url_layout).setValidation(dialog_editTmdbCategory_url_layout, (validator, text) -> {
                             validator.asWhiteList();
@@ -648,24 +706,58 @@ public class CategoriesActivity extends AppCompatActivity {
                                 validator.setValid();
                             if (text.toLowerCase().contains("http") && !text.toLowerCase().contains("https"))
                                 validator.setInvalid("Die URL muss 'https' sein!");
-                        }).validate();
+                            if (editObject instanceof ImageCropUtility) {
+                                if (!Objects.equals(text, ((ParentClass_Image) editObject).getImagePath())) {
+                                    ((ImageCropUtility) editObject).setImageCrop(null);
+                                    setPreviewCrop.run(customDialog);
+                                }
+                            }
+                        }).validate((TextInputLayout[]) null);
 
                         view1.findViewById(R.id.dialog_editTmdbCategory_localStorage).setOnClickListener(v -> {
                             ActivityResultHelper.addFileChooserRequest(this, "image/*", o -> {
-                                String path = ActivityResultHelper.getPath(this, ((Intent) o).getData());
+                                String path = ActivityResultHelper.getPath(this, o.getData());
                                 dialog_editTmdbCategory_url_layout.getEditText().setText(path);
+                                customDialog.getButtonByName("Testen").click();
                             });
                         });
 
+                        if (editObject instanceof ImageCropUtility) {
+                            View cropButton = view1.findViewById(R.id.dialog_editTmdbCategory_crop);
+                            cropButton.setVisibility(View.VISIBLE);
+                            cropButton.setOnClickListener(v -> {
+                                ((ParentClass_Image) editObject).setImagePath(CustomUtility.stringExistsOrElse(dialog_editTmdbCategory_url_layout.getEditText().getText().toString(), null));
+                                ((ImageCropUtility) editObject).selectCropForImage(this, ((ImageCropUtility) editObject).getImageCrop(), imageCrop -> {
+                                    ((ImageCropUtility) editObject).setImageCrop(imageCrop);
+                                    setPreviewCrop.run(customDialog);
+                                });
+                            });
+                            cropButton.setOnLongClickListener(v -> {
+                                ((ImageCropUtility) editObject).setImageCrop(null);
+                                Toast.makeText(this, "Crop Zurückgesetzt", Toast.LENGTH_SHORT).show();
+                                setPreviewCrop.run(customDialog);
+                                return true;
+                            });
+
+                        } else {
+                            view1.findViewById(R.id.dialog_editTmdbCategory_crop).setVisibility(View.GONE);
+                            setPreviewCrop.run(customDialog);
+                        }
                     }
                 })
                 .enableDoubleClickOutsideToDismiss(customDialog -> {
-                    boolean result = !((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim().equals(ParentClass_Alias.combineNameAndAlias(parentClass));
-                    return result || (parentClass instanceof ParentClass_Image && !Utility.boolOr(((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim(), ((ParentClass_Image) parentClass).getImagePath(), ""));
+                    String editNameText = ((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim();
+                    if (isEdit) {
+                        boolean nameResult = !editNameText.equals(ParentClass_Alias.combineNameAndAlias(editObject));
+                        return nameResult
+                                || (editObject instanceof ParentClass_Image && !Utility.boolOr(((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim(), CustomUtility.stringExistsOrElse(((ParentClass_Image) oldObject).getImagePath(), "")))
+                                || editObject instanceof ImageCropUtility && !Objects.equals(((ImageCropUtility) oldObject).getImageCrop(), ((ImageCropUtility) editObject).getImageCrop());
+                    } else {
+                        return CustomUtility.stringExists(editNameText) || (editObject instanceof ParentClass_Image && CustomUtility.stringExists(((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim()));
+                    }
                 })
                 .show();
     }
-
 
     private void removeCategory(ParentClass parentClass) {
         allDatenObjektPairList.removeIf(pair -> Objects.equals(pair.first, parentClass));
@@ -745,6 +837,7 @@ public class CategoriesActivity extends AppCompatActivity {
 
 
     private void showRandomDialog() {
+        // ToDo: auch Bilder anzeigen
         CustomList<Pair<ParentClass, Integer>> filterdDatenObjektPairList = new CustomList<>(sortList(filterList(allDatenObjektPairList)));
         if (filterdDatenObjektPairList.isEmpty()) {
             Toast.makeText(this, "Die Auswahl ist leer", Toast.LENGTH_SHORT).show();
@@ -840,6 +933,9 @@ public class CategoriesActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         switch (id) {
+            case R.id.taskBar_category_add:
+                showEditCategoryDialog(null);
+                break;
             case R.id.taskBar_category_multiSelect:
                 if ((selectedList.isEmpty() || isTreeCategory) && selectedTreeList.isEmpty()) {
                     multiSelectMode = !multiSelectMode;
@@ -935,7 +1031,9 @@ public class CategoriesActivity extends AppCompatActivity {
     //  <------------------------- ToolBar -------------------------
 
 
-    /**  ------------------------- Convenience ------------------------->  */
+    /**
+     * ------------------------- Convenience ------------------------->
+     */
     public static String escapeForSearchExtra(String s) {
         if (s.contains("&"))
             return s.replaceAll("&", "\\\\&");
@@ -953,7 +1051,10 @@ public class CategoriesActivity extends AppCompatActivity {
         else
             return s;
     }
-    /**  <------------------------- Convenience -------------------------  */
+
+    /**
+     * <------------------------- Convenience -------------------------
+     */
 
 
     @Override

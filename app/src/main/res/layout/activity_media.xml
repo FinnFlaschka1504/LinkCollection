@@ -100,25 +100,42 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller
-        android:id="@+id/fastScroller"
+<!--    <com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller-->
+<!--        android:id="@+id/fastScroller"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="match_parent"-->
+<!--        app:handleDrawable="@drawable/fast_scroll_thumb"-->
+<!--        app:handleHeight="40dp"-->
+<!--        app:handleWidth="30dp"-->
+<!--        app:trackMarginStart="5dp"-->
+<!--        app:trackMarginEnd="20dp"-->
+<!--        app:handleVisibilityDuration="1500"-->
+<!--        app:layout_behavior="@string/appbar_scrolling_view_behavior">-->
+
+<!--        <androidx.recyclerview.widget.RecyclerView-->
+<!--            android:id="@+id/recycler"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="match_parent"-->
+<!--            android:padding ="2dp"-->
+<!--            android:clipToPadding = "false"/>-->
+<!--    </com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller>-->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:handleDrawable="@drawable/fast_scroll_thumb"
-        app:handleHeight="40dp"
-        app:handleWidth="30dp"
-        app:trackMarginStart="5dp"
-        app:trackMarginEnd="20dp"
-        app:handleVisibilityDuration="1500"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:padding ="2dp"
-            android:clipToPadding = "false"/>
-    </com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller>
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        />
+<!--    <androidx.recyclerview.widget.RecyclerView-->
+<!--        android:id="@+id/recycler"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="match_parent"-->
+<!--        app:layout_behavior="@string/appbar_scrolling_view_behavior"-->
+<!--        app:fastScrollEnabled="true"-->
+<!--        app:fastScrollVerticalThumbDrawable="@drawable/thumb_drawable"-->
+<!--        app:fastScrollVerticalTrackDrawable="@drawable/line_drawable"-->
+<!--        app:fastScrollHorizontalThumbDrawable="@drawable/thumb_drawable"-->
+<!--        app:fastScrollHorizontalTrackDrawable="@drawable/line_drawable"-->
+<!--        />-->
 
     <com.veinhorn.scrollgalleryview.ScrollGalleryView
         android:id="@+id/scroll_gallery_view"

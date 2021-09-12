@@ -24,14 +24,15 @@
     <FrameLayout
         android:id="@+id/scrollGalleryView_edit"
         android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
         android:layout_marginTop="45dp"
         android:layout_marginEnd="16dp"
         android:background="@drawable/round_background"
         android:backgroundTint="#8B3C3C3C"
         android:clickable="true"
-        android:padding="7dp"
-        android:layout_height="wrap_content">
+        android:padding="7dp">
+
         <ImageView
             android:layout_width="19dp"
             android:layout_height="19dp"
@@ -40,16 +41,36 @@
     </FrameLayout>
 
     <FrameLayout
-        android:id="@+id/scrollGalleryView_rotate"
+        android:id="@+id/scrollGalleryView_share"
         android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
         android:layout_marginTop="45dp"
         android:layout_marginEnd="65dp"
         android:background="@drawable/round_background"
         android:backgroundTint="#8B3C3C3C"
         android:clickable="true"
-        android:padding="7dp"
-        android:layout_height="wrap_content">
+        android:padding="7dp">
+
+        <ImageView
+            android:layout_width="19dp"
+            android:layout_height="19dp"
+            android:tint="#FFFFFF"
+            app:srcCompat="@drawable/ic_share" />
+
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/scrollGalleryView_rotate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="45dp"
+        android:layout_marginEnd="117dp"
+        android:background="@drawable/round_background"
+        android:backgroundTint="#8B3C3C3C"
+        android:clickable="true"
+        android:padding="7dp">
 
         <ImageView
             android:layout_width="19dp"
@@ -58,6 +79,7 @@
             app:srcCompat="@drawable/ic_screen_rotation" />
 
     </FrameLayout>
+
     <LinearLayout
         android:id="@+id/customImageDescription"
         android:layout_width="wrap_content"
@@ -76,8 +98,8 @@
         android:layout_alignParentStart="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentBottom="true"
-        android:background="#66000000"
         android:layout_marginBottom="16dp"
+        android:background="#66000000"
         android:scrollbars="none">
 
         <LinearLayout

@@ -1,5 +1,6 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Content.Media;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -21,6 +22,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -66,6 +68,7 @@ import java.util.stream.Collectors;
 
 import me.zhanghai.android.fastscroll.FastScroller;
 import me.zhanghai.android.fastscroll.FastScrollerBuilder;
+import me.zhanghai.android.fastscroll.Predicate;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
@@ -284,7 +287,6 @@ public class MediaEventActivity extends AppCompatActivity {
 
                     heightList[0] = filteredList.stream().map(MediaEvent::_getHeight).collect(Collectors.toList());
                     scrollRange[0] = heightList[0].stream().mapToInt(Integer::intValue).sum();
-                    Log.d(TAG, "loadRecycler: " + scrollRange[0]);
                     return filteredList;
                 })
                 .setSetItemContent((customRecycler, itemView, mediaEvent) -> {
@@ -446,40 +448,13 @@ public class MediaEventActivity extends AppCompatActivity {
                 .generate();
 
         FastScroller[] fastScroller = {null};
-        fastScroller[0] = new FastScrollerBuilder(recyclerView)
+        FastScrollerBuilder fastScrollerBuilder = new FastScrollerBuilder(recyclerView)
                 .setThumbDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_thumb)))
-                .setTrackDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_track)))
+                .setTrackDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_track)));
+//        fastScrollerBuilder.disableScrollbarAutoHide();
+        fastScroller[0] = fastScrollerBuilder
                 .setPadding(0, 20, 0, 50)
-                .setViewHelper(new FastScrollRecyclerViewHelper(recyclerView, fastScroller, null) {
-                    @Override
-                    public int getScrollRange() {
-                        return scrollRange[0];
-                    }
-
-                    @Override
-                    public int getScrollOffset() {
-                        int position = eventRecycler.getLayoutManager().findFirstVisibleItemPosition();
-                        int firstItemPosition = getFirstItemPosition();
-                        if (firstItemPosition == RecyclerView.NO_POSITION) {
-                            return 0;
-                        }
-                        int firstItemTop = getFirstItemOffset();
-                        int sum = heightList[0].subList(0, position).stream().mapToInt(Integer::intValue).sum();
-                        return recyclerView.getPaddingTop() + sum - firstItemTop;
-                    }
-
-                    @Override
-                    public void scrollTo(int offset) {
-                        int i = 0;
-                        for (; i < heightList[0].size(); i++) {
-                            if (offset - heightList[0].get(i) < 0)
-                                break;
-                            else
-                                offset -= heightList[0].get(i);
-                        }
-                        eventRecycler.getLayoutManager().scrollToPositionWithOffset(i, -offset);
-                    }
-                })
+                .setViewHelper(new FastScrollRecyclerViewHelper(eventRecycler, fastScroller, scrollRange, heightList, false, null))
                 .build();
 
     }

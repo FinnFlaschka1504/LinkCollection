@@ -19,10 +19,14 @@ package com.maxMustermannGeheim.linkcollection.Utilities;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.util.Log;
+import android.util.Pair;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewGroupOverlay;
 import android.view.ViewOverlay;
+import android.view.animation.Animation;
+import android.view.animation.Transformation;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -31,8 +35,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.finn.androidUtilities.CustomUtility;
+import com.finn.androidUtilities.CustomRecycler;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 
 import me.zhanghai.android.fastscroll.FastScroller;
 import me.zhanghai.android.fastscroll.FastScrollerBuilder;
@@ -52,6 +59,18 @@ public class FastScrollRecyclerViewHelper implements FastScroller.ViewHelper {
     @NonNull
     private final Rect mTempRect = new Rect();
 
+    int[] scrollRange;
+    List<Integer>[] heightList;
+    CustomRecycler customRecycler;
+    int thumbOffset = 0;
+    boolean smoothScroll;
+    private Runnable onPreDraw;
+    private View thumbView;
+
+    // ToDo: wenn nach ganz untern gescrollt dann letztes element anzeigen
+    //  & warum so abgehackt in medien
+
+    /**  <------------------------- Constructor -------------------------  */
     public FastScrollRecyclerViewHelper(@NonNull RecyclerView view, @Nullable PopupTextProvider popupTextProvider) {
         mView = view;
         mPopupTextProvider = popupTextProvider;
@@ -63,8 +82,28 @@ public class FastScrollRecyclerViewHelper implements FastScroller.ViewHelper {
         mPopupTextProvider = popupTextProvider;
     }
 
+    public FastScrollRecyclerViewHelper(CustomRecycler customRecycler, @Nullable FastScroller[] fastScroller, int[] scrollRange, List<Integer>[] heightList, boolean smoothScroll, @Nullable PopupTextProvider popupTextProvider) {
+        mView = customRecycler.getRecycler();
+        mFastScroller = fastScroller;
+        mPopupTextProvider = popupTextProvider;
+        this.customRecycler = customRecycler;
+        this.scrollRange = scrollRange;
+        this.heightList = heightList;
+        this.smoothScroll = smoothScroll;
+    }
+
+    public FastScrollRecyclerViewHelper(CustomRecycler customRecycler, @Nullable FastScroller[] fastScroller, boolean smoothScroll, @Nullable PopupTextProvider popupTextProvider) {
+        mView = customRecycler.getRecycler();
+        mFastScroller = fastScroller;
+        mPopupTextProvider = popupTextProvider;
+        this.customRecycler = customRecycler;
+        this.smoothScroll = smoothScroll;
+    }
+    /**  ------------------------- Constructor ------------------------->  */
+
     @Override
     public void addOnPreDrawListener(@NonNull Runnable onPreDraw) {
+        this.onPreDraw = onPreDraw;
         mView.addItemDecoration(new RecyclerView.ItemDecoration() {
             @Override
             public void onDraw(@NonNull Canvas canvas, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
@@ -85,26 +124,13 @@ public class FastScrollRecyclerViewHelper implements FastScroller.ViewHelper {
 
     @Override
     public void addOnTouchEventListener(@NonNull Predicate<MotionEvent> onTouchEvent) {
-//        try {
-//            ViewGroupOverlay overlay = mView.getOverlay();
-//            Field mOverlayViewGroup = ViewOverlay.class.getDeclaredField("mOverlayViewGroup");
-//            mOverlayViewGroup.setAccessible(true);
-//            Object overlayViewGroup = mOverlayViewGroup.get(overlay);
-//            Field mChildren = overlayViewGroup.getClass().getDeclaredField("mChildren");
-//            mChildren.setAccessible(true);
-//            View[] children = (View[]) mChildren.get(overlayViewGroup);
-//            View child = children[1];
-//            String BREAKPOINT = null;
-//        } catch (NoSuchFieldException | IllegalAccessException e) {
-//        }
-        final View[] thumbView = {null};
         CustomUtility.GenericReturnOnlyInterface<View> tryGetThumbView = () -> {
             if (mFastScroller != null && mFastScroller[0] != null) {
                 try {
                     Field mThumbView = FastScroller.class.getDeclaredField("mThumbView");
                     mThumbView.setAccessible(true);
-                    thumbView[0] = (View) mThumbView.get(mFastScroller[0]);
-                    return thumbView[0];
+                    thumbView = (View) mThumbView.get(mFastScroller[0]);
+                    return thumbView;
                 } catch (NoSuchFieldException | IllegalAccessException e) {
                     Log.e(TAG, "addOnTouchEventListener: ", e);
                 }
@@ -115,23 +141,27 @@ public class FastScrollRecyclerViewHelper implements FastScroller.ViewHelper {
         final boolean[] blocked = {false};
 
         CustomUtility.GenericReturnInterface<MotionEvent, Boolean> processMotionEvent = event -> {
-            if (thumbView[0] == null && (thumbView[0] = tryGetThumbView.run()) == null)
+            if (thumbView == null && (thumbView = tryGetThumbView.run()) == null)
                 return onTouchEvent.test(event);
             else {
                 int[] ints = new int[]{0,0};
-                thumbView[0].getLocationOnScreen(ints);
+                thumbView.getLocationOnScreen(ints);
                 float rawX = event.getX();
                 float rawY = event.getY();
-                boolean isInX = rawX >= ints[0] && rawX <= ints[0] + thumbView[0].getWidth();
-                boolean isInY = rawY >= ints[1] && rawY <= ints[1] + thumbView[0].getHeight();
-                if (event.getAction() == MotionEvent.ACTION_DOWN)
-                    Log.d(TAG, String.format("addOnTouchEventListener: %d, %d | %d, %d || %s, %s", (int) rawX, (int) rawY, ints[0], ints[1], isInX, isInY));
+                boolean isInX = rawX >= ints[0] && rawX <= ints[0] + thumbView.getWidth();
+                boolean isInY = rawY >= ints[1] && rawY <= ints[1] + thumbView.getHeight();
+
+                if (!smoothScroll && !blocked[0] && event.getAction() == MotionEvent.ACTION_UP) {
+                    startResetThumbOffsetAnimation();
+                }
+
+//                if (event.getAction() == MotionEvent.ACTION_DOWN)
+//                    Log.d(TAG, String.format("addOnTouchEventListener: %d, %d | %d, %d || %s, %s", (int) rawX, (int) rawY, ints[0], ints[1], isInX, isInY));
                 if ((event.getAction() == MotionEvent.ACTION_DOWN && isInX && isInY) || (event.getAction() != MotionEvent.ACTION_DOWN && !blocked[0])) {
                     blocked[0] = false;
                     return onTouchEvent.test(event);
                 } else
                     blocked[0] = true;
-                String BREAKPOINT = null;
                 return false;
             }
         };
@@ -151,38 +181,118 @@ public class FastScrollRecyclerViewHelper implements FastScroller.ViewHelper {
 
     @Override
     public int getScrollRange() {
-        int itemCount = getItemCount();
-        if (itemCount == 0) {
-            return 0;
-        }
-        int itemHeight = getItemHeight();
-        if (itemHeight == 0) {
-            return 0;
-        }
-        return mView.getPaddingTop() + itemCount * itemHeight + mView.getPaddingBottom();
+        if (scrollRange == null) {
+            return getItemHeight() * getItemCount();
+        } else
+            return scrollRange[0];
     }
 
+    private int getItemCount() {
+        int count;
+        if (heightList == null)
+            count = mView.getAdapter().getItemCount();
+        else
+            count = heightList[0].size();
+        LinearLayoutManager layoutManager = customRecycler.getLayoutManager();
+        if (layoutManager instanceof GridLayoutManager)
+            count /= ((GridLayoutManager) layoutManager).getSpanCount();
+        return count;
+    }
+
+    int prev;
     @Override
     public int getScrollOffset() {
-        int firstItemPosition = getFirstItemPosition();
+        LinearLayoutManager layoutManager = customRecycler.getLayoutManager();
+        int position = layoutManager.findFirstVisibleItemPosition();
+        int firstItemPosition = position = getFirstItemPosition();
         if (firstItemPosition == RecyclerView.NO_POSITION) {
             return 0;
         }
-        int itemHeight = getItemHeight();
         int firstItemTop = getFirstItemOffset();
-        return mView.getPaddingTop() + firstItemPosition * itemHeight - firstItemTop;
+        int columns = 1;
+        if (layoutManager instanceof GridLayoutManager)
+            columns = ((GridLayoutManager) layoutManager).getSpanCount();
+//        Log.d(TAG, "getScrollOffset: " + position + " | " + firstItemTop + " | " + columns);
+        int sum;
+        if (heightList == null)
+            sum = getItemHeight() * position;
+        else
+            sum = heightList[0].subList(0, position).stream().mapToInt(Integer::intValue).sum();
+        int i = mView.getPaddingTop() + sum - firstItemTop  + thumbOffset;
+//        if (i != prev) {
+////            Log.d(TAG, String.format("getScrollOffset: %d", i - prev));
+////            Log.d(TAG, String.format("getScrollOffset: %d | %d | %d\n", sum, firstItemTop, thumbOffset));
+//            prev = i;
+//        }
+        return i;
     }
 
     @Override
     public void scrollTo(int offset) {
-        // Stop any scroll in progress for RecyclerView.
         mView.stopScroll();
-        offset -= mView.getPaddingTop();
-        int itemHeight = getItemHeight();
-        // firstItemPosition should be non-negative even if paddingTop is greater than item height.
-        int firstItemPosition = Math.max(0, offset / itemHeight);
-        int firstItemTop = firstItemPosition * itemHeight - offset;
-        scrollToPositionWithOffset(firstItemPosition, firstItemTop);
+        int i = 0;
+        int size;
+        boolean isLast;
+        LinearLayoutManager layoutManager = customRecycler.getLayoutManager();
+        if (heightList == null) {
+            int columns = 1;
+            if (layoutManager instanceof GridLayoutManager)
+                columns = ((GridLayoutManager) layoutManager).getSpanCount();
+
+            int itemHeight = getItemHeight();
+            size = getItemCount();
+            for (; i < size; i++) {
+                if (offset - itemHeight < 0)
+                    break;
+                else
+                    offset -= itemHeight;
+            }
+            isLast = layoutManager.findLastVisibleItemPosition() == size - 1;// && offset > itemHeight / 2;
+//            Log.d(TAG, String.format("scrollTo: %d | %d | %s", layoutManager.findLastVisibleItemPosition(), size-1,  isLast));
+            thumbOffset = smoothScroll || isLast ? 0 : (offset /*+  itemHeight * (i % columns)*/);
+            layoutManager.scrollToPositionWithOffset(i * columns, smoothScroll || isLast ? -offset : 0);
+//            Log.d(TAG, String.format("scrollTo: %d | %d", i, thumbOffset));
+
+        } else {
+            size = getItemCount();
+            Integer itemHeight = 0;
+            for (; i < size; i++) {
+                itemHeight = heightList[0].get(i);
+                if (offset - itemHeight < 0)
+                    break;
+                else
+                    offset -= itemHeight;
+            }
+            isLast = layoutManager.findLastVisibleItemPosition() == size - 1;// && offset > itemHeight / 2;
+
+            thumbOffset = smoothScroll || isLast ? 0 : offset;
+            layoutManager.scrollToPositionWithOffset(i, smoothScroll || isLast ? -offset : 0);
+        }
+    }
+
+    private void startResetThumbOffsetAnimation() {
+        if (thumbView != null && thumbOffset > 0 && onPreDraw != null) {
+            int startOffset = thumbOffset;
+            Animation a = new Animation() {
+                @Override
+                protected void applyTransformation(float interpolatedTime, Transformation t) {
+                    if (interpolatedTime == 1) {
+                        thumbOffset = 0;
+                    } else {
+                        thumbOffset = startOffset - (int) (startOffset * interpolatedTime);
+                        onPreDraw.run();
+                    }
+                }
+
+                @Override
+                public boolean willChangeBounds() {
+                    return true;
+                }
+            };
+
+            a.setDuration(125);
+            thumbView.startAnimation(a);
+        }
     }
 
     @Nullable
@@ -203,22 +313,6 @@ public class FastScrollRecyclerViewHelper implements FastScroller.ViewHelper {
             return null;
         }
         return popupTextProvider.getPopupText(position);
-    }
-
-    private int getItemCount() {
-        LinearLayoutManager linearLayoutManager = getVerticalLinearLayoutManager();
-        if (linearLayoutManager == null) {
-            return 0;
-        }
-        int itemCount = linearLayoutManager.getItemCount();
-        if (itemCount == 0) {
-            return 0;
-        }
-        if (linearLayoutManager instanceof GridLayoutManager) {
-            GridLayoutManager gridLayoutManager = (GridLayoutManager) linearLayoutManager;
-            itemCount = (itemCount - 1) / gridLayoutManager.getSpanCount() + 1;
-        }
-        return itemCount;
     }
 
     private int getItemHeight() {

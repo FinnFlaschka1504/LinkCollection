@@ -19,6 +19,7 @@ import android.text.SpannableStringBuilder;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
 import android.transition.TransitionManager;
+import android.util.Pair;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -69,6 +70,7 @@ import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomScrollGallary.CustomGlideImageLoader;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomScrollGallary.CustomVideoLoader;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.FastScrollRecyclerViewHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller;
@@ -92,6 +94,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import me.zhanghai.android.fastscroll.FastScroller;
 import me.zhanghai.android.fastscroll.FastScrollerBuilder;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
@@ -582,11 +585,6 @@ public class MediaActivity extends AppCompatActivity {
 
 //        new RecyclerViewFastScroller(this)
 //                .set
-        new FastScrollerBuilder(recyclerView)
-                .setThumbDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_thumb)))
-                .setTrackDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_track)))
-                .setPadding(0, 20, 0, 50)
-                .build();
 
         mediaRecycler = new CustomRecycler<MultiSelectHelper.Selectable<Media>>(this, recyclerView)
                 .addOptionalModifications(customRecycler -> selectHelper.customRecycler = customRecycler)
@@ -628,6 +626,13 @@ public class MediaActivity extends AppCompatActivity {
                 .setRowOrColumnCount(recyclerMetrics.first)
                 .generate();
 
+        FastScroller[] fastScroller = {null};
+        fastScroller[0] = new FastScrollerBuilder(recyclerView)
+                .setThumbDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_thumb)))
+                .setTrackDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_track)))
+                .setPadding(0, 20, 0, 50)
+                .setViewHelper(new FastScrollRecyclerViewHelper(mediaRecycler, fastScroller, false, null))
+                .build();
 
         recyclerView.addOnItemTouchListener(dragSelectTouchListener);
     }

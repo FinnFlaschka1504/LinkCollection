@@ -73,9 +73,10 @@ import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAutoCompleteAdapter;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.ImageAdapterItem;
 import com.finn.androidUtilities.CustomList;
+import com.finn.androidUtilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.FastScrollRecyclerViewHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.MinDimensionLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -108,6 +109,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import me.zhanghai.android.fastscroll.FastScroller;
 import me.zhanghai.android.fastscroll.FastScrollerBuilder;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
@@ -1022,7 +1024,7 @@ public class VideoActivity extends AppCompatActivity {
         RecyclerView recycler = findViewById(R.id.recycler);
         customRecycler_VideoList = new CustomRecycler<Video>(this, recycler)
                 .setItemLayout(R.layout.list_item_video)
-                .setGetActiveObjectList(() -> {
+                .setGetActiveObjectList((customRecycler) -> {
                     List<Video> filteredList = sortList(filterList());
                     TextView noItem = findViewById(R.id.no_item);
                     String text = videos_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche";
@@ -1174,13 +1176,14 @@ public class VideoActivity extends AppCompatActivity {
                 .setOnLongClickListener((customRecycler, view, object, index) -> {
                     addOrEditDialog = showEditOrNewDialog(object).first;
                 })
-                .hideDivider()
                 .generate();
 
-        new FastScrollerBuilder(recycler)
+        FastScroller[] fastScroller = {null};
+        fastScroller[0] = new FastScrollerBuilder(customRecycler_VideoList.getRecycler())
                 .setThumbDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_thumb)))
                 .setTrackDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_track)))
                 .setPadding(0, 20, 0, 50)
+                .setViewHelper(new FastScrollRecyclerViewHelper(customRecycler_VideoList, fastScroller, false, null))
                 .build();
 
 //        View trackView = findViewById(R.id.trackView);

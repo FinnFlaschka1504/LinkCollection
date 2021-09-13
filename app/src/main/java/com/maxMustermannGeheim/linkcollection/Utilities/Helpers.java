@@ -1623,7 +1623,13 @@ public class Helpers {
                     EditText editText = customDialog.findViewById(editTextId);
                     if (editText != null) {
                         editText.setText(s);
-                        return customDialog1 -> ADVANCED_SEARCH_CRITERIA_NAME + ":" + editText.getText().toString();
+                        return customDialog1 -> {
+                            String text = editText.getText().toString();
+                            if (CustomUtility.stringExists(text))
+                                return ADVANCED_SEARCH_CRITERIA_NAME + ":" + text;
+                            else
+                                return null;
+                        };
                     }
                     return null;
                 });

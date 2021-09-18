@@ -286,7 +286,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     return filteredList;
                 })
 
-                .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper<Knowledge>(R.layout.list_item_knowledge, (customRecycler1, itemView, knowledge, expanded) -> {
+                .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper<Knowledge>(R.layout.list_item_knowledge, (customRecycler1, itemView, knowledge, expanded, index) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_knowledge_title)).setText(knowledge.getName());
 
                     TextView listItem_knowledge_content = itemView.findViewById(R.id.listItem_knowledge_content);
@@ -620,8 +620,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     itemList.addAll(objectList);
 //                    itemRecycler.reload();
                 }, true)
-                .setSetItemContent((customRecycler, itemView, item) -> {
-                    int index = customRecycler.getObjectList().indexOf(item);
+                .setSetItemContent((customRecycler, itemView, item, index) -> {
                     CustomList<Integer> thisPosList = new CustomList<>(posList).add(new Integer[]{index});
 
 //                    ((TextView) itemView.findViewById(R.id.listItem_knowledgeList_marker)).setText(thisPosList.stream().map(String::valueOf).collect(Collectors.joining("-")));
@@ -917,7 +916,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .setObjectList(itemList)
                 .hideOverscroll()
                 .setItemLayout(R.layout.list_item_knowledge_list_text)
-                .setSetItemContent((customRecycler2, itemView1, item) -> {
+                .setSetItemContent((customRecycler2, itemView1, item, index) -> {
 
                     ((TextView) itemView1.findViewById(R.id.listItem_knowledgeList_text)).setText(applyFormatting_text(item.getName()));
 
@@ -1367,7 +1366,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                                 view.findViewById(R.id.dialog_sources_noSources).setVisibility(sources.isEmpty() ? View.VISIBLE : View.GONE);
                                 return sources;
                             })
-                            .setSetItemContent((customRecycler, itemView, nameUrlPair) -> {
+                            .setSetItemContent((customRecycler, itemView, nameUrlPair, index) -> {
                                 ((TextView) itemView.findViewById(R.id.listItem_source_name)).setText(nameUrlPair.get(0));
                                 ((TextView) itemView.findViewById(R.id.listItem_source_content)).setText(nameUrlPair.get(1));
                             })

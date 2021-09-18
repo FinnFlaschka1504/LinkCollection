@@ -362,7 +362,7 @@ public class CollectionActivity extends AppCompatActivity {
                     return filteredList;
 
                 })
-                .setSetItemContent((customRecycler, itemView, collection) -> {
+                .setSetItemContent((customRecycler, itemView, collection, index) -> {
                     String imagePath = collection.getImagePath();
                     ImageView thumbnail = itemView.findViewById(R.id.listItem_collection_thumbnail);
                     if (Utility.stringExists(imagePath)) {
@@ -452,7 +452,7 @@ public class CollectionActivity extends AppCompatActivity {
                                 customDialog.findViewById(R.id.dialogDetail_collection_noVideos).setVisibility(videoList.isEmpty() ? View.VISIBLE : View.GONE);
                                 return videoList;
                             })
-                            .setSetItemContent((customRecycler1, itemView, video) -> {
+                            .setSetItemContent((customRecycler1, itemView, video, index) -> {
                                 String imagePath = video.getImagePath();
                                 ImageView thumbnail = itemView.findViewById(R.id.listItem_collectionVideo_thumbnail);
                                 if (Utility.stringExists(imagePath)) {
@@ -571,7 +571,7 @@ public class CollectionActivity extends AppCompatActivity {
                                             .setView(new CustomRecycler<List<String>>(this)
                                                     .setItemLayout(R.layout.list_item_collection_video)
                                                     .setObjectList(filmList)
-                                                    .setSetItemContent((customRecycler1, itemView, detailList) -> {
+                                                    .setSetItemContent((customRecycler1, itemView, detailList, index) -> {
                                                         Utility.applyToAllViews((ViewGroup) itemView, View.class, view -> {
                                                             view.setAlpha(database.videoMap.values().stream().anyMatch(video -> Objects.equals(video.getImdbId(), detailList.get(0))) ? 1f : 0.6f);
                                                         });
@@ -600,7 +600,7 @@ public class CollectionActivity extends AppCompatActivity {
                                                                 .setItemLayout(R.layout.list_item_select)
                                                                 .setMultiClickEnabled(true)
                                                                 .setObjectList(notImprtedList)
-                                                                .setSetItemContent((customRecycler, itemView, detailList) -> {
+                                                                .setSetItemContent((customRecycler, itemView, detailList, index) -> {
                                                                     ImageView thumbnail = itemView.findViewById(R.id.selectList_thumbnail);
                                                                     String imagePath = detailList.get(2);
 

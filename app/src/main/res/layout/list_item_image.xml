@@ -6,7 +6,7 @@
     android:layout_height="wrap_content">
 
     <ImageView
-        android:id="@+id/listItem_image_imgaeView"
+        android:id="@+id/listItem_image_imageView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_margin="2dp"

@@ -490,5 +490,17 @@ public interface ParentClass_Tree {
         list.add(this);
         return list;
     }
+
+    // ---------------
+
+    default <R> R reduce(R initialValue, CustomUtility.DoubleGenericReturnInterface<R, ParentClass_Tree, R> reducer) {
+        final R[] value = (R[]) new Object[] {initialValue};
+        _getAll().stream().forEach(parentClass_tree -> {
+            value[0] = reducer.run(initialValue, parentClass_tree);
+        });
+
+        return value[0];
+    }
+
     //  <------------------------- Convenience -------------------------
 }

@@ -1,6 +1,5 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Content.Media;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -22,7 +21,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -68,7 +66,6 @@ import java.util.stream.Collectors;
 
 import me.zhanghai.android.fastscroll.FastScroller;
 import me.zhanghai.android.fastscroll.FastScrollerBuilder;
-import me.zhanghai.android.fastscroll.Predicate;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
@@ -249,7 +246,7 @@ public class MediaEventActivity extends AppCompatActivity {
         // ToDo: Versuchen Recycler diskret zu scrollen
         RecyclerView recyclerView = findViewById(R.id.recycler);
 
-        final List<Integer>[] heightList = new List[]{new ArrayList<>()};
+        final CustomList<Integer>[] heightList = new CustomList[]{new CustomList<>()};
         final int[] scrollRange = {0};
 
         eventRecycler = new CustomRecycler<MediaEvent>(this, recyclerView)
@@ -271,6 +268,7 @@ public class MediaEventActivity extends AppCompatActivity {
                                     ._enableDummy()
                                     .setDescription(parent.getDescription())
                                     .setBeginning(parent.getBeginning())
+                                    // ToDo: das an content anpassen
                                     .setEnd(parent.getEnd())
                                     .setMediaIdList(parent.getMediaIdList()));
                     }
@@ -285,11 +283,11 @@ public class MediaEventActivity extends AppCompatActivity {
                     SpannableStringBuilder builder = new SpannableStringBuilder().append(elementCountText).append("\n", new RelativeSizeSpan(0.5f), Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
                     elementCount.setText(builder);
 
-                    heightList[0] = filteredList.stream().map(MediaEvent::_getHeight).collect(Collectors.toList());
+                    heightList[0] = filteredList.stream().map(MediaEvent::_getHeight).collect(Collectors.toCollection(CustomList::new));;
                     scrollRange[0] = heightList[0].stream().mapToInt(Integer::intValue).sum();
                     return filteredList;
                 })
-                .setSetItemContent((customRecycler, itemView, mediaEvent) -> {
+                .setSetItemContent((customRecycler, itemView, mediaEvent, index) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_mediaEvent_title)).setText(mediaEvent.getName());
 
                     String dateString = null;
@@ -313,7 +311,7 @@ public class MediaEventActivity extends AppCompatActivity {
                         if (!event.getChildren().isEmpty())
                             event.getChildren().forEach(parentClass_tree -> list.add((ParentClass) parentClass_tree));
                         if (!event.getMediaIdList().isEmpty())
-                            list.addAll(Utility.idToParentClassList(CategoriesActivity.CATEGORIES.MEDIA, event.getMediaIdList()));
+                            list.addAll(Utility.findAllObjectById(CategoriesActivity.CATEGORIES.MEDIA, event.getMediaIdList()));
                         return list;
                     };
 
@@ -351,12 +349,12 @@ public class MediaEventActivity extends AppCompatActivity {
                     new CustomRecycler<ParentClass>(this, contentRecycler)
                             .setItemLayout(R.layout.empty_layout)
                             .setObjectList(flattenMediaEvent.run(mediaEvent))
-                            .setSetItemContent((customRecycler1, itemView1, parentClass) -> {
+                            .setSetItemContent((customRecycler1, itemView1, parentClass, index1) -> {
                                 View view = null;
                                 if (parentClass instanceof Media) {
                                     view = LayoutInflater.from(this).inflate(R.layout.list_item_image, (ViewGroup) itemView1, false);
                                     Media media = (Media) parentClass;
-                                    MediaActivity.SelectMediaHelper.loadPathIntoImageView(media.getImagePath(), view, 99);
+                                    MediaActivity.SelectMediaHelper.loadPathIntoImageView(media.getImagePath(), view, CustomUtility.dpToPx(99), 1);
                                 } else if (parentClass instanceof MediaEvent) {
                                     view = LayoutInflater.from(this).inflate(R.layout.list_item_media_event_compact, (ViewGroup) itemView1, false);
                                     List<ParentClass> list = flattenMediaEvent.run((MediaEvent) parentClass);
@@ -406,20 +404,20 @@ public class MediaEventActivity extends AppCompatActivity {
                                     onClickListener.setAccessible(true);
                                     onLongClickListener.setAccessible(true);
                                     customRecycler1
-                                            .setOnClickListener((customRecycler2, itemView1, parentClass, index) -> {
+                                            .setOnClickListener((customRecycler2, itemView1, parentClass, index1) -> {
                                                 try {
                                                     CustomRecycler.OnClickListener<ParentClass> listener = (CustomRecycler.OnClickListener<ParentClass>) onClickListener.get(customRecycler);
                                                     if (listener != null)
-                                                        listener.runOnClickListener(null, itemView, mediaEvent, -1);
+                                                        listener.runOnClickListener(null, itemView, mediaEvent, index1);
                                                 } catch (IllegalAccessException ignored) {
 
                                                 }
                                             })
-                                            .setOnLongClickListener((customRecycler2, view, parentClass, index) -> {
+                                            .setOnLongClickListener((customRecycler2, view, parentClass, index1) -> {
                                                 try {
                                                     CustomRecycler.OnLongClickListener<ParentClass> listener = (CustomRecycler.OnLongClickListener<ParentClass>) onLongClickListener.get(customRecycler);
                                                     if (listener != null)
-                                                        listener.runOnLongClickListener(null, itemView, mediaEvent, -1);
+                                                        listener.runOnLongClickListener(null, itemView, mediaEvent, index1);
                                                 } catch (IllegalAccessException ignored) {
                                                 }
                                             });
@@ -468,18 +466,18 @@ public class MediaEventActivity extends AppCompatActivity {
 
     /**  ------------------------- Edit ------------------------->  */
     private CustomDialog showEditDialog(@Nullable MediaEvent oldEvent) {
-        if (!Utility.isOnline(this))
-            return null;
+//        if (!Utility.isOnline(this))
+//            return null;
 
         removeFocusFromSearch();
 
         boolean isAdd = oldEvent == null;
         MediaEvent newEvent = isAdd ? new MediaEvent("") : (MediaEvent) oldEvent.clone();
-        CustomList<Media> selectedMediaList =  newEvent.getMediaIdList().isEmpty() ? new CustomList<>() : (CustomList<Media>) Utility.idToParentClassList(CategoriesActivity.CATEGORIES.MEDIA, newEvent.getMediaIdList());
+        CustomList<Media> selectedMediaList =  newEvent.getMediaIdList().isEmpty() ? new CustomList<>() : (CustomList<Media>) Utility.findAllObjectById(CategoriesActivity.CATEGORIES.MEDIA, newEvent.getMediaIdList());
 
         Date from[] = {newEvent.getBeginning()};
         Date to[] = {newEvent.getEnd()};
-        long timeZoneOffset = Utility.getTimezoneOffsetMillis();
+        long timeZoneOffset = -Utility.getTimezoneOffsetMillis();
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
 
         String dialogTitle = "Ein " + singular + (isAdd ? " Hinzufügen" : " Bearbeiten");
@@ -515,6 +513,100 @@ public class MediaEventActivity extends AppCompatActivity {
                     helper
                             .validate(new TextInputLayout[]{null});
 
+
+                    // ---------------
+
+                    TextView dateText = customDialog.findViewById(R.id.dialog_editMediaEvent_date_text);
+                    final Pair<Date, Date>[] minMaxDatePair = new Pair[]{null};
+                    CustomUtility.GenericReturnOnlyInterface<Pair<Date,Date>> getMinMaxDatePair = () -> {
+                        CustomList<Date> dateList = newEvent.reduce(new CustomList<>(), (dates, parentClass_tree) -> {
+                            dates.addAll(((CustomList<Media>) Utility.findAllObjectById(CategoriesActivity.CATEGORIES.MEDIA, ((MediaEvent) parentClass_tree).getMediaIdList())).map(media -> {
+                                if (CustomUtility.stringExists(media.getImagePath())) {
+                                    return new Date(new File(media.getImagePath()).lastModified());
+                                } else
+                                    return null;
+                            }).filter(Objects::nonNull, false));
+                            return dates;
+                        });
+
+                        Date smallest = CustomUtility.isNullReturnOrElse(dateList.getSmallest(), null, CustomUtility::removeTime);
+                        Date biggest = CustomUtility.isNullReturnOrElse(dateList.getBiggest(), null, CustomUtility::removeTime);
+
+                        if (smallest == null && biggest == null)
+                            return minMaxDatePair[0] = null;
+                        else if (Objects.equals(smallest, biggest))
+                            return minMaxDatePair[0] = Pair.create(smallest, null);
+                        else
+                            return minMaxDatePair[0] = Pair.create(smallest, biggest);
+
+
+                    };
+                    Runnable setClickableTextView = () -> {
+                        getMinMaxDatePair.run();
+                        dateText.setEnabled(minMaxDatePair[0] != null && !Objects.equals(minMaxDatePair[0], Pair.create(from[0], to[0])));
+                    };
+                    Runnable setDateRangeTextView = () -> {
+                        if (from[0] != null && to[0] != null) {
+                            dateText.setText(String.format("%s - %s", dateFormat.format(from[0]), dateFormat.format(to[0])));
+                        } else if (from[0] != null) {
+                            dateText.setText(dateFormat.format(from[0]));
+                        } else {
+                            dateText.setText("Nicht ausgewählt");
+                        }
+                        setClickableTextView.run();
+                    };
+
+
+                    dateText.setOnClickListener(v -> {
+                        CustomList<String> dateNameList = new CustomList<>();
+                        if (minMaxDatePair[0].first != null)
+                            dateNameList.add(dateFormat.format(minMaxDatePair[0].first));
+                        if (minMaxDatePair[0].second != null)
+                            dateNameList.add(dateFormat.format(minMaxDatePair[0].second));
+
+                        CustomDialog.Builder(this)
+                                .setTitle((dateNameList.size() > 1 ? "Daten" : "Datum") + " Übernehmen")
+                                .setText(new com.finn.androidUtilities.Helpers.SpannableStringHelper().append(dateNameList.size() > 1 ? "Den neuen Zeitraum" : "Das neue Datum").append(" übernehmen?\n").appendBold(String.join(" - ", dateNameList)).get())
+                                .addOptionalModifications(customDialog1 -> customDialog1.getTextTextView().setTextAlignment(View.TEXT_ALIGNMENT_CENTER))
+                                .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
+                                .addButton("Übernehmen", customDialog1 -> {
+                                    from[0] = minMaxDatePair[0].first;
+                                    to[0] = minMaxDatePair[0].second;
+                                    setDateRangeTextView.run();
+                                    Toast.makeText(this, "Übernommen", Toast.LENGTH_SHORT).show();
+                                })
+                                .markLastAddedButtonAsActionButton()
+                                .show();
+                    });
+                    setDateRangeTextView.run();
+
+                    MaterialDatePicker.Builder<Pair<Long, Long>> builder = MaterialDatePicker.Builder.dateRangePicker();
+                    builder.setTitleText("Zeitraum Auswählen");
+
+                    view.findViewById(R.id.dialog_editMediaEvent_date_select).setOnClickListener(v -> {
+                        if (from[0] != null && to[0] != null) {
+                            builder.setSelection(Pair.create(from[0].getTime() - timeZoneOffset, to[0].getTime() - timeZoneOffset));
+                            CustomUtility.logD(TAG, String.format("showEditDialog: d %s | %s | %s", Utility.formatDate("dd.MM HH:mm:ss:SSS", from[0]), Utility.formatDate("dd.MM HH:mm:ss:SSS", to[0]), Utility.formatDate("HH:mm:ss:SSS", new Date(timeZoneOffset))));
+                        } else if (from[0] != null) {
+                            builder.setSelection(Pair.create(from[0].getTime() - timeZoneOffset, from[0].getTime() - timeZoneOffset));
+                            CustomUtility.logD(TAG, String.format("showEditDialog: e %s | %s", Utility.formatDate("dd.MM HH:mm:ss:SSS", from[0]), Utility.formatDate("HH:MM:ss:SSS", new Date(timeZoneOffset))));
+                        }
+                        MaterialDatePicker<Pair<Long, Long>> picker = builder.build();
+
+                        picker.addOnPositiveButtonClickListener(selection -> {
+                            from[0] = new Date(selection.first + timeZoneOffset);
+                            if (!Objects.equals(selection.first, selection.second))
+                                to[0] = new Date(selection.second + timeZoneOffset);
+                            else
+                                to[0] = null;
+                            setDateRangeTextView.run();
+                            CustomUtility.logD(TAG, String.format("showEditDialog: a %s | %s | %s", Utility.formatDate("dd.MM HH:mm:ss:SSS", new Date(selection.first)), Utility.formatDate("dd.MM HH:mm:ss:SSS", new Date(selection.second)), Utility.formatDate("HH:mm:ss:SSS", new Date(timeZoneOffset))));
+                        });
+                        picker.show(((AppCompatActivity) this).getSupportFragmentManager(), picker.toString());
+                    });
+
+                    // ---------------
+
                     FrameLayout selectedMediaParent = view.findViewById(R.id.dialog_editMediaEvent_selectParent);
                     MediaActivity.SelectMediaHelper.Builder(this, selectedMediaList)
                             .setParentView(selectedMediaParent)
@@ -528,51 +620,15 @@ public class MediaEventActivity extends AppCompatActivity {
                                         if (list != null) {
                                             CustomList<Media> mediaList = list.stream().map(s -> (Media) Utility.findObjectById(CategoriesActivity.CATEGORIES.MEDIA, s)).collect(Collectors.toCollection(CustomList::new));
                                             selectedMedia.replaceWith(mediaList);
+                                            newEvent.setMediaIdList(mediaList.map(com.finn.androidUtilities.ParentClass::getUuid));
                                             onSelected.run();
                                             helper.validate(new TextInputLayout[]{null});
+                                            setClickableTextView.run();
                                         }
                                     }
                                 });
                             })
                             .build();
-
-                    // ---------------
-
-                    TextView dateText = customDialog.findViewById(R.id.dialog_editMediaEvent_date_text);
-                    Runnable setDateRangeTextView = () -> {
-                        if (from[0] != null && to[0] != null) {
-                            dateText.setText(String.format("%s - %s", dateFormat.format(from[0]), dateFormat.format(to[0])));
-                        } else if (from[0] != null) {
-                            dateText.setText(dateFormat.format(from[0]));
-                        } else {
-                            dateText.setText("Nicht ausgewählt");
-                        }
-                    };
-                    setDateRangeTextView.run();
-
-                    MaterialDatePicker.Builder<Pair<Long, Long>> builder = MaterialDatePicker.Builder.dateRangePicker();
-                    builder.setTitleText("Zeitraum Auswählen");
-                    if (from[0] != null && to[0] != null) {
-                        builder.setSelection(Pair.create(from[0].getTime() - timeZoneOffset, to[0].getTime() - timeZoneOffset));
-                    } else if (from[0] != null) {
-                        builder.setSelection(Pair.create(from[0].getTime() - timeZoneOffset, from[0].getTime() - timeZoneOffset));
-                    }
-                    MaterialDatePicker<Pair<Long, Long>> picker = builder.build();
-
-                    picker.addOnPositiveButtonClickListener(selection -> {
-                        String BREAKPOINT = null;
-                        from[0] = new Date(selection.first + timeZoneOffset);
-                        if (!Objects.equals(selection.first, selection.second))
-                            to[0] = new Date(selection.second + timeZoneOffset);
-                        else
-                            to[0] = null;
-                        setDateRangeTextView.run();
-                    });
-
-
-                    view.findViewById(R.id.dialog_editMediaEvent_date_select).setOnClickListener(v -> {
-                        picker.show(((AppCompatActivity) this).getSupportFragmentManager(), picker.toString());
-                    });
                 })
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .addOptionalModifications(customDialog -> {

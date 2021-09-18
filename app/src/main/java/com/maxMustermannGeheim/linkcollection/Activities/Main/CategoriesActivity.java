@@ -432,7 +432,7 @@ public class CategoriesActivity extends AppCompatActivity {
                     return filteredList;
 
                 })
-                .setSetItemContent((customRecycler, itemView, parentClassIntegerPair) -> {
+                .setSetItemContent((customRecycler, itemView, parentClassIntegerPair, index) -> {
                     ParentClass parentClass = parentClassIntegerPair.first;
                     ((TextView) itemView.findViewById(R.id.listItem_catigoryItem_name)).setText(parentClass.getName());
 
@@ -516,7 +516,7 @@ public class CategoriesActivity extends AppCompatActivity {
         customRecycler = new CustomRecycler<Pair<ParentClass, Integer>>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.empty_layout)
                 .setGetActiveObjectList((customRecycler) -> new CustomList<>(Pair.create(null, null)))
-                .setSetItemContent((customRecycler1, itemView, parentClassIntegerPair) -> {
+                .setSetItemContent((customRecycler1, itemView, parentClassIntegerPair, index) -> {
                     Pair<TreeNode.TreeNodeClickListener, TreeNode.TreeNodeLongClickListener> clickListenerPair = Pair.create((node, value) -> {
                         startActivityForResult(new Intent(this, category.getSearchIn())
                                         .putExtra(EXTRA_SEARCH, escapeForSearchExtra(((ParentClass) value).getName()))

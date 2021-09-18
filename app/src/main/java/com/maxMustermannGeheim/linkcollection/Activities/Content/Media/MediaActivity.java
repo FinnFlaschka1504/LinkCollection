@@ -6,6 +6,8 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.database.ContentObserver;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.media.MediaPlayer;
@@ -19,7 +21,6 @@ import android.text.SpannableStringBuilder;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
 import android.transition.TransitionManager;
-import android.util.Pair;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -27,6 +28,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
@@ -42,7 +44,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
@@ -63,6 +64,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.BuildConfig;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaEvent;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tree;
 import com.maxMustermannGeheim.linkcollection.R;
@@ -73,7 +75,6 @@ import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.FastScrollRecyclerViewHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
-import com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller;
 import com.veinhorn.scrollgalleryview.HackyViewPager;
 import com.veinhorn.scrollgalleryview.MediaInfo;
 import com.veinhorn.scrollgalleryview.ScrollGalleryView;
@@ -100,6 +101,8 @@ import me.zhanghai.android.fastscroll.FastScrollerBuilder;
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
 public class MediaActivity extends AppCompatActivity {
+    private static final String TAG = "MediaActivity";
+
     public static final String EXTRA_SELECT_MODE = "EXTRA_SELECT_MODE";
     private final String ADVANCED_SEARCH_CRITERIA__PERSON = "p";
     private final String ADVANCED_SEARCH_CRITERIA__CATEGORY = "c";
@@ -221,17 +224,27 @@ public class MediaActivity extends AppCompatActivity {
 
             onSwipeTouchListener = new Utility.OnSwipeTouchListener(this) {
                 @Override
+                public boolean onSwipeTop() {
+                    View view = getCurrentViewFromViewPager(scrollGalleryView.getViewPager());
+                    if (view != null) {
+                        PhotoView photo = view.findViewById(R.id.photoView);
+                        if (photo.getScale() <= 1f)
+                            showDetailsDialog(getCurrentGalleryMedia());
+                    } else
+                        showDetailsDialog(getCurrentGalleryMedia());
+                    return false;
+                }
+
+                @Override
                 public boolean onSwipeBottom() {
                     View view = getCurrentViewFromViewPager(scrollGalleryView.getViewPager());
                     if (view != null) {
                         PhotoView photo = view.findViewById(R.id.photoView);
-                        float scale = photo.getScale();
-                        if (scale == 1)
+                        if (photo.getScale() <= 1f)
                             hideScrollGallery();
                     } else
                         hideScrollGallery();
                     return false;
-//                    return super.onSwipeBottom();
                 }
             };
 
@@ -582,10 +595,50 @@ public class MediaActivity extends AppCompatActivity {
             } else
                 selectables.forEach(mediaSelectable -> mediaSelectable.setSelected(false));
         };
+        /*
+        allMediaList = new CustomList<>(database.mediaMap.values());
+        CustomList<MultiSelectHelper.Selectable<Media>> collect = allMediaList.stream().map(MultiSelectHelper.Selectable::new).collect(Collectors.toCollection(CustomList::new));
 
-//        new RecyclerViewFastScroller(this)
-//                .set
+        CustomList<String> urls = new CustomList<>("https://www.anti-bias.eu/wp-content/uploads/2015/01/shutterstock_92612287-e1420280083718.jpg",
+                "https://povodu.ru/wp-content/uploads/2016/04/pochemu-korabl-derzitsa-na-vode.jpg",
+                "https://www.fotomagazin.de/sites/www.fotomagazin.de/files/styles/landing_lead_mobile/public/fm/2019/aufmacher_fotowettbewerb_haida_landschaft.jpg?itok=yk9rEzGY&timestamp=1562245157",
+                "https://upload.wikimedia.org/wikipedia/commons/a/af/Landschaft_in_Sachsen%2C_Bernsdorf..2H1A4651%D0%A6%D0%A8.jpg",
+                "https://i.pinimg.com/originals/22/7e/36/227e36c82a5341e4efdc9654e802dcdb.jpg",
+                "https://www.reisebüro-sasbachwalden.de/wp-content/uploads/2019/09/Indien1-1024x640.jpg",
+                "https://www.stuttgarter-nachrichten.de/media.media.eb344091-b684-4128-9817-606016cd9179.original1024.jpg",
+                "https://www.zg.ch/behoerden/baudirektion/arv/natur-landschaft/landschaft_block_1/@@images/cd95975d-c541-4d75-aefd-5e05bb252e68.jpeg"
+        );
 
+        mediaRecycler = new CustomRecycler<MultiSelectHelper.Selectable<Media>>(this, recyclerView)
+                .setItemLayout(R.layout.list_item_image)
+                .setObjectList(collect)
+                .setSetItemContent((customRecycler, itemView, player, index) -> {
+                    ImageView imageView = itemView.findViewById(R.id.listItem_image_imageView);
+                    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(475, 475);
+                    itemView.setLayoutParams(params);
+
+                    int index = customRecycler.getObjectList().indexOf(player);
+                    RequestOptions myOptions = new RequestOptions()
+                            .override(475, 275)
+                            .centerCrop();
+
+                    Glide.with(this)
+                            .load(urls.get(index % (urls.size())))
+//                            .apply(myOptions)
+                            .diskCacheStrategy(DiskCacheStrategy.NONE)
+                            .skipMemoryCache(true)
+                            .into(imageView);
+                })
+                .setRowOrColumnCount(3)
+                .generate();
+
+        mediaRecycler.getLayoutManager().scrollToPositionWithOffset(CustomUtility.randomInteger(25, 50), 0);
+
+        if (true)
+            return;
+        */
+
+        final int[] size = new int[1];
         mediaRecycler = new CustomRecycler<MultiSelectHelper.Selectable<Media>>(this, recyclerView)
                 .addOptionalModifications(customRecycler -> selectHelper.customRecycler = customRecycler)
                 .setItemLayout(R.layout.list_item_image)
@@ -596,19 +649,25 @@ public class MediaActivity extends AppCompatActivity {
 
                     TextView noItem = findViewById(R.id.no_item);
                     String text = media_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche";
-                    int size = filteredList.size();
+                    size[0] = filteredList.size();
 
-                    noItem.setText(size == 0 ? text : "");
-                    String elementCountText = size > 1 ? size + " Elemente" : (size == 1 ? "Ein" : "Kein") + " Element";
+                    noItem.setText(size[0] == 0 ? text : "");
+                    String elementCountText = size[0] > 1 ? size[0] + " Elemente" : (size[0] == 1 ? "Ein" : "Kein") + " Element";
 //                    String viewsCountText = (views > 1 ? views + " Episoden" : (views == 1 ? "Eine" : "Keine") + " Episode") + " angesehen";
                     SpannableStringBuilder builder = new SpannableStringBuilder().append(elementCountText).append("\n", new RelativeSizeSpan(0.5f), Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
                     elementCount.setText(builder);
 
                     return filteredList;
                 })
-                .setSetItemContent((customRecycler, itemView, mediaSelectable) -> {
-                    itemView.setLayoutParams(new FrameLayout.LayoutParams(recyclerMetrics.second, recyclerMetrics.second));
-                    SelectMediaHelper.loadPathIntoImageView(mediaSelectable.content.getImagePath(), itemView, recyclerMetrics.third);
+                .setSetItemContent((customRecycler, itemView, mediaSelectable, index) -> {
+                    FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(recyclerMetrics.second, recyclerMetrics.second);
+                    if (index < recyclerMetrics.first)
+                        params.setMargins(0, 7, 0, 0);
+                    else if (index + 1 >= size[0] - ((size[0] - 1) % recyclerMetrics.first))
+                        params.setMargins(0, 0, 0, 7);
+                    itemView.setLayoutParams(params);
+
+                    SelectMediaHelper.loadPathIntoImageView(mediaSelectable.content.getImagePath(), itemView, recyclerMetrics.second, 2d/3d);
 
                     itemView.findViewById(R.id.listItem_image_selected).setVisibility(mediaSelectable.isSelected() ? View.VISIBLE : View.GONE);
                     View fullScreenButton = itemView.findViewById(R.id.listItem_image_fullScreen);
@@ -633,6 +692,48 @@ public class MediaActivity extends AppCompatActivity {
                 .setPadding(0, 20, 0, 50)
                 .setViewHelper(new FastScrollRecyclerViewHelper(mediaRecycler, fastScroller, false, null))
                 .build();
+
+//        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+//            @Override
+//            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+//                super.onScrolled(recyclerView, dx, dy);
+////                Log.d(TAG, String.format("onScrolled: %d", recyclerView.computeVerticalScrollOffset()));
+//                Log.d(TAG, String.format("onScrolled: %d", mediaRecycler.getLayoutManager().findFirstVisibleItemPosition()));
+//            }
+//        });
+
+//        new Handler(Looper.myLooper()).postDelayed(() -> {
+//            int i = CustomUtility.randomInteger(25, 100);
+////            int y = 475 * (i / recyclerMetrics.first);
+//                    mediaRecycler.getLayoutManager().scrollToPositionWithOffset(i, 0);
+//            Log.d(TAG, String.format("loadRecycler: %d", i));
+////            Log.d(TAG, String.format("loadRecycler: %d | %d", i, y));
+////                    recyclerView.scrollTo(0, y);
+////            recyclerView.scrollBy(0, y);
+//        }, 500);
+
+//        if (true)
+//            return;
+
+        ArrayList<String> selectedIds = getIntent().getStringArrayListExtra(EXTRA_SELECT_MODE);
+        if (selectedIds != null && !selectedIds.isEmpty()) {
+//            Optional<MultiSelectHelper.Selectable<Media>> first = mediaRecycler.getObjectList().stream().filter(mediaSelectable -> selectedIds.contains(mediaSelectable.getContent().getUuid())).findFirst();
+//            if (first.isPresent()) {
+//
+//            }
+            mediaRecycler.getObjectList().stream().filter(mediaSelectable -> selectedIds.contains(mediaSelectable.getContent().getUuid())).findFirst().ifPresent(mediaSelectable -> {
+                int index = mediaRecycler.getObjectList().indexOf(mediaSelectable);
+//                Log.d(TAG, String.format("loadRecycler: %d", index));
+//                new Handler(Looper.myLooper()).postDelayed(() -> {
+//                    int y = 475 * (index / recyclerMetrics.first);
+                    mediaRecycler.getLayoutManager().scrollToPositionWithOffset(index, 0);
+//                    Log.d(TAG, String.format("loadRecycler: %d", y));
+//                    recyclerView.scrollTo(0, y);
+//                    recyclerView.scrollBy(0, y);
+//                }, 1000);
+//                mediaRecycler.scrollTo(index, false);
+            });
+        }
 
         recyclerView.addOnItemTouchListener(dragSelectTouchListener);
     }
@@ -757,7 +858,6 @@ public class MediaActivity extends AppCompatActivity {
                     }
 
                 })
-                // ToDo: ^^
                 .show();
     }
 
@@ -917,18 +1017,89 @@ public class MediaActivity extends AppCompatActivity {
             });
         }
 
-        public static void loadPathIntoImageView(String path, View view, int sizeDp) {
+
+        public static void loadPathIntoImageView(String path, View view, int sizePx, double scale) {
+            ImageView imageView = view.findViewById(R.id.listItem_image_imageView);
+            imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+
+            sizePx *= scale;
+
             Uri imageUri = Uri.fromFile(new File(path));
             RequestOptions myOptions = new RequestOptions()
-                    .override(CustomUtility.dpToPx(sizeDp), CustomUtility.dpToPx(sizeDp))
+                    .override(sizePx, sizePx)
                     .centerCrop();
 
-            ImageView imageView = view.findViewById(R.id.listItem_image_imgaeView);
             Glide.with(imageView.getContext())
                     .load(imageUri)
                     .error(R.drawable.ic_broken_image)
+//                    .diskCacheStrategy(DiskCacheStrategy.NONE)
+//                    .skipMemoryCache(true)
                     .apply(myOptions)
                     .into(imageView);
+//                    .into(new SimpleTarget<Bitmap>() {
+//                        @Override
+//                        public void onResourceReady(@NotNull Bitmap resource, Transition<? super Bitmap> transition) {
+//                            imageView.setImageBitmap(resource);
+//                        }
+//                    });
+//                    .listener(new RequestListener<Drawable>() {
+//                        @Override
+//                        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+//                            return false;
+//                        }
+//
+//                        @Override
+//                        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+////                            if (resource instanceof BitmapDrawable)
+////                                imageView.setImageBitmap(((BitmapDrawable) resource).getBitmap());
+////                            else if (resource instanceof GifDrawable)
+////                                imageView.setImageBitmap(((GifDrawable) resource).getFirstFrame());
+//////                            imageView.setImageDrawable(resource);
+//                            return false;
+//                        }
+//                    })
+//                    .into(new DrawableImageViewTarget(imageView) {
+//                        @Override
+//                        protected void setResource(@Nullable Drawable resource) {
+//                            super.setResource(resource);
+//                            Log.d(TAG, String.format("setResource: "));
+//                        }
+//                    });
+
+/*
+            Glide.with(imageView.getContext())
+                    .load(imageUri)
+                    .error(R.drawable.ic_broken_image)
+                    .diskCacheStrategy(DiskCacheStrategy.NONE)
+                    .skipMemoryCache(true)
+                    .apply(myOptions)
+                    .listener(new RequestListener<Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                            imageView.setImageBitmap(BitmapFactory.decodeResource(imageView.getContext().getResources(), R.drawable.simpsons_movie_poster));
+//                            imageView.setImageDrawable(resource);
+                            return true;
+                        }
+                    })
+                    .into(new DrawableImageViewTarget(new ImageView(imageView.getContext())) {
+                        @Override
+                        protected void setResource(@Nullable Drawable resource) {
+//                            super.setResource(resource);
+                        }
+                    });
+*/
+//                    .into(imageView);
+//            new Handler(Looper.myLooper()).postDelayed(() -> {
+//
+//
+//                // ToDo: pro reingeladenen Foto wird nach oben gescrollt
+//
+//            }, 2000);
 
             ImageView videoIndicator = view.findViewById(R.id.listItem_image_videoIndicator);
             if (Media.isVideo(path))
@@ -937,6 +1108,44 @@ public class MediaActivity extends AppCompatActivity {
                 videoIndicator.setVisibility(View.GONE);
 
 
+        }
+
+        public static int calculateInSampleSize(
+                BitmapFactory.Options options, int reqWidth, int reqHeight) {
+            // Raw height and width of image
+            final int height = options.outHeight;
+            final int width = options.outWidth;
+            int inSampleSize = 1;
+
+            if (height > reqHeight || width > reqWidth) {
+
+                final int halfHeight = height / 2;
+                final int halfWidth = width / 2;
+
+                // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+                // height and width larger than the requested height and width.
+                while ((halfHeight / inSampleSize) >= reqHeight
+                        && (halfWidth / inSampleSize) >= reqWidth) {
+                    inSampleSize *= 2;
+                }
+            }
+
+            return inSampleSize;
+        }
+
+        public static Bitmap decodeSampledBitmapFromResource(String pathName, int reqWidth, int reqHeight) {
+
+            // First decode with inJustDecodeBounds=true to check dimensions
+            final BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(pathName, options);
+
+            // Calculate inSampleSize
+            options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+
+            // Decode bitmap with inSampleSize set
+            options.inJustDecodeBounds = false;
+            return BitmapFactory.decodeFile(pathName, options);
         }
         //  <------------------------- Convenience -------------------------
 
@@ -963,8 +1172,8 @@ public class MediaActivity extends AppCompatActivity {
             selectedRecycler = new CustomRecycler<Media>(context, view.findViewById(R.id.fragment_selectMediaHelper_selection_recycler))
                     .setObjectList(selectedMedia)
                     .setItemLayout(R.layout.list_item_image)
-                    .setSetItemContent((customRecycler, itemView, media) -> {
-                        loadPathIntoImageView(media.getImagePath(), itemView, 120);
+                    .setSetItemContent((customRecycler, itemView, media, index) -> {
+                        loadPathIntoImageView(media.getImagePath(), itemView, CustomUtility.dpToPx(120), 1);
                         itemView.findViewById(R.id.listItem_image_selected).setVisibility(subSelectedMedia != null && subSelectedMedia.contains(media) ? View.VISIBLE : View.GONE);
                     })
                     .enableSwiping((objectList, direction, media) -> {
@@ -1022,10 +1231,54 @@ public class MediaActivity extends AppCompatActivity {
     //  <------------------------- Edit -------------------------
 
 
+    /**  ------------------------- Details ------------------------->  */
+    private void showDetailsDialog(Media media) {
+        if (new File(media.getImagePath()).lastModified() == 0)
+            return;
+        CustomDialog.Builder(this)
+                .setView(R.layout.dialog_detail_media)
+                .setTitle("Details")
+                .setSetViewContent((customDialog, view, reload) -> {
+                    ImageView imageView = view.findViewById(R.id.dialog_detailMedia_poster);
+                    Utility.loadUrlIntoImageView(this, imageView, media.getImagePath(), null, null, () -> Utility.roundImageView(imageView, 4));
+                    Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.MEDIA_PERSON, view.findViewById(R.id.dialog_detailMedia_parson), media.getPersonIdList());
+                    Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.MEDIA_CATEGORY, view.findViewById(R.id.dialog_detailMedia_category), media.getCategoryIdList());
+                    Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.MEDIA_TAG, view.findViewById(R.id.dialog_detailMedia_tag), media.getTagIdList());
+                    List<String> mediaEventIdList = MediaEventActivity.getEventsContaining(media).map(ParentClass::getUuid);
+                    if (!mediaEventIdList.isEmpty()) {
+                        view.findViewById(R.id.dialog_detailMedia_event_layout).setVisibility(View.VISIBLE);
+                        Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.MEDIA_EVENT, view.findViewById(R.id.dialog_detailMedia_event), mediaEventIdList);
+                    }
+                    ((TextView) view.findViewById(R.id.dialog_detailMedia_date)).setText(Utility.formatDate("dd.MM.yyyy   HH:mm:ss 'Uhr'", new Date(new File(media.getImagePath()).lastModified())));
+                    ((TextView) view.findViewById(R.id.dialog_detailMedia_path)).setText(media.getImagePath());
+                })
+                .show();
+    }
+    /**  <------------------------- Details -------------------------  */
+
+
     //  ------------------------- ScrollGallery ------------------------->
     private void setupScrollGalleryView() {
         scrollGalleryView = findViewById(R.id.scroll_gallery_view);
-        ((HackyViewPager) findViewById(com.veinhorn.scrollgalleryview.R.id.viewPager)).setOffscreenPageLimit(3);
+        HackyViewPager viewPager = (HackyViewPager) findViewById(com.veinhorn.scrollgalleryview.R.id.viewPager);
+        viewPager.setOffscreenPageLimit(3);
+
+        final View[] currentView = {null};
+
+        HackyViewPager hackyViewPager = new HackyViewPager(this) {
+            @Override
+            public boolean onInterceptTouchEvent(MotionEvent ev) {
+                if (currentView[0] != null || (currentView[0] = getCurrentViewFromViewPager(scrollGalleryView.getViewPager())) != null) {
+                    PhotoView photoView = currentView[0].findViewById(R.id.photoView);
+                    if (photoView.getScale() > 1f)
+                        return false;
+                }
+                return super.onInterceptTouchEvent(ev);
+            }
+        };
+
+        CustomUtility.replaceView(viewPager, hackyViewPager, (source, target) -> target.setId(source.getId()));
+
 
         scrollGalleryView
                 .setThumbnailSize(200)
@@ -1043,9 +1296,9 @@ public class MediaActivity extends AppCompatActivity {
                     public void onPageSelected(int position) {
                         super.onPageSelected(position);
                         setCustomDescription(indexOfMedia(getCurrentGalleryMedia()));
-                        View currentView = getCurrentViewFromViewPager(scrollGalleryView.getViewPager());
-                        if (currentView != null) {
-                            VideoView videoView = currentView.findViewById(R.id.imageFragment_video);
+                        currentView[0] = getCurrentViewFromViewPager(scrollGalleryView.getViewPager());
+                        if (currentView[0] != null) {
+                            VideoView videoView = currentView[0].findViewById(R.id.imageFragment_video);
                             if (currentVideoPreview != null && currentVideoPreview != videoView)
                                 currentVideoPreview.pause();
                             if (videoView.getVisibility() == View.VISIBLE) {
@@ -1055,6 +1308,8 @@ public class MediaActivity extends AppCompatActivity {
                         }
                     }
                 });
+
+
 
 //        Utility.reflectionSet(scrollGalleryView, "useDefaultThumbnailsTransition", false);
 
@@ -1080,8 +1335,30 @@ public class MediaActivity extends AppCompatActivity {
 
         findViewById(R.id.scrollGalleryView_share).setOnClickListener(v -> shareMedia(new CustomList<>(getCurrentGalleryMedia())));
 
-            View changeRotationButton = findViewById(R.id.scrollGalleryView_rotate);
+        View changeRotationButton = findViewById(R.id.scrollGalleryView_rotate);
+        setupThumbnailMap();
         applyChangeRotationButton(this, changeRotationButton);
+
+//        LinearLayout thumbnailContainer = findViewById(R.id.thumbnails_container);
+//        HorizontalScrollView thumbnailScrollView = findViewById(R.id.thumbnails_scroll_view);
+//        thumbnailContainer.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+//            @Override
+//            public void onViewAttachedToWindow(View v) {
+//                Log.d(TAG, String.format("onViewAttachedToWindow: %d | %d", thumbnailScrollView.getWidth(), thumbnailContainer.getWidth()));
+//            }
+//
+//            @Override
+//            public void onViewDetachedFromWindow(View v) {
+//
+//            }
+//        });
+//        thumbnailContainer.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+//            @Override
+//            public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+//                Log.d(TAG, String.format("onViewAttachedToWindow: %d | %d", thumbnailScrollView.getWidth(), thumbnailContainer.getWidth()));
+//            }
+//        });
+
     }
 
     public static void applyChangeRotationButton(AppCompatActivity activity, View changeRotationButton) {
@@ -1179,14 +1456,17 @@ public class MediaActivity extends AppCompatActivity {
         }
     }
 
+    boolean b;
     private void setMediaScrollGalleryAndShow(List<Media> shownMediaList, int index) {
-        setMediaScrollGallery(shownMediaList);
+        if (!b) {
+            setMediaScrollGallery(shownMediaList);
+//            b = true;
+        }
         showScrollGallery(index);
     }
 
     private void setMediaScrollGallery(List<Media> shownMediaList) {
-        scrollGalleryView.addMedia(
-                shownMediaList.stream().map(media -> {
+        scrollGalleryView.addMedia(shownMediaList.stream().map(media -> {
                     if (Media.isVideo(media))
                         return MediaInfo.mediaLoader(new CustomVideoLoader(media));
                     else
@@ -1196,6 +1476,8 @@ public class MediaActivity extends AppCompatActivity {
 
     private void clearScrollGallery() {
         scrollGalleryView.clearGallery();
+        ((HorizontalScrollView) findViewById(R.id.thumbnails_scroll_view)).setScrollX(0);
+        thumbnailLoadMap.clear();
     }
 
     private void showScrollGallery(int index) {
@@ -1222,33 +1504,87 @@ public class MediaActivity extends AppCompatActivity {
         setCustomDescription(Math.abs(index));
         scrollGalleryView.setVisibility(View.VISIBLE);
         scrollGalleryView.setCurrentItem(Math.max(0, index));
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+//        hideSystemUI();
+//        getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+
+        View viewPager = findViewById(R.id.viewPager);
+
+        int[] coords = new int[2];
+        viewPager.getLocationOnScreen(coords);
+
+        CustomUtility.logD(TAG, "showScrollGallery: %d | %d", coords[0], coords[1]);
 
 
         LinearLayout thumbnailContainer = findViewById(R.id.thumbnails_container);
         HorizontalScrollView thumbnailScrollView = findViewById(R.id.thumbnails_scroll_view);
-        thumbnailContainer.postDelayed(() -> {
-            int[] thumbnailCoords = new int[2];
-            thumbnailContainer.getChildAt(Math.max(0, index)).getLocationOnScreen(thumbnailCoords);
-            int thumbnailCenterX = thumbnailCoords[0] + 200 / 2;
-            int thumbnailDelta = 1440 / 2 - thumbnailCenterX;
+        thumbnailScrollView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                if (thumbnailScrollView.getWidth() > 0/* && false*/) {
+                    int[] thumbnailCoords = new int[2];
+                    thumbnailContainer.getChildAt(Math.max(0, index)).getLocationOnScreen(thumbnailCoords);
+                    int thumbnailCenterX = thumbnailCoords[0] + 200 / 2;
+                    int thumbnailDelta = 1440 / 2 - thumbnailCenterX;
 
-            thumbnailScrollView.scrollTo(-thumbnailDelta, 0);
-        }, 300);
+//                    CustomUtility.logD(TAG, "onLayoutChange: %d | %d | %d", thumbnailScrollView.getWidth(), thumbnailContainer.getWidth(), thumbnailDelta);
+//                    CustomUtility.logD(TAG, "onLayoutChange: %d", thumbnailDelta);
+                    if (thumbnailDelta != 0)
+                        thumbnailScrollView.scrollBy(pendingScroll = -thumbnailDelta, 0);
+                    thumbnailContainer.postDelayed(() -> {
+                        pendingScroll = -1;
+                    }, 400);
+
+                    thumbnailScrollView.removeOnLayoutChangeListener(this);
+
+                }
+
+//                CustomUtility.logD(TAG, "onLayoutChange: %d | %d | %d | %d", left, right, oldLeft, oldRight);
+
+
+            }
+        });
     }
 
     private void hideScrollGallery() {
         scrollGalleryShown = false;
         scrollGalleryView.setVisibility(View.GONE);
         int currentItem = scrollGalleryView.getCurrentItem();
-//        mediaRecycler.scrollTo(currentItem, false);
         if (scrollGalleryView.getViewPager().getChildCount() > 1)
             mediaRecycler.getRecycler().getLayoutManager().scrollToPosition(currentItem);
-        // ToDo: Funktioniert nicht wirklich ^^
-        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+//        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+//        showSystemUI();
         clearScrollGallery();
         currentVideoPreview = null;
+        pendingScroll = -1;
     }
+
+//    private void hideSystemUI() {
+//        // Enables regular immersive mode.
+//        // For "lean back" mode, remove SYSTEM_UI_FLAG_IMMERSIVE.
+//        // Or for "sticky immersive," replace it with SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+//        View decorView = getWindow().getDecorView();
+//        decorView.setSystemUiVisibility(
+//                View.SYSTEM_UI_FLAG_IMMERSIVE
+//                        // Set the content to appear under the system bars so that the
+//                        // content doesn't resize when the system bars hide and show.
+//                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+//                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+//                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+//                        // Hide the nav bar and status bar
+//                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+//                        | View.SYSTEM_UI_FLAG_FULLSCREEN);
+//    }
+//
+//    private void showSystemUI() {
+//        View decorView = getWindow().getDecorView();
+//        decorView.setSystemUiVisibility(
+//                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+//                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+//                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+//    }
 
     public static void toggleDescriptionAndButtonVisibility(AppCompatActivity activity) {
         int visibility = activity.findViewById(com.veinhorn.scrollgalleryview.R.id.thumbnails_scroll_view).getVisibility();
@@ -1330,7 +1666,44 @@ public class MediaActivity extends AppCompatActivity {
     private boolean isScrollViewVisible() {
         return scrollGalleryView.getVisibility() == View.VISIBLE;
     }
+
+    public static Map<Integer, Runnable> thumbnailLoadMap = new HashMap<>();
+
+    int pendingScroll = -1;
+    private void setupThumbnailMap() {
+        HorizontalScrollView thumbnailScrollView = findViewById(R.id.thumbnails_scroll_view);
+        thumbnailScrollView.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+            if (pendingScroll != -1 && scrollX != pendingScroll) {
+                thumbnailScrollView.scrollTo(pendingScroll, 0);
+//                CustomUtility.logD(TAG, "setupThumbnailMap: changed " + ++changedCount);
+            } /*else if (scrollX == pendingScroll)
+                CustomUtility.logD(TAG, "setupThumbnailMap: equals");*/
+            int thumbnailSize = 220;
+            int width = thumbnailScrollView.getWidth();
+            int offset = width / 2;
+            scrollX += offset;
+            int left = Math.max(0, scrollX - width);
+            int startIndex = left / thumbnailSize - 2;
+            int endIndex = (int) Math.ceil(scrollX / (double) thumbnailSize) + 1;
+//            CustomUtility.logD(TAG, String.format("setupThumbnailMap: %d | %d | %d | %d", scrollX - offset, startIndex, endIndex, thumbnailLoadMap.size()));
+//            CustomUtility.logD(TAG, "setupThumbnailMap: %d | %d | %d | %d | %d", scrollX - offset, oldScrollX, startIndex, endIndex, thumbnailLoadMap.size());
+            for (int i = startIndex; i <= endIndex; i++) {
+                Runnable runnable = thumbnailLoadMap.get(i);
+                if (runnable != null) {
+                    runnable.run();
+                    thumbnailLoadMap.remove(i);
+                }
+            }
+        });
+
+    }
+
+    public static void addToThumbnailMap(ImageView imageView, Runnable request){
+        int index = ((LinearLayout) imageView.getParent()).indexOfChild(imageView);
+        thumbnailLoadMap.put(index, request);
+    }
     //  <------------------------- ScrollGallery -------------------------
+
 
 
     /**
@@ -1371,10 +1744,11 @@ public class MediaActivity extends AppCompatActivity {
             startActivity(Intent.createChooser(shareIntent, "Medien Teilen Mit..."));
         }
     }
-
     /**
      * <------------------------- Share -------------------------
      */
+
+
 
     //  ------------------------- ToolBar ------------------------->
     @Override
@@ -1399,6 +1773,10 @@ public class MediaActivity extends AppCompatActivity {
         int id = item.getItemId();
         switch (id) {
             case R.id.taskBar_media_add:
+//                mediaRecycler.getRecycler().stopScroll();
+//                mediaRecycler.getLayoutManager().scrollToPositionWithOffset(CustomUtility.randomInteger(25, /*mediaRecycler.getObjectList().size() - 25*/100), 0);
+//                if (true)
+//                    return true;
                 showEditMultipleDialog(null, false);
 //                SelectMediaHelper.Builder(this).showSelection();
                 break;

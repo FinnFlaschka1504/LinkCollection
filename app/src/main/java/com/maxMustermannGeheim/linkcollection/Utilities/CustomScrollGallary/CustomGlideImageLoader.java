@@ -2,12 +2,23 @@ package com.maxMustermannGeheim.linkcollection.Utilities.CustomScrollGallary;
 
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
+import android.util.Log;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
+
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.request.target.Target;
 import com.github.chrisbanes.photoview.PhotoView;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.Media.MediaActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.squareup.picasso.Callback;
@@ -45,11 +56,23 @@ public class CustomGlideImageLoader extends PicassoImageLoader {
     @Override
     public void loadMedia(Context context, ImageView imageView, SuccessCallback callback) {
         if (media.getImagePath().startsWith("/storage/")) {
-            ((PhotoView) imageView).setScaleLevels(1f,2.5f, 6f);
+            ((PhotoView) imageView).setScaleLevels(1f,2.5f, 5f);
             Glide.with(context)
                     .load(new File(media.getImagePath()))
-                    .placeholder(com.veinhorn.scrollgalleryview.loader.picasso.R.drawable.placeholder_image)
+//                    .placeholder(R.drawable.ic_image)
                     .error(R.drawable.ic_broken_image)
+                    .addListener(new RequestListener<Drawable>() {
+                        @Override
+                        public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                            ((PhotoView) imageView).setZoomable(false);
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                            return false;
+                        }
+                    })
                     .into(imageView);
 //            ((TextView) ((FrameLayout) imageView.getParent()).findViewById(R.id.imageFragment_description)).setText(media._getDescription());
         } else
@@ -59,14 +82,17 @@ public class CustomGlideImageLoader extends PicassoImageLoader {
     @Override
     public void loadThumbnail(Context context, final ImageView thumbnailView, final SuccessCallback callback) {
         if (media.getImagePath().startsWith("/storage/")) {
-            Picasso.get()
-                    .load(new File(media.getImagePath()))
-                    .resize(thumbWidth == null ? 100 : thumbWidth,
-                            thumbHeight == null ? 100 : thumbHeight)
-                    .placeholder(com.veinhorn.scrollgalleryview.loader.picasso.R.drawable.placeholder_image)
-                    .error(R.drawable.ic_broken_image)
-                    .centerCrop()
-                    .into(thumbnailView, new ImageCallback(callback));
+            MediaActivity.addToThumbnailMap(thumbnailView, () -> {
+                Glide.with(context)
+                        .load(new File(media.getImagePath()))
+                        .override(200, 200)
+                        .placeholder(com.veinhorn.scrollgalleryview.loader.picasso.R.drawable.placeholder_image)
+                        .error(R.drawable.ic_broken_image)
+//                        .skipMemoryCache(true)
+//                        .diskCacheStrategy(DiskCacheStrategy.NONE)
+                        .centerCrop()
+                        .into(thumbnailView);
+            });
         } else
             super.loadThumbnail(context, thumbnailView, callback);
     }

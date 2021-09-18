@@ -34,6 +34,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomUtility;
 import com.finn.androidUtilities.CustomRecycler;
 
@@ -60,7 +61,7 @@ public class FastScrollRecyclerViewHelper implements FastScroller.ViewHelper {
     private final Rect mTempRect = new Rect();
 
     int[] scrollRange;
-    List<Integer>[] heightList;
+    CustomList<Integer>[] heightList;
     CustomRecycler customRecycler;
     int thumbOffset = 0;
     boolean smoothScroll;
@@ -82,7 +83,7 @@ public class FastScrollRecyclerViewHelper implements FastScroller.ViewHelper {
         mPopupTextProvider = popupTextProvider;
     }
 
-    public FastScrollRecyclerViewHelper(CustomRecycler customRecycler, @Nullable FastScroller[] fastScroller, int[] scrollRange, List<Integer>[] heightList, boolean smoothScroll, @Nullable PopupTextProvider popupTextProvider) {
+    public FastScrollRecyclerViewHelper(CustomRecycler customRecycler, @Nullable FastScroller[] fastScroller, int[] scrollRange, CustomList<Integer>[] heightList, boolean smoothScroll, @Nullable PopupTextProvider popupTextProvider) {
         mView = customRecycler.getRecycler();
         mFastScroller = fastScroller;
         mPopupTextProvider = popupTextProvider;
@@ -179,12 +180,13 @@ public class FastScrollRecyclerViewHelper implements FastScroller.ViewHelper {
         });
     }
 
+    int lastRange;
     @Override
     public int getScrollRange() {
         if (scrollRange == null) {
-            return getItemHeight() * getItemCount();
+            return lastRange = getItemHeight() * getItemCount() - mView.getPaddingBottom() - mView.getPaddingTop();
         } else
-            return scrollRange[0];
+            return lastRange = scrollRange[0];
     }
 
     private int getItemCount() {
@@ -195,7 +197,7 @@ public class FastScrollRecyclerViewHelper implements FastScroller.ViewHelper {
             count = heightList[0].size();
         LinearLayoutManager layoutManager = customRecycler.getLayoutManager();
         if (layoutManager instanceof GridLayoutManager)
-            count /= ((GridLayoutManager) layoutManager).getSpanCount();
+            count = (int) Math.ceil((double) count / ((GridLayoutManager) layoutManager).getSpanCount());
         return count;
     }
 
@@ -203,15 +205,14 @@ public class FastScrollRecyclerViewHelper implements FastScroller.ViewHelper {
     @Override
     public int getScrollOffset() {
         LinearLayoutManager layoutManager = customRecycler.getLayoutManager();
-        int position = layoutManager.findFirstVisibleItemPosition();
-        int firstItemPosition = position = getFirstItemPosition();
-        if (firstItemPosition == RecyclerView.NO_POSITION) {
+        int position = getFirstItemPosition();
+        if (position == RecyclerView.NO_POSITION) {
             return 0;
         }
         int firstItemTop = getFirstItemOffset();
-        int columns = 1;
-        if (layoutManager instanceof GridLayoutManager)
-            columns = ((GridLayoutManager) layoutManager).getSpanCount();
+//        int columns = 1;
+//        if (layoutManager instanceof GridLayoutManager)
+//            columns = ((GridLayoutManager) layoutManager).getSpanCount();
 //        Log.d(TAG, "getScrollOffset: " + position + " | " + firstItemTop + " | " + columns);
         int sum;
         if (heightList == null)
@@ -233,6 +234,8 @@ public class FastScrollRecyclerViewHelper implements FastScroller.ViewHelper {
         int i = 0;
         int size;
         boolean isLast;
+//        int initialOffset = offset;
+//        int availableDistance = lastRange - mView.getHeight() - initialOffset;
         LinearLayoutManager layoutManager = customRecycler.getLayoutManager();
         if (heightList == null) {
             int columns = 1;
@@ -247,11 +250,16 @@ public class FastScrollRecyclerViewHelper implements FastScroller.ViewHelper {
                 else
                     offset -= itemHeight;
             }
-            isLast = layoutManager.findLastVisibleItemPosition() == size - 1;// && offset > itemHeight / 2;
-//            Log.d(TAG, String.format("scrollTo: %d | %d | %s", layoutManager.findLastVisibleItemPosition(), size-1,  isLast));
+//            int lastItemOffset = getLastItemOffset();
+            isLast = layoutManager.findLastVisibleItemPosition() >= layoutManager.getItemCount() - 1;// && offset > (double) lastItemOffset / 2 && lastItemOffset + availableDistance < itemHeight;// && (double) itemHeight / 2 >  lastItemOffset;// && (double) itemHeight / 2 >  getLastItemOffset();// && offset > itemHeight / 2;
+//            Log.d(TAG, String.format("scrollTo: %d | %d | %d | %s", layoutManager.findLastVisibleItemPosition(), size-1, layoutManager.getItemCount() - 1, isLast));
             thumbOffset = smoothScroll || isLast ? 0 : (offset /*+  itemHeight * (i % columns)*/);
             layoutManager.scrollToPositionWithOffset(i * columns, smoothScroll || isLast ? -offset : 0);
 //            Log.d(TAG, String.format("scrollTo: %d | %d", i, thumbOffset));
+//            if (isLast) {
+//                int lastItemOffset = getLastItemOffset();
+//            Log.d(TAG, String.format("scrollTo: l:%d | %s | o:%d | h:%d | d:%s | %s | c:%d", lastItemOffset, (double) itemHeight / 2 >  lastItemOffset, offset, itemHeight, availableDistance, lastItemOffset + availableDistance > itemHeight, lastItemOffset + availableDistance));
+//            }
 
         } else {
             size = getItemCount();
@@ -264,6 +272,7 @@ public class FastScrollRecyclerViewHelper implements FastScroller.ViewHelper {
                     offset -= itemHeight;
             }
             isLast = layoutManager.findLastVisibleItemPosition() == size - 1;// && offset > itemHeight / 2;
+
 
             thumbOffset = smoothScroll || isLast ? 0 : offset;
             layoutManager.scrollToPositionWithOffset(i, smoothScroll || isLast ? -offset : 0);
@@ -356,6 +365,16 @@ public class FastScrollRecyclerViewHelper implements FastScroller.ViewHelper {
         View itemView = mView.getChildAt(0);
         mView.getDecoratedBoundsWithMargins(itemView, mTempRect);
         return mTempRect.top;
+    }
+
+    public int getLastItemOffset() {
+        int childCount = mView.getChildCount();
+        if (childCount == 0) {
+            return RecyclerView.NO_POSITION;
+        }
+        View itemView = mView.getChildAt(childCount - 1);
+        mView.getDecoratedBoundsWithMargins(itemView, mTempRect);
+        return mTempRect.bottom - mView.getHeight();
     }
 
     private void scrollToPositionWithOffset(int position, int offset) {

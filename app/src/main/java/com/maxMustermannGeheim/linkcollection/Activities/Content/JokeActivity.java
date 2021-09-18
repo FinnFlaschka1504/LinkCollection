@@ -231,7 +231,7 @@ public class JokeActivity extends AppCompatActivity {
 
                 })
 
-                .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper<Joke>(R.layout.list_item_joke, (customRecycler1, itemView, joke, expanded) -> {
+                .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper<Joke>(R.layout.list_item_joke, (customRecycler1, itemView, joke, expanded, index) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_joke_title_label)).setText(joke.getPunchLine() == null || joke.getPunchLine().isEmpty() ? "Witz:" : "Aufbau:");
                     itemView.findViewById(R.id.listItem_joke_punchLine_layout).setVisibility(joke.getPunchLine() == null || joke.getPunchLine().isEmpty() ? View.GONE : View.VISIBLE);
 
@@ -265,7 +265,7 @@ public class JokeActivity extends AppCompatActivity {
 
                 }))
 
-//                .setSetItemContent((itemView, joke) -> {
+//                .setSetItemContent((itemView, joke, index) -> {
 //                })
 //                .setOnClickListener((customRecycler, view, object, index) -> {
 ////                  openUrl(object, false);

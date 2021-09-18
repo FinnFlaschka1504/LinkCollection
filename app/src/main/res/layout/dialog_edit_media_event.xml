@@ -81,6 +81,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            style="@style/TextButtonStyle"
+            android:enabled="false"
             tools:text="04.10.2020 - 12.01.2021" />
 
         <Button

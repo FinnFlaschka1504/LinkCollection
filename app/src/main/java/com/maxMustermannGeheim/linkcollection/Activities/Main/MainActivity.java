@@ -127,8 +127,11 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     private View main_offline;
     private Utility.OnSwipeTouchListener touchListener;
 
+    public static MainActivity activity;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        activity = this;
         super.onCreate(savedInstanceState);
 //        isLoadingLayout = savedInstanceState == null;
 

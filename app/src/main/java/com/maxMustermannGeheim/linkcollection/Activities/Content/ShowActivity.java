@@ -559,7 +559,7 @@ public class ShowActivity extends AppCompatActivity {
                     elementCount.setText(builder.append(viewsCountText));
                     return filteredList;
                 })
-                .setSetItemContent((customRecycler, itemView, show) -> {
+                .setSetItemContent((customRecycler, itemView, show, index) -> {
                     MinDimensionLayout listItem_show_image_layout = itemView.findViewById(R.id.listItem_show_image_layout);
                     if (CustomUtility.stringExists(show.getImagePath())) {
                         listItem_show_image_layout.setVisibility(View.VISIBLE);
@@ -666,7 +666,7 @@ public class ShowActivity extends AppCompatActivity {
                                                 .enableExpandByDefault()
                                                 .customizeRecycler(subRecycler -> {
                                                     subRecycler
-                                                            .setSetItemContent((customRecycler2, itemView, episode1) -> {
+                                                            .setSetItemContent((customRecycler2, itemView, episode1, index) -> {
                                                                 Utility.setMargins(itemView, 8, 5, 8, 5);
                                                                 itemView.findViewById(R.id.listItem_episode_seen).setVisibility(View.GONE);
 
@@ -719,7 +719,7 @@ public class ShowActivity extends AppCompatActivity {
                 .setView(new CustomRecycler<Show.Episode>(this)
                         .setGetActiveObjectList(customRecycler -> sorter.sort())
                         .setItemLayout(R.layout.list_item_episode)
-                        .setSetItemContent((customRecycler, itemView, episode) -> {
+                        .setSetItemContent((customRecycler, itemView, episode, index) -> {
 //                            Utility.setMargins(itemView, 8, 5, 8, 5);
                             itemView.findViewById(R.id.listItem_episode_seen).setVisibility(View.GONE);
 
@@ -827,7 +827,7 @@ public class ShowActivity extends AppCompatActivity {
                         .setExpandMatching(expandable -> expandable.getList().stream().anyMatch(episode -> !episode.isWatched()))
                         .customizeRecycler(subRecycler -> {
                             subRecycler
-                                    .setSetItemContent((customRecycler1, itemView, episode) -> {
+                                    .setSetItemContent((customRecycler1, itemView, episode, index) -> {
                                         Utility.setMargins(itemView, 8, 5, 8, 5);
                                         itemView.findViewById(R.id.listItem_episode_seen).setVisibility(View.GONE);
 
@@ -1323,7 +1323,7 @@ public class ShowActivity extends AppCompatActivity {
                 .setGetActiveObjectList(customRecycler1 -> new CustomList<>(show.getSeasonList()).executeIf(seasons -> !seasons.isEmpty() && seasons.getFirst().getName().equals(Show.EMPTY_SEASON)
                         , CustomList::removeFirst))
                 .setItemLayout(R.layout.list_item_season)
-                .setSetItemContent((customRecycler, itemView, season) -> {
+                .setSetItemContent((customRecycler, itemView, season, index) -> {
                     int watchedSize = (int) season.getEpisodeMap().values().stream().filter(Show.Episode::isWatched).count();
                     ((TextView) itemView.findViewById(R.id.listItem_season_number)).setText(String.valueOf(season.getSeasonNumber()));
 
@@ -1463,7 +1463,7 @@ public class ShowActivity extends AppCompatActivity {
                         imageView.setLayoutParams(layoutParams);
                     }
                 })
-                .setSetItemContent((customRecycler, itemView, episode) -> {
+                .setSetItemContent((customRecycler, itemView, episode, index) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(episode.getEpisodeNumber()));
                     ImageView listItem_episode_image = itemView.findViewById(R.id.listItem_episode_image);
                     if (customRecycler.isReloading() && imageDimensions.containsKey(episode)) {

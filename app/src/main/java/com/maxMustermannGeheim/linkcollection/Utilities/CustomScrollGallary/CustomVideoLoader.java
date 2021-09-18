@@ -11,6 +11,7 @@ import android.os.Looper;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.Toast;
 import android.widget.VideoView;
 
 import androidx.activity.result.ActivityResult;
@@ -24,6 +25,7 @@ import androidx.lifecycle.OnLifecycleEvent;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
+import com.github.chrisbanes.photoview.PhotoView;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Media.MediaActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Media.VideoPlayerActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
@@ -60,6 +62,12 @@ public class CustomVideoLoader extends DefaultVideoLoader {
     @Override
     public void loadMedia(Context context, ImageView imageView, SuccessCallback callback) {
         if (media.getImagePath().startsWith("/storage/")) {
+
+            ((PhotoView) imageView).setZoomable(false);
+            if (new File(media.getImagePath()).lastModified() == 0) {
+                imageView.setImageResource(R.drawable.ic_broken_image);
+                return;
+            }
 
             FrameLayout parent = (FrameLayout) imageView.getParent();
 
@@ -174,12 +182,14 @@ public class CustomVideoLoader extends DefaultVideoLoader {
     @Override
     public void loadThumbnail(Context context, final ImageView thumbnailView, final SuccessCallback callback) {
         if (media.getImagePath().startsWith("/storage/")) {
-            Glide.with(context)
-                    .load(media.getImagePath())
-                    .apply(new RequestOptions()
-                            .override(200, 200)
-                            .centerCrop())
-                    .into(thumbnailView);
+            MediaActivity.addToThumbnailMap(thumbnailView, () -> {
+                Glide.with(context)
+                        .load(media.getImagePath())
+                        .apply(new RequestOptions()
+                                .override(200, 200)
+                                .centerCrop())
+                        .into(thumbnailView);
+            });
         } else
             super.loadThumbnail(context, thumbnailView, callback);
     }

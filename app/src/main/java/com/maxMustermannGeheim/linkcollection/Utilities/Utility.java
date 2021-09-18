@@ -154,7 +154,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
@@ -175,6 +174,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -290,17 +290,21 @@ public class Utility {
 
 
     /**  ------------------------- Internet Dialog ------------------------->  */
-    public static CustomDialog showInternetDialog(Context context, String url, @NonNull CustomDialog[] internetDialog, @Nullable DoubleGenericInterface<CustomDialog, String> onImageSelected, @Nullable DoubleGenericInterface<CustomDialog, String> onTextSelected) {
+    public static CustomDialog showInternetDialog(Context context, String url, @NonNull CustomDialog[] internetDialog, boolean mobileView, @Nullable DoubleGenericInterface<CustomDialog, String> onImageSelected, @Nullable DoubleGenericInterface<CustomDialog, String> onTextSelected, @Nullable TripleGenericInterface<WebView, Boolean, DoubleGenericInterface<List<String>, Boolean>> optionalParser) {
         if (internetDialog[0] == null) {
             internetDialog[0] = CustomDialog.Builder(context)
                     .setView(R.layout.dialog_video_internet)
+                    .removeMargin()
                     .setSetViewContent((customDialog, view, reload) -> {
                         WebView webView = view.findViewById(R.id.dialog_videoInternet_webView);
                         webView.loadUrl(CustomUtility.stringExists(url) ? url : "https://www.google.de/");
                         webView.setWebViewClient(new WebViewClient());
                         WebSettings webSettings = webView.getSettings();
                         webSettings.setJavaScriptEnabled(true);
-                        webSettings.setUserAgentString(com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper.USER_AGENT);
+                        if (!mobileView)
+                            webSettings.setUserAgentString(com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper.USER_AGENT);
+                        else
+                            webSettings.setUserAgentString(null);
                         webSettings.setUseWideViewPort(true);
                         webSettings.setLoadWithOverviewMode(true);
 
@@ -314,7 +318,7 @@ public class Utility {
                         if (onImageSelected != null) {
                             dialog_videoInternet_getThumbnails.setVisibility(View.VISIBLE);
                             dialog_videoInternet_getThumbnails.setOnClickListener(v1 -> {
-                                showSelectThumbnailDialog(context, webView, null, s -> onImageSelected.run(customDialog, s));
+                                showSelectThumbnailDialog(context, webView, null, s -> onImageSelected.run(customDialog, s), optionalParser != null ? (webView1, onResult) -> optionalParser.run(webView1, true, onResult) : null);
                             });
                         } else
                             dialog_videoInternet_getThumbnails.setVisibility(View.GONE);
@@ -325,10 +329,21 @@ public class Utility {
                         if (onTextSelected != null) {
                             dialog_videoInternet_getSelection.setVisibility(View.VISIBLE);
                             dialog_videoInternet_getSelection.setOnClickListener(v1 -> {
-                                webView.evaluateJavascript("(function(){return window.getSelection().toString()})()", value -> {
-                                    value = Utility.subString(value, 1, -1);
-                                    onTextSelected.run(customDialog, value);
-                                });
+                                Runnable runDefault = () -> {
+                                    webView.evaluateJavascript("(function(){return window.getSelection().toString()})()", value -> {
+                                        value = Utility.subString(value, 1, -1);
+                                        onTextSelected.run(customDialog, value);
+                                    });
+                                };
+
+                                if (optionalParser != null) {
+                                    optionalParser.run(webView, false, (strings, consumed) -> {
+                                        onTextSelected.run(customDialog, strings.get(0));
+                                        if (!consumed)
+                                            runDefault.run();
+                                    });
+                                } else
+                                    runDefault.run();
                             });
 
                         } else
@@ -389,13 +404,14 @@ public class Utility {
         } else {
             internetDialog[0].show();
             WebView webView = internetDialog[0].findViewById(R.id.dialog_videoInternet_webView);
+
             if (CustomUtility.stringExists(url) && !Objects.equals(webView.getOriginalUrl(), url))
                 webView.loadUrl(CustomUtility.stringExists(url) ? url : "https://www.google.de/");
         }
         return internetDialog[0];
     }
 
-    private static void showSelectThumbnailDialog(Context context, @Nullable WebView webView, @Nullable String text, GenericInterface<String> onImageSelected) {
+    private static void showSelectThumbnailDialog(Context context, @Nullable WebView webView, @Nullable String text, GenericInterface<String> onImageSelected, @Nullable DoubleGenericInterface<WebView, DoubleGenericInterface<List<String>, Boolean>> optionalParser) {
         final int[] count = {3};
         CustomList<String> imageUrlList = new CustomList<>();
         CustomList<String> imageFromUrlParser = new CustomList<>();
@@ -411,7 +427,8 @@ public class Utility {
             imageUrlList.addAll(imageFromOpenGraph);
             imageUrlList.addAll(imagesFromText);
             imageUrlList.replaceAll(path -> path.startsWith("//") ? "https:" + path : path);
-            showDialog.run();
+            showSelectImageDialog(context, imageUrlList, onImageSelected);
+//            showDialog.run();
         };
 
         Runnable lowerCount = () -> {
@@ -481,9 +498,25 @@ public class Utility {
             };
             //       <-------------------- Getter --------------------
 
-            getFromUrlParser.run();
-            getFromOpenGraph.run();
-            getFromHtml[0].run();
+            Runnable runDefault = () -> {
+                getFromUrlParser.run();
+                getFromOpenGraph.run();
+                getFromHtml[0].run();
+            };
+
+            if (optionalParser != null) {
+                optionalParser.run(webView, (results, consumed) -> {
+                    imageFromUrlParser.addAll(results);
+                    if (consumed)
+                        count[0] = 1;
+                    else
+                        runDefault.run();
+                    lowerCount.run();
+                });
+            } else
+                runDefault.run();
+
+
         } else if (text != null) {
             imagesFromText.addAll(Utility.getImageUrlsFromText(text));
             connectLists.run();
@@ -497,7 +530,7 @@ public class Utility {
                 .setView(customDialog -> new CustomRecycler<String>((AppCompatActivity) context)
                         .setItemLayout(R.layout.list_item_select_thumbnail)
                         .setObjectList(imageUrlList)
-                        .setSetItemContent((customRecycler, itemView, s) -> {
+                        .setSetItemContent((customRecycler, itemView, s, index) -> {
                             ImageView thumbnail = itemView.findViewById(R.id.listItem_selectThumbnail_thumbnail);
                             thumbnail.setVisibility(View.VISIBLE);
                             View editUrlLayout = itemView.findViewById(R.id.listItem_selectThumbnail_editLayout);
@@ -511,7 +544,7 @@ public class Utility {
                                 thumbnail.setVisibility(View.GONE);
                                 editUrlLayout.setVisibility(View.VISIBLE);
                                 new Helpers.TextInputHelper(listItem_selectThumbnail_test::setEnabled, listItem_selectThumbnail_url_layout)
-                                        .setValidation(listItem_selectThumbnail_url_layout, (validator, text1) -> validator.setRegEx(CategoriesActivity.pictureRegex));
+                                        .setValidation(listItem_selectThumbnail_url_layout, (validator, text1) -> validator.setRegEx(CategoriesActivity.pictureRegexAll));
 
                             });
 
@@ -535,7 +568,10 @@ public class Utility {
                             editUrlLayout.setVisibility(View.VISIBLE);
                         })
                         .generateRecyclerView())
-                .setDimensionsFullscreen()
+                .addOptionalModifications(customDialog -> {
+                    if (imageUrlList.size() > 1)
+                        customDialog.setDimensionsFullscreen();
+                })
                 .disableScroll()
                 .show();
     }
@@ -755,10 +791,7 @@ public class Utility {
     }
 
     public static void searchQueryOnInternet(AppCompatActivity activity, CharSequence query) {
-        try {
-            query = URLEncoder.encode(query.toString(), "UTF-8");
-        } catch (UnsupportedEncodingException ignored) {
-        }
+        query = encodeTextForUrl(query);
         String url = "https://www.google.de/search?q=" + query;
 
         Intent intent = new Intent(Intent.ACTION_VIEW);
@@ -768,6 +801,14 @@ public class Utility {
             activity.startActivity(chooser);
         else
             Toast.makeText(activity, "Fehler", Toast.LENGTH_SHORT).show();
+    }
+
+    public static CharSequence encodeTextForUrl(CharSequence text) {
+        try {
+            text = URLEncoder.encode(text.toString(), "UTF-8");
+        } catch (UnsupportedEncodingException ignored) {
+        }
+        return text;
     }
 
     public static void applySelectionSearch(CategoriesActivity.CATEGORIES category, CustomDialog customDialog) {
@@ -1048,7 +1089,7 @@ public class Utility {
                                             .setObjectList(resList)
                                             .setOrientation(com.finn.androidUtilities.CustomRecycler.ORIENTATION.HORIZONTAL)
                                             .setItemLayout(R.layout.list_item_wer_streamt_es_results)
-                                            .setSetItemContent((customRecycler, itemView, jsonObject) -> {
+                                            .setSetItemContent((customRecycler, itemView, jsonObject, index) -> {
                                                 try {
                                                     String img = jsonObject.getString("img");
                                                     CustomUtility.loadUrlIntoImageView(context, itemView.findViewById(R.id.listItem_werStreamtEs_results_image), img, img);
@@ -1403,7 +1444,7 @@ public class Utility {
         Database database = Database.getInstance();
         CustomRecycler customRecycler = new CustomRecycler<>((AppCompatActivity) context, layout.findViewById(R.id.fragmentCalender_videoList))
                 .setItemLayout(R.layout.list_item_video)
-                .setSetItemContent((customRecycler1, itemView, object) -> {
+                .setSetItemContent((customRecycler1, itemView, object, index) -> {
                     itemView.findViewById(R.id.listItem_video_internetOrDetails).setVisibility(View.GONE);
                     itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.GONE);
 
@@ -1517,7 +1558,7 @@ public class Utility {
         Database database = Database.getInstance();
         CustomRecycler<Event> customRecycler = new CustomRecycler<Event>((AppCompatActivity) context, layout.findViewById(R.id.fragmentCalender_videoList))
                 .setItemLayout(R.layout.list_item_episode)
-                .setSetItemContent((customRecycler1, itemView, event) -> {
+                .setSetItemContent((customRecycler1, itemView, event, index) -> {
                     itemView.findViewById(R.id.listItem_episode_seen).setVisibility(View.GONE);
 
 
@@ -2192,7 +2233,7 @@ public class Utility {
                 .setItemLayout(R.layout.list_item_bubble)
                 .setObjectList(selectedUuidList)
                 .enableDragAndDrop((customRecycler, objectList) -> {})
-                .setSetItemContent((customRecycler, itemView, uuid) -> {
+                .setSetItemContent((customRecycler, itemView, uuid, index) -> {
                     ParentClass parentClass = getObjectFromDatabase(category, uuid);
                     if (parentClass instanceof ParentClass_Image && CustomUtility.stringExists(((ParentClass_Image) parentClass).getImagePath())) {
                         ImageView imageView = itemView.findViewById(R.id.list_bubble_image);
@@ -2247,7 +2288,7 @@ public class Utility {
                     return resultList;
                 })
                 .enableDivider()
-                .setSetItemContent((customRecycler, itemView, parentClass) -> {
+                .setSetItemContent((customRecycler, itemView, parentClass, index) -> {
                     ImageView thumbnail = itemView.findViewById(R.id.selectList_thumbnail);
                     if (parentClass instanceof ParentClass_Image) {
                         String imagePath = ((ParentClass_Image) parentClass).getImagePath();
@@ -2331,7 +2372,7 @@ public class Utility {
                             .setItemLayout(R.layout.list_item_bubble)
                             .setObjectList(selectedIds)
                             .enableDragAndDrop((customRecycler, objectList) -> {})
-                            .setSetItemContent((customRecycler, itemView, uuid) -> {
+                            .setSetItemContent((customRecycler, itemView, uuid, index) -> {
                                 ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(ParentClass_Tree.findObjectById(category, uuid).getName());
                                 view.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.GONE);
                             })
@@ -2453,8 +2494,8 @@ public class Utility {
         }
     }
 
-    public static com.finn.androidUtilities.CustomList<? extends ParentClass> idToParentClassList(CategoriesActivity.CATEGORIES category, List<String> idList){
-        return idList.stream().map(id -> findObjectById(category, id)).collect(Collectors.toCollection(com.finn.androidUtilities.CustomList::new));
+    public static com.finn.androidUtilities.CustomList<? extends ParentClass> findAllObjectById(CategoriesActivity.CATEGORIES category, Collection<String> ids) {
+        return ids.stream().map(id -> findObjectById(category, id)).collect(Collectors.toCollection(com.finn.androidUtilities.CustomList::new));
     }
     /**  ------------------------- Objects from Database ------------------------->  */
 

@@ -309,12 +309,12 @@ public class VersionControl {
                 .setView(new CustomRecycler<Pair<String, List<String>>>(activity)
                         .setObjectList(changeList)
                         .setItemLayout(R.layout.list_item_change_log_version)
-                        .setSetItemContent((customRecycler, itemView, change) -> {
+                        .setSetItemContent((customRecycler, itemView, change, index) -> {
                             ((TextView) itemView.findViewById(R.id.changeLogList_Version)).setText(change.first);
                             new CustomRecycler<String>(activity, itemView.findViewById(R.id.changeLogList_changeList))
                                     .setItemLayout(R.layout.list_item_change_log_change)
                                     .setObjectList(change.second)
-                                    .setSetItemContent((customRecycler1, itemView1, changeText) -> ((TextView) itemView1.findViewById(R.id.changeLogList_change))
+                                    .setSetItemContent((customRecycler1, itemView1, changeText, index1) -> ((TextView) itemView1.findViewById(R.id.changeLogList_change))
                                             .setText(changeText))
                                     .generate();
                         })

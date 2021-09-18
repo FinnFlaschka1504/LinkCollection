@@ -123,7 +123,7 @@ public class CustomMenu {
                 .setObjectList(menus)
                 .hideDivider()
                 .hideOverscroll()
-                .setSetItemContent((customRecycler, itemView, item) -> {
+                .setSetItemContent((customRecycler, itemView, item, index) -> {
                     ((TextView) itemView.findViewById(R.id.popup_standardList_text)).setText(item.getName());
 
                     ImageView iconView = itemView.findViewById(R.id.popup_standardList_icon);

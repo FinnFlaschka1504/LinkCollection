@@ -252,7 +252,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                     elementCount.setText(elementCountText);
                     return newOweList;
                 })
-                .setSetItemContent((customRecycler, itemView, owe) -> {
+                .setSetItemContent((customRecycler, itemView, owe, index) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_owe_title)).setText(owe.getName());
                     ((TextView) itemView.findViewById(R.id.listItem_owe_description)).setText(owe.getDescription());
 //                    itemView.findViewById(R.id.listItem_owe_description).setSelected(true);
@@ -789,7 +789,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                                 view.findViewById(R.id.dialog_items_noSources).setVisibility(sources.isEmpty() ? View.VISIBLE : View.GONE);
                                 return sources;
                             })
-                            .setSetItemContent((customRecycler, itemView, item) -> {
+                            .setSetItemContent((customRecycler, itemView, item, index) -> {
                                 ((TextView) itemView.findViewById(R.id.listItem_source_name)).setText(database.personMap.get(item.getPersonId()).getName());
                                 ((TextView) itemView.findViewById(R.id.listItem_source_content)).setText(Utility.formatToEuro(item.getAmount()));
                                 itemView.findViewById(R.id.listItem_source_check).setVisibility(item.isOpen() ? View.GONE : View.VISIBLE);
@@ -996,7 +996,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
 //                .setObjectList(Arrays.asList(ownOrOther, status))
 //                .hideDivider()
 //                .hideOverscroll()
-//                .setSetItemContent((itemView0, o0) -> {
+//                .setSetItemContent((itemView0, o0, index) -> {
 //                    ((TextView) itemView0.findViewById(R.id.popup_standardList_text)).setName(o0.toString());
 //                    View popup_standardList_sub = itemView0.findViewById(R.id.popup_standardList_sub);
 //                    popup_standardList_sub.setVisibility(View.VISIBLE);
@@ -1014,7 +1014,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
 //                    recycler
 //                            .hideDivider()
 //                            .hideOverscroll()
-//                            .setSetItemContent((itemView, o) -> {
+//                            .setSetItemContent((itemView, o, index) -> {
 //                                if (o instanceof Owe.OWN_OR_OTHER)
 //                                    ((TextView) itemView.findViewById(R.id.popup_standardList_text)).setName(((Owe.OWN_OR_OTHER) o).getName());
 //                                else
@@ -1045,7 +1045,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
 //                                subRecycler
 //                                        .hideDivider()
 //                                        .hideOverscroll()
-//                                        .setSetItemContent((itemView2, o2) -> {
+//                                        .setSetItemContent((itemView2, o2, index) -> {
 //                                            if (o instanceof Owe.OWN_OR_OTHER)
 //                                                ((TextView) itemView2.findViewById(R.id.popup_standardList_text)).setName(String.format("%s & %s", name, (boolean) o2 ? "Offene" : "Abgeschlosene"));
 //                                            else
@@ -1100,7 +1100,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                 .setItemLayout(R.layout.list_item_trade_off)
                 .setObjectList(list)
                 .hideDivider()
-                .setSetItemContent((customRecycler, itemView, triple) -> {
+                .setSetItemContent((customRecycler, itemView, triple, index) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_tradeOff_name)).setText(triple.first.getName());
                     ((TextView) itemView.findViewById(R.id.listItem_tradeOff_own)).setText(Utility.formatToEuro(triple.second));
                     ((TextView) itemView.findViewById(R.id.listItem_tradeOff_other)).setText(Utility.formatToEuro(triple.third));

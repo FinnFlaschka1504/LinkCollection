@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -17,6 +18,7 @@ import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.text.style.RelativeSizeSpan;
+import android.util.Log;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -115,6 +117,8 @@ import me.zhanghai.android.fastscroll.FastScrollerBuilder;
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
 public class VideoActivity extends AppCompatActivity {
+    private static final String TAG = "VideoActivity";
+
     public static final String SEEN_SEARCH = "SEEN_SEARCH";
     public static final String WATCH_LATER_SEARCH = "WATCH_LATER_SEARCH";
     public static final String UPCOMING_SEARCH = "UPCOMING_SEARCH";
@@ -1090,7 +1094,7 @@ public class VideoActivity extends AppCompatActivity {
                     return filteredList;
 
                 })
-                .setSetItemContent((customRecycler, itemView, video) -> {
+                .setSetItemContent((customRecycler, itemView, video, index) -> {
                     itemView.findViewById(R.id.listItem_video_deleteCheck).setVisibility(delete ? View.VISIBLE : View.GONE);
 
                     MinDimensionLayout listItem_video_image_layout = itemView.findViewById(R.id.listItem_video_image_layout);
@@ -1186,9 +1190,6 @@ public class VideoActivity extends AppCompatActivity {
                 .setViewHelper(new FastScrollRecyclerViewHelper(customRecycler_VideoList, fastScroller, false, null))
                 .build();
 
-//        View trackView = findViewById(R.id.trackView);
-//        if (trackView != null)
-//            trackView.setOnTouchListener((v, event) -> recycler.onTouchEvent(event));
     }
 
     private void reLoadVideoRecycler() {
@@ -1540,7 +1541,8 @@ public class VideoActivity extends AppCompatActivity {
                 .addOnLongClickToLastAddedButton(onClickSave)
                 .disableLastAddedButton()
                 .setSetViewContent((editDialog, view, reload) -> {
-                    final CustomDialog[] internetDialog = {null};
+                    final CustomDialog[] internetDialogClick = {null};
+                    final CustomDialog[] internetDialogLongClick = {null};
                     TextInputLayout dialog_editOrAddVideo_Title_layout = view.findViewById(R.id.dialog_editOrAddVideo_Title_layout);
                     Utility.applySelectionSearch(this, CategoriesActivity.CATEGORIES.VIDEO, dialog_editOrAddVideo_Title_layout.getEditText());
                     TextInputLayout dialog_editOrAddVideo_Url_layout = view.findViewById(R.id.dialog_editOrAddVideo_url_layout);
@@ -1605,23 +1607,12 @@ public class VideoActivity extends AppCompatActivity {
 //                                                        .setDebug(true)
                                                         .enableLoadImages()
                                                         .setMobileVersion(true)
-                                                        .setUserAgent("Mozilla/5.0 (Linux; Android 11; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.181 Mobile Safari/537.36")
-                                                        .addRequest("{\n" +
-                                                                "    let images = document.getElementsByClassName(\"n3VNCb\")\n" +
-                                                                "    let results = []\n" +
-                                                                "    for (let image of images) {\n" +
-                                                                "        let result = image.getAttribute(\"src\")\n" +
-                                                                "        if (result && !result.includes(\"data\"))\n" +
-                                                                "            results.push(result);\n" +
-                                                                "    };\n" +
-                                                                "    if (results.length)\n" +
-                                                                "        return results\n" +
-                                                                "    else\n" +
-                                                                "        return undefined\n" +
-                                                                "}", result -> {
+                                                        .setUserAgent("Mozilla/5.0 (Linux; Android 11; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.6 Mobile Safari/537.36")
+                                                        .addRequest("document.querySelectorAll(\".BIB1wf .n3VNCb\")[0].getAttribute(\"src\")", result -> {
                                                             resultList.clear();
                                                             if (!result.startsWith("null"))
-                                                                resultList.addAll(new Gson().fromJson(result, CustomList.class));
+                                                                resultList.add(result);
+//                                                                resultList.addAll(new Gson().fromJson(result, CustomList.class));
                                                             if (resultList.isEmpty()) {
                                                                 Utility.openUrl(VideoActivity.this, now, true);
                                                             } else {
@@ -1681,23 +1672,47 @@ public class VideoActivity extends AppCompatActivity {
                                 .show();
                     });
                     setThumbnailButton(editVideo[0], editDialog);
+
+                    Utility.DoubleGenericInterface<CustomDialog, String> onImagePathResult = (customDialog, s) -> {
+                        editVideo[0].setImagePath(s);
+                        setThumbnailButton(editVideo[0], editDialog);
+                        customDialog.dismiss();
+                    };
+                    Utility.DoubleGenericInterface<CustomDialog, String> onTitleResult = (customDialog, value) -> {
+                        if (!value.isEmpty()) {
+                            Toast.makeText(this, value, Toast.LENGTH_SHORT).show();
+                            dialog_editOrAddVideo_Title_layout.getEditText().setText(value);
+                            if (useTmdbSearch)
+                                dialog_editOrAddVideo_Title_layout.getEditText().onEditorAction(Helpers.TextInputHelper.IME_ACTION.SEARCH.getCode());
+                            customDialog.dismiss();
+                            parseTitleToDetails(video, editVideo, value);
+                        }
+                    };
                     view.findViewById(R.id.dialog_editOrAddVideo_internet).setOnClickListener(v -> {
                         String url = dialog_editOrAddVideo_Url_layout.getEditText().getText().toString();
-                        Utility.showInternetDialog(this, url, internetDialog, (customDialog, s) -> {
-                            editVideo[0].setImagePath(s);
-                            setThumbnailButton(editVideo[0], editDialog);
-                            customDialog.dismiss();
-                        }, (customDialog, value) -> {
-                            if (!value.isEmpty()) {
-                                Toast.makeText(this, value, Toast.LENGTH_SHORT).show();
-                                dialog_editOrAddVideo_Title_layout.getEditText().setText(value);
-                                if (useTmdbSearch)
-                                    dialog_editOrAddVideo_Title_layout.getEditText().onEditorAction(Helpers.TextInputHelper.IME_ACTION.SEARCH.getCode());
-                                customDialog.dismiss();
-                                parseTitleToDetails(video, editVideo, value);
+                        Utility.showInternetDialog(this, url, internetDialogClick, false, onImagePathResult, onTitleResult, null);
+                    });
+                    view.findViewById(R.id.dialog_editOrAddVideo_internet).setOnLongClickListener(v -> {
+                        String title = dialog_editOrAddVideo_Title_layout.getEditText().getText().toString();
+
+                        title =  "https://www.google.com/search?tbm=isch&q=" + CustomUtility.encodeTextForUrl(title);
+
+                        Utility.showInternetDialog(this, title, internetDialogLongClick, true, onImagePathResult, onTitleResult, (webView, isThumbnails, onResult) -> {
+                            if (isThumbnails) {
+                                List<String> urls = new ArrayList<>();
+                                webView.evaluateJavascript("(function() {\n" +
+                                        "    return document.querySelectorAll(\".BIB1wf .n3VNCb\")[0].getAttribute(\"src\")\n" +
+                                        "})();", value -> {
+                                    if (CustomUtility.stringExists(value) && !value.startsWith("null"))
+                                        urls.add(Utility.subString(value, 1, -1));
+//                                        urls.addAll(new Gson().fromJson(value, CustomList.cl  ass));
+                                        onResult.run(urls, !urls.isEmpty());
+                                });
                             }
                         });
+                        return true;
                     });
+
 
                     CheckBox dialog_editOrAddVideo_watchLater = editDialog.findViewById(R.id.dialog_editOrAddVideo_watchLater);
                     boolean warnEmptyUrl = Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_WARN_EMPTY_URL);
@@ -2797,7 +2812,7 @@ public class VideoActivity extends AppCompatActivity {
                         .setView(new com.finn.androidUtilities.CustomRecycler<Video>(this, customDialog.findViewById(R.id.dialogDetail_collection_videos))
                                 .setItemLayout(R.layout.list_item_collection_video)
                                 .setGetActiveObjectList(customRecycler -> markedVideos)
-                                .setSetItemContent((customRecycler1, itemView, video) -> {
+                                .setSetItemContent((customRecycler1, itemView, video, index) -> {
                                     String imagePath = video.getImagePath();
                                     ImageView thumbnail = itemView.findViewById(R.id.listItem_collectionVideo_thumbnail);
                                     if (Utility.stringExists(imagePath)) {

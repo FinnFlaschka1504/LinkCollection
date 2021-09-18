@@ -289,10 +289,10 @@ public class Settings extends AppCompatActivity {
                                             .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                                             .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog2 -> {
                                                 String url = customDialog2.getEditText();
-                                                Utility.showInternetDialog(settingsContext, url, internetDialog, (customDialog3, s) -> {
+                                                Utility.showInternetDialog(settingsContext, url, internetDialog, false, (customDialog3, s) -> {
 //                                                    Toast.makeText(settingsContext, s, Toast.LENGTH_SHORT).show();
                                                     showResult.run(s);
-                                                }, null);
+                                                }, null, null);
                                             }, false)
                                             .disableLastAddedButton()
                                             .show();
@@ -313,7 +313,7 @@ public class Settings extends AppCompatActivity {
                     view.findViewById(R.id.dialogSettingsVideo_more_parseUrl_select).setOnClickListener(v -> {
 
                         CustomRecycler<CustomRecycler.Expandable<UrlParser>> customRecycler = new CustomRecycler<CustomRecycler.Expandable<UrlParser>>(context)
-                                .setExpandableHelper(customRecycler1 -> customRecycler1.new ExpandableHelper<UrlParser>(R.layout.list_item_url_parser, (customRecycler2, itemView, urlParser, expanded) -> {
+                                .setExpandableHelper(customRecycler1 -> customRecycler1.new ExpandableHelper<UrlParser>(R.layout.list_item_url_parser, (customRecycler2, itemView, urlParser, expanded, i) -> {
                                     ((TextView) itemView.findViewById(R.id.listItem_urlParser_name)).setText(urlParser.getName());
                                     ((TextView) itemView.findViewById(R.id.listItem_urlParser_codeType)).setText(urlParser.getType().getName() + ":");
                                     TextView listItem_urlParser_code = itemView.findViewById(R.id.listItem_urlParser_code);
@@ -776,7 +776,7 @@ public class Settings extends AppCompatActivity {
         spaceRecycler_customRecycler = new CustomRecycler<Space>(this, spaceRecycler)
                 .setItemLayout(R.layout.list_item_space_setting)
                 .setGetActiveObjectList(customRecycler -> allSpaces.stream().filter(Space::isShown).collect(Collectors.toList()))
-                .setSetItemContent((customRecycler, itemView, space) -> {
+                .setSetItemContent((customRecycler, itemView, space, index) -> {
                     ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getPlural());
                     ImageView list_spaceSetting_lock = itemView.findViewById(R.id.list_spaceSetting_lock);
                     list_spaceSetting_lock.setImageResource(space.isEncrypted() ? R.drawable.ic_lock_closed : R.drawable.ic_lock_open);
@@ -1074,7 +1074,7 @@ public class Settings extends AppCompatActivity {
                     .setView(new CustomRecycler<Space>(this)
                             .setItemLayout(R.layout.list_item_space_shown)
                             .setObjectList(allSpaces)
-                            .setSetItemContent((customRecycler, itemView, space) -> {
+                            .setSetItemContent((customRecycler, itemView, space, index) -> {
                                 ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getPlural());
 
                                 ((CheckBox) itemView.findViewById(R.id.list_spaceSetting_shown)).setChecked(space.isShown());
@@ -1119,7 +1119,7 @@ public class Settings extends AppCompatActivity {
                     .setView(new CustomRecycler<Space>(this)
                             .setItemLayout(R.layout.list_item_space_shown)
                             .setObjectList(allSpaces.stream().filter(Space::isShown).collect(Collectors.toList()))
-                            .setSetItemContent((customRecycler, itemView, space) -> {
+                            .setSetItemContent((customRecycler, itemView, space, index) -> {
                                 ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getPlural());
 
                                 ((CheckBox) itemView.findViewById(R.id.list_spaceSetting_shown)).setChecked(space.isEncrypted());

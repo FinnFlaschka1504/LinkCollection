@@ -63,7 +63,7 @@ public class CustomVideoLoader extends DefaultVideoLoader {
     public void loadMedia(Context context, ImageView imageView, SuccessCallback callback) {
         if (media.getImagePath().startsWith("/storage/")) {
 
-            ((PhotoView) imageView).setZoomable(false);
+            ((PhotoView) imageView).setScaleLevels(1f, 1.0001f, 1.0002f);
             if (new File(media.getImagePath()).lastModified() == 0) {
                 imageView.setImageResource(R.drawable.ic_broken_image);
                 return;

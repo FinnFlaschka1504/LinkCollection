@@ -611,7 +611,7 @@ public class Show extends ParentClass {
                     }
                     if (previousEpisode != null && Utility.isImdbId(previousEpisode.getImdbId())) {
                         new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper(context, "https://www.imdb.com/title/" + previousEpisode.getImdbId())
-                                .addRequest("document.getElementsByClassName(\"bp_item np_next\")[0].getAttribute(\"href\")", s -> {
+                                .addRequest("document.querySelector(\"[title='Next episode'\").getAttribute(\"href\")", s -> {
                                     Matcher matcher = Pattern.compile(Utility.imdbPattern).matcher(s);
                                     if (matcher.find()) {
                                         imdbId = matcher.group(0);

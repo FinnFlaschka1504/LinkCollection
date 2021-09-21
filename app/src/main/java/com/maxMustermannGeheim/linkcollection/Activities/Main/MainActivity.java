@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
@@ -20,6 +21,7 @@ import android.view.ViewParent;
 import android.view.ViewStub;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -60,6 +62,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaEvent;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomInternetHelper;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomPopupWindow;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -395,6 +398,52 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         main_offline.setVisibility(Utility.isOnline() ? View.GONE : View.VISIBLE);
     }
 
+    private void applyDimensionsLayout() {
+        ViewGroup fragmentView = (ViewGroup) currentSpace.getFragment().getView();
+        if (fragmentView == null)
+            return;
+        CustomList<SquareLayout> buttonList = new CustomList<>();
+        LinearLayout container = (LinearLayout) fragmentView.getChildAt(0);
+        for (int i = 0; i < container.getChildCount(); i++) {
+            LinearLayout subContainer = (LinearLayout) container.getChildAt(i);
+            for (int i1 = 0; i1 < subContainer.getChildCount(); i1++) {
+                SquareLayout button = (SquareLayout) subContainer.getChildAt(i1);
+                buttonList.add(button);
+            }
+            subContainer.removeAllViews();
+        }
+        container.removeAllViews();
+        buttonList.filter(squareLayout -> squareLayout.getChildCount() > 0, true);
+//        View frameContainer = findViewById(R.id.main_frame_container);
+//        frameContainer.measure(0, 0);
+//        int width = frameContainer.getWidth();
+        int width = Utility.getScreenAvailableWidth(this);
+
+
+        int maxButtonWidth = CustomUtility.dpToPx(180);
+        int columnCount = (int) Math.round(width / (double) maxButtonWidth);
+        int rowCount = (int) Math.ceil(buttonList.size() / (double) columnCount);
+
+//        CustomUtility.logD("GenericTag", "applyDimensionsLayout: %d | %d | %d | %d", buttonList.size(), width, rowCount, columnCount);
+
+        for (int ri = 0; ri < rowCount; ri++) {
+            LinearLayout horizontalLayout = new LinearLayout(this);
+            horizontalLayout.setOrientation(LinearLayout.HORIZONTAL);
+            for (int ci = 0; ci < columnCount; ci++) {
+                SquareLayout button = buttonList.removeFirst();
+                if (button != null)
+                    horizontalLayout.addView(button);
+                else {
+                    SquareLayout filler = new SquareLayout(this);
+                    LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1);
+                    filler.setLayoutParams(layoutParams);
+                    horizontalLayout.addView(filler);
+                }
+            }
+            container.addView(horizontalLayout);
+        }
+    }
+
     BottomNavigationView.OnNavigationItemSelectedListener onNavigationItemSelectedListener = menuItem -> {
         Settings.Space selectedSpace = Settings.Space.getSpaceById(menuItem.getItemId());
         if (selectedSpace == null && Settings.Space.nextMoreSpace == null) {
@@ -434,6 +483,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
             selectedSpace.setFragment(new SpaceFragment(selectedSpace.getFragmentLayoutId()));
         SpaceFragment.currentSpace = selectedSpace;
         getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container, selectedSpace.getFragment()).runOnCommit(() -> {
+            applyDimensionsLayout();
             setCounts(this);
             if (currentSpace != null)
                 mySPR_settings.edit().putInt(SETTING_LAST_OPEN_SPACE, currentSpace.getItemId()).apply();
@@ -463,10 +513,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                     }
                 };
 
-                View test1 = findViewById(R.id.main_media_count);
-                View test2 = view.findViewById(R.id.main_media_count);
-
-                FrameLayout frameLayout = (FrameLayout) findViewById(R.id.main_frame_container);
+                FrameLayout frameLayout = findViewById(R.id.main_frame_container);
                 if (frameLayout.getChildCount() == 0 && view != null) {
                     ViewParent parent = view.getParent();
                     if (parent != null)
@@ -808,9 +855,9 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 .show();
     }
 
-    public void showLaterMenu_show(View view) {
-        ShowActivity.showLaterMenu(this, view);
-    }
+//    public void showLaterMenu_show(View view) {
+//        ShowActivity.showLaterMenu(this, view);
+//    }
 
     public void showNextEpisode(View view) {
         ShowActivity.showNextEpisode(this, view, false);
@@ -1019,4 +1066,9 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
             main_offline.setVisibility(View.VISIBLE);
     }
 
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        applyDimensionsLayout();
+    }
 }

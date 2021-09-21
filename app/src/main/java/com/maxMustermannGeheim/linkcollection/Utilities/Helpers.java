@@ -1745,9 +1745,19 @@ public class Helpers {
         }
 
         public boolean handleBackPress(AppCompatActivity context) {
-            if (Utility.stringExists(getQuery())) {
+            String query = getQuery();
+            if (Utility.stringExists(query)) {
                 String extraSearch = context.getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
-                if (!CustomUtility.stringExists(extraSearch) || !istExtraSearch(extraSearch)) {
+                if (CustomUtility.stringExists(extraSearch) && istExtraSearch(extraSearch)) {
+                    CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) context.getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
+                    String wrappedExtraSearch;
+                    if (extraSearchCategory != null && !query.equals((wrappedExtraSearch = wrapExtraSearch(extraSearchCategory, extraSearch)).trim())) {
+                        searchView.setQuery(wrappedExtraSearch, false);
+                        return true;
+                    } else
+                        return false;
+
+                } else {
                     searchView.setQuery("", false);
                     return true;
                 }
@@ -1767,7 +1777,7 @@ public class Helpers {
         public String wrapExtraSearch(CategoriesActivity.CATEGORIES category, String extraSearch) {
             Optional<SearchCriteria> optional = criteriaList.stream().filter(criteria -> Objects.equals(criteria.getCategory(), category)).findFirst();
             if (optional.isPresent()) {
-                return String.format(Locale.getDefault(), "{[%s:%s]}", optional.get().key, extraSearch);
+                return String.format(Locale.getDefault(), "{[%s:%s]} ", optional.get().key, extraSearch);
             }
             return "";
         }

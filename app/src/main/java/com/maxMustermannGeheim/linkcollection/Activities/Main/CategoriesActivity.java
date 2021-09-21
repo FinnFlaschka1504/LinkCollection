@@ -669,7 +669,8 @@ public class CategoriesActivity extends AppCompatActivity {
                             new com.finn.androidUtilities.Helpers.TextInputHelper(dialog_editTmdbCategory_name_layout)
                             .defaultDialogValidation(customDialog)
                             .setValidation(dialog_editTmdbCategory_name_layout, (validator, text) -> {
-                                if (Utility.findObjectByName(category, text) != null)
+                                ParentClass parentClass = Utility.findObjectByName(category, text);
+                                if (parentClass != null && parentClass != oldObject)
                                     validator.setInvalid(category.singular + " bereits vorhanden");
                             });
 

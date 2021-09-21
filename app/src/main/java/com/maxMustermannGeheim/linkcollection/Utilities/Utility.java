@@ -154,6 +154,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
@@ -2617,6 +2619,12 @@ public class Utility {
         int height = size.y;
         return Pair.create(width, height);
     }
+
+    public static int getScreenAvailableWidth(AppCompatActivity context){
+        Integer fullWidth = getScreenSize(context).first;
+        boolean isPortrait = Utility.isPortrait(context);
+        return fullWidth - (isPortrait ? 0 : 100);
+    }
     /**  <------------------------- Pixels -------------------------  */
 
 
@@ -3675,6 +3683,22 @@ public class Utility {
         } catch (NoSuchFieldException | IllegalAccessException ignored) {
         }
     }
+
+    public static <T> void reflectionCall(T t, String methodName, Pair<Class<?>, Object>... paramTypesAndValues) {
+        try {
+            Class<?>[] classes = new Class<?>[paramTypesAndValues.length];
+            Object[] objects = new Object[paramTypesAndValues.length];
+            for (int i = 0; i < paramTypesAndValues.length; i++) {
+                classes[i] = paramTypesAndValues[i].first;
+                objects[i] = paramTypesAndValues[i].second;
+            }
+
+            Method field = t.getClass().getDeclaredMethod(methodName, classes);
+            field.setAccessible(true);
+            field.invoke(t, objects);
+        } catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException ignored) {
+        }
+    }
     /**  <------------------------- Reflections -------------------------  */
 
 
@@ -4537,7 +4561,7 @@ public class Utility {
         recycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-                if (newState == 0) {
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                     canExpand[0] = recycler.computeVerticalScrollOffset() <= tolerance;
                     recycler.setNestedScrollingEnabled(canExpand[0]);
                 }

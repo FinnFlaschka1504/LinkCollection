@@ -791,25 +791,25 @@ public class ShowActivity extends AppCompatActivity {
 
 
     //  --------------- Static from Main --------------->
-    public static void showLaterMenu(AppCompatActivity activity, View view) {
-        if (!Database.isReady())
-            return;
-        CustomMenu.Builder(activity, view.findViewById(R.id.main_shows_watchLater_label))
-                .setMenus((customMenu, items) -> {
-                    items.add(new CustomMenu.MenuItem("Später ansehen", new Pair<>(new Intent(activity, ShowActivity.class)
-                            .putExtra(CategoriesActivity.EXTRA_SEARCH, WATCH_LATER_SEARCH)
-                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.SHOW), MainActivity.START_WATCH_LATER)));
-                    items.add(new CustomMenu.MenuItem("Bevorstehende", new Pair<>(new Intent(activity, ShowActivity.class)
-                            .putExtra(CategoriesActivity.EXTRA_SEARCH, UPCOMING_SEARCH)
-                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.SHOW), MainActivity.START_UPCOMING)));
-                })
-                .setOnClickListener((customRecycler, itemView, item, index) -> {
-                    Pair<Intent, Integer> pair = (Pair<Intent, Integer>) item.getContent();
-                    activity.startActivityForResult(pair.first, pair.second);
-                })
-                .dismissOnClick()
-                .show();
-    }
+//    public static void showLaterMenu(AppCompatActivity activity, View view) {
+//        if (!Database.isReady())
+//            return;
+//        CustomMenu.Builder(activity, view.findViewById(R.id.main_shows_watchLater_label))
+//                .setMenus((customMenu, items) -> {
+//                    items.add(new CustomMenu.MenuItem("Später ansehen", new Pair<>(new Intent(activity, ShowActivity.class)
+//                            .putExtra(CategoriesActivity.EXTRA_SEARCH, WATCH_LATER_SEARCH)
+//                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.SHOW), MainActivity.START_WATCH_LATER)));
+//                    items.add(new CustomMenu.MenuItem("Bevorstehende", new Pair<>(new Intent(activity, ShowActivity.class)
+//                            .putExtra(CategoriesActivity.EXTRA_SEARCH, UPCOMING_SEARCH)
+//                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.SHOW), MainActivity.START_UPCOMING)));
+//                })
+//                .setOnClickListener((customRecycler, itemView, item, index) -> {
+//                    Pair<Intent, Integer> pair = (Pair<Intent, Integer>) item.getContent();
+//                    activity.startActivityForResult(pair.first, pair.second);
+//                })
+//                .dismissOnClick()
+//                .show();
+//    }
 
     public static void showNewEpisodesDialog(AppCompatActivity activity) {
         Database database = Database.getInstance();

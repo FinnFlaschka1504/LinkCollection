@@ -152,8 +152,11 @@ public class FastScrollRecyclerViewHelper implements FastScroller.ViewHelper {
                 boolean isInX = rawX >= ints[0] && rawX <= ints[0] + thumbView.getWidth();
                 boolean isInY = rawY >= ints[1] && rawY <= ints[1] + thumbView.getHeight();
 
-                if (!smoothScroll && !blocked[0] && event.getAction() == MotionEvent.ACTION_UP) {
-                    startResetThumbOffsetAnimation();
+                if (!blocked[0] && event.getAction() == MotionEvent.ACTION_UP) {
+                    if (!smoothScroll) {
+                        startResetThumbOffsetAnimation();
+                    }
+                    Utility.reflectionCall(mView, "dispatchOnScrollStateChanged", Pair.create(int.class, RecyclerView.SCROLL_STATE_IDLE));
                 }
 
 //                if (event.getAction() == MotionEvent.ACTION_DOWN)

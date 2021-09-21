@@ -9,9 +9,12 @@ import android.database.ContentObserver;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -21,7 +24,9 @@ import android.text.SpannableStringBuilder;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
 import android.transition.TransitionManager;
+import android.util.Pair;
 import android.view.ContextThemeWrapper;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -228,7 +233,7 @@ public class MediaActivity extends AppCompatActivity {
                     View view = getCurrentViewFromViewPager(scrollGalleryView.getViewPager());
                     if (view != null) {
                         PhotoView photo = view.findViewById(R.id.photoView);
-                        if (photo.getScale() <= 1f)
+                        if (photo.getScale() <= 1.0002f)
                             showDetailsDialog(getCurrentGalleryMedia());
                     } else
                         showDetailsDialog(getCurrentGalleryMedia());
@@ -240,7 +245,7 @@ public class MediaActivity extends AppCompatActivity {
                     View view = getCurrentViewFromViewPager(scrollGalleryView.getViewPager());
                     if (view != null) {
                         PhotoView photo = view.findViewById(R.id.photoView);
-                        if (photo.getScale() <= 1f)
+                        if (photo.getScale() <= 1.0002f)
                             hideScrollGallery();
                     } else
                         hideScrollGallery();
@@ -1270,7 +1275,7 @@ public class MediaActivity extends AppCompatActivity {
             public boolean onInterceptTouchEvent(MotionEvent ev) {
                 if (currentView[0] != null || (currentView[0] = getCurrentViewFromViewPager(scrollGalleryView.getViewPager())) != null) {
                     PhotoView photoView = currentView[0].findViewById(R.id.photoView);
-                    if (photoView.getScale() > 1f)
+                    if (photoView.getScale() > 1.0002f)
                         return false;
                 }
                 return super.onInterceptTouchEvent(ev);
@@ -1338,7 +1343,7 @@ public class MediaActivity extends AppCompatActivity {
         View changeRotationButton = findViewById(R.id.scrollGalleryView_rotate);
         setupThumbnailMap();
         applyChangeRotationButton(this, changeRotationButton);
-
+        setDisplayProps();
 //        LinearLayout thumbnailContainer = findViewById(R.id.thumbnails_container);
 //        HorizontalScrollView thumbnailScrollView = findViewById(R.id.thumbnails_scroll_view);
 //        thumbnailContainer.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
@@ -1359,6 +1364,14 @@ public class MediaActivity extends AppCompatActivity {
 //            }
 //        });
 
+    }
+
+    private void setDisplayProps() {
+        boolean isPortrait = Utility.isPortrait(this);
+        Point point = new Point();
+        Rect bounds = getWindowManager().getCurrentWindowMetrics().getBounds();
+        point.set(bounds.width() + (isPortrait ? 0 : 100), bounds.height());
+        Utility.reflectionSet(scrollGalleryView, "displayProps", point);
     }
 
     public static void applyChangeRotationButton(AppCompatActivity activity, View changeRotationButton) {
@@ -1456,12 +1469,8 @@ public class MediaActivity extends AppCompatActivity {
         }
     }
 
-    boolean b;
     private void setMediaScrollGalleryAndShow(List<Media> shownMediaList, int index) {
-        if (!b) {
-            setMediaScrollGallery(shownMediaList);
-//            b = true;
-        }
+        setMediaScrollGallery(shownMediaList);
         showScrollGallery(index);
     }
 
@@ -1513,7 +1522,7 @@ public class MediaActivity extends AppCompatActivity {
         int[] coords = new int[2];
         viewPager.getLocationOnScreen(coords);
 
-        CustomUtility.logD(TAG, "showScrollGallery: %d | %d", coords[0], coords[1]);
+//        CustomUtility.logD(TAG, "showScrollGallery: %d | %d", coords[0], coords[1]);
 
 
         LinearLayout thumbnailContainer = findViewById(R.id.thumbnails_container);
@@ -1525,7 +1534,8 @@ public class MediaActivity extends AppCompatActivity {
                     int[] thumbnailCoords = new int[2];
                     thumbnailContainer.getChildAt(Math.max(0, index)).getLocationOnScreen(thumbnailCoords);
                     int thumbnailCenterX = thumbnailCoords[0] + 200 / 2;
-                    int thumbnailDelta = 1440 / 2 - thumbnailCenterX;
+                    boolean isPortrait = Utility.isPortrait(MediaActivity.this);
+                    int thumbnailDelta = (Utility.getScreenSize(MediaActivity.this).first + (isPortrait ? 0 : 100)) / 2 - thumbnailCenterX;
 
 //                    CustomUtility.logD(TAG, "onLayoutChange: %d | %d | %d", thumbnailScrollView.getWidth(), thumbnailContainer.getWidth(), thumbnailDelta);
 //                    CustomUtility.logD(TAG, "onLayoutChange: %d", thumbnailDelta);
@@ -1560,31 +1570,6 @@ public class MediaActivity extends AppCompatActivity {
         currentVideoPreview = null;
         pendingScroll = -1;
     }
-
-//    private void hideSystemUI() {
-//        // Enables regular immersive mode.
-//        // For "lean back" mode, remove SYSTEM_UI_FLAG_IMMERSIVE.
-//        // Or for "sticky immersive," replace it with SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-//        View decorView = getWindow().getDecorView();
-//        decorView.setSystemUiVisibility(
-//                View.SYSTEM_UI_FLAG_IMMERSIVE
-//                        // Set the content to appear under the system bars so that the
-//                        // content doesn't resize when the system bars hide and show.
-//                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-//                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-//                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-//                        // Hide the nav bar and status bar
-//                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-//                        | View.SYSTEM_UI_FLAG_FULLSCREEN);
-//    }
-//
-//    private void showSystemUI() {
-//        View decorView = getWindow().getDecorView();
-//        decorView.setSystemUiVisibility(
-//                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-//                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-//                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
-//    }
 
     public static void toggleDescriptionAndButtonVisibility(AppCompatActivity activity) {
         int visibility = activity.findViewById(com.veinhorn.scrollgalleryview.R.id.thumbnails_scroll_view).getVisibility();
@@ -1686,7 +1671,7 @@ public class MediaActivity extends AppCompatActivity {
             int startIndex = left / thumbnailSize - 2;
             int endIndex = (int) Math.ceil(scrollX / (double) thumbnailSize) + 1;
 //            CustomUtility.logD(TAG, String.format("setupThumbnailMap: %d | %d | %d | %d", scrollX - offset, startIndex, endIndex, thumbnailLoadMap.size()));
-//            CustomUtility.logD(TAG, "setupThumbnailMap: %d | %d | %d | %d | %d", scrollX - offset, oldScrollX, startIndex, endIndex, thumbnailLoadMap.size());
+//            CustomUtility.logD(TAG, "setupThumbnailMap: %d | %d | %d || %d | %d || %d", scrollX - offset, width, offset, startIndex, endIndex, thumbnailLoadMap.size());
             for (int i = startIndex; i <= endIndex; i++) {
                 Runnable runnable = thumbnailLoadMap.get(i);
                 if (runnable != null) {
@@ -1882,6 +1867,10 @@ public class MediaActivity extends AppCompatActivity {
         setRecyclerMetrics();
         ((GridLayoutManager) mediaRecycler.getRecycler().getLayoutManager()).setSpanCount(recyclerMetrics.first);
         reLoadRecycler();
+
+        Pair<Integer, Integer> screenSize = Utility.getScreenSize(this);
+        findViewById(R.id.thumbnails_container).setPadding(screenSize.first / 2, 0, screenSize.first / 2, 0);
+        setDisplayProps();
     }
 }
 

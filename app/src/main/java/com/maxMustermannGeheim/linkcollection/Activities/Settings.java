@@ -97,6 +97,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import io.fabric.sdk.android.services.concurrency.AsyncTask;
+
 import static com.maxMustermannGeheim.linkcollection.Activities.Settings.Space.allSpaces;
 
 public class Settings extends AppCompatActivity {
@@ -307,6 +309,17 @@ public class Settings extends AppCompatActivity {
                                 .enableStackButtons()
                                 .show();
 
+                    });
+
+                    view.findViewById(R.id.dialogSettingsVideo_more_permutations).setOnClickListener(v -> {
+                        Toast.makeText(context, "Einen Moment bitte...", Toast.LENGTH_SHORT).show();
+                        new AsyncTask<Object, Object, Object>() {
+                            @Override
+                            protected Object doInBackground(Object... objects) {
+                                VideoActivity.showIntersectionsDialog(settingsContext);
+                                return null;
+                            }
+                        }.doInBackground();
                     });
 
                     ((TextView) view.findViewById(R.id.dialogSettingsVideo_edit_parseUrl_added)).setText(database.urlParserMap.values().stream().map(UrlParser::getName).collect(Collectors.joining(", ")));

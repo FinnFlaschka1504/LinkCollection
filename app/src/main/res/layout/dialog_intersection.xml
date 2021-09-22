@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Länge"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/dialog_permutations_minLength"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0" />
+
+            <com.innovattic.rangeseekbar.RangeSeekBar
+                android:id="@+id/dialog_intersections_lengthLimit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:rsb_initialMaxThumbValue="20"
+                app:rsb_initialMinThumbValue="5"
+                app:rsb_max="20"
+                app:rsb_maxThumbDrawable="@drawable/ic_dot"
+                app:rsb_maxThumbOffsetHorizontal="7dp"
+                app:rsb_minRange="0"
+                app:rsb_minThumbDrawable="@drawable/ic_dot"
+                app:rsb_minThumbOffsetHorizontal="-7dp"
+                app:rsb_touchRadius="25dp"
+                app:rsb_trackRoundedCaps="false"
+                app:rsb_trackSelectedColor="@color/colorPrimaryDark"
+                app:rsb_trackSelectedRoundedCaps="true"
+                app:rsb_trackSelectedThickness="3dp"
+                app:rsb_trackThickness="2dp" />
+
+            <TextView
+                android:id="@+id/dialog_intersections_maxLength"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="8" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/dialog_intersections_minMaxLength"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="1 - 8"
+            android:textAlignment="textEnd" />
+
+        <!--    <CheckBox-->
+        <!--        android:id="@+id/dialog_permutations_excludeExisting"-->
+        <!--        android:layout_width="match_parent"-->
+        <!--        android:layout_height="wrap_content"-->
+        <!--        android:layout_marginHorizontal="10dp"-->
+        <!--        android:text="Existierende verbergen" />-->
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Anzahl"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0" />
+
+            <com.innovattic.rangeseekbar.RangeSeekBar
+                android:id="@+id/dialog_intersections_countLimit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                app:rsb_initialMaxThumbValue="11"
+                app:rsb_initialMinThumbValue="2"
+                app:rsb_max="11"
+                app:rsb_maxThumbDrawable="@drawable/ic_dot"
+                app:rsb_maxThumbOffsetHorizontal="7dp"
+                app:rsb_minRange="0"
+                app:rsb_minThumbDrawable="@drawable/ic_dot"
+                app:rsb_minThumbOffsetHorizontal="-7dp"
+                app:rsb_touchRadius="25dp"
+                app:rsb_trackRoundedCaps="false"
+                app:rsb_trackSelectedColor="@color/colorPrimaryDark"
+                app:rsb_trackSelectedRoundedCaps="true"
+                app:rsb_trackSelectedThickness="3dp"
+                app:rsb_trackThickness="2dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Max." />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/dialog_intersections_minMaxCount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="1 - 8"
+            android:textAlignment="textEnd" />
+
+        <!--    <CheckBox-->
+        <!--        android:id="@+id/dialog_permutations_excludeExisting"-->
+        <!--        android:layout_width="match_parent"-->
+        <!--        android:layout_height="wrap_content"-->
+        <!--        android:layout_marginHorizontal="10dp"-->
+        <!--        android:text="Existierende verbergen" />-->
+    </LinearLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/dialog_permutations_blacklistRegex_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="8dp"
+            android:layout_marginBottom="8dp"
+            app:prefixText=".*("
+            app:suffixText=").*">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/dialog_intersections_blacklistRegex"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="BlackListRegex"
+                android:singleLine="true"
+                />
+        </com.google.android.material.textfield.TextInputLayout>
+
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?android:attr/listDivider" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/dialog_intersections_list"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1" />
+</LinearLayout>

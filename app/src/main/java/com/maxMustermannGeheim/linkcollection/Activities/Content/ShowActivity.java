@@ -62,7 +62,6 @@ import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAutoCompleteAdapter;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.ImageAdapterItem;
 import com.finn.androidUtilities.CustomDialog;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.finn.androidUtilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
@@ -82,7 +81,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -1671,7 +1669,7 @@ public class ShowActivity extends AppCompatActivity {
                                                     Database.saveAll();
                                                     customDialog.reloadView();
                                                 })
-                                                .transformPreviousButtonToImageButton()
+                                                .transformLastAddedButtonToImageButton()
                                                 .alignPreviousButtonsLeft();
                                 })
                                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
@@ -1704,7 +1702,7 @@ public class ShowActivity extends AppCompatActivity {
                                                     Database.saveAll();
                                                     customDialog.reloadView();
                                                 })
-                                                .transformPreviousButtonToImageButton()
+                                                .transformLastAddedButtonToImageButton()
                                                 .alignPreviousButtonsLeft();
                                 })
                                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
@@ -1751,7 +1749,7 @@ public class ShowActivity extends AppCompatActivity {
                                                     Toast.makeText(this, "IMDB-ID gelöscht", Toast.LENGTH_SHORT).show();
                                                     Database.saveAll();
                                                 })
-                                                .transformPreviousButtonToImageButton()
+                                                .transformLastAddedButtonToImageButton()
                                                 .alignPreviousButtonsLeft();
 
                                 })

@@ -8,7 +8,6 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Looper;
 import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -18,7 +17,6 @@ import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.text.style.RelativeSizeSpan;
-import android.util.Log;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -57,7 +55,6 @@ import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.gson.Gson;
 import com.innovattic.rangeseekbar.RangeSeekBar;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
@@ -78,7 +75,7 @@ import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
-import com.maxMustermannGeheim.linkcollection.Utilities.FastScrollRecyclerViewHelper;
+import com.finn.androidUtilities.FastScrollRecyclerViewHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.MinDimensionLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -445,9 +442,9 @@ public class VideoActivity extends AppCompatActivity {
                                     minLength_edit.setText(CustomUtility.isNotValueReturnOrElse(minLength[0], -1, String::valueOf, integer -> null));
                                     maxLength_edit.setText(CustomUtility.isNotValueReturnOrElse(maxLength[0], -1, String::valueOf, integer -> null));
                                 }
-                                
+
                                 // --------------- 
-                                
+
                                 return customDialog1 -> {
                                     String  minLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_video_length_min_edit)).getText().toString().trim();
                                     String maxLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_video_length_max_edit)).getText().toString().trim();
@@ -896,6 +893,8 @@ public class VideoActivity extends AppCompatActivity {
                     } else if (extraSearch.equals(UPCOMING_SEARCH)) {
                         mode = MODE.UPCOMING;
                         reLoadVideoRecycler();
+                    } else if (extraSearchCategory == CategoriesActivity.CATEGORIES.VIDEO) {
+                        videos_search.setQuery(extraSearch, false);
                     } else {
                         if (!advancedQueryHelper.wrapAndSetExtraSearch(extraSearchCategory, extraSearch)) {
                             videos_search.setQuery(extraSearch, true);
@@ -916,12 +915,6 @@ public class VideoActivity extends AppCompatActivity {
                 if (getIntent().getBooleanExtra(MainActivity.EXTRA_SHOW_RANDOM, false))
                     showRandomDialog();
             }
-
-
-//            String collect = database.videoMap.values().stream().filter(s -> s.getImagePath() != null && !s.getImagePath().matches(CategoriesActivity.pictureRegexAll)).map(video -> video.getName() + ":  " + video.getImagePath()).collect(Collectors.joining("\n\n"));
-//            CustomDialog.Builder(this)
-//                    .setText(collect)
-//                    .show();
 
         };
 
@@ -1211,8 +1204,8 @@ public class VideoActivity extends AppCompatActivity {
                                 .addButton(R.drawable.ic_search, customDialog1 -> showSearchDialog(video, null), false)
                                 .alignPreviousButtonsLeft();
                 })
-                .addButton("Bearbeiten", customDialog ->
-                        addOrEditDialog = showEditOrNewDialog(video).first, false)
+                .addButton(CustomDialog.BUTTON_TYPE.EDIT_BUTTON, customDialog -> addOrEditDialog = showEditOrNewDialog(video).first, false)
+                .markLastAddedButtonAsActionButton()
 //                .addButton("Öffnen mit...", customDialog -> openUrl(video.getUrl(), true), openWithButtonId, false)
                 .setSetViewContent((customDialog, view, reload) -> {
                     if (reload && views[0] != video.getDateList().size()) {
@@ -1487,6 +1480,192 @@ public class VideoActivity extends AppCompatActivity {
                 .colorLastAddedButton()
                 .show();
     }
+
+    public static void showIntersectionsDialog(AppCompatActivity context) {
+        CustomList<String> resultList = new CustomList<>();
+
+        for (Video video : new CustomList<>(Database.getInstance().videoMap.values()))
+            resultList.addAll(CustomUtility.getAllSubTextMutations(video.getName()).distinct());
+
+        CustomList<CustomUtility.Triple<Integer, Integer, String>> tripleList = resultList.stream().distinct().map(s -> CustomUtility.Triple.create(Collections.frequency(resultList, s), s.split(" ").length, s)).sorted((o1, o2) -> {
+            int compResult;
+            if ((compResult = o1.second.compareTo(o2.second)) != 0)
+                return compResult * -1;
+            if ((compResult = o1.first.compareTo(o2.first)) != 0)
+                return compResult * -1;
+            return 0;
+        }).filter(pair -> pair.first > 1).collect(Collectors.toCollection(CustomList::new));
+
+//                CustomList<CustomUtility.Triple<Integer, Integer, String>> tripleList = Stream.iterate(1, count -> count + 1).limit(300).map(integer -> CustomUtility.Triple.create(integer, integer, "Test " + integer)).collect(Collectors.toCollection(CustomList::new));
+        Utility.GenericReturnInterface<String, Boolean> alreadyExists = text -> {
+            if (Utility.findObjectByName(CategoriesActivity.CATEGORIES.DARSTELLER, text, true) != null)
+                return true;
+            else if (Utility.findObjectByName(CategoriesActivity.CATEGORIES.STUDIOS, text, true) != null)
+                return true;
+            else if (Utility.findObjectByName(CategoriesActivity.CATEGORIES.GENRE, text, true) != null)
+                return true;
+            else
+                return false;
+        };
+
+        int maxLength = tripleList.stream().mapToInt(value -> value.second).max().orElse(0);
+        int[] lengthRange = {0, maxLength};
+        int[] countRange = {2, 11};
+        final String[] blacklistRegex = {""};
+
+        Utility.GenericInterface<View> setLengthTexts = view -> {
+            ((TextView) view.findViewById(R.id.dialog_intersections_maxLength)).setText("" + maxLength);
+            ((TextView) view.findViewById(R.id.dialog_intersections_minMaxLength)).setText(String.format("%d–%d", lengthRange[0], lengthRange[1]));
+        };
+
+        Utility.GenericInterface<View> setCountTexts = view -> {
+            ((TextView) view.findViewById(R.id.dialog_intersections_minMaxCount)).setText(String.format("%d–%s", countRange[0], countRange[1] != 11 ? countRange[1] + "" : "Max."));
+        };
+
+        CustomRecycler<CustomUtility.Triple<Integer, Integer, String>> customRecycler = new CustomRecycler<CustomUtility.Triple<Integer, Integer, String>>(context)
+                .setGetActiveObjectList(customRecycler1 -> {
+                    return tripleList.filter(triple -> {
+                        if (triple.second < lengthRange[0] || triple.second > lengthRange[1])
+                            return false;
+                        if (triple.first < countRange[0] || (triple.first > countRange[1] && countRange[1] != 11))
+                            return false;
+                        if (CustomUtility.stringExists(blacklistRegex[0]))
+                            try {
+                                if (triple.third.matches(".*(" + blacklistRegex[0] + ").*")) {
+                                    return false;
+                                }
+                            } catch (Exception ignored) {}
+                        return true;
+                    }, false);
+                })
+                .setItemLayout(R.layout.list_item_intersection)
+                .enableDivider()
+                .disableCustomRipple()
+                .setSetItemContent((customRecycler1, itemView, triple, index) -> {
+                    ((TextView) itemView.findViewById(R.id.listItem_intersection_count)).setText(String.format("(%d)", triple.first));
+                    ((TextView) itemView.findViewById(R.id.listItem_intersection_text)).setText(triple.third);
+
+                    itemView.findViewById(R.id.listItem_intersection_exists).setVisibility(alreadyExists.run(triple.third) ? View.VISIBLE : View.GONE);
+                })
+                .setOnClickListener((customRecycler1, itemView, triple, index) -> {
+                    context.startActivity(
+                            new Intent(context, VideoActivity.class)
+                                    .putExtra(CategoriesActivity.EXTRA_SEARCH, triple.third)
+                                    .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO)
+                    );
+                })
+                .setOnLongClickListener((customRecycler1, view, triple, index) -> {
+                    CustomDialog.Builder(context)
+                            .setTitle("Kategorie hinzufügen")
+                            .setEdit((customDialog, editBuilder) ->
+                                    editBuilder
+                                    .setHint("Name")
+                                    .setText(triple.third)
+                                    .setValidation((validator, text) -> {
+                                        customDialog.getButtonByName("Darsteller").setEnabled(CustomUtility.stringExists(text) && Utility.findObjectByName(CategoriesActivity.CATEGORIES.DARSTELLER, text, true) == null);
+                                        customDialog.getButtonByName("Studio").setEnabled(CustomUtility.stringExists(text) && Utility.findObjectByName(CategoriesActivity.CATEGORIES.STUDIOS, text, true) == null);
+                                        customDialog.getButtonByName("Genre").setEnabled(CustomUtility.stringExists(text) && Utility.findObjectByName(CategoriesActivity.CATEGORIES.GENRE, text, true) == null);
+                                    }))
+                            .addButton("Darsteller", customDialog -> {
+                                Darsteller darsteller = new Darsteller(customDialog.getEditText());
+                                Database.getInstance().darstellerMap.put(darsteller.getUuid(), darsteller);
+                                Database.saveAll(context);
+                                customRecycler1.reload();
+                            })
+                            .addButton("Studio", customDialog -> {
+                                Studio studio = new Studio(customDialog.getEditText());
+                                Database.getInstance().studioMap.put(studio.getUuid(), studio);
+                                Database.saveAll(context);
+                                customRecycler1.reload();
+                            })
+                            .addButton("Genre", customDialog -> {
+                                Genre genre = new Genre(customDialog.getEditText());
+                                Database.getInstance().genreMap.put(genre.getUuid(), genre);
+                                Database.saveAll(context);
+                                customRecycler1.reload();
+                            })
+                            .enableStackButtons()
+                            .show();
+                })
+                .enableFastScroll(null, false)
+                .generate();
+
+        CustomDialog.Builder(context)
+                .setTitle("Überschneidungen")
+                .setView(R.layout.dialog_intersection)
+                .setSetViewContent((customDialog, view, reload) -> {
+                    RangeSeekBar lengthSeekBar = (RangeSeekBar) view.findViewById(R.id.dialog_intersections_lengthLimit);
+                    lengthSeekBar.setMax(maxLength);
+                    setLengthTexts.run(view);
+                    lengthSeekBar.setSeekBarChangeListener(new RangeSeekBar.SeekBarChangeListener() {
+                        @Override
+                        public void onStartedSeeking() {
+
+                        }
+
+                        @Override
+                        public void onStoppedSeeking() {
+
+                        }
+
+                        @Override
+                        public void onValueChanged(int i, int i1) {
+                            lengthRange[0] = i;
+                            lengthRange[1] = i1;
+                            customRecycler.reload();
+                            setLengthTexts.run(view);
+                        }
+                    });
+
+                    RangeSeekBar countSeekBar = (RangeSeekBar) view.findViewById(R.id.dialog_intersections_countLimit);
+                    setCountTexts.run(view);
+                    countSeekBar.setSeekBarChangeListener(new RangeSeekBar.SeekBarChangeListener() {
+                        @Override
+                        public void onStartedSeeking() {
+
+                        }
+
+                        @Override
+                        public void onStoppedSeeking() {
+
+                        }
+
+                        @Override
+                        public void onValueChanged(int i, int i1) {
+                            countRange[0] = i;
+                            countRange[1] = i1;
+                            customRecycler.reload();
+                            setCountTexts.run(view);
+                        }
+                    });
+
+                    EditText blacklistRegexEdit = view.findViewById(R.id.dialog_intersections_blacklistRegex);
+                    blacklistRegexEdit.addTextChangedListener(new TextWatcher() {
+                        @Override
+                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                        @Override
+                        public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+                        @Override
+                        public void afterTextChanged(Editable s) {
+                            blacklistRegex[0] = s.toString();
+                            customRecycler.reload();
+                        }
+                    });
+
+                    customRecycler.setRecycler(view.findViewById(R.id.dialog_intersections_list)).generate();
+                })
+                .setDimensionsFullscreen()
+                .disableScroll()
+                .enableTitleBackButton()
+                .setOnBackPressedListener(customDialog -> {
+                    Toast.makeText(context, "TitleBackButton benutzen", Toast.LENGTH_SHORT).show();
+                    return true;
+                })
+                .show();
+    }
+
 
     //  ------------------------- EditVideo ------------------------->
     private Pair<CustomDialog, Video> showEditOrNewDialog(Video video) {

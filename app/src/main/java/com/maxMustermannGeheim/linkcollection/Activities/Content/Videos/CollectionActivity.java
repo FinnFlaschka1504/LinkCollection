@@ -921,7 +921,7 @@ public class CollectionActivity extends AppCompatActivity {
                                                 .show();
 
                                     }, false)
-                                    .transformPreviousButtonToImageButton()
+                                    .transformLastAddedButtonToImageButton()
                                     .alignPreviousButtonsLeft();
                     })
                     .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)

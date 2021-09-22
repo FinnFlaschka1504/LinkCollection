@@ -176,7 +176,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -2420,7 +2419,7 @@ public class Utility {
                     });
                 })
                 .addButton(CustomDialog.BUTTON_TYPE.ADD_BUTTON)
-                .transformPreviousButtonToImageButton()
+                .transformLastAddedButtonToImageButton()
                 .alignPreviousButtonsLeft()
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     onSaved.run(selectedIds);
@@ -2479,11 +2478,15 @@ public class Utility {
     }
 
     public static ParentClass findObjectByName(CategoriesActivity.CATEGORIES category, String name) {
+        return findObjectByName(category, name, false);
+    }
+
+    public static ParentClass findObjectByName(CategoriesActivity.CATEGORIES category, String name, boolean ignoreCase) {
         switch (category) {
             case MEDIA_CATEGORY:
-                return (ParentClass) ParentClass_Tree.findObjectByName(category, name, false);
+                return (ParentClass) ParentClass_Tree.findObjectByName(category, name, ignoreCase);
             default:
-                return getMapFromDatabase(category).values().stream().filter(parentClass -> parentClass.getName().equals(name)).findFirst().orElse(null);
+                return getMapFromDatabase(category).values().stream().filter(parentClass -> ParentClass_Alias.equalsQuery(parentClass, name, ignoreCase)).findFirst().orElse(null);
         }
     }
 

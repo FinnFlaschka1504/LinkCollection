@@ -1748,6 +1748,8 @@ public class Helpers {
             String query = getQuery();
             if (Utility.stringExists(query)) {
                 String extraSearch = context.getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
+                if (Objects.equals(extraSearch, query))
+                    return false;
                 if (CustomUtility.stringExists(extraSearch) && istExtraSearch(extraSearch)) {
                     CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) context.getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
                     String wrappedExtraSearch;

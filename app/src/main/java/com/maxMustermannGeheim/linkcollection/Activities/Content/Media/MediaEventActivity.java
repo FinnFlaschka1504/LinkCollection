@@ -17,7 +17,6 @@ import android.os.Bundle;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.RelativeSizeSpan;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -51,7 +50,7 @@ import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
-import com.maxMustermannGeheim.linkcollection.Utilities.FastScrollRecyclerViewHelper;
+import com.finn.androidUtilities.FastScrollRecyclerViewHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
 import java.io.File;
@@ -247,7 +246,7 @@ public class MediaEventActivity extends AppCompatActivity {
         RecyclerView recyclerView = findViewById(R.id.recycler);
 
         final CustomList<Integer>[] heightList = new CustomList[]{new CustomList<>()};
-        final int[] scrollRange = {0};
+        final Integer[] scrollRange = {0};
 
         eventRecycler = new CustomRecycler<MediaEvent>(this, recyclerView)
                 .setItemLayout(R.layout.list_item_media_event)
@@ -648,7 +647,7 @@ public class MediaEventActivity extends AppCompatActivity {
                                     Toast.makeText(this, "Events mit Kindern können nicht gelöscht werden", Toast.LENGTH_SHORT).show();
                                 })
                                 .alignPreviousButtonsLeft()
-                                .transformPreviousButtonToImageButton()
+                                .transformLastAddedButtonToImageButton()
                                 .addConfirmationDialogToLastAddedButton("", "", customDialog1 -> {
                                     customDialog1
                                             .setTitle(singular + " Löschen")

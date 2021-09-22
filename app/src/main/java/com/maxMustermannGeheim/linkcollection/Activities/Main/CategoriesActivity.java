@@ -1,24 +1,20 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Main;
 
-import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.text.InputType;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
-import android.util.Log;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -32,14 +28,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 
-import com.allyants.draggabletreeview.DraggableTreeView;
-import com.allyants.draggabletreeview.SimpleTreeViewAdapter;
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.RequestBuilder;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
-import com.github.chrisbanes.photoview.PhotoView;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.textfield.TextInputLayout;
@@ -63,7 +54,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomTreeViewAdapter;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.ImageCropUtility;
@@ -73,8 +63,6 @@ import com.unnamed.b.atv.view.AndroidTreeView;
 
 import org.intellij.lang.annotations.Language;
 
-import java.io.File;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -615,7 +603,7 @@ public class CategoriesActivity extends AppCompatActivity {
                                             })
                                             .show();
                                 }, false)
-                                .transformPreviousButtonToImageButton();
+                                .transformLastAddedButtonToImageButton();
                 })
                 .enableDynamicWrapHeight(this)
                 .enableAutoUpdateDynamicWrapHeight()

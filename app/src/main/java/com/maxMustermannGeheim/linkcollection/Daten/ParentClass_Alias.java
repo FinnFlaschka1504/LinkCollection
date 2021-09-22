@@ -98,4 +98,28 @@ public interface ParentClass_Alias {
         } else
             return false;
     }
+
+    static boolean equalsQuery(ParentClass parentClass, String query, boolean ignoreCase) {
+        if (ignoreCase && parentClass.getName().equalsIgnoreCase(query))
+            return true;
+        else if (!ignoreCase && parentClass.getName().equals(query))
+            return true;
+        else if (parentClass instanceof ParentClass_Alias) {
+            try {
+                return Utility.isNullReturnOrElse((String) parentClass.getClass().getMethod("getNameAliases").invoke(parentClass), false, s -> {
+                    return Arrays.stream(s.split("\n")).anyMatch(alias -> {
+                        if (ignoreCase)
+                            return alias.equalsIgnoreCase(query);
+                        else
+                            return alias.equals(query);
+                    });
+                });
+            } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                return false;
+            }
+        } else
+            return false;
+
+
+    }
 }

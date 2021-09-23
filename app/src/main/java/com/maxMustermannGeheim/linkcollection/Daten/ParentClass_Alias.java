@@ -1,6 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Daten;
 
 import com.finn.androidUtilities.CustomList;
+import com.finn.androidUtilities.CustomUtility;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
 import java.lang.reflect.InvocationTargetException;
@@ -57,6 +58,25 @@ public interface ParentClass_Alias {
         return parentClass.getName();
 
     }
+
+    static boolean addAlias(ParentClass parentClass, String alias) {
+        if (parentClass instanceof ParentClass_Alias) {
+            try {
+                String oldAlias = (String) parentClass.getClass().getDeclaredMethod("getNameAliases").invoke(parentClass);
+                String newAlias;
+                if (CustomUtility.stringExists(oldAlias))
+                    newAlias = oldAlias + "\n" + alias;
+                else
+                    newAlias = alias;
+                parentClass.getClass().getDeclaredMethod("setNameAliases", String.class).invoke(parentClass, newAlias);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // ---------------
 
     static boolean containsQuery(ParentClass parentClass, String query) {
         if (parentClass == null || query == null)

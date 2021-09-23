@@ -689,7 +689,7 @@ public class Utility {
                             Toast.makeText(activity, s, Toast.LENGTH_SHORT).show();
                             activity.startActivity(new Intent(activity, CategoriesActivity.class)
                                     .putExtra(MainActivity.EXTRA_CATEGORY, category)
-                                    .putExtra(CategoriesActivity.EXTRA_SEARCH, CategoriesActivity.escapeForSearchExtra(s)));
+                                    .putExtra(CategoriesActivity.EXTRA_SEARCH, /*CategoriesActivity.escapeForSearchExtra(*/s));
                         };
 
                         if (!(parentClass instanceof Darsteller) || ((Darsteller) parentClass).getTmdbId() == 0)
@@ -4077,6 +4077,34 @@ public class Utility {
         drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
         drawable.draw(canvas);
         return bitmap;
+    }
+
+    public static void simpleLoadUrlIntoImageView(Context context, ImageView imageView, String imagePath, @Nullable String fullScreenPath, int roundedRadiusDp, Runnable... onFail_onSuccess_onFullscreen) {
+        Runnable round = () -> roundImageView(imageView, roundedRadiusDp);
+
+        Runnable[] runnables = onFail_onSuccess_onFullscreen;
+        if (roundedRadiusDp > 0) {
+            if (runnables.length == 0) {
+                runnables = new Runnable[2];
+                runnables[1] = round;
+            } else if (runnables.length == 1) {
+                Runnable old = runnables[0];
+                runnables = new Runnable[2];
+                runnables[0] = old;
+                runnables[1] = round;
+            } else if (runnables.length >= 2 && runnables[1] != null) {
+                Runnable old = runnables[1];
+                runnables[1] = () -> {
+                    round.run();
+                    old.run();
+                };
+            } else if (runnables.length >= 2)
+                runnables[0] = round;
+        } else {
+            runnables = onFail_onSuccess_onFullscreen;
+        }
+
+        loadUrlIntoImageView(context, imageView, null, getTmdbImagePath_ifNecessary(imagePath, false), CustomUtility.stringExists(fullScreenPath) ? getTmdbImagePath_ifNecessary(fullScreenPath, true) : null, runnables);
     }
 
     public static void loadUrlIntoImageView(Context context, ImageView imageView, String imagePath, @Nullable String fullScreenPath, Runnable... onFail_onSuccess_onFullscreen) {

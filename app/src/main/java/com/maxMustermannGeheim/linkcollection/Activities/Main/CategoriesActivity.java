@@ -121,6 +121,9 @@ public class CategoriesActivity extends AppCompatActivity {
             return searchIn;
         }
 
+        public boolean isTreeCategory() {
+            return CustomUtility.boolOr(this, CATEGORIES.MEDIA_CATEGORY, MEDIA_EVENT);
+        }
     }
 
 
@@ -205,7 +208,7 @@ public class CategoriesActivity extends AppCompatActivity {
 
         category = (CATEGORIES) getIntent().getSerializableExtra(MainActivity.EXTRA_CATEGORY);
 
-        isTreeCategory = CustomUtility.boolOr(category, CATEGORIES.MEDIA_CATEGORY);
+        isTreeCategory = category.isTreeCategory();
 
         loadDatabase();
     }
@@ -492,7 +495,13 @@ public class CategoriesActivity extends AppCompatActivity {
                         return;
 
                     ParentClass parentClass = item.first;
-                    showEditCategoryDialog(parentClass);
+                    removeFocusFromSearch();
+                    showEditCategoryDialog(this, category, parentClass, editObject -> reLoadRecycler(), editObject -> {
+                        allDatenObjektPairList.removeIf(pair -> Objects.equals(pair.first, parentClass));
+                        treeObjectCountMap.remove(editObject.getUuid());
+                        setResult(RESULT_OK);
+                        reLoadRecycler();
+                    }, null);
                 })
                 .generate();
 
@@ -515,7 +524,13 @@ public class CategoriesActivity extends AppCompatActivity {
                             return false;
 
                         ParentClass parentClass = (ParentClass) value;
-                        showEditCategoryDialog(parentClass);
+                        removeFocusFromSearch();
+                        showEditCategoryDialog(this, category, parentClass, editObject -> reLoadRecycler(), editObject -> {
+                            allDatenObjektPairList.removeIf(pair -> Objects.equals(pair.first, parentClass));
+                            treeObjectCountMap.remove(editObject.getUuid());
+                            setResult(RESULT_OK);
+                            reLoadRecycler();
+                        }, null);
                         return true;
                     });
                     CustomUtility.Triple<AndroidTreeView, View, TreeNode> triple = ParentClass_Tree.buildTreeView((ViewGroup) itemView, category,
@@ -558,14 +573,12 @@ public class CategoriesActivity extends AppCompatActivity {
 
 
     //  ------------------------- Edit ------------------------->
-    private void showEditCategoryDialog(@Nullable ParentClass oldObject) {
-        if (!CustomUtility.isOnline(this))
+    public static void showEditCategoryDialog(AppCompatActivity context, CATEGORIES category, @Nullable ParentClass oldObject, @Nullable CustomUtility.GenericInterface<ParentClass> onSave, @Nullable CustomUtility.GenericInterface<ParentClass> onDelete, @Nullable CustomUtility.GenericInterface<CustomDialog> optionalModifications) {
+        if (!CustomUtility.isOnline(context))
             return;
 
         boolean isEdit = oldObject != null;
         ParentClass editObject = isEdit ? (ParentClass) oldObject.clone() : ParentClass.newCategory(category, "");
-
-        removeFocusFromSearch();
 
         Utility.GenericInterface<CustomDialog> setPreviewCrop = (customDialog) -> {
             View preview = customDialog.findViewById(R.id.dialog_editTmdbCategory_preview);
@@ -582,30 +595,30 @@ public class CategoriesActivity extends AppCompatActivity {
                 previewCrop.setVisibility(View.GONE);
         };
 
-        CustomDialog.Builder(this)
+        CustomDialog.Builder(context)
                 .setTitle(category.getSingular() + (isEdit ? " Bearbeiten, oder Löschen" : " Hinzufügen"))
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .addOptionalModifications(customDialog -> {
                     if (isEdit)
                         customDialog
                                 .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog1 -> {
-                                    if (isTreeCategory && !((ParentClass_Tree) editObject).getChildren().isEmpty()) {
-                                        Toast.makeText(this, "Kategorie mit Unterkategorien kann noch nicht gelöscht werden", Toast.LENGTH_LONG).show();
+                                    if (category.isTreeCategory() && !((ParentClass_Tree) editObject).getChildren().isEmpty()) {
+                                        Toast.makeText(context, "Kategorie mit Unterkategorien kann noch nicht gelöscht werden", Toast.LENGTH_LONG).show();
                                         return;
                                     }
-                                    CustomDialog.Builder(this)
+                                    CustomDialog.Builder(context)
                                             .setTitle("Löschen")
-                                            .setText("Wirklich '" + editObject.getName() + "' löschen?")
+                                            .setText(new Helpers.SpannableStringHelper().append("Wirklich '").appendBold(editObject.getName()).append("' löschen?").get())
                                             .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
                                             .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog2 -> {
                                                 customDialog1.dismiss();
-                                                removeCategory(oldObject);
+                                                removeCategory(category, oldObject, onDelete);
                                             })
                                             .show();
                                 }, false)
                                 .transformLastAddedButtonToImageButton();
                 })
-                .enableDynamicWrapHeight(this)
+                .enableDynamicWrapHeight(context)
                 .enableAutoUpdateDynamicWrapHeight()
                 .addOptionalModifications(customDialog -> {
                     if (editObject instanceof ParentClass_Image) {
@@ -614,12 +627,12 @@ public class CategoriesActivity extends AppCompatActivity {
                                     String url = ((EditText) customDialog1.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
                                     ImageView preview = customDialog1.findViewById(R.id.dialog_editTmdbCategory_preview);
                                     if (CustomUtility.stringExists(url)) {
-                                        Utility.loadUrlIntoImageView(this, preview, Utility.getTmdbImagePath_ifNecessary(url, true), null, null, () -> {
+                                        Utility.loadUrlIntoImageView(context, preview, Utility.getTmdbImagePath_ifNecessary(url, true), null, null, () -> {
                                             setPreviewCrop.run(customDialog);
                                         });
                                         preview.setVisibility(View.VISIBLE);
                                     } else {
-                                        Toast.makeText(this, "Nichts eingegeben", Toast.LENGTH_SHORT).show();
+                                        Toast.makeText(context, "Nichts eingegeben", Toast.LENGTH_SHORT).show();
                                         preview.setVisibility(View.GONE);
                                         setPreviewCrop.run(customDialog);
                                     }
@@ -628,7 +641,7 @@ public class CategoriesActivity extends AppCompatActivity {
                 })
                 .alignPreviousButtonsLeft()
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
-                    if (!Utility.isOnline(this))
+                    if (!Utility.isOnline(context))
                         return;
                     ParentClass_Alias.applyNameAndAlias(editObject, ((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim());
                     if (editObject instanceof ParentClass_Image) {
@@ -637,15 +650,10 @@ public class CategoriesActivity extends AppCompatActivity {
                     }
                     if (isEdit)
                         oldObject.getChangesFrom(editObject);
-                    else {
+                    else
                         ((Map<String, ParentClass>) Utility.getMapFromDatabase(category)).put(editObject.getUuid(), editObject);
-                        if (editObject instanceof ParentClass_Tree)
-                            treeObjectCountMap.put(editObject.getUuid(), 0);
-                        else
-                            allDatenObjektPairList.add(new Pair<>(editObject, 0));
-                    }
-                    reLoadRecycler();
-                    Toast.makeText(this, (Database.saveAll_simple() ? "" : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
+                    CustomUtility.runGenericInterface(onSave, isEdit ? oldObject : editObject);
+                    Toast.makeText(context, (Database.saveAll_simple() ? "" : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
 
                 })
                 .setView(R.layout.dialog_edit_tmdb_category)
@@ -671,7 +679,7 @@ public class CategoriesActivity extends AppCompatActivity {
                         if (editObject instanceof ParentClass_Tmdb) {
                             ImageView dialog_editTmdbCategory_internet = view1.findViewById(R.id.dialog_editTmdbCategory_internet);
                             if (((ParentClass_Tmdb) editObject).getTmdbId() != 0) {
-                                dialog_editTmdbCategory_internet.setOnClickListener(v -> Utility.openUrl(this, "https://www.themoviedb.org/person/" + ((ParentClass_Tmdb) editObject).getTmdbId(), true));
+                                dialog_editTmdbCategory_internet.setOnClickListener(v -> Utility.openUrl(context, "https://www.themoviedb.org/person/" + ((ParentClass_Tmdb) editObject).getTmdbId(), true));
                                 dialog_editTmdbCategory_internet.setVisibility(View.VISIBLE);
                             }
                         }
@@ -683,7 +691,7 @@ public class CategoriesActivity extends AppCompatActivity {
                         dialog_editTmdbCategory_url_layout.getEditText().setText(imagePath);
                         ImageView preview = customDialog.findViewById(R.id.dialog_editTmdbCategory_preview);
                         if (CustomUtility.stringExists(imagePath)) {
-                            Utility.loadUrlIntoImageView(this, preview, Utility.getTmdbImagePath_ifNecessary(imagePath, true), null, null, () -> {
+                            Utility.loadUrlIntoImageView(context, preview, Utility.getTmdbImagePath_ifNecessary(imagePath, true), null, null, () -> {
                                 setPreviewCrop.run(customDialog);
                             });
                             preview.setVisibility(View.VISIBLE);
@@ -704,8 +712,8 @@ public class CategoriesActivity extends AppCompatActivity {
                         }).validate((TextInputLayout[]) null);
 
                         view1.findViewById(R.id.dialog_editTmdbCategory_localStorage).setOnClickListener(v -> {
-                            ActivityResultHelper.addFileChooserRequest(this, "image/*", o -> {
-                                String path = ActivityResultHelper.getPath(this, o.getData());
+                            ActivityResultHelper.addFileChooserRequest(context, "image/*", o -> {
+                                String path = ActivityResultHelper.getPath(context, o.getData());
                                 dialog_editTmdbCategory_url_layout.getEditText().setText(path);
                                 customDialog.getButtonByName("Testen").click();
                             });
@@ -716,14 +724,14 @@ public class CategoriesActivity extends AppCompatActivity {
                             cropButton.setVisibility(View.VISIBLE);
                             cropButton.setOnClickListener(v -> {
                                 ((ParentClass_Image) editObject).setImagePath(CustomUtility.stringExistsOrElse(dialog_editTmdbCategory_url_layout.getEditText().getText().toString(), null));
-                                ((ImageCropUtility) editObject).selectCropForImage(this, ((ImageCropUtility) editObject).getImageCrop(), imageCrop -> {
+                                ((ImageCropUtility) editObject).selectCropForImage(context, ((ImageCropUtility) editObject).getImageCrop(), imageCrop -> {
                                     ((ImageCropUtility) editObject).setImageCrop(imageCrop);
                                     setPreviewCrop.run(customDialog);
                                 });
                             });
                             cropButton.setOnLongClickListener(v -> {
                                 ((ImageCropUtility) editObject).setImageCrop(null);
-                                Toast.makeText(this, "Crop Zurückgesetzt", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(context, "Crop Zurückgesetzt", Toast.LENGTH_SHORT).show();
                                 setPreviewCrop.run(customDialog);
                                 return true;
                             });
@@ -745,11 +753,12 @@ public class CategoriesActivity extends AppCompatActivity {
                         return CustomUtility.stringExists(editNameText) || (editObject instanceof ParentClass_Image && CustomUtility.stringExists(((EditText) customDialog.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim()));
                     }
                 })
+                .addOptionalModifications(customDialog -> CustomUtility.runGenericInterface(optionalModifications, customDialog))
                 .show();
     }
 
-    private void removeCategory(ParentClass parentClass) {
-        allDatenObjektPairList.removeIf(pair -> Objects.equals(pair.first, parentClass));
+    public static void removeCategory(CategoriesActivity.CATEGORIES category, ParentClass parentClass, @Nullable CustomUtility.GenericInterface<ParentClass> onDelete) {
+        Database database = Database.getInstance();
         switch (category) {
             case DARSTELLER:
                 database.darstellerMap.remove(parentClass.getUuid());
@@ -819,8 +828,7 @@ public class CategoriesActivity extends AppCompatActivity {
         }
         // ToDo: abstrahieren
         Database.saveAll();
-        setResult(RESULT_OK);
-        reLoadRecycler();
+        CustomUtility.runGenericInterface(onDelete, parentClass);
     }
     //  <------------------------- Edit -------------------------
 
@@ -923,7 +931,14 @@ public class CategoriesActivity extends AppCompatActivity {
         int id = item.getItemId();
         switch (id) {
             case R.id.taskBar_category_add:
-                showEditCategoryDialog(null);
+                removeFocusFromSearch();
+                showEditCategoryDialog(this, category, null, parentClass -> {
+                    if (parentClass instanceof ParentClass_Tree)
+                        treeObjectCountMap.put(parentClass.getUuid(), 0);
+                    else
+                        allDatenObjektPairList.add(new Pair<>(parentClass, 0));
+                    reLoadRecycler();
+                }, null, null);
                 break;
             case R.id.taskBar_category_multiSelect:
                 if ((selectedList.isEmpty() || isTreeCategory) && selectedTreeList.isEmpty()) {

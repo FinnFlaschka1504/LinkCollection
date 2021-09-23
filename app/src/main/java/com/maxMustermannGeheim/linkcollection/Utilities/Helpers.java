@@ -1746,11 +1746,11 @@ public class Helpers {
 
         public boolean handleBackPress(AppCompatActivity context) {
             String query = getQuery();
-            if (Utility.stringExists(query)) {
-                String extraSearch = context.getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
+            String extraSearch = context.getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
+            if (Utility.stringExists(query) || CustomUtility.stringExists(extraSearch)) {
                 if (Objects.equals(extraSearch, query))
                     return false;
-                if (CustomUtility.stringExists(extraSearch) && istExtraSearch(extraSearch)) {
+                if (CustomUtility.stringExists(extraSearch)/* && istExtraSearch(query)*/) {
                     CategoriesActivity.CATEGORIES extraSearchCategory = (CategoriesActivity.CATEGORIES) context.getIntent().getSerializableExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY);
                     String wrappedExtraSearch;
                     if (extraSearchCategory != null && !query.equals((wrappedExtraSearch = wrapExtraSearch(extraSearchCategory, extraSearch)).trim())) {

@@ -640,11 +640,13 @@ public class ShowActivity extends AppCompatActivity {
                                 });
                             })
                             .enableStackButtons()
+                            .enableButtonDividerAll()
                             .show();
                 })
                 .setOnLongClickListener((customRecycler, view, show, index) -> {
                     showEditOrNewDialog(show);
                 })
+                .enableFastScroll()
                 .generate();
     }
 

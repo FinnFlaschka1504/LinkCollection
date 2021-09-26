@@ -76,7 +76,6 @@ import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
-import com.finn.androidUtilities.FastScrollRecyclerViewHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.MinDimensionLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -107,11 +106,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
-
-import me.zhanghai.android.fastscroll.FastScroller;
-import me.zhanghai.android.fastscroll.FastScrollerBuilder;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
@@ -1173,15 +1168,16 @@ public class VideoActivity extends AppCompatActivity {
                 .setOnLongClickListener((customRecycler, view, object, index) -> {
                     addOrEditDialog = showEditOrNewDialog(object).first;
                 })
+                .enableFastScroll((video, integer) -> video.getName())
                 .generate();
 
-        FastScroller[] fastScroller = {null};
-        fastScroller[0] = new FastScrollerBuilder(customRecycler_VideoList.getRecycler())
-                .setThumbDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_thumb)))
-                .setTrackDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_track)))
-                .setPadding(0, 20, 0, 50)
-                .setViewHelper(new FastScrollRecyclerViewHelper(customRecycler_VideoList, fastScroller, false, null))
-                .build();
+//        FastScroller[] fastScroller = {null};
+//        fastScroller[0] = new FastScrollerBuilder(customRecycler_VideoList.getRecycler())
+//                .setThumbDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_thumb)))
+//                .setTrackDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_track)))
+//                .setPadding(0, 20, 0, 50)
+//                .setViewHelper(new FastScrollRecyclerViewHelper(customRecycler_VideoList, fastScroller, false, null))
+//                .build();
 
     }
 
@@ -1493,7 +1489,7 @@ public class VideoActivity extends AppCompatActivity {
                 return compResult * -1;
             if ((compResult = o1.first.compareTo(o2.first)) != 0)
                 return compResult * -1;
-            return 0;
+            return o1.third.compareTo(o2.third);
         }).filter(pair -> pair.first > 1).collect(Collectors.toCollection(CustomList::new));
 
 //                CustomList<CustomUtility.Triple<Integer, Integer, String>> tripleList = Stream.iterate(1, count -> count + 1).limit(300).map(integer -> CustomUtility.Triple.create(integer, integer, "Test " + integer)).collect(Collectors.toCollection(CustomList::new));
@@ -1511,7 +1507,8 @@ public class VideoActivity extends AppCompatActivity {
         int maxLength = tripleList.stream().mapToInt(value -> value.second).max().orElse(0);
         int[] lengthRange = {0, maxLength};
         int[] countRange = {2, 11};
-        final String[] blacklistRegex = {""};
+        final String[] regex = {""};
+        final boolean[] isBlacklist = {true};
 
         Utility.GenericInterface<View> setLengthTexts = view -> {
             ((TextView) view.findViewById(R.id.dialog_intersections_maxLength)).setText("" + maxLength);
@@ -1529,11 +1526,12 @@ public class VideoActivity extends AppCompatActivity {
                             return false;
                         if (triple.first < countRange[0] || (triple.first > countRange[1] && countRange[1] != 11))
                             return false;
-                        if (CustomUtility.stringExists(blacklistRegex[0]))
+                        if (CustomUtility.stringExists(regex[0]))
                             try {
-                                if (triple.third.matches(".*(" + blacklistRegex[0] + ").*")) {
-                                    return false;
-                                }
+                                if (triple.third.matches("(?i).*(" + regex[0] + ").*")) {
+                                    return !isBlacklist[0];
+                                } else
+                                    return isBlacklist[0];
                             } catch (Exception ignored) {
                             }
                         return true;
@@ -1707,7 +1705,7 @@ public class VideoActivity extends AppCompatActivity {
                             .enableButtonDividerAll()
                             .show();
                 })
-                .enableFastScroll(null, false)
+                .enableFastScroll()
                 .generate();
 
         CustomDialog.Builder(context)
@@ -1759,8 +1757,8 @@ public class VideoActivity extends AppCompatActivity {
                         }
                     });
 
-                    EditText blacklistRegexEdit = view.findViewById(R.id.dialog_intersections_blacklistRegex);
-                    blacklistRegexEdit.addTextChangedListener(new TextWatcher() {
+                    EditText regexEdit = view.findViewById(R.id.dialog_intersections_regex);
+                    regexEdit.addTextChangedListener(new TextWatcher() {
                         @Override
                         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
                         }
@@ -1771,9 +1769,14 @@ public class VideoActivity extends AppCompatActivity {
 
                         @Override
                         public void afterTextChanged(Editable s) {
-                            blacklistRegex[0] = s.toString();
+                            regex[0] = s.toString();
                             customRecycler.reload();
                         }
+                    });
+                    view.findViewById(R.id.dialog_intersections_regexSwap).setOnClickListener(v -> {
+                        isBlacklist[0] = !isBlacklist[0];
+                        ((TextInputLayout) view.findViewById(R.id.dialog_intersections_regex_layout)).setHint(isBlacklist[0] ? "BlackList-RegEx" : "WhiteList-RegEx");
+                        customRecycler.reload();
                     });
 
                     customRecycler.setRecycler(view.findViewById(R.id.dialog_intersections_list)).generate();

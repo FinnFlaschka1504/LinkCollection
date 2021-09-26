@@ -1404,6 +1404,7 @@ public class Settings extends AppCompatActivity {
 
         public void setLayout() {
             // fragment.getView() gibt manchmal null
+            // ToDo: kann null sein
             setLayout.runSetLayout(this, fragment.getView());
         }
 

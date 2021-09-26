@@ -14,6 +14,7 @@ import androidx.annotation.Nullable;
 
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomList;
+import com.google.gson.annotations.Expose;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
@@ -39,7 +40,7 @@ public class UrlParser extends ParentClass {
     public static Map<String, WebView> webViewMap = new HashMap<>();
     private int openJs;
     private boolean debug = false;
-    private CustomDialog webViewDialog;
+    private transient CustomDialog webViewDialog;
 
 
     public enum TYPE {

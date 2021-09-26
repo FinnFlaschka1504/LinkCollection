@@ -14,6 +14,7 @@ import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -165,6 +166,13 @@ public class MediaActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            Toast.makeText(this, "Die Android Version ist zu alt", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
 
         Settings.startSettings_ifNeeded(this);
         String stringExtra = Settings.getSingleSetting(this, Settings.SETTING_SPACE_NAMES_ + Settings.Space.SPACE_MEDIA);
@@ -684,55 +692,14 @@ public class MediaActivity extends AppCompatActivity {
                 })
                 .setOnLongClickListener((customRecycler, view, mediaSelectable, index) -> selectHelper.startSelection(index))
                 .setRowOrColumnCount(recyclerMetrics.first)
+                .enableFastScroll(Pair.create(7,7))
                 .generate();
-
-        FastScroller[] fastScroller = {null};
-        fastScroller[0] = new FastScrollerBuilder(recyclerView)
-                .setThumbDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_thumb)))
-                .setTrackDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_track)))
-                .setPadding(0, 20, 0, 50)
-                .setViewHelper(new FastScrollRecyclerViewHelper(mediaRecycler, fastScroller, false, null))
-                .build();
-
-//        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-//            @Override
-//            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-//                super.onScrolled(recyclerView, dx, dy);
-////                Log.d(TAG, String.format("onScrolled: %d", recyclerView.computeVerticalScrollOffset()));
-//                Log.d(TAG, String.format("onScrolled: %d", mediaRecycler.getLayoutManager().findFirstVisibleItemPosition()));
-//            }
-//        });
-
-//        new Handler(Looper.myLooper()).postDelayed(() -> {
-//            int i = CustomUtility.randomInteger(25, 100);
-////            int y = 475 * (i / recyclerMetrics.first);
-//                    mediaRecycler.getLayoutManager().scrollToPositionWithOffset(i, 0);
-//            Log.d(TAG, String.format("loadRecycler: %d", i));
-////            Log.d(TAG, String.format("loadRecycler: %d | %d", i, y));
-////                    recyclerView.scrollTo(0, y);
-////            recyclerView.scrollBy(0, y);
-//        }, 500);
-
-//        if (true)
-//            return;
 
         ArrayList<String> selectedIds = getIntent().getStringArrayListExtra(EXTRA_SELECT_MODE);
         if (selectedIds != null && !selectedIds.isEmpty()) {
-//            Optional<MultiSelectHelper.Selectable<Media>> first = mediaRecycler.getObjectList().stream().filter(mediaSelectable -> selectedIds.contains(mediaSelectable.getContent().getUuid())).findFirst();
-//            if (first.isPresent()) {
-//
-//            }
             mediaRecycler.getObjectList().stream().filter(mediaSelectable -> selectedIds.contains(mediaSelectable.getContent().getUuid())).findFirst().ifPresent(mediaSelectable -> {
                 int index = mediaRecycler.getObjectList().indexOf(mediaSelectable);
-//                Log.d(TAG, String.format("loadRecycler: %d", index));
-//                new Handler(Looper.myLooper()).postDelayed(() -> {
-//                    int y = 475 * (index / recyclerMetrics.first);
                     mediaRecycler.getLayoutManager().scrollToPositionWithOffset(index, 0);
-//                    Log.d(TAG, String.format("loadRecycler: %d", y));
-//                    recyclerView.scrollTo(0, y);
-//                    recyclerView.scrollBy(0, y);
-//                }, 1000);
-//                mediaRecycler.scrollTo(index, false);
             });
         }
 
@@ -1169,9 +1136,13 @@ public class MediaActivity extends AppCompatActivity {
         private void buildFragment() {
             FrameLayout view = (FrameLayout) LayoutInflater.from(context).inflate(R.layout.fragment_select_media_helper_selection, parentView, false);
             view.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            TextView emptyText = view.findViewById(R.id.fragment_selectMediaHelper_selection_empty);
             parentView.addView(view);
             selectedRecycler = new CustomRecycler<Media>(context, view.findViewById(R.id.fragment_selectMediaHelper_selection_recycler))
-                    .setObjectList(selectedMedia)
+                    .setGetActiveObjectList(customRecycler -> {
+                        emptyText.setVisibility(selectedMedia.isEmpty() ? View.VISIBLE : View.GONE);
+                        return selectedMedia;
+                    })
                     .setItemLayout(R.layout.list_item_image)
                     .setSetItemContent((customRecycler, itemView, media, index) -> {
                         loadPathIntoImageView(media.getImagePath(), itemView, CustomUtility.dpToPx(120), 1);
@@ -1179,6 +1150,7 @@ public class MediaActivity extends AppCompatActivity {
                     })
                     .enableSwiping((objectList, direction, media) -> {
                         selectedMedia.remove(media);
+                        emptyText.setVisibility(selectedMedia.isEmpty() ? View.VISIBLE : View.GONE);
                         if (subSelectedMedia != null) {
                             subSelectedMedia.remove(media);
                             onSubSelectionChanged.run(subSelectedMedia);

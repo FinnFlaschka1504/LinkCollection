@@ -121,13 +121,13 @@ public class MediaEvent extends ParentClass implements ParentClass_Tree {
 
     public int _getHeight() {
         if (!hasContent() && description == null)
-            return 143 + 35;
+            return 132 + 36;
         else if (!hasContent())
-            return 202 + 35;
+            return 191 + 36;
         else if (description == null)
-            return 503 + 35;
+            return 504 + 36;
         else
-            return 562 + 35;
+            return 563 + 36;
     }
     /**  <------------------------- Convenience -------------------------  */
 }

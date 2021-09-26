@@ -202,7 +202,10 @@ public class Utility {
     }
 
     static public boolean isOnline() {
-        if (Build.MODEL.equals("Android SDK built for x86"))
+//        if (true)
+//            return true;
+
+        if (Build.MODEL.contains("Emulator"))
             return true;
         Runtime runtime = Runtime.getRuntime();
         try {

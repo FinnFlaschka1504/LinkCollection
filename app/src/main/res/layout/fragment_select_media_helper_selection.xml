@@ -10,9 +10,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:clipToPadding="false"
         android:orientation="horizontal"
-        android:paddingHorizontal="6dp"
-        android:clipToPadding = "false"/>
+        android:paddingHorizontal="6dp" />
 
     <ImageView
         android:id="@+id/fragment_selectMediaHelper_selection_add"
@@ -25,4 +25,13 @@
         android:background="@drawable/grey_rounded_corners"
         android:tint="@color/colorTileBackground"
         app:srcCompat="@drawable/ic_add" />
+
+    <TextView
+        android:id="@+id/fragment_selectMediaHelper_selection_empty"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginRight="16dp"
+        android:text="Nichts Ausgewählt"
+        android:textStyle="italic" />
 </FrameLayout>

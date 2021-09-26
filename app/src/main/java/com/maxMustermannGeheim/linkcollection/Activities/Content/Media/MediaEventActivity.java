@@ -3,7 +3,6 @@ package com.maxMustermannGeheim.linkcollection.Activities.Content.Media;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.util.Pair;
 import androidx.core.widget.ImageViewCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -13,10 +12,12 @@ import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.RelativeSizeSpan;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -117,6 +118,13 @@ public class MediaEventActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            Toast.makeText(this, "Die Android Version ist zu alt", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
+
 
         Settings.startSettings_ifNeeded(this);
         singular = "Event";
@@ -296,7 +304,7 @@ public class MediaEventActivity extends AppCompatActivity {
                         dateString = Utility.formatDate(Utility.DateFormat.DATE_DOT, mediaEvent.getBeginning());
                     ((TextView) itemView.findViewById(R.id.listItem_mediaEvent_date)).setText(dateString);
 
-                    TextView descriptionTextView = (TextView) itemView.findViewById(R.id.listItem_mediaEvent_description);
+                    TextView descriptionTextView = itemView.findViewById(R.id.listItem_mediaEvent_description);
                     if (CustomUtility.stringExists(mediaEvent.getDescription())) {
                         descriptionTextView.setVisibility(View.VISIBLE);
                         descriptionTextView.setText(mediaEvent.getDescription());
@@ -314,7 +322,7 @@ public class MediaEventActivity extends AppCompatActivity {
                         return list;
                     };
 
-                    Utility.TripleGenericInterface<ImageView, ParentClass,Pair<Integer,Integer>> applyImage = (imageView, parentClass, dimensions) -> {
+                    Utility.TripleGenericInterface<ImageView, ParentClass, Pair<Integer,Integer>> applyImage = (imageView, parentClass, dimensions) -> {
                         imageView.setVisibility(View.VISIBLE);
                         RequestOptions myOptions = new RequestOptions()
                                 .override(CustomUtility.dpToPx(dimensions.first), CustomUtility.dpToPx(dimensions.second))
@@ -344,87 +352,92 @@ public class MediaEventActivity extends AppCompatActivity {
                     };
 
                     RecyclerView contentRecycler = itemView.findViewById(R.id.listItem_mediaEvent_content);
-                    contentRecycler.setNestedScrollingEnabled(false);
-                    new CustomRecycler<ParentClass>(this, contentRecycler)
-                            .setItemLayout(R.layout.empty_layout)
-                            .setObjectList(flattenMediaEvent.run(mediaEvent))
-                            .setSetItemContent((customRecycler1, itemView1, parentClass, index1) -> {
-                                View view = null;
-                                if (parentClass instanceof Media) {
-                                    view = LayoutInflater.from(this).inflate(R.layout.list_item_image, (ViewGroup) itemView1, false);
-                                    Media media = (Media) parentClass;
-                                    MediaActivity.SelectMediaHelper.loadPathIntoImageView(media.getImagePath(), view, CustomUtility.dpToPx(99), 1);
-                                } else if (parentClass instanceof MediaEvent) {
-                                    view = LayoutInflater.from(this).inflate(R.layout.list_item_media_event_compact, (ViewGroup) itemView1, false);
-                                    List<ParentClass> list = flattenMediaEvent.run((MediaEvent) parentClass);
-                                    switch (list.size()) {
-                                        case 0:
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), null, Pair.create(95, 95));
-                                            view.findViewById(R.id.listItem_mediaEventCompact_image2).setVisibility(View.GONE);
-                                            view.findViewById(R.id.listItem_mediaEventCompact_image3).setVisibility(View.GONE);
-                                            view.findViewById(R.id.listItem_mediaEventCompact_image4).setVisibility(View.GONE);
-                                            break;
-                                        case 1:
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(95, 95));
-                                            view.findViewById(R.id.listItem_mediaEventCompact_image2).setVisibility(View.GONE);
-                                            view.findViewById(R.id.listItem_mediaEventCompact_image3).setVisibility(View.GONE);
-                                            view.findViewById(R.id.listItem_mediaEventCompact_image4).setVisibility(View.GONE);
-                                            break;
-                                        case 2:
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(46, 95));
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image2), list.get(1), Pair.create(46, 95));
-                                            view.findViewById(R.id.listItem_mediaEventCompact_image3).setVisibility(View.GONE);
-                                            view.findViewById(R.id.listItem_mediaEventCompact_image4).setVisibility(View.GONE);
-                                            break;
-                                        case 3:
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(46, 46));
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image2), list.get(1), Pair.create(46, 46));
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image3), list.get(2), Pair.create(95, 46));
-                                            view.findViewById(R.id.listItem_mediaEventCompact_image4).setVisibility(View.GONE);
-                                            break;
-                                        default:
-                                        case 4:
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(46, 46));
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image2), list.get(1), Pair.create(46, 46));
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image3), list.get(2), Pair.create(46, 46));
-                                            applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image4), list.get(3), Pair.create(46, 46));
-                                            break;
-                                    }
-                                }
-                                itemView1.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                                view.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                                ((LinearLayout) itemView1).removeAllViews();
-                                ((LinearLayout) itemView1).addView(view);
-                            })
-                            .addOptionalModifications(customRecycler1 -> {
-                                try {
-                                    Field onClickListener = customRecycler1.getClass().getDeclaredField("onClickListener");
-                                    Field onLongClickListener = customRecycler1.getClass().getDeclaredField("onLongClickListener");
-                                    onClickListener.setAccessible(true);
-                                    onLongClickListener.setAccessible(true);
-                                    customRecycler1
-                                            .setOnClickListener((customRecycler2, itemView1, parentClass, index1) -> {
-                                                try {
-                                                    CustomRecycler.OnClickListener<ParentClass> listener = (CustomRecycler.OnClickListener<ParentClass>) onClickListener.get(customRecycler);
-                                                    if (listener != null)
-                                                        listener.runOnClickListener(null, itemView, mediaEvent, index1);
-                                                } catch (IllegalAccessException ignored) {
 
-                                                }
-                                            })
-                                            .setOnLongClickListener((customRecycler2, view, parentClass, index1) -> {
-                                                try {
-                                                    CustomRecycler.OnLongClickListener<ParentClass> listener = (CustomRecycler.OnLongClickListener<ParentClass>) onLongClickListener.get(customRecycler);
-                                                    if (listener != null)
-                                                        listener.runOnLongClickListener(null, itemView, mediaEvent, index1);
-                                                } catch (IllegalAccessException ignored) {
-                                                }
-                                            });
-                                } catch (NoSuchFieldException ignored) {
-                                }
-                            })
-                            .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
-                            .generate();
+                    if (mediaEvent.hasContent()) {
+                        contentRecycler.setVisibility(View.VISIBLE);
+                        contentRecycler.setNestedScrollingEnabled(false);
+                        new CustomRecycler<ParentClass>(this, contentRecycler)
+                                .setItemLayout(R.layout.empty_layout)
+                                .setObjectList(flattenMediaEvent.run(mediaEvent))
+                                .setSetItemContent((customRecycler1, itemView1, parentClass, index1) -> {
+                                    View view = null;
+                                    if (parentClass instanceof Media) {
+                                        view = LayoutInflater.from(this).inflate(R.layout.list_item_image, (ViewGroup) itemView1, false);
+                                        Media media = (Media) parentClass;
+                                        MediaActivity.SelectMediaHelper.loadPathIntoImageView(media.getImagePath(), view, CustomUtility.dpToPx(99), 1);
+                                    } else if (parentClass instanceof MediaEvent) {
+                                        view = LayoutInflater.from(this).inflate(R.layout.list_item_media_event_compact, (ViewGroup) itemView1, false);
+                                        List<ParentClass> list = flattenMediaEvent.run((MediaEvent) parentClass);
+                                        switch (list.size()) {
+                                            case 0:
+                                                applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), null, Pair.create(94, 94));
+                                                view.findViewById(R.id.listItem_mediaEventCompact_image2).setVisibility(View.GONE);
+                                                view.findViewById(R.id.listItem_mediaEventCompact_image3).setVisibility(View.GONE);
+                                                view.findViewById(R.id.listItem_mediaEventCompact_image4).setVisibility(View.GONE);
+                                                break;
+                                            case 1:
+                                                applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(94, 94));
+                                                view.findViewById(R.id.listItem_mediaEventCompact_image2).setVisibility(View.GONE);
+                                                view.findViewById(R.id.listItem_mediaEventCompact_image3).setVisibility(View.GONE);
+                                                view.findViewById(R.id.listItem_mediaEventCompact_image4).setVisibility(View.GONE);
+                                                break;
+                                            case 2:
+                                                applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(46, 94));
+                                                applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image2), list.get(1), Pair.create(46, 94));
+                                                view.findViewById(R.id.listItem_mediaEventCompact_image3).setVisibility(View.GONE);
+                                                view.findViewById(R.id.listItem_mediaEventCompact_image4).setVisibility(View.GONE);
+                                                break;
+                                            case 3:
+                                                applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(46, 46));
+                                                applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image2), list.get(1), Pair.create(46, 46));
+                                                applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image3), list.get(2), Pair.create(94, 46));
+                                                view.findViewById(R.id.listItem_mediaEventCompact_image4).setVisibility(View.GONE);
+                                                break;
+                                            default:
+                                            case 4:
+                                                applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image1), list.get(0), Pair.create(46, 46));
+                                                applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image2), list.get(1), Pair.create(46, 46));
+                                                applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image3), list.get(2), Pair.create(46, 46));
+                                                applyImage.run(view.findViewById(R.id.listItem_mediaEventCompact_image4), list.get(3), Pair.create(46, 46));
+                                                break;
+                                        }
+                                    }
+                                    itemView1.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                                    view.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                                    ((LinearLayout) itemView1).removeAllViews();
+                                    ((LinearLayout) itemView1).addView(view);
+                                })
+                                .addOptionalModifications(customRecycler1 -> {
+                                    try {
+                                        Field onClickListener = customRecycler1.getClass().getDeclaredField("onClickListener");
+                                        Field onLongClickListener = customRecycler1.getClass().getDeclaredField("onLongClickListener");
+                                        onClickListener.setAccessible(true);
+                                        onLongClickListener.setAccessible(true);
+                                        customRecycler1
+                                                .setOnClickListener((customRecycler2, itemView1, parentClass, index1) -> {
+                                                    try {
+                                                        CustomRecycler.OnClickListener<ParentClass> listener = (CustomRecycler.OnClickListener<ParentClass>) onClickListener.get(customRecycler);
+                                                        if (listener != null)
+                                                            listener.runOnClickListener(null, itemView, mediaEvent, index1);
+                                                    } catch (IllegalAccessException ignored) {
+
+                                                    }
+                                                })
+                                                .setOnLongClickListener((customRecycler2, view, parentClass, index1) -> {
+                                                    try {
+                                                        CustomRecycler.OnLongClickListener<ParentClass> listener = (CustomRecycler.OnLongClickListener<ParentClass>) onLongClickListener.get(customRecycler);
+                                                        if (listener != null)
+                                                            listener.runOnLongClickListener(null, itemView, mediaEvent, index1);
+                                                    } catch (IllegalAccessException ignored) {
+                                                    }
+                                                });
+                                    } catch (NoSuchFieldException ignored) {
+                                    }
+                                })
+                                .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
+                                .generate();
+                    } else
+                        contentRecycler.setVisibility(View.GONE);
                 })
                 .setOnClickListener((customRecycler, itemView, mediaEvent, index) -> {
                     if (mediaEvent.getChildren().isEmpty()) {
@@ -442,17 +455,18 @@ public class MediaEventActivity extends AppCompatActivity {
                     }
                 })
                 .setOnLongClickListener((customRecycler, view, mediaEvent, index) -> showEditDialog(mediaEvent._isDummy() ? parent : mediaEvent))
+                .enableFastScroll(scrollRange, heightList)
                 .generate();
 
-        FastScroller[] fastScroller = {null};
-        FastScrollerBuilder fastScrollerBuilder = new FastScrollerBuilder(recyclerView)
-                .setThumbDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_thumb)))
-                .setTrackDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_track)));
-//        fastScrollerBuilder.disableScrollbarAutoHide();
-        fastScroller[0] = fastScrollerBuilder
-                .setPadding(0, 20, 0, 50)
-                .setViewHelper(new FastScrollRecyclerViewHelper(eventRecycler, fastScroller, scrollRange, heightList, false, null))
-                .build();
+//        FastScroller[] fastScroller = {null};
+//        FastScrollerBuilder fastScrollerBuilder = new FastScrollerBuilder(recyclerView)
+//                .setThumbDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_thumb)))
+//                .setTrackDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_track)));
+////        fastScrollerBuilder.disableScrollbarAutoHide();
+//        fastScroller[0] = fastScrollerBuilder
+//                .setPadding(0, 20, 0, 50)
+//                .setViewHelper(new FastScrollRecyclerViewHelper(eventRecycler, fastScroller, scrollRange, heightList, false, null))
+//                .build();
 
     }
 
@@ -579,18 +593,18 @@ public class MediaEventActivity extends AppCompatActivity {
                     });
                     setDateRangeTextView.run();
 
-                    MaterialDatePicker.Builder<Pair<Long, Long>> builder = MaterialDatePicker.Builder.dateRangePicker();
+                    MaterialDatePicker.Builder<androidx.core.util.Pair<Long, Long>> builder = MaterialDatePicker.Builder.dateRangePicker();
                     builder.setTitleText("Zeitraum Auswählen");
 
                     view.findViewById(R.id.dialog_editMediaEvent_date_select).setOnClickListener(v -> {
                         if (from[0] != null && to[0] != null) {
-                            builder.setSelection(Pair.create(from[0].getTime() - timeZoneOffset, to[0].getTime() - timeZoneOffset));
+                            builder.setSelection(androidx.core.util.Pair.create(from[0].getTime() - timeZoneOffset, to[0].getTime() - timeZoneOffset));
                             CustomUtility.logD(TAG, String.format("showEditDialog: d %s | %s | %s", Utility.formatDate("dd.MM HH:mm:ss:SSS", from[0]), Utility.formatDate("dd.MM HH:mm:ss:SSS", to[0]), Utility.formatDate("HH:mm:ss:SSS", new Date(timeZoneOffset))));
                         } else if (from[0] != null) {
-                            builder.setSelection(Pair.create(from[0].getTime() - timeZoneOffset, from[0].getTime() - timeZoneOffset));
+                            builder.setSelection(androidx.core.util.Pair.create(from[0].getTime() - timeZoneOffset, from[0].getTime() - timeZoneOffset));
                             CustomUtility.logD(TAG, String.format("showEditDialog: e %s | %s", Utility.formatDate("dd.MM HH:mm:ss:SSS", from[0]), Utility.formatDate("HH:MM:ss:SSS", new Date(timeZoneOffset))));
                         }
-                        MaterialDatePicker<Pair<Long, Long>> picker = builder.build();
+                        MaterialDatePicker<androidx.core.util.Pair<Long, Long>> picker = builder.build();
 
                         picker.addOnPositiveButtonClickListener(selection -> {
                             from[0] = new Date(selection.first + timeZoneOffset);
@@ -601,7 +615,7 @@ public class MediaEventActivity extends AppCompatActivity {
                             setDateRangeTextView.run();
                             CustomUtility.logD(TAG, String.format("showEditDialog: a %s | %s | %s", Utility.formatDate("dd.MM HH:mm:ss:SSS", new Date(selection.first)), Utility.formatDate("dd.MM HH:mm:ss:SSS", new Date(selection.second)), Utility.formatDate("HH:mm:ss:SSS", new Date(timeZoneOffset))));
                         });
-                        picker.show(((AppCompatActivity) this).getSupportFragmentManager(), picker.toString());
+                        picker.show(this.getSupportFragmentManager(), picker.toString());
                     });
 
                     // ---------------

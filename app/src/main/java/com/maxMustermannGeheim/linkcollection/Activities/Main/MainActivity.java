@@ -19,6 +19,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.ViewStub;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -545,7 +546,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
     public void getDatabaseCode(OnDatabaseCodeFinish onFinish) {
         CustomDialog.Builder(MainActivity.this)
-                .setTitle("Anmelden")
+                .setTitle("Anmelden oder Erstellen")
                 .setView(R.layout.dialog_database_login)
                 .setSetViewContent((customDialog, view, reload) -> {
                     TextInputLayout dialog_databaseLogin_name_layout = customDialog.findViewById(R.id.dialog_databaseLogin_name_layout);
@@ -583,8 +584,18 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                     Database.databaseCall_read(dataSnapshot -> {
                         if (dataSnapshot.getValue() == null) {
                             CustomDialog.Builder(this)
-                                    .setTitle("Batenbank Noch Nicht Vorhanden")
+                                    .setTitle("Datenbank Noch Nicht Vorhanden")
                                     .setText(new Helpers.SpannableStringHelper().append("Die Datenbank '").appendBold(databaseCode).append("' existiert noch nicht.\nMochtest du sie hinzufügen?").get())
+                                    .setEdit(new CustomDialog.EditBuilder()
+                                            .setHint("Passwort bestätigen")
+                                            .setInputType(Helpers.TextInputHelper.INPUT_TYPE.PASSWORD)
+                                            .setValidation((validator, text) -> {
+                                                validator.asWhiteList();
+                                                if (text.equals(((EditText) customDialog.findViewById(R.id.dialog_databaseLogin_passwordFirst)).getText().toString()))
+                                                    validator.setValid();
+                                                else
+                                                    validator.setInvalid("Die Passwörter müssen übereinstimmen");
+                                            }))
                                     .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
                                     .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
                                         Settings.resetEncryption();
@@ -592,6 +603,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                                         onFinish.runOndatabaseCodeFinish(databaseCode);
                                         Database.databaseCall_write(Hashing.sha256().hashString(password, StandardCharsets.UTF_8).toString(), Database.databaseCode, Database.PASSWORD);
                                     })
+                                    .disableLastAddedButton()
                                     .show();
                         } else if (Hashing.sha256().hashString(password, StandardCharsets.UTF_8).toString().equals(dataSnapshot.getValue())) {
                             List<String> encryptedSpaces = new ArrayList<>();

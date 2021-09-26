@@ -9,8 +9,8 @@ android {
         applicationId "com.maxMustermannGeheim.linkcollection"
         minSdkVersion 27
         targetSdkVersion 29
-        versionCode 7
-        versionName "2.5"
+        versionCode 8
+        versionName "3"
         testInstrumentationRunner "androidx.dialog_poster.runner.AndroidJUnitRunner"
     }
     buildTypes {

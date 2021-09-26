@@ -3,6 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical">
 
     <LinearLayout
@@ -139,23 +140,40 @@
         <!--        android:text="Existierende verbergen" />-->
     </LinearLayout>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/dialog_permutations_blacklistRegex_layout"
+            android:id="@+id/dialog_intersections_regex_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="8dp"
+            android:layout_marginLeft="8dp"
             android:layout_marginBottom="8dp"
+            android:layout_weight="1"
+            android:hint="BlackList-RegEx"
             app:prefixText=".*("
             app:suffixText=").*">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/dialog_intersections_blacklistRegex"
+                android:id="@+id/dialog_intersections_regex"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="BlackListRegex"
-                android:singleLine="true"
-                />
+                tools:text="s"
+                android:singleLine="true" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <ImageView
+            android:id="@+id/dialog_intersections_regexSwap"
+            style="@style/ImageButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="12dp"
+            android:layout_gravity="center_vertical"
+            app:srcCompat="@drawable/ic_switch_mode" />
+
+    </LinearLayout>
 
 
     <View

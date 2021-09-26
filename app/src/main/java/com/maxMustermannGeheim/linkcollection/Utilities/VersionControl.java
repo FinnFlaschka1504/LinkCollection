@@ -24,9 +24,11 @@ import androidx.core.content.FileProvider;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomRecycler;
+import com.google.gson.JsonObject;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.BuildConfig;
 import com.maxMustermannGeheim.linkcollection.R;
@@ -45,8 +47,8 @@ import static android.content.Context.DOWNLOAD_SERVICE;
 public class VersionControl {
     private static final String TAG = "VersionControl";
 
-    private static final String URL_APK = "https://docs.google.com/uc?export=download&id=1wGPMttpXXoqH6C8KI4P4A4Unec-4DyU2";
-    private static final String URL_JSON = "https://docs.google.com/uc?export=download&id=1k6Chaa7ghHuGO-2KMgNhbl3BQUNZO-rs";
+    private static final String URL_APK = "https://www.googleapis.com/drive/v3/files/" + "1wGPMttpXXoqH6C8KI4P4A4Unec-4DyU2" + "?alt=media&key=" + "AIzaSyAO-j9mydwwiZ9S9iRVaB9lfkcmlM4Jgmk";
+    private static final String URL_JSON = "https://www.googleapis.com/drive/v3/files/" + "1Ia1IlO0I0NypvstIbXDZbdxb4tMOmCUp" + "?alt=media&key=" + "AIzaSyAO-j9mydwwiZ9S9iRVaB9lfkcmlM4Jgmk";//"https://docs.google.com/uc?export=download&id=1k6Chaa7ghHuGO-2KMgNhbl3BQUNZO-rs";
     private static final String FILE_NAME = "SecondMind";
 
     private static RequestQueue requestQueue;
@@ -78,10 +80,10 @@ public class VersionControl {
         if (visible)
             Toast.makeText(activity, "Einen Moment bitte..", Toast.LENGTH_SHORT).show();
 
-        JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, URL_JSON, null, response -> {
+        JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, URL_JSON, null, response -> {
             try {
                 final String version = getVersion(activity);
-                final String newVersion = response.getJSONObject(0).getJSONObject("apkData").getString("versionName");
+                final String newVersion = response.getJSONArray("elements").getJSONObject(0).getString("versionName");
 
                 if (version.equals(newVersion)) {
                     if (visible)
@@ -256,6 +258,9 @@ public class VersionControl {
                 "Nach dem Löschen eines Eintrags werden sofort alle dazugehörigen Dialoge gelöscht",
                 "Dropdown in EditShow bleibt geschlossen nach der Auswahl eines Items",
                 "Bilder zur Darsteller- und Studio-Übersicht hinzugefügt");
+        addChange("3.0", "Medien können verwaltet werden",
+                "Fast Scroll zu einzelnen Aktivitäten hinzugefügt",
+                "Viele weitere kleine Änderungen");
     };
 
     private static void addChange(String version, String... changes) {

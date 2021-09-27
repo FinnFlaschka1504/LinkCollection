@@ -84,6 +84,7 @@ import com.veinhorn.scrollgalleryview.loader.MediaLoader;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -582,6 +583,7 @@ public class MediaActivity extends AppCompatActivity {
 
         setRecyclerMetrics();
 
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
         DragSelectTouchListener dragSelectTouchListener = DragSelectTouchListener.Companion.create(this, new MyDragSelectReceiver(), null);
         selectHelper = new MultiSelectHelper<>(this);
         selectHelper.dragSelectTouchListener = dragSelectTouchListener;
@@ -692,7 +694,12 @@ public class MediaActivity extends AppCompatActivity {
                 })
                 .setOnLongClickListener((customRecycler, view, mediaSelectable, index) -> selectHelper.startSelection(index))
                 .setRowOrColumnCount(recyclerMetrics.first)
-                .enableFastScroll(Pair.create(7,7))
+                .enableFastScroll(null, false, Pair.create(7,7), (customRecycler, mediaSelectable, integer) -> {
+                    long lastModified = new File(mediaSelectable.getContent().getImagePath()).lastModified();
+                    if (lastModified != 0)
+                        return dateFormat.format(new Date(lastModified));
+                    return "Fehler";
+                })
                 .generate();
 
         ArrayList<String> selectedIds = getIntent().getStringArrayListExtra(EXTRA_SELECT_MODE);

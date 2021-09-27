@@ -109,66 +109,13 @@ public class ParentClass extends com.finn.androidUtilities.ParentClass implement
     }
     //  <------------------------- GetChangesFrom -------------------------
 
-//    //  --------------- DynamicHash --------------->
-//    @Override
-//    public int hashCode() {
-//        return Objects.hash(getValues(new ArrayList<>(), getClass()).toArray());
-//    }
-//
-//    private List<Object> getValues(List<Object> valueList, Class aClass) {
-//        try {
-//            for (Field field : aClass.getDeclaredFields()) {
-//                field.setAccessible(true);
-//                Object get = field.get(this);
-//                valueList.add(get);
-//            }
-//
-//            if (!aClass.equals(ParentClass.class) && aClass.getSuperclass() != null) {
-//                getValues(valueList, aClass.getSuperclass());
-//            }
-//        } catch (IllegalAccessException e) {
-//            String BREAKPOINT = null;
-//        }
-//        return valueList;
-//    }
-//    //  <--------------- DynamicHash ---------------
-//
-//
-//    //  --------------- DynamicEqual --------------->
-//    @Override
-//    public boolean equals(Object o) {
-//        if (this == o) return true;
-//        if (o == null || getClass() != o.getClass()) return false;
-//        ParentClass that = (ParentClass) o;
-//        return dynamicEqual(that);
-//    }
-//
-//    protected boolean dynamicEqual(Object o) {
-//        return compareClassLayer(o.getClass(), o);
-//    }
-//
-//    private boolean compareClassLayer(Class aClass, Object o) {
-//        try {
-//            for (Field field : aClass.getDeclaredFields()) {
-//                field.setAccessible(true);
-//                Object get = field.get(o);
-//                Object get2 = field.get(this);
-//                if (!Objects.equals(get, get2)) {
-//                    return false;
-//                }
-//            }
-//
-//            if (!aClass.equals(ParentClass.class) && aClass.getSuperclass() != null) {
-//                if (!compareClassLayer(aClass.getSuperclass(), o)) {
-//                    return false;
-//                }
-//            }
-//        } catch (IllegalAccessException e) {
-//            String BREAKPOINT = null;
-//        }
-//        return true;
-//    }
-//    //  <--------------- DynamicEqual ---------------
+    /**
+     * ------------------------- Compare ------------------------->
+     */
+    public int compareByName(ParentClass parentClass) {
+        return name.compareTo(parentClass.getName());
+    }
+    /**  <------------------------- Compare -------------------------  */
 
 
     //  ------------------------- Encryption ------------------------->

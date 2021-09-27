@@ -941,7 +941,7 @@ public class VideoActivity extends AppCompatActivity {
     private List<Video> sortList(List<Video> videoList) {
         switch (sort_type) {
             case NAME:
-                videoList.sort((video1, video2) -> video1.getName().compareTo(video2.getName()));
+                videoList.sort((video1, video2) -> video1.getName().compareToIgnoreCase(video2.getName()));
                 if (reverse)
                     Collections.reverse(videoList);
                 break;
@@ -1014,6 +1014,7 @@ public class VideoActivity extends AppCompatActivity {
 
     private void loadVideoRecycler() {
         RecyclerView recycler = findViewById(R.id.recycler);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
         customRecycler_VideoList = new CustomRecycler<Video>(this, recycler)
                 .setItemLayout(R.layout.list_item_video)
                 .setGetActiveObjectList((customRecycler) -> {
@@ -1168,7 +1169,29 @@ public class VideoActivity extends AppCompatActivity {
                 .setOnLongClickListener((customRecycler, view, object, index) -> {
                     addOrEditDialog = showEditOrNewDialog(object).first;
                 })
-                .enableFastScroll((video, integer) -> video.getName())
+                .enableFastScroll((customRecycler, video, integer) -> {
+                    switch (sort_type) {
+                        case NAME:
+                            return video.getName().substring(0, 1).toUpperCase();
+                        case VIEWS:
+                            int size = video.getDateList().size();
+                            if (size == 0)
+                                return "Keine Ansichten";
+                            return size + (size > 1 ? " Ansichten" : " Ansicht");
+                        case RATING:
+                            float rating = video.getRating();
+                            if (rating == 0)
+                                return "Keine Bewertung";
+                            return rating + " ☆";
+                        case LATEST:
+                            Date max = video.getDateList().stream().max(Date::compareTo).orElse(null);
+                            if (max != null)
+                                return dateFormat.format(max);
+                            return "Keine Ansicht";
+                        default:
+                            return null;
+                    }
+                })
                 .generate();
 
 //        FastScroller[] fastScroller = {null};
@@ -1277,7 +1300,8 @@ public class VideoActivity extends AppCompatActivity {
                         }
                         viewsTextView.setText(viewsText);
                     };
-                    setViewsText.run();
+                    if (!reload)
+                        setViewsText.run();
                     if (views[0] > 0) {
                         viewsTextView.setOnClickListener(v -> setViewsText.run());
                         viewsTextView.setClickable(true);

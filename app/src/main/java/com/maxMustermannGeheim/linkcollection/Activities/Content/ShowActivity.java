@@ -90,6 +90,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -536,6 +537,7 @@ public class ShowActivity extends AppCompatActivity {
     }
 
     private void loadRecycler() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
         customRecycler_ShowList = new CustomRecycler<Show>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_show)
                 .setGetActiveObjectList(customRecycler -> {
@@ -646,7 +648,32 @@ public class ShowActivity extends AppCompatActivity {
                 .setOnLongClickListener((customRecycler, view, show, index) -> {
                     showEditOrNewDialog(show);
                 })
-                .enableFastScroll()
+                .enableFastScroll((customRecycler, show, integer) -> {
+                    switch (sort_type) {
+                        case NAME:
+                            return show.getName().substring(0, 1).toUpperCase();
+                        case VIEWS:
+                            int size = show.getSeasonList().stream().mapToInt(season -> season.getEpisodeMap().values().stream().mapToInt(value -> value.getDateList().size()).sum()).sum();
+                            if (size == 0)
+                                return "Keine Ansichten";
+                            return size + (size > 1 ? " Ansichten" : " Ansicht");
+                        case RATING:
+                            double rating = CustomUtility.concatenateCollections(show.getSeasonList(), season -> season.getEpisodeMap().values()).stream().mapToDouble(ParentClass_Ratable::getRating).filter(value -> value > 0).average().orElse(-1);
+                            if (rating <= 0)
+                                return "Keine Bewertung";
+                            if (rating % 1 == 0)
+                                return rating + " ☆";
+                            else
+                                return new DecimalFormat("#.##").format(rating) + " ☆";
+                        case LATEST:
+                            Date max = show.getSeasonList().stream().map(season -> season.getEpisodeMap().values().stream().map(value -> value.getDateList().stream().max(Date::compareTo).orElse(null)).filter(Objects::nonNull).max(Date::compareTo).orElse(null)).filter(Objects::nonNull).max(Date::compareTo).orElse(null);
+                            if (max != null)
+                                return dateFormat.format(max);
+                            return "Keine Ansicht";
+                        default:
+                            return null;
+                    }
+                })
                 .generate();
     }
 

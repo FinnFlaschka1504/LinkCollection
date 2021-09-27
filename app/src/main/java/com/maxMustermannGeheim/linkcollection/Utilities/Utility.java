@@ -422,10 +422,6 @@ public class Utility {
         CustomList<String> imageFromOpenGraph = new CustomList<>();
         CustomList<String> imagesFromText = new CustomList<>();
 
-        Runnable showDialog = () -> {
-            showSelectImageDialog(context, imageUrlList, onImageSelected);
-        };
-
         Runnable connectLists = () -> {
             imageUrlList.addAll(imageFromUrlParser);
             imageUrlList.addAll(imageFromOpenGraph);
@@ -509,13 +505,16 @@ public class Utility {
             };
 
             if (optionalParser != null) {
+                count[0]++;
                 optionalParser.run(webView, (results, consumed) -> {
                     imageFromUrlParser.addAll(results);
-                    if (consumed)
+                    if (consumed) {
                         count[0] = 1;
-                    else
+                        lowerCount.run();
+                    } else {
+                        lowerCount.run();
                         runDefault.run();
-                    lowerCount.run();
+                    }
                 });
             } else
                 runDefault.run();

@@ -11,6 +11,7 @@
     android:foreground="@drawable/ripple"
     android:orientation="horizontal"
     android:padding="8dp"
+    android:minHeight="76dp"
     android:gravity="center_vertical">
 
     <com.maxMustermannGeheim.linkcollection.Utilities.MinDimensionLayout
@@ -63,9 +64,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:maxLines="2"
+                    android:singleLine="true"
+                    android:ellipsize="end"
                     style="@style/CaptionStyle"
-                    android:text="Name1" />
+                    android:text="Sehr langer Serien Name der abgeschnitten" />
             </LinearLayout>
 
             <LinearLayout

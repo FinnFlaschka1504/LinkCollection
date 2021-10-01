@@ -104,7 +104,7 @@ import me.zhanghai.android.fastscroll.FastScrollerBuilder;
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
 public class MediaActivity extends AppCompatActivity {
-    private static final String TAG = "MediaActivity";
+    private static final String TAG = "MediaActivityCustom";
 
     public static final String EXTRA_SELECT_MODE = "EXTRA_SELECT_MODE";
     private final String ADVANCED_SEARCH_CRITERIA__PERSON = "p";
@@ -684,6 +684,7 @@ public class MediaActivity extends AppCompatActivity {
                     View fullScreenButton = itemView.findViewById(R.id.listItem_image_fullScreen);
                     fullScreenButton.setVisibility(selectHelper.isActiveSelection() ? View.VISIBLE : View.GONE);
                     fullScreenButton.setOnClickListener(v -> setMediaScrollGalleryAndShow(Arrays.asList(mediaSelectable.getContent()), mediaRecycler.getObjectList().indexOf(mediaSelectable) * -1));
+//                    CustomUtility.logD(TAG, "loadRecycler: %d | %d | %d", index, customRecycler.getLayoutManager().findFirstVisibleItemPosition(), customRecycler.getLayoutManager().findLastVisibleItemPosition());
                 })
                 .setOnClickListener((customRecycler, view, mediaSelectable, index) -> {
                     if (selectHelper.isActiveSelection()) {

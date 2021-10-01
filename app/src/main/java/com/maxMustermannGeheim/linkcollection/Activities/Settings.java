@@ -254,7 +254,7 @@ public class Settings extends AppCompatActivity {
                     Boolean showCollection = getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_COLLECTIONS);
                     if (showCollection)
                         ((TextView) view.findViewById(R.id.main_collectionCount)).setText(String.valueOf(database.collectionMap.size()));
-                    view.findViewById(R.id.main_collection_layout).setVisibility(showCollection ? View.VISIBLE : View.GONE);
+                    view.findViewById(R.id.main_collection_layout).setVisibility(showCollection ? View.VISIBLE : View.INVISIBLE);
                 })
                 .setAssociatedClasses(Video.class, Darsteller.class, Studio.class, Genre.class, UrlParser.class)
                 .setSettingsDialog(new Utility.Triple<>(R.layout.dialog_settings_video, (customDialog, view, space) -> {

@@ -267,6 +267,7 @@ public class KnowledgeActivity extends AppCompatActivity {
     }
 
     private void loadRecycler() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
         customRecycler_List = new CustomRecycler<CustomRecycler.Expandable<Knowledge>>(this, findViewById(R.id.recycler))
                 .setGetActiveObjectList(customRecycler -> {
                     List<CustomRecycler.Expandable<Knowledge>> filteredList;
@@ -285,7 +286,6 @@ public class KnowledgeActivity extends AppCompatActivity {
                     elementCount.setText(elementCountText);
                     return filteredList;
                 })
-
                 .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper<Knowledge>(R.layout.list_item_knowledge, (customRecycler1, itemView, knowledge, expanded, index) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_knowledge_title)).setText(knowledge.getName());
 
@@ -330,10 +330,25 @@ public class KnowledgeActivity extends AppCompatActivity {
 
 
                 }))
-
                 .addSubOnClickListener(R.id.listItem_knowledge_details, (customRecycler, view, knowledgeExpandable, index) -> detailDialog = showDetailDialog(knowledgeExpandable.getObject()), false)
                 .setOnLongClickListener((customRecycler, view, knowledgeExpandable, index) -> {
                     showEditOrNewDialog(knowledgeExpandable.getObject());
+                })
+                .enableFastScroll(knowledgeExpandable -> knowledgeExpandable.getHeight(297), (expandableCustomRecycler, knowledgeExpandable, integer) -> {
+                    switch (sort_type) {
+                        case NAME:
+                            return knowledgeExpandable.getObject().getName().substring(0, 1);
+                        case RATING:
+                            Float rating = knowledgeExpandable.getObject().getRating();
+                            if (rating > 0)
+                                return rating + " ☆";
+                            else
+                                return "Keine Bewertung";
+                        case LATEST:
+                            return dateFormat.format(knowledgeExpandable.getObject().getLastChanged());
+                        default:
+                            return null;
+                    }
                 })
                 .generate();
     }

@@ -35,6 +35,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.finn.androidUtilities.CustomList;
+import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
@@ -49,7 +50,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.finn.androidUtilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -101,7 +101,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
     private boolean reverse;
     private SORT_TYPE sort_type = SORT_TYPE.STATUS;
     Database database = Database.getInstance();
-    private CustomRecycler customRecycler_List;
+    private CustomRecycler<Owe> customRecycler_List;
     private CustomDialog[] addOrEditDialog = new CustomDialog[]{null};
     private String searchQuery = "";
     private SharedPreferences mySPR_daten;
@@ -225,9 +225,10 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
 
     private void loadRecycler() {
         TextView noItem = findViewById(R.id.no_item);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
         customRecycler_List = new CustomRecycler<Owe>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_owe)
-                .setGetActiveObjectList(() -> {
+                .setGetActiveObjectList(customRecycler -> {
                     allOweList = new ArrayList<>(database.oweMap.values());
                     List<Owe> newOweList;
 
@@ -308,7 +309,20 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                 .setOnLongClickListener((customRecycler, view, object, index) -> {
                     addOrEditDialog[0] = showEditOrNewDialog(object);
                 })
-                .hideDivider()
+                .enableFastScroll((customRecycler, owe, integer) -> {
+                    switch (sort_type) {
+                        case NAME:
+                            return owe.getName().substring(0, 1);
+                        case LATEST:
+                            return dateFormat.format(owe.getDate());
+                        case STATUS:
+                            return owe.isOpen() ? "Offen" : "Abgeschlossen";
+                        case OWN_OR_OTHER:
+                            return owe.getOwnOrOther() == Owe.OWN_OR_OTHER.OWN ? "Eigene" : "Fremde";
+                        default:
+                            return null;
+                    }
+                })
                 .generate();
     }
 
@@ -784,7 +798,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
 
                     CustomRecycler sources_customRecycler = new CustomRecycler<Owe.Item>(this, view.findViewById(R.id.dialog_items_sources))
                             .setItemLayout(R.layout.list_item_source_or_item)
-                            .setGetActiveObjectList(() -> {
+                            .setGetActiveObjectList(customRecycler -> {
                                 List<Owe.Item> sources = owe.getItemList();
                                 view.findViewById(R.id.dialog_items_noSources).setVisibility(sources.isEmpty() ? View.VISIBLE : View.GONE);
                                 return sources;
@@ -794,7 +808,6 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                                 ((TextView) itemView.findViewById(R.id.listItem_source_content)).setText(Utility.formatToEuro(item.getAmount()));
                                 itemView.findViewById(R.id.listItem_source_check).setVisibility(item.isOpen() ? View.GONE : View.VISIBLE);
                             })
-                            .hideDivider()
                             .setOnClickListener((customRecycler, itemView, item, index) -> {
                                 item.setOpen(!item.isOpen());
                                 Database.saveAll();
@@ -1099,7 +1112,6 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
         CustomRecycler tradeOff_customRecycler = new CustomRecycler<Utility.Triple<Person, Double, Double>>(activity)
                 .setItemLayout(R.layout.list_item_trade_off)
                 .setObjectList(list)
-                .hideDivider()
                 .setSetItemContent((customRecycler, itemView, triple, index) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_tradeOff_name)).setText(triple.first.getName());
                     ((TextView) itemView.findViewById(R.id.listItem_tradeOff_own)).setText(Utility.formatToEuro(triple.second));

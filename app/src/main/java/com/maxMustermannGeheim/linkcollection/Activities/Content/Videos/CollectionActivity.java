@@ -338,6 +338,7 @@ public class CollectionActivity extends AppCompatActivity {
 
     //  ------------------------- Recycler ------------------------->
     private void loadRecycler() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
         customRecycler = new CustomRecycler<Collection>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_collection)
                 .setGetActiveObjectList(customRecycler -> {
@@ -366,8 +367,7 @@ public class CollectionActivity extends AppCompatActivity {
                     String imagePath = collection.getImagePath();
                     ImageView thumbnail = itemView.findViewById(R.id.listItem_collection_thumbnail);
                     if (Utility.stringExists(imagePath)) {
-                        Utility.loadUrlIntoImageView(this, thumbnail, (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/w92/") + imagePath,
-                                (imagePath.contains("https") ? "" : "https://image.tmdb.org/t/p/original/") + imagePath);
+                        Utility.simpleLoadUrlIntoImageView(this, thumbnail, imagePath, imagePath, 4);
                         thumbnail.setVisibility(View.VISIBLE);
                     } else
                         thumbnail.setVisibility(View.GONE);
@@ -428,6 +428,27 @@ public class CollectionActivity extends AppCompatActivity {
                 }, false)
                 .setOnLongClickListener((customRecycler, view, collection, index) -> {
                     showEditDialog(collection);
+                })
+                .enableFastScroll((collectionCustomRecycler, collection, integer) -> {
+                    switch (sort_type) {
+                        case NAME:
+                            return collection.getName().substring(0, 1);
+                        case COUNT:
+                            return String.valueOf(collection.getFilmIdList().size());
+                        case LATEST:
+                            Date date = getLatest(collection);
+                            if (date != null)
+                                return dateFormat.format(date);
+                            return "Keine Ansichten";
+                        case RATING:
+                            OptionalDouble rating = getAverageRating(collection);
+                            if (rating.isPresent())
+                                return String.format("Ø %.4s ☆", rating.getAsDouble());
+                            else
+                                return "Keine Bewertungen";
+                        default:
+                            return null;
+                    }
                 })
                 .generate();
     }

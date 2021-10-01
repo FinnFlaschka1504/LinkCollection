@@ -409,7 +409,8 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
             LinearLayout subContainer = (LinearLayout) container.getChildAt(i);
             for (int i1 = 0; i1 < subContainer.getChildCount(); i1++) {
                 SquareLayout button = (SquareLayout) subContainer.getChildAt(i1);
-                buttonList.add(button);
+                if (button.getVisibility() == View.VISIBLE)
+                    buttonList.add(button);
             }
             subContainer.removeAllViews();
         }
@@ -484,8 +485,8 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
             selectedSpace.setFragment(new SpaceFragment(selectedSpace.getFragmentLayoutId()));
         SpaceFragment.currentSpace = selectedSpace;
         getSupportFragmentManager().beginTransaction().replace(R.id.main_frame_container, selectedSpace.getFragment()).runOnCommit(() -> {
-            applyDimensionsLayout();
             setCounts(this);
+            applyDimensionsLayout();
             if (currentSpace != null)
                 mySPR_settings.edit().putInt(SETTING_LAST_OPEN_SPACE, currentSpace.getItemId()).apply();
             if (Settings.Space.allSpaces.filter(Settings.Space::isShown, false).size() > 1) {

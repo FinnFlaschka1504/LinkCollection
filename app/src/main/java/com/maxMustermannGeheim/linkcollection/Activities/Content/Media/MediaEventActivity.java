@@ -250,7 +250,6 @@ public class MediaEventActivity extends AppCompatActivity {
     }
 
     private void loadRecycler() {
-        // ToDo: Versuchen Recycler diskret zu scrollen
         RecyclerView recyclerView = findViewById(R.id.recycler);
 
         final CustomList<Integer>[] heightList = new CustomList[]{new CustomList<>()};
@@ -455,7 +454,8 @@ public class MediaEventActivity extends AppCompatActivity {
                     }
                 })
                 .setOnLongClickListener((customRecycler, view, mediaEvent, index) -> showEditDialog(mediaEvent._isDummy() ? parent : mediaEvent))
-                .enableFastScroll(scrollRange, heightList)
+//                .enableFastScroll(scrollRange, heightList)
+                .enableFastScroll(MediaEvent::_getHeight)
                 .generate();
 
 //        FastScroller[] fastScroller = {null};

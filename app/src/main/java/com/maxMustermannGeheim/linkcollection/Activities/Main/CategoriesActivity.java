@@ -63,11 +63,13 @@ import com.unnamed.b.atv.view.AndroidTreeView;
 
 import org.intellij.lang.annotations.Language;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -168,33 +170,11 @@ public class CategoriesActivity extends AppCompatActivity {
                 .addSorter(SORT_TYPE.TIME)
                 .changeType(parentClassIntegerPair -> {
                     ParentClass parentClass = parentClassIntegerPair.first;
-                    List<Video> allRelatedVideos = new CustomList<>();
-                    switch (category) {
-                        case DARSTELLER:
-                            for (Video video : database.videoMap.values()) {
-                                if (video.getDarstellerList().contains(parentClass.getUuid()))
-                                    allRelatedVideos.add(video);
-                            }
-                            break;
-                        case GENRE:
-                            for (Video video : database.videoMap.values()) {
-                                if (video.getGenreList().contains(parentClass.getUuid()))
-                                    allRelatedVideos.add(video);
-                            }
-                            break;
-                        case STUDIOS:
-                            for (Video video : database.videoMap.values()) {
-                                if (video.getStudioList().contains(parentClass.getUuid()))
-                                    allRelatedVideos.add(video);
-                            }
-                            break;
-                    }
-                    Date date = CustomUtility.concatenateCollections(allRelatedVideos, Video::getDateList).stream().max(Date::compareTo).orElse(null);
+                    Date date = getDateFromParentClass(parentClass);
                     return date != null ? date : parentClass.getName();
-
                 })
                 .addCondition((o1, o2) -> {
-                    int result = 0;
+                    int result;
                     if (o1 instanceof Date && o2 instanceof Date)
                         result = ((Date) o1).compareTo((Date) o2) * -1;
                     else if (o1 instanceof String && o2 instanceof String)
@@ -211,6 +191,31 @@ public class CategoriesActivity extends AppCompatActivity {
         isTreeCategory = category.isTreeCategory();
 
         loadDatabase();
+    }
+
+    private Date getDateFromParentClass(ParentClass parentClass) {
+        List<Video> allRelatedVideos = new CustomList<>();
+        switch (category) {
+            case DARSTELLER:
+                for (Video video : database.videoMap.values()) {
+                    if (video.getDarstellerList().contains(parentClass.getUuid()))
+                        allRelatedVideos.add(video);
+                }
+                break;
+            case GENRE:
+                for (Video video : database.videoMap.values()) {
+                    if (video.getGenreList().contains(parentClass.getUuid()))
+                        allRelatedVideos.add(video);
+                }
+                break;
+            case STUDIOS:
+                for (Video video : database.videoMap.values()) {
+                    if (video.getStudioList().contains(parentClass.getUuid()))
+                        allRelatedVideos.add(video);
+                }
+                break;
+        }
+        return CustomUtility.concatenateCollections(allRelatedVideos, Video::getDateList).stream().max(Date::compareTo).orElse(null);
     }
 
     private void loadDatabase() {
@@ -408,6 +413,7 @@ public class CategoriesActivity extends AppCompatActivity {
 
     //  ------------------------- Recycler ------------------------->
     private void loadRecycler() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
         customRecycler = new CustomRecycler<Pair<ParentClass, Integer>>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_catigory_item)
                 .setGetActiveObjectList((customRecycler) -> {
@@ -502,6 +508,21 @@ public class CategoriesActivity extends AppCompatActivity {
                         setResult(RESULT_OK);
                         reLoadRecycler();
                     }, null);
+                })
+                .enableFastScroll((customRecycler1, pair, integer) -> {
+                    switch (sort_type) {
+                        case NAME:
+                            return pair.first.getName().substring(0, 1);
+                        case COUNT:
+                            return String.valueOf(pair.second);
+                        case TIME:
+                            Date date = getDateFromParentClass(pair.first);
+                            if (date == null)
+                                return "Keine Ansichten";
+                            return dateFormat.format(date);
+                        default:
+                            return null;
+                    }
                 })
                 .generate();
 

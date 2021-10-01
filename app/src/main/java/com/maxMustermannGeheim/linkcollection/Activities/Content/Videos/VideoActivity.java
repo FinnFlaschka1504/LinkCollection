@@ -1193,15 +1193,6 @@ public class VideoActivity extends AppCompatActivity {
                     }
                 })
                 .generate();
-
-//        FastScroller[] fastScroller = {null};
-//        fastScroller[0] = new FastScrollerBuilder(customRecycler_VideoList.getRecycler())
-//                .setThumbDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_thumb)))
-//                .setTrackDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_track)))
-//                .setPadding(0, 20, 0, 50)
-//                .setViewHelper(new FastScrollRecyclerViewHelper(customRecycler_VideoList, fastScroller, false, null))
-//                .build();
-
     }
 
     private void reLoadVideoRecycler() {
@@ -1285,25 +1276,24 @@ public class VideoActivity extends AppCompatActivity {
                         urlTextView.setClickable(true);
 
                     TextView viewsTextView = view.findViewById(R.id.dialog_video_views);
-                    Runnable setViewsText = () -> {
+                    Utility.GenericInterface<Boolean> setViewsText = flip -> {
                         Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
                         SpannableStringBuilder viewsText = helper.quickItalic("Keine Ansichten");
                         if (views[0] > 0) {
                             Date lastWatched = new CustomList<>(video.getDateList()).getBiggest();
                             helper.append(String.valueOf(views[0]));
                             long days = Days.daysBetween(new LocalDate(lastWatched), new LocalDate(new Date())).getDays();
-                            if (viewsTextView.getText().toString().contains("–")) {
-                                viewsText = helper.appendItalic(String.format(Locale.getDefault(), "   (%s)", Utility.formatDuration(Duration.ofDays(days), "'%j% Jahr§e§~, ~''%w% Woche§n§~, ~''%d% Tag§e§~, ~'"))).get();
+                            if (viewsTextView.getText().toString().contains("–") == flip) {
+                                viewsText = helper.appendItalic(String.format(Locale.getDefault(), "   (%s)", Helpers.DurationFormatter.formatDefault(Duration.ofDays(days), "'%y% Jahr§e§~, ~''%w% Woche§n§~, ~''%d% Tag§e§~, ~'"))).get();
                             } else {
-                                viewsText = helper.appendItalic(String.format(Locale.getDefault(), "   (%s – %dd)", new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(lastWatched), days)).get();
+                                viewsText = helper.appendItalic(String.format(Locale.getDefault(), "   (%s – %dd)", new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(lastWatched), days)).get();
                             }
                         }
                         viewsTextView.setText(viewsText);
                     };
-                    if (!reload)
-                        setViewsText.run();
+                    setViewsText.run(!reload);
                     if (views[0] > 0) {
-                        viewsTextView.setOnClickListener(v -> setViewsText.run());
+                        viewsTextView.setOnClickListener(v -> setViewsText.run(true));
                         viewsTextView.setClickable(true);
                     } else
                         viewsTextView.setClickable(false);

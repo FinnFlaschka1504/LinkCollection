@@ -403,22 +403,21 @@
                 android:orientation="horizontal">
 
                 <com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout
-                    android:id="@+id/main_collection"
+                    android:id="@+id/main_collection_layout"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:layout_margin="8dp"
                     android:layout_weight="1"
-                    android:clickable="true"
-                    android:elevation="3dp"
-                    android:foreground="@drawable/ripple"
                     android:gravity="center"
-                    android:onClick="openCollectionActivity"
                     android:orientation="vertical">
 
                     <androidx.constraintlayout.widget.ConstraintLayout
-                        android:id="@+id/main_collection_layout"
                         android:background="@drawable/tile_background"
                         android:layout_width="match_parent"
+                        android:foreground="@drawable/ripple"
+                        android:layout_margin="8dp"
+                        android:clickable="true"
+                        android:onClick="openCollectionActivity"
+                        android:elevation="3dp"
                         android:layout_height="match_parent">
 
                         <ImageView

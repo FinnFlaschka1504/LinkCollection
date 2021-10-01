@@ -58,8 +58,11 @@ import com.finn.androidUtilities.CustomList;
 import org.intellij.lang.annotations.Language;
 
 import java.text.Normalizer;
+import java.time.Duration;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -1575,9 +1578,7 @@ public class Helpers {
     //  <------------------------- WebViewHelper -------------------------
 
 
-    /**
-     * ------------------------- AdvancedSearch ------------------------->
-     */
+    /**  ------------------------- AdvancedSearch ------------------------->  */
     public static class AdvancedQueryHelper<T> {
         public static final String ADVANCED_SEARCH_CRITERIA_NAME = "n";
         @Language("RegExp") public static final String PARENT_CLASS_PATTERN = "([^|&\\[\\]]+?)([|&][^|&\\[\\]]+?)*";
@@ -2103,4 +2104,203 @@ public class Helpers {
         }
     }
     /**  <------------------------- AdvancedSearch -------------------------  */
+
+
+    //  ------------------------- DurationFormatter ------------------------->
+    public static class DurationFormatter{
+        private String pattern = "'%y% Jahr§e§~ ~''%M% Monat§e§~ ~''%w% Woche§n§~ ~''%d% Tag§e§~ ~''%h% Stunde§n§~ ~''%m% Minute§n§~ ~''%s% Sekunde§n§~ ~'";
+        private boolean lastZeroIfEmpty = true;
+        private String patternIfEmpty;
+        private String textIfEmpty;
+        private Duration lastDuration;
+
+        //  ------------------------- Constructor ------------------------->
+        public DurationFormatter(String pattern) {
+            if (CustomUtility.stringExists(pattern))
+                this.pattern = pattern;
+        }
+
+        public DurationFormatter() {
+        }
+        //  <------------------------- Constructor -------------------------
+
+
+        //  ------------------------- Static ------------------------->
+        public static String formatDefault(Duration duration, @Nullable String pattern) {
+            return new DurationFormatter().format(duration, pattern);
+        }
+
+        public static String formatDefault(Duration duration) {
+            return new DurationFormatter().format(duration);
+        }
+
+        public static String formatDefault(Date from, Date to, @Nullable String pattern) {
+            return new DurationFormatter().format(from, to, pattern);
+        }
+
+        public static String formatDefault(Date from, Date to) {
+            return new DurationFormatter().format(from, to);
+        }
+        //  <------------------------- Static -------------------------
+
+
+        //  ------------------------- Getter & Setter ------------------------->
+        public String getPattern() {
+            return pattern;
+        }
+
+        public DurationFormatter setPattern(String pattern) {
+            this.pattern = pattern;
+            return this;
+        }
+
+        public boolean isLastZeroIfEmpty() {
+            return lastZeroIfEmpty;
+        }
+
+        public DurationFormatter setLastZeroIfEmpty(boolean lastZeroIfEmpty) {
+            this.lastZeroIfEmpty = lastZeroIfEmpty;
+            return this;
+        }
+
+        public DurationFormatter disableLastZeroIfEmpty() {
+            this.lastZeroIfEmpty = false;
+            return this;
+        }
+
+        public String getPatternIfEmpty() {
+            return patternIfEmpty;
+        }
+
+        public DurationFormatter setPatternIfEmpty(String patternIfEmpty) {
+            this.patternIfEmpty = patternIfEmpty;
+            return this;
+        }
+
+        public String getTextIfEmpty() {
+            return textIfEmpty;
+        }
+
+        public DurationFormatter setTextIfEmpty(String textIfEmpty) {
+            this.textIfEmpty = textIfEmpty;
+            return this;
+        }
+
+        public Duration getLastDuration() {
+            return lastDuration;
+        }
+        //  <------------------------- Getter & Setter -------------------------
+
+
+        //  ------------------------- Convenience ------------------------->
+        public static Duration getDurationBetweenDates(Date from, Date to) {
+            return Duration.between(
+                    from.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
+                    to.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
+        }
+        //  <------------------------- Convenience -------------------------
+
+
+        //  ------------------------- Format ------------------------->
+        public String format(Duration duration, @Nullable String pattern) {
+            return formatDuration(duration, pattern);
+        }
+
+        public String format(Duration duration) {
+            return formatDuration(duration, null);
+        }
+
+        public String format(Date from, Date to, @Nullable String pattern) {
+            return format(getDurationBetweenDates(from, to), pattern);
+        }
+
+        public String format(Date from, Date to) {
+            return format(getDurationBetweenDates(from, to));
+        }
+
+        // ---------------
+
+        private String formatDuration(Duration duration, @Nullable String format){
+            lastDuration = duration;
+            format = CustomUtility.stringExistsOrElse(format, this.pattern);
+            String fullFormat = format;
+            CustomList<Pair<String, Integer>> patternList = new CustomList<>(Pair.create("%y%", 31557600), Pair.create("%M%", 2565000), Pair.create("%w%", 604800), Pair.create("%d%", 86400), Pair.create("%h%", 3600), Pair.create("%m%", 60), Pair.create("%s%", 1));
+            patternList.filter(pair -> fullFormat.contains(pair.first), true);
+            int seconds = (int) (duration.getSeconds());
+            Pair<String, Integer> tiniest = null;
+            boolean empty = true;
+            while (true) {
+                Matcher segments = Pattern.compile("'.+?'").matcher(format);
+                if (!segments.find())
+                    break;
+                String segment = segments.group();
+                Iterator<Pair<String, Integer>> iterator = patternList.iterator();
+                while (iterator.hasNext()) {
+                    Pair<String, Integer> pair = iterator.next();
+                    if (segment.contains(pair.first)) {
+                        if (tiniest == null || tiniest.second > pair.second)
+                            tiniest = Pair.create(segment, pair.second);
+                        int amount = seconds / pair.second;
+                        if (amount > 0) {
+                            empty = false;
+                            seconds = seconds % pair.second;
+                            Matcher matcher = Pattern.compile(pair.first).matcher(segment);
+                            String replacement = matcher.replaceFirst(String.valueOf(amount));
+                            if (replacement.contains("§")) {
+                                Matcher removePlural = Pattern.compile("§\\w+?§").matcher(replacement);
+                                if (removePlural.find())
+                                    replacement = removePlural.replaceFirst(amount > 1 ? CustomUtility.subString(removePlural.group(), 1, -1) : "");
+                            }
+                            format = segments.replaceFirst(CustomUtility.subString(replacement, 1, -1));
+                        } else
+                            format = segments.replaceFirst("");
+
+                        patternList.remove(pair);
+                        break;
+                    }
+                }
+            }
+
+            if (format.contains("~")) {
+                while (true) {
+                    Matcher segments = Pattern.compile("~.+?~").matcher(format);
+                    if (!segments.find())
+                        break;
+
+                    int start = segments.start();
+                    int end = segments.end();
+                    String replacement = CustomUtility.subString(segments.group(), 1, -1);
+
+                    format = CustomUtility.stringReplace(format, start, end, segments.find() ? replacement : "");
+                }
+            }
+
+            if (empty) {
+                if (CustomUtility.stringExists(patternIfEmpty) && !fullFormat.equals(patternIfEmpty)) {
+                    format = formatDuration(duration, patternIfEmpty);
+                    if (CustomUtility.stringExists(format))
+                        return format;
+                }
+                if (CustomUtility.stringExists(textIfEmpty))
+                    return textIfEmpty;
+                if (lastZeroIfEmpty) {
+                    if (tiniest == null)
+                        return "0 Sekunden";
+                    else {
+                        format = CustomUtility.subString(tiniest.first.replaceAll("%.+?%", "0").replaceAll("~.+?~", ""), 1, -1);
+                        if (format.contains("§")) {
+                            Matcher removePlural = Pattern.compile("§\\w+?§").matcher(format);
+                            if (removePlural.find())
+                                format = removePlural.replaceFirst(CustomUtility.subString(removePlural.group(), 1, -1));
+                        }
+
+                    }
+                }
+            }
+
+            return format;
+        }
+        //  <------------------------- Format -------------------------
+    }
+    //  <------------------------- DurationFormatter -------------------------
 }

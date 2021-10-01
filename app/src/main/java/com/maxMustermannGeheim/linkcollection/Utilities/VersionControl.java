@@ -97,7 +97,7 @@ public class VersionControl {
                 } else
                     CustomDialog.Builder(activity)
                             .setTitle("Update Verfügbar")
-                            .setText("Die Version " + newVersion + " steht zum Download bereit \n(Aktuelle Version: " + version + ")")
+                            .setText("Die Version " + newVersion + " steht zum Download bereit. \n(Aktuelle Version: " + version + ")")
                             .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
                             .addButton("Herunterladen", dialog -> {
                                 if (hasPermissions(activity, true)) {
@@ -121,7 +121,7 @@ public class VersionControl {
     }
 
     public static void updateApp(Activity activity, String newVersion) {
-        Toast.makeText(activity, "Updaten..", Toast.LENGTH_SHORT).show();
+        Toast.makeText(activity, "Updaten...", Toast.LENGTH_SHORT).show();
 
         DownloadManager downloadManager = (DownloadManager) activity.getSystemService(DOWNLOAD_SERVICE);
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(URL_APK));
@@ -259,8 +259,10 @@ public class VersionControl {
                 "Dropdown in EditShow bleibt geschlossen nach der Auswahl eines Items",
                 "Bilder zur Darsteller- und Studio-Übersicht hinzugefügt");
         addChange("3.0", "Medien können verwaltet werden",
-                "Fast Scroll zu einzelnen Aktivitäten hinzugefügt",
+                "Fast-Scroll zu einzelnen Aktivitäten hinzugefügt",
                 "Viele weitere kleine Änderungen");
+        addChange("3.1", "Fast-Scroll-Popup hinzugefügt",
+                "Fast-Scroll zu allen Aktivitäten hinzugefügt");
     };
 
     private static void addChange(String version, String... changes) {

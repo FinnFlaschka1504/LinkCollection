@@ -29,6 +29,7 @@
         android:foreground="@drawable/ripple"
         android:orientation="horizontal"
         android:gravity="center_vertical"
+        android:minHeight="76dp"
         android:padding="8dp">
 
         <com.maxMustermannGeheim.linkcollection.Utilities.MinDimensionLayout

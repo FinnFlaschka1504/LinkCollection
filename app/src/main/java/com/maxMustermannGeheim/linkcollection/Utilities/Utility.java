@@ -1146,6 +1146,7 @@ public class Utility {
         map.put(23, "CHILI");
         map.put(30, "Sky Store");
         map.put(31, "Pantaflix");
+        map.put(32, "Crunchyroll");
         map.put(33, "Anime On Demand");
         map.put(34, "MagentaTV");
         map.put(35, "freenet Video");
@@ -1456,7 +1457,7 @@ public class Utility {
                     MinDimensionLayout listItem_video_image_layout = itemView.findViewById(R.id.listItem_video_image_layout);
                     if (showImages && CustomUtility.stringExists(video.getImagePath())) {
                         listItem_video_image_layout.setVisibility(View.VISIBLE);
-                        Utility.loadUrlIntoImageView(context, itemView.findViewById(R.id.listItem_video_image), Utility.getTmdbImagePath_ifNecessary(video.getImagePath(), false), Utility.getTmdbImagePath_ifNecessary(video.getImagePath(), true));
+                        Utility.simpleLoadUrlIntoImageView(context, itemView.findViewById(R.id.listItem_video_image), video.getImagePath(), video.getImagePath(), 4);
                     } else
                         listItem_video_image_layout.setVisibility(View.GONE);
 
@@ -1558,14 +1559,21 @@ public class Utility {
         calender_previousMonth.setOnClickListener(view -> calendarView.scrollLeft());
         calender_nextMonth.setOnClickListener(view -> calendarView.scrollRight());
 
+        int showPreviewSetting = Settings.getSingleSetting_int(context, Settings.SETTING_SHOW_EPISODE_PREVIEW);
+
         Database database = Database.getInstance();
         CustomRecycler<Event> customRecycler = new CustomRecycler<Event>((AppCompatActivity) context, layout.findViewById(R.id.fragmentCalender_videoList))
                 .setItemLayout(R.layout.list_item_episode)
                 .setSetItemContent((customRecycler1, itemView, event, index) -> {
                     itemView.findViewById(R.id.listItem_episode_seen).setVisibility(View.GONE);
-
-
                     Show.Episode episode = ((Show.Episode) event.getData());
+
+                    ImageView imageView = itemView.findViewById(R.id.listItem_episode_image);
+                    if (Utility.stringExists(episode.getStillPath()) && (showPreviewSetting == 0 || showPreviewSetting == 1 && episode.isWatched())) {
+                        imageView.setVisibility(View.VISIBLE);
+                        Utility.simpleLoadUrlIntoImageView(context, imageView, episode.getStillPath(), episode.getStillPath(), 3);
+                    } else
+                        imageView.setVisibility(View.GONE);
 
                     if (openEpisode) {
                         itemView.findViewById(R.id.listItem_episode_extraInfo).setVisibility(View.VISIBLE);

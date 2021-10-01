@@ -19,6 +19,7 @@ import androidx.appcompat.widget.Toolbar;
 
 import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomRecycler;
+import com.finn.androidUtilities.CustomUtility;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
@@ -210,6 +211,7 @@ public class JokeActivity extends AppCompatActivity {
     }
 
     private void loadRecycler() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
         customRecycler_List = new CustomRecycler<CustomRecycler.Expandable<Joke>>(this, findViewById(R.id.recycler))
                 .setGetActiveObjectList(customRecycler -> {
                     List<CustomRecycler.Expandable<Joke>> filteredList;
@@ -232,8 +234,8 @@ public class JokeActivity extends AppCompatActivity {
                 })
 
                 .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper<Joke>(R.layout.list_item_joke, (customRecycler1, itemView, joke, expanded, index) -> {
-                    ((TextView) itemView.findViewById(R.id.listItem_joke_title_label)).setText(joke.getPunchLine() == null || joke.getPunchLine().isEmpty() ? "Witz:" : "Aufbau:");
-                    itemView.findViewById(R.id.listItem_joke_punchLine_layout).setVisibility(joke.getPunchLine() == null || joke.getPunchLine().isEmpty() ? View.GONE : View.VISIBLE);
+                    ((TextView) itemView.findViewById(R.id.listItem_joke_title_label)).setText(CustomUtility.stringExists(joke.getPunchLine()) ? "Witz:" : "Aufbau:");
+                    itemView.findViewById(R.id.listItem_joke_punchLine_layout).setVisibility(CustomUtility.stringExists(joke.getPunchLine()) ? View.VISIBLE : View.GONE);
 
                     TextView listItem_joke_title = itemView.findViewById(R.id.listItem_joke_title);
                     TextView listItem_joke_punchLine = itemView.findViewById(R.id.listItem_joke_punchLine);
@@ -258,7 +260,7 @@ public class JokeActivity extends AppCompatActivity {
                         listItem_joke_title.setMaxLines(Integer.MAX_VALUE);
                         listItem_joke_punchLine.setSingleLine(false);
                     } else {
-                        listItem_joke_title.setMaxLines(2);
+                        listItem_joke_title.setMaxLines(1);
                         listItem_joke_punchLine.setSingleLine(true);
 
                     }
@@ -274,6 +276,22 @@ public class JokeActivity extends AppCompatActivity {
 
                 .addSubOnClickListener(R.id.listItem_joke_details, (customRecycler, view, jokeExpandable, index) -> detailDialog = showDetailDialog(jokeExpandable.getObject()), false)
                 .setOnLongClickListener((customRecycler, view, jokeExpandable, index) -> addOrEditDialog[0] = showEditOrNewDialog(jokeExpandable.getObject()))
+                .enableFastScroll(jokeExpandable -> jokeExpandable.getHeight(CustomUtility.stringExists(jokeExpandable.getObject().getPunchLine()) ? 269 : 212), (expandableCustomRecycler, jokeExpandable, integer) -> {
+                    switch (sort_type) {
+                        case NAME:
+                            return jokeExpandable.getObject().getName().substring(0, 1);
+                        case RATING:
+                            Float rating = jokeExpandable.getObject().getRating();
+                            if (rating > 0)
+                                return rating + " ☆";
+                            else
+                                return "Keine Bewertung";
+                        case LATEST:
+                            return dateFormat.format(jokeExpandable.getObject().getAddedDate());
+                        default:
+                            return null;
+                    }
+                })
                 .generate();
     }
 

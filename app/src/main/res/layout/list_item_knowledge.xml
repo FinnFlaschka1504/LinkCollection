@@ -48,9 +48,10 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:maxLines="2"
+                        android:singleLine="true"
+                        android:ellipsize="end"
                         style="@style/CaptionStyle"
-                        tools:text="Test" />
+                        tools:text="Eine sehr lange Überschrift, um ellipse zu testen" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -78,7 +79,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="☆" />
+                        android:text=" ☆" />
                 </LinearLayout>
 
             </LinearLayout>
@@ -114,6 +115,7 @@
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/listItem_knowledge_list"
+                        android:nestedScrollingEnabled="false"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_weight="1"/>

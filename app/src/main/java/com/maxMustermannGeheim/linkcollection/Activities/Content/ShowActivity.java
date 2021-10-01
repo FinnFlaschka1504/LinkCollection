@@ -75,6 +75,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -105,6 +106,10 @@ public class ShowActivity extends AppCompatActivity {
     public static final String ACTION_NEXT_EPISODE = "ACTION_NEXT_EPISODE";
     public static final String EXTRA_NEXT_EPISODE_SELECT = "EXTRA_NEXT_EPISODE_SELECT";
     private final String ADVANCED_SEARCH_CRITERIA_GENRE = "g";
+    private final DecimalFormat decimalFormat = new DecimalFormat("#.##");
+    {
+        decimalFormat.setRoundingMode(RoundingMode.HALF_UP);
+    }
 
     enum SORT_TYPE {
         NAME, VIEWS, RATING, LATEST
@@ -591,7 +596,7 @@ public class ShowActivity extends AppCompatActivity {
                     double rating = getRating(episodeList);
                     if (rating > 0) {
                         itemView.findViewById(R.id.listItem_show_rating_layout).setVisibility(View.VISIBLE);
-                        ((TextView) itemView.findViewById(R.id.listItem_show_rating)).setText(new DecimalFormat("#.##").format(rating));
+                        ((TextView) itemView.findViewById(R.id.listItem_show_rating)).setText(decimalFormat.format(rating));
                     } else
                         itemView.findViewById(R.id.listItem_show_rating_layout).setVisibility(View.GONE);
 
@@ -664,7 +669,7 @@ public class ShowActivity extends AppCompatActivity {
                             if (rating % 1 == 0)
                                 return rating + " ☆";
                             else
-                                return new DecimalFormat("#.##").format(rating) + " ☆";
+                                return decimalFormat.format(rating) + " ☆";
                         case LATEST:
                             Date max = show.getSeasonList().stream().map(season -> season.getEpisodeMap().values().stream().map(value -> value.getDateList().stream().max(Date::compareTo).orElse(null)).filter(Objects::nonNull).max(Date::compareTo).orElse(null)).filter(Objects::nonNull).max(Date::compareTo).orElse(null);
                             if (max != null)
@@ -1381,7 +1386,8 @@ public class ShowActivity extends AppCompatActivity {
                     ((TextView) itemView.findViewById(R.id.listItem_season_episodes)).setText(helper.get());
 
                     double averageRating = season.getEpisodeMap().values().stream().filter(ParentClass_Ratable::hasRating).mapToDouble(ParentClass_Ratable::getRating).average().orElse(-1);
-                    ((TextView) itemView.findViewById(R.id.listItem_season_rating)).setText(averageRating != -1 ? new DecimalFormat("#.## ☆").format(averageRating) : "");
+                    ((TextView) itemView.findViewById(R.id.listItem_season_rating)).setText(averageRating != -1 ? decimalFormat.format(averageRating) + " ☆" : "");
+                    // ToDo: runden hinzufügen und jeden aufruf ins Builder Format
                 })
                 .setOnClickListener((customRecycler, itemView, season, index) -> {
                     Map<String, Show.Episode> episodeMap;
@@ -1813,17 +1819,41 @@ public class ShowActivity extends AppCompatActivity {
                                 .show();
                         return true;
                     });
-                    Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
-                    SpannableStringBuilder viewsText = helper.quickItalic("Keine Ansichten");
+
+                    TextView viewsTextView = view.findViewById(R.id.dialog_detailEpisode_views);
+                    Utility.GenericInterface<Boolean> setViewsText = flip -> {
+                        Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
+                        SpannableStringBuilder viewsText = helper.quickItalic("Keine Ansichten");
+                        if (episode.getDateList().size() > 0) {
+                            Date lastWatched = new CustomList<>(episode.getDateList()).getBiggest();
+                            helper.append(String.valueOf(episode.getDateList().size()));
+                            long days = Days.daysBetween(new LocalDate(lastWatched), new LocalDate(new Date())).getDays();
+                            if (viewsTextView.getText().toString().contains("–") == flip) {
+                                viewsText = helper.appendItalic(String.format(Locale.getDefault(), "   (%s)", Helpers.DurationFormatter.formatDefault(Duration.ofDays(days), "'%y% Jahr§e§~, ~''%w% Woche§n§~, ~''%d% Tag§e§~, ~'"))).get();
+                            } else {
+                                viewsText = helper.appendItalic(String.format(Locale.getDefault(), "   (%s – %dd)", new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(lastWatched), days)).get();
+                            }
+                        }
+                        viewsTextView.setText(viewsText);
+                    };
+                    setViewsText.run(!reload);
                     if (episode.getDateList().size() > 0) {
-                        Date lastWatched = new CustomList<>(episode.getDateList()).getBiggest();
-                        viewsText = helper.append(String.valueOf(episode.getDateList().size())).append(
-                                String.format(Locale.getDefault(), "   (%s – %dd)",
-                                        new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(lastWatched),
-                                        Days.daysBetween(new LocalDate(lastWatched), new LocalDate(new Date())).getDays())
-                                , Helpers.SpannableStringHelper.SPAN_TYPE.ITALIC).get();
-                    }
-                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_views)).setText(viewsText);
+                        viewsTextView.setOnClickListener(v -> setViewsText.run(true));
+                        viewsTextView.setClickable(true);
+                    } else
+                        viewsTextView.setClickable(false);
+String BREAKPOINT = null;
+//                    Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
+//                    SpannableStringBuilder viewsText = helper.quickItalic("Keine Ansichten");
+//                    if (episode.getDateList().size() > 0) {
+//                        Date lastWatched = new CustomList<>(episode.getDateList()).getBiggest();
+//                        viewsText = helper.append(String.valueOf(episode.getDateList().size())).append(
+//                                String.format(Locale.getDefault(), "   (%s – %dd)",
+//                                        new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(lastWatched),
+//                                        Days.daysBetween(new LocalDate(lastWatched), new LocalDate(new Date())).getDays())
+//                                , Helpers.SpannableStringHelper.SPAN_TYPE.ITALIC).get();
+//                    }
+//                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_views)).setText(viewsText);
 
                     ((TextView) view.findViewById(R.id.dialog_detailEpisode_release)).setText(Utility.isNullReturnOrElse(episode.getAirDate(), "", date -> new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(date)));
 

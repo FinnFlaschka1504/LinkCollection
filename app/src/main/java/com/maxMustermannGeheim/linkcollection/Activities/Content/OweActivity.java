@@ -323,6 +323,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                             return null;
                     }
                 })
+                .setPadding(16)
                 .generate();
     }
 

@@ -1055,7 +1055,7 @@ public class Utility {
                                     empty.setVisibility(View.GONE);
                                     JSONObject provider = currentSelected[0].getJSONObject("provider");
                                     new com.finn.androidUtilities.CustomRecycler<CharSequence>((AppCompatActivity) context, recycler)
-                                            .enableDivider()
+                                            .enableDivider(12)
                                             .setGetActiveObjectList((customRecycler) -> {
                                                 CustomList<Pair<String, Boolean>> list = new CustomList<>();
                                                 Iterator<String> keys = provider.keys();
@@ -2187,51 +2187,6 @@ public class Utility {
                 })
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     onSaved.run(customDialog, selectedUuidList);
-//                    List<String> nameList = new ArrayList<>();
-//                    switch (category) {
-//                        case DARSTELLER:
-//                            ((Video) o).setDarstellerList(selectedUuidList);
-//                            selectedUuidList.forEach(uuid -> nameList.add(database.darstellerMap.get(uuid).getName()));
-//                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_actor)).setText(String.join(", ", nameList));
-//                            break;
-//                        case STUDIOS:
-//                            ((Video) o).setStudioList(selectedUuidList);
-//                            selectedUuidList.forEach(uuid -> nameList.add(database.studioMap.get(uuid).getName()));
-//                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_studio)).setText(String.join(", ", nameList));
-//                            break;
-//                        case GENRE:
-//                            ((Video) o).setGenreList(selectedUuidList);
-//                            selectedUuidList.forEach(uuid -> nameList.add(database.genreMap.get(uuid).getName()));
-//                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddVideo_Genre)).setText(String.join(", ", nameList));
-//                            break;
-//                        case KNOWLEDGE_CATEGORIES:
-//                            ((Knowledge) o).setCategoryIdList(selectedUuidList);
-//                            selectedUuidList.forEach(uuid -> nameList.add(database.knowledgeCategoryMap.get(uuid).getName()));
-//                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddKnowledge_categories)).setText(String.join(", ", nameList));
-//                            break;
-//                        case JOKE_CATEGORIES:
-//                            ((Joke) o).setCategoryIdList(selectedUuidList);
-//                            selectedUuidList.forEach(uuid -> nameList.add(database.jokeCategoryMap.get(uuid).getName()));
-//                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddJoke_categories)).setText(String.join(", ", nameList));
-//                            break;
-//                        case SHOW_GENRES:
-//                            ((Show) o).setGenreIdList(selectedUuidList);
-//                            selectedUuidList.forEach(uuid -> nameList.add(database.showGenreMap.get(uuid).getName()));
-//                            ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAdd_show_Genre)).setText(String.join(", ", nameList));
-//                            break;
-//                        case COLLECTION:
-//                            ((com.maxMustermannGeheim.linkcollection.Daten.Videos.Collection) o).setFilmIdList(new com.finn.androidUtilities.CustomList<>(selectedUuidList));
-//                            if (addOrEditDialog != null)
-//                                ((TextView) addOrEditDialog.findViewById(R.id.dialog_editOrAddCollection_films)).setText(
-//                                        selectedUuidList.stream().map(uuid -> database.videoMap.get(uuid).getName()).collect(Collectors.joining(", ")));
-//                            break;
-//                        case MEDIA_PERSON:
-//                            com.finn.androidUtilities.CustomList<String> idList = (com.finn.androidUtilities.CustomList<String>) o;
-//                            idList.replaceWith(selectedUuidList);
-//                            addOrEditDialog.reloadView();
-//                            break;
-//
-//                    }
                 }, saveButtonId)
                 .show();
 
@@ -2246,36 +2201,19 @@ public class Utility {
                 .enableDragAndDrop((customRecycler, objectList) -> {})
                 .setSetItemContent((customRecycler, itemView, uuid, index) -> {
                     ParentClass parentClass = getObjectFromDatabase(category, uuid);
-                    if (parentClass instanceof ParentClass_Image && CustomUtility.stringExists(((ParentClass_Image) parentClass).getImagePath())) {
+                    String imagePath;
+                    if ((parentClass instanceof ParentClass_Image && CustomUtility.stringExists(imagePath = ((ParentClass_Image) parentClass).getImagePath())) || (parentClass instanceof Video) && CustomUtility.stringExists(imagePath = ((Video) parentClass).getImagePath())) {
                         ImageView imageView = itemView.findViewById(R.id.list_bubble_image);
-                        loadUrlIntoImageView(context, imageView, ImageCropUtility.applyCropTransformation(parentClass), getTmdbImagePath_ifNecessary(((ParentClass_Image) parentClass).getImagePath(), false), null, null, () -> Utility.roundImageView(imageView, 3));
+                        loadUrlIntoImageView(context, imageView, ImageCropUtility.applyCropTransformation(parentClass), getTmdbImagePath_ifNecessary(imagePath, false), null, null, () -> Utility.roundImageView(imageView, 3));
                         imageView.setVisibility(View.VISIBLE);
                     } else
                         itemView.findViewById(R.id.list_bubble_image).setVisibility(View.GONE);
-                    ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(parentClass.getName());
+                    ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(CustomUtility.getEllipsedString(parentClass.getName(), 15));
                     dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.GONE);
                 })
                 .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
-                .setOnClickListener((customRecycler, view, object, index) -> {
-                    Toast.makeText(context,
-                            "Swipe nach Oben zum abwählen", Toast.LENGTH_SHORT).show();
-                })
-                .enableSwiping((objectList, direction, s) -> {
-                    customRecycler_selectList.reload();
-                }, true, false)
-//                .setOnLongClickListener((customRecycler, view, object, index) -> {
-//                    ((CustomRecycler.MyAdapter) customRecycler.getRecycler().getAdapter()).removeItemAt(index);
-//                    selectedUuidList.remove(object);
-//
-//                    if (selectedUuidList.size() <= 0) {
-//                        dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.VISIBLE);
-//                    } else {
-//                        dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.GONE);
-//                    }
-//                    dialog_AddActorOrGenre.findViewById(saveButtonId).setEnabled(true);
-//
-//                    customRecycler_selectList.reload();
-//                })
+                .setOnClickListener((customRecycler, view, object, index) -> Toast.makeText(context, "Swipe nach Oben zum abwählen", Toast.LENGTH_SHORT).show())
+                .enableSwiping((objectList, direction, s) -> customRecycler_selectList.reload(), true, false)
                 .generate();
 
 
@@ -2298,17 +2236,17 @@ public class Utility {
 
                     return resultList;
                 })
-                .enableDivider()
+                .enableDivider(12)
                 .setSetItemContent((customRecycler, itemView, parentClass, index) -> {
                     ImageView thumbnail = itemView.findViewById(R.id.selectList_thumbnail);
-                    if (parentClass instanceof ParentClass_Image) {
-                        String imagePath = ((ParentClass_Image) parentClass).getImagePath();
-                        if (Utility.stringExists(imagePath)) {
+                    String imagePath;
+                    if ((parentClass instanceof ParentClass_Image && CustomUtility.stringExists(imagePath = ((ParentClass_Image) parentClass).getImagePath())) || (parentClass instanceof Video) && CustomUtility.stringExists(imagePath = ((Video) parentClass).getImagePath())) {
+//                        if (Utility.stringExists(imagePath)) {
                             Utility.loadUrlIntoImageView(context, thumbnail, ImageCropUtility.applyCropTransformation(parentClass), getTmdbImagePath_ifNecessary(imagePath, false),
                                     getTmdbImagePath_ifNecessary(imagePath, true), null, () -> roundImageView(thumbnail, 4), searchView::clearFocus);
                             thumbnail.setVisibility(View.VISIBLE);
-                        } else
-                            thumbnail.setVisibility(View.GONE);
+//                        } else
+//                            thumbnail.setVisibility(View.GONE);
 
                     } else
                         thumbnail.setVisibility(View.GONE);
@@ -2643,728 +2581,728 @@ public class Utility {
 
 
     /**  ------------------------- Advanced Search ------------------------->  */
-    public static CustomDialog showAdvancedSearchDialog(Context context, SearchView searchView, Collection<? extends ParentClass_Ratable> ratables) {
-        boolean preSelected = false;
-        /**  ------------------------- Rating ------------------------->  */
-        boolean[] singleMode = {false};
-        final int[] min = {0};
-        final int[] max = {20};
-        /**  <------------------------- Rating -------------------------  */
-
-
-        /**  ------------------------- Watched ------------------------->  */
-        final Date[] from = {null};
-        final Date[] to = {null};
-
-        // ---------------
-
-        final String[] pivot = {""};
-        final String[] duration = {""};
-        /**  <------------------------- Watched -------------------------  */
-
-        /**  ------------------------- Length ------------------------->  */
-        final Integer[] minLength = {null};
-        final Integer[] maxLength = {null};
-        /**  <------------------------- Length -------------------------  */
-
-        AdvancedQueryHelper advancedQueryHelper = AdvancedQueryHelper.getAdvancedQuery(searchView.getQuery().toString());
-        if (advancedQueryHelper.hasAdvancedSearch()) {
-            preSelected = true;
-
-            if (advancedQueryHelper.hasRatingSub()) {
-                Pair<Float, Float> ratingMinMax = advancedQueryHelper.getRatingMinMax();
-                min[0] = Math.round(ratingMinMax.first * 4);
-                max[0] = Math.round(ratingMinMax.second * 4);
-                singleMode[0] = ratingMinMax.first.equals(ratingMinMax.second);
-            }
-
-            // ---------------
-
-            if (advancedQueryHelper.hasDateSub()) {
-                Pair<Date, Date> dateMinMax = advancedQueryHelper.getDateMinMax();
-                from[0] = dateMinMax.first;
-                to[0] = dateMinMax.second;
-            }
-
-            // ---------------
-
-            if (advancedQueryHelper.hasDurationSub()) {
-                String[] split = advancedQueryHelper.durationSub.split(";");
-                if (split.length == 1) {
-                    duration[0] = split[0];
-                } else {
-                    pivot[0] = split[0];
-                    duration[0] = split[1];
-                }
-            }
-
-            // ---------------
-
-            if (advancedQueryHelper.hasLengthSub()) {
-                Pair<Integer, Integer> lengthMinMax = advancedQueryHelper.getLengthMinMax();
-                minLength[0] = lengthMinMax.first;
-                maxLength[0] = lengthMinMax.second;
-            }
-        }
-
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.ENGLISH);
-        boolean finalPreSelected = preSelected;
-        int timezoneOffset = new Date().getTimezoneOffset() * 60 * 1000;
-
-        return CustomDialog.Builder(context)
-                .setTitle("Erweiterte Suche")
-                .setView(R.layout.dialog_advanced_search_video)
-                .setSetViewContent((customDialog, view, reload) -> {
-                    final Runnable[] applyStrings = {() -> {
-                    }};
-
-                    /**  ------------------------- Rating ------------------------->  */
-                    TextView rangeText = customDialog.findViewById(R.id.dialog_advancedSearch_video_range);
-                    RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_advancedSearch_video_rangeBar);
-                    SeekBar singleBar = customDialog.findViewById(R.id.dialog_advancedSearch_video_singleBar);
-                    CustomUtility.GenericInterface<Pair<Integer, Integer>> setText = pair -> {
-                        singleBar.setEnabled(singleMode[0]);
-                        if (singleMode[0])
-                            rangeText.setText(String.format(Locale.getDefault(), "%.2f ☆", pair.first / 4d));
-                        else
-                            rangeText.setText(String.format(Locale.getDefault(), "%.2f ☆ – %.2f ☆", pair.first / 4d, pair.second / 4d));
-                    };
-                    rangeBar.setVisibility(singleMode[0] ? View.INVISIBLE : View.VISIBLE);
-                    singleBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                        @Override
-                        public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                            if (fromUser) {
-                                rangeBar.setMinThumbValue(progress);
-                                setText.run(Pair.create(progress, progress));
-                            }
-                        }
-
-                        @Override
-                        public void onStartTrackingTouch(SeekBar seekBar) {
-
-                        }
-
-                        @Override
-                        public void onStopTrackingTouch(SeekBar seekBar) {
-
-                        }
-                    });
-                    rangeText.setOnClickListener(v -> {
-                        if (singleMode[0] && singleBar.getProgress() == 20) {
-                            singleBar.setProgress(19);
-                            rangeBar.setMaxThumbValue(20);
-                        }
-                        singleMode[0] = !singleMode[0];
-                        rangeBar.setVisibility(singleMode[0] ? View.INVISIBLE : View.VISIBLE);
-                        setText.run(Pair.create(rangeBar.getMinThumbValue(), rangeBar.getMaxThumbValue()));
-                    });
-                    singleBar.setProgress(min[0]);
-                    rangeBar.setMaxThumbValue(max[0]);
-                    rangeBar.setMinThumbValue(min[0]);
-                    setText.run(Pair.create(min[0], max[0]));
-
-                    rangeBar.setSeekBarChangeListener(new RangeSeekBar.SeekBarChangeListener() {
-                        @Override
-                        public void onStartedSeeking() {
-
-                        }
-
-                        @Override
-                        public void onStoppedSeeking() {
-                        }
-
-                        @Override
-                        public void onValueChanged(int min, int max) {
-                            setText.run(Pair.create(min, max));
-                            singleBar.setProgress(min);
-                        }
-                    });
-                    /**  <------------------------- Rating -------------------------  */
-
-
-                    /**  ------------------------- DateRange ------------------------->  */
-                    TextView dialog_advancedSearch_viewed_text = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_text);
-                    Runnable setDateRangeTextView = () -> {
-                        if (from[0] != null && to[0] != null) {
-                            dialog_advancedSearch_viewed_text.setText(String.format("%s - %s", dateFormat.format(from[0]), dateFormat.format(to[0])));
-                        } else if (from[0] != null) {
-                            dialog_advancedSearch_viewed_text.setText(dateFormat.format(from[0]));
-                        } else {
-                            dialog_advancedSearch_viewed_text.setText("Nicht ausgewählt");
-                        }
-                    };
-                    setDateRangeTextView.run();
-
-                    MaterialDatePicker.Builder<androidx.core.util.Pair<Long, Long>> builder = MaterialDatePicker.Builder.dateRangePicker();
-                    builder.setTitleText("Zeitraum Auswählen");
-                    if (from[0] != null && to[0] != null) {
-                        builder.setSelection(androidx.core.util.Pair.create(from[0].getTime() - timezoneOffset, to[0].getTime() - timezoneOffset));
-                    } else if (from[0] != null) {
-                        builder.setSelection(androidx.core.util.Pair.create(from[0].getTime() - timezoneOffset, from[0].getTime() - timezoneOffset));
-                    }
-                    MaterialDatePicker<androidx.core.util.Pair<Long, Long>> picker = builder.build();
-
-                    picker.addOnPositiveButtonClickListener(selection -> {
-                        from[0] = new Date(selection.first + timezoneOffset);
-                        if (!Objects.equals(selection.first, selection.second))
-                            to[0] = new Date(selection.second + timezoneOffset);
-                        else
-                            to[0] = null;
-                        setDateRangeTextView.run();
-                        pivot[0] = "";
-                        duration[0] = "";
-                        applyStrings[0].run();
-                    });
-
-                    customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_change).setOnClickListener(v -> picker.show(((AppCompatActivity) context).getSupportFragmentManager(), picker.toString()));
-                    Runnable resetDateRange = () -> {
-                        if (from[0] != null || to[0] != null) {
-                            from[0] = null;
-                            to[0] = null;
-                            setDateRangeTextView.run();
-                        }
-                    };
-
-                    customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_change).setOnLongClickListener(v -> {
-                        resetDateRange.run();
-                        return true;
-                    });
-                    /**  <------------------------- DateRange -------------------------  */
-
-
-                    /**  ------------------------- Duration ------------------------->  */
-                    TextInputEditText since_edit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_since_edit);
-                    Spinner since_unit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_since_unit);
-                    TextInputEditText duration_edit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_duration_edit);
-                    Spinner duration_unit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_duration_unit);
-                    Map<String, Integer> modeMap = new HashMap<>();
-                    modeMap.put("d", 0);
-                    modeMap.put("m", 1);
-                    modeMap.put("y", 2);
-                    modeMap.put("_m", 3);
-                    modeMap.put("_y", 4);
-
-                    applyStrings[0] = () -> {
-                        if (CustomUtility.stringExists(duration[0])) {
-                            duration_edit.setText(CustomUtility.subString(duration[0], 0, -1));
-                            String durationMode = CustomUtility.subString(duration[0], -1);
-                            duration_unit.setSelection(modeMap.get(durationMode));
-                        } else {
-                            if (!duration_edit.getText().toString().equals(""))
-                                duration_edit.setText("");
-                            if (duration_unit.getSelectedItemPosition() != 0)
-                                duration_unit.setSelection(0);
-                        }
-
-                        if (CustomUtility.stringExists(pivot[0])) {
-                            boolean floored = pivot[0].contains("_");
-                            since_edit.setText(CustomUtility.subString(pivot[0], floored ? 1 : 0, -1));
-                            String sinceMode = CustomUtility.subString(pivot[0], -1);
-                            since_unit.setSelection(modeMap.get((floored ? "_" : "") + sinceMode));
-                        } else {
-                            if (!since_edit.getText().toString().equals(""))
-                                since_edit.setText("");
-                            if (since_unit.getSelectedItemPosition() != 0)
-                                since_unit.setSelection(0);
-                        }
-                    };
-                    applyStrings[0].run();
-
-                    Runnable updateStrings = () -> {
-                        Set<String> since_keysByValue = getKeysByValue(modeMap, since_unit.getSelectedItemPosition());
-                        String since_mode = since_keysByValue.toArray(new String[0])[0];
-                        String since_text = since_edit.getText().toString();
-
-                        Set<String> duration_keysByValue = getKeysByValue(modeMap, duration_unit.getSelectedItemPosition());
-                        String duration_mode = duration_keysByValue.toArray(new String[0])[0];
-                        String duration_text = duration_edit.getText().toString();
-
-                        boolean sinceExists = CustomUtility.stringExists(since_text) || since_mode.contains("_");
-                        boolean durationExists = CustomUtility.stringExists(duration_text);
-
-                        if (durationExists) {
-                            duration[0] = (duration_mode.contains("_") ? "_" : "") + duration_text + duration_mode.replaceAll("_", "");
-                            if (sinceExists)
-                                pivot[0] = (since_mode.contains("_") ? "_" : "") + since_text + since_mode.replaceAll("_", "");
-                            else
-                                pivot[0] = "";
-                        } else {
-                            pivot[0] = "";
-                            duration[0] = "";
-                        }
-                    };
-
-                    since_edit.addTextChangedListener(new TextWatcher() {
-                        @Override
-                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                        }
-
-                        @Override
-                        public void onTextChanged(CharSequence s, int start, int before, int count) {
-                        }
-
-                        @Override
-                        public void afterTextChanged(Editable s) {
-                            if (CustomUtility.stringExists(s.toString())) {
-                                resetDateRange.run();
-                            } else
-                                pivot[0] = "";
-
-                            updateStrings.run();
-                        }
-                    });
-                    duration_edit.addTextChangedListener(new TextWatcher() {
-                        @Override
-                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                        }
-
-                        @Override
-                        public void onTextChanged(CharSequence s, int start, int before, int count) {
-                        }
-
-                        @Override
-                        public void afterTextChanged(Editable s) {
-                            if (CustomUtility.stringExists(s.toString()))
-                                resetDateRange.run();
-
-                            updateStrings.run();
-                        }
-                    });
-
-                    AdapterView.OnItemSelectedListener spinnerListener = new AdapterView.OnItemSelectedListener() {
-                        @Override
-                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                            updateStrings.run();
-                        }
-
-                        @Override
-                        public void onNothingSelected(AdapterView<?> parent) {
-
-                        }
-                    };
-                    since_unit.setOnItemSelectedListener(spinnerListener);
-                    duration_unit.setOnItemSelectedListener(spinnerListener);
-                    /**  <------------------------- Duration -------------------------  */
-
-
-                    /**  ------------------------- Length ------------------------->  */
-                    TextInputEditText minLength_edit = customDialog.findViewById(R.id.dialog_advancedSearch_video_length_min_edit);
-                    TextInputEditText maxLength_edit = customDialog.findViewById(R.id.dialog_advancedSearch_video_length_max_edit);
-
-                    if (minLength[0] != null) {
-                        minLength_edit.setText(CustomUtility.isNotValueReturnOrElse(minLength[0], -1, String::valueOf, integer -> null));
-                        maxLength_edit.setText(CustomUtility.isNotValueReturnOrElse(maxLength[0], -1, String::valueOf, integer -> null));
-                    }
-
-                    /**  <------------------------- Length -------------------------  */
-
-                    // ---------------
-                    /**/
-                    // --------------- Chart
-
-//                    PieChart pieChart = customDialog.findViewById(R.id.dialog_filterByRating_chart);
-//                    pieChart.setUsePercentValues(true);
-//                    pieChart.getDescription().setEnabled(false);
+//    public static CustomDialog showAdvancedSearchDialog(Context context, SearchView searchView, Collection<? extends ParentClass_Ratable> ratables) {
+//        boolean preSelected = false;
+//        /**  ------------------------- Rating ------------------------->  */
+//        boolean[] singleMode = {false};
+//        final int[] min = {0};
+//        final int[] max = {20};
+//        /**  <------------------------- Rating -------------------------  */
 //
-////                    pieChart.setCenterTextTypeface(tfLight);
-////                    pieChart.setCenterText(generateCenterSpannableText());
 //
-//                    pieChart.setDrawHoleEnabled(true);
-//                    pieChart.setHoleColor(Color.WHITE);
+//        /**  ------------------------- Watched ------------------------->  */
+//        final Date[] from = {null};
+//        final Date[] to = {null};
 //
-//                    pieChart.setTransparentCircleColor(Color.WHITE);
-//                    pieChart.setTransparentCircleAlpha(110);
+//        // ---------------
 //
-//                    pieChart.setHoleRadius(58f);
-//                    pieChart.setTransparentCircleRadius(61f);
+//        final String[] pivot = {""};
+//        final String[] duration = {""};
+//        /**  <------------------------- Watched -------------------------  */
 //
-//                    pieChart.setDrawCenterText(true);
+//        /**  ------------------------- Length ------------------------->  */
+//        final Integer[] minLength = {null};
+//        final Integer[] maxLength = {null};
+//        /**  <------------------------- Length -------------------------  */
 //
-//                    pieChart.setRotationEnabled(false);
-//                    pieChart.setHighlightPerTapEnabled(true);
+//        AdvancedQueryHelper advancedQueryHelper = AdvancedQueryHelper.getAdvancedQuery(searchView.getQuery().toString());
+//        if (advancedQueryHelper.hasAdvancedSearch()) {
+//            preSelected = true;
 //
-//                    pieChart.setMaxAngle(180f); // HALF CHART
-//                    pieChart.setRotationAngle(180f);
-//                    pieChart.setCenterTextOffset(0, -20);
+//            if (advancedQueryHelper.hasRatingSub()) {
+//                Pair<Float, Float> ratingMinMax = advancedQueryHelper.getRatingMinMax();
+//                min[0] = Math.round(ratingMinMax.first * 4);
+//                max[0] = Math.round(ratingMinMax.second * 4);
+//                singleMode[0] = ratingMinMax.first.equals(ratingMinMax.second);
+//            }
 //
-//                    ArrayList<PieEntry> values = new ArrayList<>();
-//                    String[] parties = new String[] {
-//                            "Party A", "Party B", "Party C", "Party D", "Party E", "Party F", "Party G", "Party H",
-//                            "Party I", "Party J", "Party K", "Party L", "Party M", "Party N", "Party O", "Party P",
-//                            "Party Q", "Party R", "Party S", "Party T", "Party U", "Party V", "Party W", "Party X",
-//                            "Party Y", "Party Z"
+//            // ---------------
+//
+//            if (advancedQueryHelper.hasDateSub()) {
+//                Pair<Date, Date> dateMinMax = advancedQueryHelper.getDateMinMax();
+//                from[0] = dateMinMax.first;
+//                to[0] = dateMinMax.second;
+//            }
+//
+//            // ---------------
+//
+//            if (advancedQueryHelper.hasDurationSub()) {
+//                String[] split = advancedQueryHelper.durationSub.split(";");
+//                if (split.length == 1) {
+//                    duration[0] = split[0];
+//                } else {
+//                    pivot[0] = split[0];
+//                    duration[0] = split[1];
+//                }
+//            }
+//
+//            // ---------------
+//
+//            if (advancedQueryHelper.hasLengthSub()) {
+//                Pair<Integer, Integer> lengthMinMax = advancedQueryHelper.getLengthMinMax();
+//                minLength[0] = lengthMinMax.first;
+//                maxLength[0] = lengthMinMax.second;
+//            }
+//        }
+//
+//        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.ENGLISH);
+//        boolean finalPreSelected = preSelected;
+//        int timezoneOffset = new Date().getTimezoneOffset() * 60 * 1000;
+//
+//        return CustomDialog.Builder(context)
+//                .setTitle("Erweiterte Suche")
+//                .setView(R.layout.dialog_advanced_search_video)
+//                .setSetViewContent((customDialog, view, reload) -> {
+//                    final Runnable[] applyStrings = {() -> {
+//                    }};
+//
+//                    /**  ------------------------- Rating ------------------------->  */
+//                    TextView rangeText = customDialog.findViewById(R.id.dialog_advancedSearch_video_range);
+//                    RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_advancedSearch_video_rangeBar);
+//                    SeekBar singleBar = customDialog.findViewById(R.id.dialog_advancedSearch_video_singleBar);
+//                    CustomUtility.GenericInterface<Pair<Integer, Integer>> setText = pair -> {
+//                        singleBar.setEnabled(singleMode[0]);
+//                        if (singleMode[0])
+//                            rangeText.setText(String.format(Locale.getDefault(), "%.2f ☆", pair.first / 4d));
+//                        else
+//                            rangeText.setText(String.format(Locale.getDefault(), "%.2f ☆ – %.2f ☆", pair.first / 4d, pair.second / 4d));
 //                    };
-//                    for (int i = 0; i < 4; i++) {
-//                        values.add(new PieEntry((float) ((Math.random() * 100) + 100 / 5), parties[i % parties.length]));
+//                    rangeBar.setVisibility(singleMode[0] ? View.INVISIBLE : View.VISIBLE);
+//                    singleBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+//                        @Override
+//                        public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+//                            if (fromUser) {
+//                                rangeBar.setMinThumbValue(progress);
+//                                setText.run(Pair.create(progress, progress));
+//                            }
+//                        }
+//
+//                        @Override
+//                        public void onStartTrackingTouch(SeekBar seekBar) {
+//
+//                        }
+//
+//                        @Override
+//                        public void onStopTrackingTouch(SeekBar seekBar) {
+//
+//                        }
+//                    });
+//                    rangeText.setOnClickListener(v -> {
+//                        if (singleMode[0] && singleBar.getProgress() == 20) {
+//                            singleBar.setProgress(19);
+//                            rangeBar.setMaxThumbValue(20);
+//                        }
+//                        singleMode[0] = !singleMode[0];
+//                        rangeBar.setVisibility(singleMode[0] ? View.INVISIBLE : View.VISIBLE);
+//                        setText.run(Pair.create(rangeBar.getMinThumbValue(), rangeBar.getMaxThumbValue()));
+//                    });
+//                    singleBar.setProgress(min[0]);
+//                    rangeBar.setMaxThumbValue(max[0]);
+//                    rangeBar.setMinThumbValue(min[0]);
+//                    setText.run(Pair.create(min[0], max[0]));
+//
+//                    rangeBar.setSeekBarChangeListener(new RangeSeekBar.SeekBarChangeListener() {
+//                        @Override
+//                        public void onStartedSeeking() {
+//
+//                        }
+//
+//                        @Override
+//                        public void onStoppedSeeking() {
+//                        }
+//
+//                        @Override
+//                        public void onValueChanged(int min, int max) {
+//                            setText.run(Pair.create(min, max));
+//                            singleBar.setProgress(min);
+//                        }
+//                    });
+//                    /**  <------------------------- Rating -------------------------  */
+//
+//
+//                    /**  ------------------------- DateRange ------------------------->  */
+//                    TextView dialog_advancedSearch_viewed_text = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_text);
+//                    Runnable setDateRangeTextView = () -> {
+//                        if (from[0] != null && to[0] != null) {
+//                            dialog_advancedSearch_viewed_text.setText(String.format("%s - %s", dateFormat.format(from[0]), dateFormat.format(to[0])));
+//                        } else if (from[0] != null) {
+//                            dialog_advancedSearch_viewed_text.setText(dateFormat.format(from[0]));
+//                        } else {
+//                            dialog_advancedSearch_viewed_text.setText("Nicht ausgewählt");
+//                        }
+//                    };
+//                    setDateRangeTextView.run();
+//
+//                    MaterialDatePicker.Builder<androidx.core.util.Pair<Long, Long>> builder = MaterialDatePicker.Builder.dateRangePicker();
+//                    builder.setTitleText("Zeitraum Auswählen");
+//                    if (from[0] != null && to[0] != null) {
+//                        builder.setSelection(androidx.core.util.Pair.create(from[0].getTime() - timezoneOffset, to[0].getTime() - timezoneOffset));
+//                    } else if (from[0] != null) {
+//                        builder.setSelection(androidx.core.util.Pair.create(from[0].getTime() - timezoneOffset, from[0].getTime() - timezoneOffset));
+//                    }
+//                    MaterialDatePicker<androidx.core.util.Pair<Long, Long>> picker = builder.build();
+//
+//                    picker.addOnPositiveButtonClickListener(selection -> {
+//                        from[0] = new Date(selection.first + timezoneOffset);
+//                        if (!Objects.equals(selection.first, selection.second))
+//                            to[0] = new Date(selection.second + timezoneOffset);
+//                        else
+//                            to[0] = null;
+//                        setDateRangeTextView.run();
+//                        pivot[0] = "";
+//                        duration[0] = "";
+//                        applyStrings[0].run();
+//                    });
+//
+//                    customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_change).setOnClickListener(v -> picker.show(((AppCompatActivity) context).getSupportFragmentManager(), picker.toString()));
+//                    Runnable resetDateRange = () -> {
+//                        if (from[0] != null || to[0] != null) {
+//                            from[0] = null;
+//                            to[0] = null;
+//                            setDateRangeTextView.run();
+//                        }
+//                    };
+//
+//                    customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_change).setOnLongClickListener(v -> {
+//                        resetDateRange.run();
+//                        return true;
+//                    });
+//                    /**  <------------------------- DateRange -------------------------  */
+//
+//
+//                    /**  ------------------------- Duration ------------------------->  */
+//                    TextInputEditText since_edit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_since_edit);
+//                    Spinner since_unit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_since_unit);
+//                    TextInputEditText duration_edit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_duration_edit);
+//                    Spinner duration_unit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_duration_unit);
+//                    Map<String, Integer> modeMap = new HashMap<>();
+//                    modeMap.put("d", 0);
+//                    modeMap.put("m", 1);
+//                    modeMap.put("y", 2);
+//                    modeMap.put("_m", 3);
+//                    modeMap.put("_y", 4);
+//
+//                    applyStrings[0] = () -> {
+//                        if (CustomUtility.stringExists(duration[0])) {
+//                            duration_edit.setText(CustomUtility.subString(duration[0], 0, -1));
+//                            String durationMode = CustomUtility.subString(duration[0], -1);
+//                            duration_unit.setSelection(modeMap.get(durationMode));
+//                        } else {
+//                            if (!duration_edit.getText().toString().equals(""))
+//                                duration_edit.setText("");
+//                            if (duration_unit.getSelectedItemPosition() != 0)
+//                                duration_unit.setSelection(0);
+//                        }
+//
+//                        if (CustomUtility.stringExists(pivot[0])) {
+//                            boolean floored = pivot[0].contains("_");
+//                            since_edit.setText(CustomUtility.subString(pivot[0], floored ? 1 : 0, -1));
+//                            String sinceMode = CustomUtility.subString(pivot[0], -1);
+//                            since_unit.setSelection(modeMap.get((floored ? "_" : "") + sinceMode));
+//                        } else {
+//                            if (!since_edit.getText().toString().equals(""))
+//                                since_edit.setText("");
+//                            if (since_unit.getSelectedItemPosition() != 0)
+//                                since_unit.setSelection(0);
+//                        }
+//                    };
+//                    applyStrings[0].run();
+//
+//                    Runnable updateStrings = () -> {
+//                        Set<String> since_keysByValue = getKeysByValue(modeMap, since_unit.getSelectedItemPosition());
+//                        String since_mode = since_keysByValue.toArray(new String[0])[0];
+//                        String since_text = since_edit.getText().toString();
+//
+//                        Set<String> duration_keysByValue = getKeysByValue(modeMap, duration_unit.getSelectedItemPosition());
+//                        String duration_mode = duration_keysByValue.toArray(new String[0])[0];
+//                        String duration_text = duration_edit.getText().toString();
+//
+//                        boolean sinceExists = CustomUtility.stringExists(since_text) || since_mode.contains("_");
+//                        boolean durationExists = CustomUtility.stringExists(duration_text);
+//
+//                        if (durationExists) {
+//                            duration[0] = (duration_mode.contains("_") ? "_" : "") + duration_text + duration_mode.replaceAll("_", "");
+//                            if (sinceExists)
+//                                pivot[0] = (since_mode.contains("_") ? "_" : "") + since_text + since_mode.replaceAll("_", "");
+//                            else
+//                                pivot[0] = "";
+//                        } else {
+//                            pivot[0] = "";
+//                            duration[0] = "";
+//                        }
+//                    };
+//
+//                    since_edit.addTextChangedListener(new TextWatcher() {
+//                        @Override
+//                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+//                        }
+//
+//                        @Override
+//                        public void onTextChanged(CharSequence s, int start, int before, int count) {
+//                        }
+//
+//                        @Override
+//                        public void afterTextChanged(Editable s) {
+//                            if (CustomUtility.stringExists(s.toString())) {
+//                                resetDateRange.run();
+//                            } else
+//                                pivot[0] = "";
+//
+//                            updateStrings.run();
+//                        }
+//                    });
+//                    duration_edit.addTextChangedListener(new TextWatcher() {
+//                        @Override
+//                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+//                        }
+//
+//                        @Override
+//                        public void onTextChanged(CharSequence s, int start, int before, int count) {
+//                        }
+//
+//                        @Override
+//                        public void afterTextChanged(Editable s) {
+//                            if (CustomUtility.stringExists(s.toString()))
+//                                resetDateRange.run();
+//
+//                            updateStrings.run();
+//                        }
+//                    });
+//
+//                    AdapterView.OnItemSelectedListener spinnerListener = new AdapterView.OnItemSelectedListener() {
+//                        @Override
+//                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+//                            updateStrings.run();
+//                        }
+//
+//                        @Override
+//                        public void onNothingSelected(AdapterView<?> parent) {
+//
+//                        }
+//                    };
+//                    since_unit.setOnItemSelectedListener(spinnerListener);
+//                    duration_unit.setOnItemSelectedListener(spinnerListener);
+//                    /**  <------------------------- Duration -------------------------  */
+//
+//
+//                    /**  ------------------------- Length ------------------------->  */
+//                    TextInputEditText minLength_edit = customDialog.findViewById(R.id.dialog_advancedSearch_video_length_min_edit);
+//                    TextInputEditText maxLength_edit = customDialog.findViewById(R.id.dialog_advancedSearch_video_length_max_edit);
+//
+//                    if (minLength[0] != null) {
+//                        minLength_edit.setText(CustomUtility.isNotValueReturnOrElse(minLength[0], -1, String::valueOf, integer -> null));
+//                        maxLength_edit.setText(CustomUtility.isNotValueReturnOrElse(maxLength[0], -1, String::valueOf, integer -> null));
 //                    }
 //
-//                    PieDataSet dataSet = new PieDataSet(values, "Election Results");
-//                    dataSet.setSliceSpace(3f);
-//                    dataSet.setSelectionShift(5f);
+//                    /**  <------------------------- Length -------------------------  */
 //
-//                    dataSet.setColors(ColorTemplate.MATERIAL_COLORS);
-//                    //dataSet.setSelectionShift(0f);
+//                    // ---------------
+//                    /**/
+//                    // --------------- Chart
 //
-//                    PieData data = new PieData(dataSet);
-//                    data.setValueFormatter(new PercentFormatter());
-//                    data.setValueTextSize(11f);
-//                    data.setValueTextColor(Color.WHITE);
-////                    data.setValueTypeface(tfLight);
-//                    pieChart.setData(data);
-//
-//                    pieChart.invalidate();
-//
-//
-//                    pieChart.animateY(1400, Easing.EaseInOutQuad);
-//
-//                    Legend l = pieChart.getLegend();
-//                    l.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
-//                    l.setHorizontalAlignment(Legend.LegendHorizontalAlignment.CENTER);
-//                    l.setOrientation(Legend.LegendOrientation.HORIZONTAL);
-//                    l.setDrawInside(false);
-//                    l.setXEntrySpace(7f);
-//                    l.setYEntrySpace(0f);
-//                    l.setYOffset(0f);
-//
-//                    // entry label styling
-//                    pieChart.setEntryLabelColor(Color.WHITE);
-////                    pieChart.setEntryLabelTypeface(tfRegular);
-//                    pieChart.setEntryLabelTextSize(12f); // ToDo: https://www.youtube.com/watch?v=iS7EgKnyDeY
-
-                    // --------------- Chart 2
-
-//                    PieChart pieChart = customDialog.findViewById(R.id.dialog_filterByRating_chart);
-//                    pieChart.setUsePercentValues(true);
-//                    pieChart.getDescription().setEnabled(false);
-//
-////                    pieChart.setCenterTextTypeface(tfLight);
-////                    pieChart.setCenterText(generateCenterSpannableText());
-//
-//                    pieChart.setDrawHoleEnabled(true);
-//                    pieChart.setHoleColor(Color.TRANSPARENT);
-//
-//                    pieChart.setTransparentCircleColor(Color.WHITE);
-//                    pieChart.setTransparentCircleAlpha(110);
-//
-//                    pieChart.setHoleRadius(58f);
-//                    pieChart.setTransparentCircleRadius(61f);
-//
-//                    pieChart.setDrawCenterText(true);
-//
+////                    PieChart pieChart = customDialog.findViewById(R.id.dialog_filterByRating_chart);
+////                    pieChart.setUsePercentValues(true);
+////                    pieChart.getDescription().setEnabled(false);
+////
+//////                    pieChart.setCenterTextTypeface(tfLight);
+//////                    pieChart.setCenterText(generateCenterSpannableText());
+////
+////                    pieChart.setDrawHoleEnabled(true);
+////                    pieChart.setHoleColor(Color.WHITE);
+////
+////                    pieChart.setTransparentCircleColor(Color.WHITE);
+////                    pieChart.setTransparentCircleAlpha(110);
+////
+////                    pieChart.setHoleRadius(58f);
+////                    pieChart.setTransparentCircleRadius(61f);
+////
+////                    pieChart.setDrawCenterText(true);
+////
 ////                    pieChart.setRotationEnabled(false);
-//                    pieChart.setHighlightPerTapEnabled(true);
-//
+////                    pieChart.setHighlightPerTapEnabled(true);
+////
 ////                    pieChart.setMaxAngle(180f); // HALF CHART
 ////                    pieChart.setRotationAngle(180f);
 ////                    pieChart.setCenterTextOffset(0, -20);
+////
+////                    ArrayList<PieEntry> values = new ArrayList<>();
+////                    String[] parties = new String[] {
+////                            "Party A", "Party B", "Party C", "Party D", "Party E", "Party F", "Party G", "Party H",
+////                            "Party I", "Party J", "Party K", "Party L", "Party M", "Party N", "Party O", "Party P",
+////                            "Party Q", "Party R", "Party S", "Party T", "Party U", "Party V", "Party W", "Party X",
+////                            "Party Y", "Party Z"
+////                    };
+////                    for (int i = 0; i < 4; i++) {
+////                        values.add(new PieEntry((float) ((Math.random() * 100) + 100 / 5), parties[i % parties.length]));
+////                    }
+////
+////                    PieDataSet dataSet = new PieDataSet(values, "Election Results");
+////                    dataSet.setSliceSpace(3f);
+////                    dataSet.setSelectionShift(5f);
+////
+////                    dataSet.setColors(ColorTemplate.MATERIAL_COLORS);
+////                    //dataSet.setSelectionShift(0f);
+////
+////                    PieData data = new PieData(dataSet);
+////                    data.setValueFormatter(new PercentFormatter());
+////                    data.setValueTextSize(11f);
+////                    data.setValueTextColor(Color.WHITE);
+//////                    data.setValueTypeface(tfLight);
+////                    pieChart.setData(data);
+////
+////                    pieChart.invalidate();
+////
+////
+////                    pieChart.animateY(1400, Easing.EaseInOutQuad);
+////
+////                    Legend l = pieChart.getLegend();
+////                    l.setVerticalAlignment(Legend.LegendVerticalAlignment.TOP);
+////                    l.setHorizontalAlignment(Legend.LegendHorizontalAlignment.CENTER);
+////                    l.setOrientation(Legend.LegendOrientation.HORIZONTAL);
+////                    l.setDrawInside(false);
+////                    l.setXEntrySpace(7f);
+////                    l.setYEntrySpace(0f);
+////                    l.setYOffset(0f);
+////
+////                    // entry label styling
+////                    pieChart.setEntryLabelColor(Color.WHITE);
+//////                    pieChart.setEntryLabelTypeface(tfRegular);
+////                    pieChart.setEntryLabelTextSize(12f); // ToDo: https://www.youtube.com/watch?v=iS7EgKnyDeY
+//
+//                    // --------------- Chart 2
+//
+////                    PieChart pieChart = customDialog.findViewById(R.id.dialog_filterByRating_chart);
+////                    pieChart.setUsePercentValues(true);
+////                    pieChart.getDescription().setEnabled(false);
+////
+//////                    pieChart.setCenterTextTypeface(tfLight);
+//////                    pieChart.setCenterText(generateCenterSpannableText());
+////
+////                    pieChart.setDrawHoleEnabled(true);
+////                    pieChart.setHoleColor(Color.TRANSPARENT);
+////
+////                    pieChart.setTransparentCircleColor(Color.WHITE);
+////                    pieChart.setTransparentCircleAlpha(110);
+////
+////                    pieChart.setHoleRadius(58f);
+////                    pieChart.setTransparentCircleRadius(61f);
+////
+////                    pieChart.setDrawCenterText(true);
+////
+//////                    pieChart.setRotationEnabled(false);
+////                    pieChart.setHighlightPerTapEnabled(true);
+////
+//////                    pieChart.setMaxAngle(180f); // HALF CHART
+//////                    pieChart.setRotationAngle(180f);
+//////                    pieChart.setCenterTextOffset(0, -20);
+////
+////
+////                    List<PieEntry> pieEntryList = new ArrayList<>();
+////
+////                    Map<Float, ? extends List<? extends ParentClass_Ratable>> map = ratables.stream().collect(Collectors.groupingBy(ParentClass_Ratable::getRating));
+////
+////                    for (int i = 1; i < 20; i++) {
+////                        float rating = i / 4f;
+////                        pieEntryList.add(new PieEntry(Utility.returnIfNull(map.get(rating), new ArrayList<ParentClass_Ratable>()).size(), Utility.removeTrailingZeros(i / 4d) + " ☆"));
+////                    }
+////
+////                    PieDataSet dataSet = new PieDataSet(pieEntryList, "Filme Verteilung");
+////                    dataSet.setColors(ColorTemplate.COLORFUL_COLORS);
+////                    PieData pieData = new PieData(dataSet);
+////
+////                    pieChart.setData(pieData);
+////                    pieChart.invalidate();
+//                })
+//                .addOptionalModifications(customDialog -> {
+//                    if (finalPreSelected) {
+//                        customDialog
+//                                .addButton(R.drawable.ic_reset, customDialog1 -> {
+//                                    String removedQuery = AdvancedQueryHelper.removeAdvancedSearch(searchView.getQuery());
+//                                    searchView.setQuery(removedQuery, false);
+//                                    Toast.makeText(context, "Erweiterte Suche zurückgesetzt", Toast.LENGTH_SHORT).show();
+//                                })
+//                                .alignPreviousButtonsLeft();
+//                    }
+//                })
+//                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+//                .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
+//                    List<String> filter = new ArrayList<>();
+//                    String removedQuery = AdvancedQueryHelper.removeAdvancedSearch(searchView.getQuery());
+//
+//                    /**  ------------------------- Rating ------------------------->  */
+//                    RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_advancedSearch_video_rangeBar);
+//                    min[0] = rangeBar.getMinThumbValue();
+//                    max[0] = rangeBar.getMaxThumbValue();
+//
+//                    if (min[0] != 0 || max[0] != 20) {
+//                        String ratingFilter;
+//                        if (singleMode[0])
+//                            ratingFilter = String.format(Locale.getDefault(), "r:%.2f", min[0] / 4d);
+//                        else
+//                            ratingFilter = String.format(Locale.getDefault(), "r:%.2f-%.2f", min[0] / 4d, max[0] / 4d);
+//
+//                        filter.add(ratingFilter);
+//                    }
+//                    /**  <------------------------- Rating -------------------------  */
 //
 //
-//                    List<PieEntry> pieEntryList = new ArrayList<>();
+//                    /**  ------------------------- DateRange ------------------------->  */
+//                    if (from[0] != null) {
+//                        String dateFilter;
+//                        if (to[0] != null)
+//                            dateFilter = String.format(Locale.getDefault(), "d:%s-%s", dateFormat.format(from[0]), dateFormat.format(to[0]));
+//                        else
+//                            dateFilter = String.format(Locale.getDefault(), "d:%s", dateFormat.format(from[0]));
 //
-//                    Map<Float, ? extends List<? extends ParentClass_Ratable>> map = ratables.stream().collect(Collectors.groupingBy(ParentClass_Ratable::getRating));
-//
-//                    for (int i = 1; i < 20; i++) {
-//                        float rating = i / 4f;
-//                        pieEntryList.add(new PieEntry(Utility.returnIfNull(map.get(rating), new ArrayList<ParentClass_Ratable>()).size(), Utility.removeTrailingZeros(i / 4d) + " ☆"));
+//                        filter.add(dateFilter);
 //                    }
 //
-//                    PieDataSet dataSet = new PieDataSet(pieEntryList, "Filme Verteilung");
-//                    dataSet.setColors(ColorTemplate.COLORFUL_COLORS);
-//                    PieData pieData = new PieData(dataSet);
+//                    // ---------------
 //
-//                    pieChart.setData(pieData);
-//                    pieChart.invalidate();
-                })
-                .addOptionalModifications(customDialog -> {
-                    if (finalPreSelected) {
-                        customDialog
-                                .addButton(R.drawable.ic_reset, customDialog1 -> {
-                                    String removedQuery = AdvancedQueryHelper.removeAdvancedSearch(searchView.getQuery());
-                                    searchView.setQuery(removedQuery, false);
-                                    Toast.makeText(context, "Erweiterte Suche zurückgesetzt", Toast.LENGTH_SHORT).show();
-                                })
-                                .alignPreviousButtonsLeft();
-                    }
-                })
-                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
-                .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
-                    List<String> filter = new ArrayList<>();
-                    String removedQuery = AdvancedQueryHelper.removeAdvancedSearch(searchView.getQuery());
-
-                    /**  ------------------------- Rating ------------------------->  */
-                    RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_advancedSearch_video_rangeBar);
-                    min[0] = rangeBar.getMinThumbValue();
-                    max[0] = rangeBar.getMaxThumbValue();
-
-                    if (min[0] != 0 || max[0] != 20) {
-                        String ratingFilter;
-                        if (singleMode[0])
-                            ratingFilter = String.format(Locale.getDefault(), "r:%.2f", min[0] / 4d);
-                        else
-                            ratingFilter = String.format(Locale.getDefault(), "r:%.2f-%.2f", min[0] / 4d, max[0] / 4d);
-
-                        filter.add(ratingFilter);
-                    }
-                    /**  <------------------------- Rating -------------------------  */
-
-
-                    /**  ------------------------- DateRange ------------------------->  */
-                    if (from[0] != null) {
-                        String dateFilter;
-                        if (to[0] != null)
-                            dateFilter = String.format(Locale.getDefault(), "d:%s-%s", dateFormat.format(from[0]), dateFormat.format(to[0]));
-                        else
-                            dateFilter = String.format(Locale.getDefault(), "d:%s", dateFormat.format(from[0]));
-
-                        filter.add(dateFilter);
-                    }
-
-                    // ---------------
-
-                    if (CustomUtility.stringExists(duration[0])) {
-                        String dateDurationFilter;
-                        if (CustomUtility.stringExists(pivot[0]))
-                            dateDurationFilter = String.format(Locale.getDefault(), "d:%s;%s", pivot[0], duration[0]);
-                        else
-                            dateDurationFilter = String.format(Locale.getDefault(), "d:%s", duration[0]);
-                        filter.add(dateDurationFilter);
-                    }
-                    /**  <------------------------- DateRange -------------------------  */
-
-
-                    /**  ------------------------- Length ------------------------->  */
-                    String  minLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_video_length_min_edit)).getText().toString().trim();
-                    String maxLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_video_length_max_edit)).getText().toString().trim();
-
-                    if (CustomUtility.stringExists(minLength_str) && CustomUtility.stringExists(maxLength_str)) {
-                        if (Objects.equals(minLength_str, maxLength_str))
-                            filter.add(String.format(Locale.getDefault(), "l:%s", minLength_str));
-                        else
-                            filter.add(String.format(Locale.getDefault(), "l:%s-%s", minLength_str, maxLength_str));
-                    } else if (CustomUtility.stringExists(minLength_str))
-                        filter.add(String.format(Locale.getDefault(), "l:%s-", minLength_str));
-                    else if (CustomUtility.stringExists(maxLength_str))
-                        filter.add(String.format(Locale.getDefault(), "l:-%s", maxLength_str));
-                    /**  <------------------------- Length -------------------------  */
-
-                    String newQuery = Utility.isNotValueReturnOrElse(removedQuery, "", s -> s + " ", null);
-                    newQuery += filter.isEmpty() ? "" : String.format("{%s}", String.join(" ", filter));
-                    searchView.setQuery(newQuery, false);
-
-                })
-//                .setOnTouchOutside(CustomDialog::dismiss)
-//                .setDismissWhenClickedOutside(false)
-                .show();
-
-    }
-
-    public static class AdvancedQueryHelper {
-        private static final Pattern advancedSearchPattern = Pattern.compile("\\{.*\\}");
-        public static final Pattern ratingPattern = Pattern.compile("(?<=r: ?)(([0-4]((.|,)\\d{1,2})?)|5((.|,)00?)?)(-(([0-4]((\\4|\\6)(?<=[,.])\\d{1,2})?)|5((\\4|\\6)(?<=[,.])00?)?))?(?=\\s*(\\}|\\w:))");
-        public static final Pattern datePattern = Pattern.compile("(?<=d: ?)(\\d{1,2}\\.\\d{1,2}\\.(\\d{4}|\\d{2}))(-\\d{1,2}\\.\\d{1,2}\\.(\\d{4}|\\d{2}))?(?=\\s*(\\}|\\w:))");
-        public static final Pattern durationPattern = Pattern.compile("(?<=d: ?)((-?\\d+[dmy])|(-?\\d+[dmy]|_(-?\\d+)?[my])(;-?\\d+[dmy]))(?=\\s*(\\}|\\w:))");
-        public static final Pattern lengthPattern = Pattern.compile("(?<=l: ?)(\\d+)?-?(\\d+)?(?=\\s*(\\}|\\w:))");
-//        public static final Pattern durationModePattern = Pattern.compile("(?<=\\d[dmy])[ba]");
-
-        public String advancedQuery, restQuery, fullQuery, ratingSub, dateSub, durationSub, lengthSub;
-
-        public Pair<Date, Date> datePair;
-
-        public static AdvancedQueryHelper getAdvancedQuery(String fullQuery) {
-            AdvancedQueryHelper advancedQueryHelper = new AdvancedQueryHelper();
-            advancedQueryHelper.fullQuery = fullQuery;
-
-            if (!fullQuery.contains("{")) {
-                advancedQueryHelper.restQuery = fullQuery;
-                return advancedQueryHelper;
-            }
-
-            Matcher advancedQueryMatcher = advancedSearchPattern.matcher(fullQuery);
-
-            if (advancedQueryMatcher.find())
-                advancedQueryHelper.advancedQuery = advancedQueryMatcher.group(0);
-
-            if (advancedQueryHelper.hasAdvancedSearch()) {
-                if (advancedQueryHelper.advancedQuery.contains("r:")) {
-                    Matcher ratingMatcher = ratingPattern.matcher(advancedQueryHelper.advancedQuery);
-                    if (ratingMatcher.find()) {
-                        advancedQueryHelper.ratingSub = ratingMatcher.group(0);
-                    }
-                }
-                if (advancedQueryHelper.advancedQuery.contains("d:")) {
-                    Matcher dateMatcher = datePattern.matcher(advancedQueryHelper.advancedQuery);
-                    if (dateMatcher.find()) {
-                        advancedQueryHelper.dateSub = dateMatcher.group(0);
-                    } else {
-                        Matcher durationMatcher = durationPattern.matcher(advancedQueryHelper.advancedQuery);
-                        if (durationMatcher.find()) {
-                            advancedQueryHelper.durationSub = durationMatcher.group(0);
-                        }
-                    }
-                }
-                if (advancedQueryHelper.advancedQuery.contains("l:")) {
-                    Matcher lengthMatcher = lengthPattern.matcher(advancedQueryHelper.advancedQuery);
-                    if (lengthMatcher.find()) {
-                        advancedQueryHelper.lengthSub = lengthMatcher.group(0);
-                    }
-                }
-            }
-
-
-            advancedQueryHelper.restQuery = advancedQueryMatcher.replaceAll("");
-
-            return advancedQueryHelper;
-        }
-
-
-        /**  ------------------------- Checks ------------------------->  */
-        public boolean hasAdvancedSearch() {
-            return advancedQuery != null;
-        }
-
-        public boolean hasAnyAdvancedQuery() {
-            return hasDateSub() || hasRatingSub() || hasDurationSub() || hasLengthSub();
-        }
-
-        public boolean hasRatingSub() {
-            return ratingSub != null;
-        }
-
-        public boolean hasDateSub() {
-            return dateSub != null;
-        }
-
-        public boolean hasDurationSub() {
-            return durationSub != null;
-        }
-
-        public boolean hasDateOrDurationSub() {
-            return hasDateSub() || hasDurationSub();
-        }
-
-        public boolean hasLengthSub() {
-            return lengthSub != null;
-        }
-        /**  <------------------------- Checks -------------------------  */
-
-
-        /**  ------------------------- Convenience ------------------------->  */
-        public Pair<Float, Float> getRatingMinMax() {
-            if (ratingSub == null)
-                return null;
-
-            String[] range = ratingSub.replaceAll(",", ".").split("-");
-            float min = Float.parseFloat(range[0]);
-            float max = Float.parseFloat(range.length < 2 ? range[0] : range[1]);
-
-            return Pair.create(min, max);
-        }
-
-        public Pair<Date, Date> getDateMinMax() {
-            if (dateSub == null)
-                return null;
-
-            String[] range = dateSub.split("-");
-            Date min = null;
-            Date max = null;
-            try {
-                GenericReturnInterface<String, String> expandYear = s -> {
-                    String[] split = s.split("\\.");
-                    if (split[2].length() == 2) {
-                        split[2] = "20" + split[2];
-                        return String.join(".", split);
-                    } else
-                        return s;
-                };
-                SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-                min = dateFormat.parse(expandYear.run(range[0]));
-                if (range.length > 1)
-                    max = dateFormat.parse(expandYear.run(range[1]));
-            } catch (ParseException ignored) {
-            }
-
-            return datePair = Pair.create(min, CustomUtility.isNotNullOrElse(max, min));
-        }
-
-        public Pair<Date, Date> getDurationMinMax() {
-            if (durationSub == null)
-                return null;
-
-            String[] range = durationSub.split(";"); // ToDo: evl. Flags hinzufügen?
-            Date pivot;
-            Calendar cal = Calendar.getInstance();
-            cal.set(Calendar.HOUR_OF_DAY, 0);
-            cal.set(Calendar.MINUTE, 0);
-            cal.set(Calendar.SECOND, 0);
-            cal.set(Calendar.MILLISECOND, 0);
-            Map<String, Integer> modeMap = new HashMap<>();
-            modeMap.put("d", Calendar.DAY_OF_MONTH);
-            modeMap.put("m", Calendar.MONTH);
-            modeMap.put("y", Calendar.YEAR);
-
-
-            if (range.length > 1) {
-                String pivotString = range[0];
-                if (pivotString.startsWith("_")) {
-                    if (pivotString.endsWith("m")) {
-                        if (pivotString.length() > 2)
-                            cal.add(Calendar.MONTH, Integer.parseInt(CustomUtility.subString(pivotString, 1, -1)) * -1);
-                        cal.set(Calendar.DAY_OF_MONTH, 1);
-                        pivot = cal.getTime();
-                    } else {
-                        if (pivotString.length() > 2)
-                            cal.add(Calendar.YEAR, Integer.parseInt(CustomUtility.subString(pivotString, 1, -1)) * -1);
-                        cal.set(Calendar.DAY_OF_YEAR, 1);
-                        pivot = cal.getTime();
-                    }
-                } else {
-                    cal.add(modeMap.get(CustomUtility.subString(pivotString, -1)), Integer.parseInt(CustomUtility.subString(pivotString, 0, -1)) * -1);
-                    pivot = cal.getTime();
-                }
-            } else
-                pivot = cal.getTime();
-
-            String durationString = range.length > 1 ? range[1] : range[0];
-            int durationInt = Integer.parseInt(CustomUtility.subString(durationString, 0, -1));
-            String durationMode = CustomUtility.subString(durationString, -1);
-            if (durationMode.equals("d"))
-                durationInt = (Math.abs(durationInt) - 1) * (durationInt < 0 ? -1 : 1);
-            cal.add(modeMap.get(durationMode), durationInt * -1);
-//            cal.add(Calendar.DAY_OF_MONTH, durationInt < 0 ? -1 : 1);
-
-            Date duration = cal.getTime();
-
-            Pair<Date, Date> datePair = pivot.before(duration) ? Pair.create(pivot, duration) : Pair.create(duration, pivot);
-
-            if (!durationMode.equals("d")) {
-                cal.setTime(datePair.second);
-                cal.add(Calendar.DAY_OF_MONTH, -1);
-                datePair = Pair.create(datePair.first, cal.getTime());
-            }
-
-            return this.datePair = datePair;
-        }
-
-        public Pair<Date, Date> getDateOrDurationMinMax() {
-            if (hasDateSub())
-                return getDateMinMax();
-            else
-                return getDurationMinMax();
-        }
-
-        public Pair<Integer, Integer> getLengthMinMax() {
-            String[] range = lengthSub.split("-");
-            int min = range.length > 0 ? Integer.parseInt(CustomUtility.isNotValueOrElse(range[0], "", "-1")) : -1;
-            int max = range.length > 1 ? Integer.parseInt(CustomUtility.isNotValueOrElse(range[1], "", "-1")) : (lengthSub.endsWith("-") ? -1 : min);
-
-            return Pair.create(min,max);
-        }
-
-        public static String removeAdvancedSearch(CharSequence fullQuery) {
-            return fullQuery.toString().replaceAll(AdvancedQueryHelper.advancedSearchPattern.pattern(), "").trim();
-        }
-        /**  <------------------------- Convenience -------------------------  */
-    }
+//                    if (CustomUtility.stringExists(duration[0])) {
+//                        String dateDurationFilter;
+//                        if (CustomUtility.stringExists(pivot[0]))
+//                            dateDurationFilter = String.format(Locale.getDefault(), "d:%s;%s", pivot[0], duration[0]);
+//                        else
+//                            dateDurationFilter = String.format(Locale.getDefault(), "d:%s", duration[0]);
+//                        filter.add(dateDurationFilter);
+//                    }
+//                    /**  <------------------------- DateRange -------------------------  */
+//
+//
+//                    /**  ------------------------- Length ------------------------->  */
+//                    String  minLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_video_length_min_edit)).getText().toString().trim();
+//                    String maxLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_video_length_max_edit)).getText().toString().trim();
+//
+//                    if (CustomUtility.stringExists(minLength_str) && CustomUtility.stringExists(maxLength_str)) {
+//                        if (Objects.equals(minLength_str, maxLength_str))
+//                            filter.add(String.format(Locale.getDefault(), "l:%s", minLength_str));
+//                        else
+//                            filter.add(String.format(Locale.getDefault(), "l:%s-%s", minLength_str, maxLength_str));
+//                    } else if (CustomUtility.stringExists(minLength_str))
+//                        filter.add(String.format(Locale.getDefault(), "l:%s-", minLength_str));
+//                    else if (CustomUtility.stringExists(maxLength_str))
+//                        filter.add(String.format(Locale.getDefault(), "l:-%s", maxLength_str));
+//                    /**  <------------------------- Length -------------------------  */
+//
+//                    String newQuery = Utility.isNotValueReturnOrElse(removedQuery, "", s -> s + " ", null);
+//                    newQuery += filter.isEmpty() ? "" : String.format("{%s}", String.join(" ", filter));
+//                    searchView.setQuery(newQuery, false);
+//
+//                })
+////                .setOnTouchOutside(CustomDialog::dismiss)
+////                .setDismissWhenClickedOutside(false)
+//                .show();
+//
+//    }
+//
+//    public static class AdvancedQueryHelper {
+//        private static final Pattern advancedSearchPattern = Pattern.compile("\\{.*\\}");
+//        public static final Pattern ratingPattern = Pattern.compile("(?<=r: ?)(([0-4]((.|,)\\d{1,2})?)|5((.|,)00?)?)(-(([0-4]((\\4|\\6)(?<=[,.])\\d{1,2})?)|5((\\4|\\6)(?<=[,.])00?)?))?(?=\\s*(\\}|\\w:))");
+//        public static final Pattern datePattern = Pattern.compile("(?<=d: ?)(\\d{1,2}\\.\\d{1,2}\\.(\\d{4}|\\d{2}))(-\\d{1,2}\\.\\d{1,2}\\.(\\d{4}|\\d{2}))?(?=\\s*(\\}|\\w:))");
+//        public static final Pattern durationPattern = Pattern.compile("(?<=d: ?)((-?\\d+[dmy])|(-?\\d+[dmy]|_(-?\\d+)?[my])(;-?\\d+[dmy]))(?=\\s*(\\}|\\w:))");
+//        public static final Pattern lengthPattern = Pattern.compile("(?<=l: ?)(\\d+)?-?(\\d+)?(?=\\s*(\\}|\\w:))");
+////        public static final Pattern durationModePattern = Pattern.compile("(?<=\\d[dmy])[ba]");
+//
+//        public String advancedQuery, restQuery, fullQuery, ratingSub, dateSub, durationSub, lengthSub;
+//
+//        public Pair<Date, Date> datePair;
+//
+//        public static AdvancedQueryHelper getAdvancedQuery(String fullQuery) {
+//            AdvancedQueryHelper advancedQueryHelper = new AdvancedQueryHelper();
+//            advancedQueryHelper.fullQuery = fullQuery;
+//
+//            if (!fullQuery.contains("{")) {
+//                advancedQueryHelper.restQuery = fullQuery;
+//                return advancedQueryHelper;
+//            }
+//
+//            Matcher advancedQueryMatcher = advancedSearchPattern.matcher(fullQuery);
+//
+//            if (advancedQueryMatcher.find())
+//                advancedQueryHelper.advancedQuery = advancedQueryMatcher.group(0);
+//
+//            if (advancedQueryHelper.hasAdvancedSearch()) {
+//                if (advancedQueryHelper.advancedQuery.contains("r:")) {
+//                    Matcher ratingMatcher = ratingPattern.matcher(advancedQueryHelper.advancedQuery);
+//                    if (ratingMatcher.find()) {
+//                        advancedQueryHelper.ratingSub = ratingMatcher.group(0);
+//                    }
+//                }
+//                if (advancedQueryHelper.advancedQuery.contains("d:")) {
+//                    Matcher dateMatcher = datePattern.matcher(advancedQueryHelper.advancedQuery);
+//                    if (dateMatcher.find()) {
+//                        advancedQueryHelper.dateSub = dateMatcher.group(0);
+//                    } else {
+//                        Matcher durationMatcher = durationPattern.matcher(advancedQueryHelper.advancedQuery);
+//                        if (durationMatcher.find()) {
+//                            advancedQueryHelper.durationSub = durationMatcher.group(0);
+//                        }
+//                    }
+//                }
+//                if (advancedQueryHelper.advancedQuery.contains("l:")) {
+//                    Matcher lengthMatcher = lengthPattern.matcher(advancedQueryHelper.advancedQuery);
+//                    if (lengthMatcher.find()) {
+//                        advancedQueryHelper.lengthSub = lengthMatcher.group(0);
+//                    }
+//                }
+//            }
+//
+//
+//            advancedQueryHelper.restQuery = advancedQueryMatcher.replaceAll("");
+//
+//            return advancedQueryHelper;
+//        }
+//
+//
+//        /**  ------------------------- Checks ------------------------->  */
+//        public boolean hasAdvancedSearch() {
+//            return advancedQuery != null;
+//        }
+//
+//        public boolean hasAnyAdvancedQuery() {
+//            return hasDateSub() || hasRatingSub() || hasDurationSub() || hasLengthSub();
+//        }
+//
+//        public boolean hasRatingSub() {
+//            return ratingSub != null;
+//        }
+//
+//        public boolean hasDateSub() {
+//            return dateSub != null;
+//        }
+//
+//        public boolean hasDurationSub() {
+//            return durationSub != null;
+//        }
+//
+//        public boolean hasDateOrDurationSub() {
+//            return hasDateSub() || hasDurationSub();
+//        }
+//
+//        public boolean hasLengthSub() {
+//            return lengthSub != null;
+//        }
+//        /**  <------------------------- Checks -------------------------  */
+//
+//
+//        /**  ------------------------- Convenience ------------------------->  */
+//        public Pair<Float, Float> getRatingMinMax() {
+//            if (ratingSub == null)
+//                return null;
+//
+//            String[] range = ratingSub.replaceAll(",", ".").split("-");
+//            float min = Float.parseFloat(range[0]);
+//            float max = Float.parseFloat(range.length < 2 ? range[0] : range[1]);
+//
+//            return Pair.create(min, max);
+//        }
+//
+//        public Pair<Date, Date> getDateMinMax() {
+//            if (dateSub == null)
+//                return null;
+//
+//            String[] range = dateSub.split("-");
+//            Date min = null;
+//            Date max = null;
+//            try {
+//                GenericReturnInterface<String, String> expandYear = s -> {
+//                    String[] split = s.split("\\.");
+//                    if (split[2].length() == 2) {
+//                        split[2] = "20" + split[2];
+//                        return String.join(".", split);
+//                    } else
+//                        return s;
+//                };
+//                SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+//                min = dateFormat.parse(expandYear.run(range[0]));
+//                if (range.length > 1)
+//                    max = dateFormat.parse(expandYear.run(range[1]));
+//            } catch (ParseException ignored) {
+//            }
+//
+//            return datePair = Pair.create(min, CustomUtility.isNotNullOrElse(max, min));
+//        }
+//
+//        public Pair<Date, Date> getDurationMinMax() {
+//            if (durationSub == null)
+//                return null;
+//
+//            String[] range = durationSub.split(";"); // ToDo: evl. Flags hinzufügen?
+//            Date pivot;
+//            Calendar cal = Calendar.getInstance();
+//            cal.set(Calendar.HOUR_OF_DAY, 0);
+//            cal.set(Calendar.MINUTE, 0);
+//            cal.set(Calendar.SECOND, 0);
+//            cal.set(Calendar.MILLISECOND, 0);
+//            Map<String, Integer> modeMap = new HashMap<>();
+//            modeMap.put("d", Calendar.DAY_OF_MONTH);
+//            modeMap.put("m", Calendar.MONTH);
+//            modeMap.put("y", Calendar.YEAR);
+//
+//
+//            if (range.length > 1) {
+//                String pivotString = range[0];
+//                if (pivotString.startsWith("_")) {
+//                    if (pivotString.endsWith("m")) {
+//                        if (pivotString.length() > 2)
+//                            cal.add(Calendar.MONTH, Integer.parseInt(CustomUtility.subString(pivotString, 1, -1)) * -1);
+//                        cal.set(Calendar.DAY_OF_MONTH, 1);
+//                        pivot = cal.getTime();
+//                    } else {
+//                        if (pivotString.length() > 2)
+//                            cal.add(Calendar.YEAR, Integer.parseInt(CustomUtility.subString(pivotString, 1, -1)) * -1);
+//                        cal.set(Calendar.DAY_OF_YEAR, 1);
+//                        pivot = cal.getTime();
+//                    }
+//                } else {
+//                    cal.add(modeMap.get(CustomUtility.subString(pivotString, -1)), Integer.parseInt(CustomUtility.subString(pivotString, 0, -1)) * -1);
+//                    pivot = cal.getTime();
+//                }
+//            } else
+//                pivot = cal.getTime();
+//
+//            String durationString = range.length > 1 ? range[1] : range[0];
+//            int durationInt = Integer.parseInt(CustomUtility.subString(durationString, 0, -1));
+//            String durationMode = CustomUtility.subString(durationString, -1);
+//            if (durationMode.equals("d"))
+//                durationInt = (Math.abs(durationInt) - 1) * (durationInt < 0 ? -1 : 1);
+//            cal.add(modeMap.get(durationMode), durationInt * -1);
+////            cal.add(Calendar.DAY_OF_MONTH, durationInt < 0 ? -1 : 1);
+//
+//            Date duration = cal.getTime();
+//
+//            Pair<Date, Date> datePair = pivot.before(duration) ? Pair.create(pivot, duration) : Pair.create(duration, pivot);
+//
+//            if (!durationMode.equals("d")) {
+//                cal.setTime(datePair.second);
+//                cal.add(Calendar.DAY_OF_MONTH, -1);
+//                datePair = Pair.create(datePair.first, cal.getTime());
+//            }
+//
+//            return this.datePair = datePair;
+//        }
+//
+//        public Pair<Date, Date> getDateOrDurationMinMax() {
+//            if (hasDateSub())
+//                return getDateMinMax();
+//            else
+//                return getDurationMinMax();
+//        }
+//
+//        public Pair<Integer, Integer> getLengthMinMax() {
+//            String[] range = lengthSub.split("-");
+//            int min = range.length > 0 ? Integer.parseInt(CustomUtility.isNotValueOrElse(range[0], "", "-1")) : -1;
+//            int max = range.length > 1 ? Integer.parseInt(CustomUtility.isNotValueOrElse(range[1], "", "-1")) : (lengthSub.endsWith("-") ? -1 : min);
+//
+//            return Pair.create(min,max);
+//        }
+//
+//        public static String removeAdvancedSearch(CharSequence fullQuery) {
+//            return fullQuery.toString().replaceAll(AdvancedQueryHelper.advancedSearchPattern.pattern(), "").trim();
+//        }
+//        /**  <------------------------- Convenience -------------------------  */
+//    }
     /**  <------------------------- Advanced Search -------------------------  */
 
 
@@ -4320,10 +4258,14 @@ public class Utility {
 
     // ---------------
 
-    public static String getTmdbImagePath_ifNecessary(String imagePath, boolean original) {
+    public static String getTmdbImagePath_ifNecessary(String imagePath, String size) {
         if (imagePath.matches(ActivityResultHelper.uriRegex))
             return imagePath;
-        return (!imagePath.matches("\\/\\w+\\.\\w+") ? "" : "https://image.tmdb.org/t/p/" + (original ? "original" : "w92") + "/") + imagePath;
+        return (!imagePath.matches("\\/\\w+\\.\\w+") ? "" : "https://image.tmdb.org/t/p/" + size + "/") + imagePath;
+    }
+
+    public static String getTmdbImagePath_ifNecessary(String imagePath, boolean original) {
+        return getTmdbImagePath_ifNecessary(imagePath, (original ? "original" : "w92"));
     }
     /**  <------------------------- ImageView -------------------------  */
 

@@ -38,6 +38,7 @@ import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Collection;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
@@ -117,6 +118,7 @@ public class CollectionActivity extends AppCompatActivity {
         else
             setContentView(R.layout.activity_collection);
 
+        Settings.startSettings_ifNeeded(this);
         mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
         loadDatabase();
@@ -477,9 +479,8 @@ public class CollectionActivity extends AppCompatActivity {
                                 String imagePath = video.getImagePath();
                                 ImageView thumbnail = itemView.findViewById(R.id.listItem_collectionVideo_thumbnail);
                                 if (Utility.stringExists(imagePath)) {
-                                    imagePath = Utility.getTmdbImagePath_ifNecessary(imagePath, true);
                                     Utility.loadUrlIntoImageView(this, thumbnail,
-                                            imagePath, imagePath, null, () -> Utility.roundImageView(thumbnail, 8));
+                                            Utility.getTmdbImagePath_ifNecessary(imagePath, "w500"), Utility.getTmdbImagePath_ifNecessary(imagePath, true), null, () -> Utility.roundImageView(thumbnail, 8));
                                     thumbnail.setVisibility(View.VISIBLE);
 
                                     thumbnail.setOnLongClickListener(v -> {
@@ -510,10 +511,6 @@ public class CollectionActivity extends AppCompatActivity {
                             videoRecycler.reload();
                             Database.saveAll();
                         });
-//                                .addOnDialogDismiss(customDialog1 -> {
-//                                    videoRecycler.reload();
-//                                    Database.saveAll();
-//                                });
                     });
                 })
                 .addOnDialogDismiss(customDialog -> {
@@ -642,7 +639,7 @@ public class CollectionActivity extends AppCompatActivity {
                                                                         importList.add(detailList.get(0));
                                                                     allFilmsDialog.getActionButton().setEnabled(!importList.isEmpty());
                                                                 })
-                                                                .enableDivider()
+                                                                .enableDivider(12)
                                                                 .removeLastDivider()
                                                                 .disableCustomRipple()
                                                                 .generateRecyclerView())

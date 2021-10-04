@@ -40,6 +40,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.Media.MediaActi
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
@@ -157,6 +158,7 @@ public class CategoriesActivity extends AppCompatActivity {
             setContentView(R.layout.loading_screen);
         else
             setContentView(R.layout.activity_catigorys);
+        Settings.startSettings_ifNeeded(this);
         mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
         sortHelper = new Helpers.SortHelper<Pair<ParentClass, Integer>>()
@@ -229,14 +231,14 @@ public class CategoriesActivity extends AppCompatActivity {
             setLayout();
         };
 
-        if (Database.isReady() && database != null)
-            whenLoaded.run();
-        else
+        if (database == null || !Database.isReady()) {
             Database.getInstance(mySPR_daten, newDatabase -> {
                 database = newDatabase;
                 whenLoaded.run();
             }, false);
-
+        }
+        else
+            whenLoaded.run();
     }
 
     private void setLayout() {
@@ -583,6 +585,7 @@ public class CategoriesActivity extends AppCompatActivity {
                     String elementCountText = size > 1 ? size + " Elemente" : (size == 1 ? "Ein" : "Kein") + " Element";
                     elementCount.setText(elementCountText);
                 })
+                .enableFastScroll(null, true, null, null)
                 .generate();
 
     }

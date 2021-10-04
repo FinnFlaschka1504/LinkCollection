@@ -57,7 +57,6 @@ import com.finn.androidUtilities.CustomList;
 
 import org.intellij.lang.annotations.Language;
 
-import java.text.Normalizer;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -766,7 +765,7 @@ public class Helpers {
         //  <--------------- Quick... ---------------
 
         //  ------------------------- Builder ------------------------->
-        public  interface SpannableStringHelperInterface {
+        public interface SpannableStringHelperInterface {
             SpannableStringHelper get(SpannableStringHelper spanBuilder);
         }
 
@@ -1578,10 +1577,11 @@ public class Helpers {
     //  <------------------------- WebViewHelper -------------------------
 
 
-    /**  ------------------------- AdvancedSearch ------------------------->  */
+    /** ------------------------- AdvancedSearch -------------------------> */
     public static class AdvancedQueryHelper<T> {
         public static final String ADVANCED_SEARCH_CRITERIA_NAME = "n";
-        @Language("RegExp") public static final String PARENT_CLASS_PATTERN = "([^|&\\[\\]]+?)([|&][^|&\\[\\]]+?)*";
+        @Language("RegExp")
+        public static final String PARENT_CLASS_PATTERN = "([^|&\\[\\]]+?)([|&][^|&\\[\\]]+?)*";
         private static final Pattern advancedQueryPattern = Pattern.compile("\\{.*\\}");
         private SearchView searchView;
         public String fullQuery, advancedQuery, restQuery;
@@ -1786,7 +1786,7 @@ public class Helpers {
         }
 
 
-            public boolean hasAdvancedSearch() {
+        public boolean hasAdvancedSearch() {
             return criteriaList.stream().anyMatch(SearchCriteria::has);
         }
 
@@ -1871,9 +1871,7 @@ public class Helpers {
         /**  <------------------------- Function -------------------------  */
 
 
-        /**
-         * ------------------------- Dialog ------------------------->
-         */
+        /** ------------------------- Dialog -------------------------> */
         public AdvancedQueryHelper<T> showAdvancedSearchDialog() {
             clean().splitQuery();
             CustomList<Utility.GenericReturnInterface<com.finn.androidUtilities.CustomDialog, String>> onSaveList = new CustomList<>();
@@ -1899,7 +1897,7 @@ public class Helpers {
                         if (preSelected) {
                             customDialog
                                     .addButton(R.drawable.ic_reset, customDialog1 -> {
-                                        String removedQuery = Utility.AdvancedQueryHelper.removeAdvancedSearch(searchView.getQuery());
+                                        String removedQuery = AdvancedQueryHelper.removeAdvancedSearch(searchView.getQuery());
                                         searchView.setQuery(removedQuery, false);
                                         Toast.makeText(context, "Erweiterte Suche zurückgesetzt", Toast.LENGTH_SHORT).show();
                                     })
@@ -1929,7 +1927,7 @@ public class Helpers {
          */
 
 
-        /**  ------------------------- Color ------------------------->  */
+        /** ------------------------- Color -------------------------> */
         public AdvancedQueryHelper<T> enableColoration() {
 //            CharSequence query = searchView.getQuery();
 //            searchView.
@@ -1989,7 +1987,8 @@ public class Helpers {
                 }
             }
         }
-        /**  <------------------------- Color -------------------------  */
+
+        /** <------------------------- Color ------------------------- */
 
         // ---------------
 
@@ -2089,25 +2088,28 @@ public class Helpers {
             }
 
             public Result parse() {
-                if (CustomUtility.stringExists(sub) && parser != null)
-                    return tempResult = parser.run(sub);
+                return tempResult = parse(sub);
+            }
+
+            public Result parse(String text) {
+                if (CustomUtility.stringExists(text) && parser != null)
+                    return parser.run(text);
                 else
                     return null;
             }
-            /**
-             * <------------------------- Convenience -------------------------
-             */
+            /**  <------------------------- Convenience -------------------------  */
 
             public interface ApplyDialogInterface<T, Result> {
                 Utility.GenericReturnInterface<com.finn.androidUtilities.CustomDialog, String> runApplyDialog(com.finn.androidUtilities.CustomDialog customDialog, Result result, SearchCriteria<T, Result> criteria);
             }
         }
     }
-    /**  <------------------------- AdvancedSearch -------------------------  */
+
+    /** <------------------------- AdvancedSearch ------------------------- */
 
 
     //  ------------------------- DurationFormatter ------------------------->
-    public static class DurationFormatter{
+    public static class DurationFormatter {
         private String pattern = "'%y% Jahr§e§~ ~''%M% Monat§e§~ ~''%w% Woche§n§~ ~''%d% Tag§e§~ ~''%h% Stunde§n§~ ~''%m% Minute§n§~ ~''%s% Sekunde§n§~ ~'";
         private boolean lastZeroIfEmpty = true;
         private String patternIfEmpty;
@@ -2220,7 +2222,7 @@ public class Helpers {
 
         // ---------------
 
-        private String formatDuration(Duration duration, @Nullable String format){
+        private String formatDuration(Duration duration, @Nullable String format) {
             lastDuration = duration;
             format = CustomUtility.stringExistsOrElse(format, this.pattern);
             String fullFormat = format;

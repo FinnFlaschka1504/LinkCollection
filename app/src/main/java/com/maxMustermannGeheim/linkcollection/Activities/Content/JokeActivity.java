@@ -292,6 +292,7 @@ public class JokeActivity extends AppCompatActivity {
                             return null;
                     }
                 })
+                .setPadding(16)
                 .generate();
     }
 

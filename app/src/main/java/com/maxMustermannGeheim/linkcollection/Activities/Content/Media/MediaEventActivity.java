@@ -456,6 +456,7 @@ public class MediaEventActivity extends AppCompatActivity {
                 .setOnLongClickListener((customRecycler, view, mediaEvent, index) -> showEditDialog(mediaEvent._isDummy() ? parent : mediaEvent))
 //                .enableFastScroll(scrollRange, heightList)
                 .enableFastScroll(MediaEvent::_getHeight)
+                .setPadding(16)
                 .generate();
 
 //        FastScroller[] fastScroller = {null};

@@ -190,7 +190,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     com.finn.androidUtilities.CustomDialog selectDialog = com.finn.androidUtilities.CustomDialog.Builder(this);
                     CharSequence finalText = text;
                     CustomRecycler<String> customRecycler = new CustomRecycler<String>(this)
-                            .enableDivider()
+                            .enableDivider(12)
                             .disableCustomRipple()
                             .setGetActiveObjectList(customRecycler1 -> knowledgeList.stream().map(ParentClass::getName).collect(Collectors.toList()))
                             .setOnClickListener((customRecycler1, itemView, s, index) -> {
@@ -350,6 +350,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                             return null;
                     }
                 })
+                .setPadding(16)
                 .generate();
     }
 

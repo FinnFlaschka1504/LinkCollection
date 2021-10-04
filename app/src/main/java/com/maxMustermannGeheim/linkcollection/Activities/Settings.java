@@ -1078,6 +1078,7 @@ public class Settings extends AppCompatActivity {
                     .enableTitleBackButton()
                     .disableButtonAllCaps()
                     .enableStackButtons()
+                    .enableButtonDividerAll()
                     .show();
         });
 

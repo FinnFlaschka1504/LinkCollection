@@ -584,7 +584,7 @@ public class VideoActivity extends AppCompatActivity {
 
 
                                 /**  ------------------------- DateRange ------------------------->  */
-                                TextView dialog_advancedSearch_viewed_text = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_text);
+                                TextView dialog_advancedSearch_viewed_text = customDialog.findViewById(R.id.dialog_advancedSearch_video_dateRange_text);
                                 Runnable setDateRangeTextView = () -> {
                                     if (from[0] != null && to[0] != null) {
                                         dialog_advancedSearch_viewed_text.setText(String.format("%s - %s", dateFormat.format(from[0]), dateFormat.format(to[0])));
@@ -617,7 +617,7 @@ public class VideoActivity extends AppCompatActivity {
                                     applyStrings[0].run();
                                 });
 
-                                customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_change).setOnClickListener(v -> picker.show(this.getSupportFragmentManager(), picker.toString()));
+                                customDialog.findViewById(R.id.dialog_advancedSearch_video_dateRange_change).setOnClickListener(v -> picker.show(this.getSupportFragmentManager(), picker.toString()));
                                 Runnable resetDateRange = () -> {
                                     if (from[0] != null || to[0] != null) {
                                         from[0] = null;
@@ -626,7 +626,7 @@ public class VideoActivity extends AppCompatActivity {
                                     }
                                 };
 
-                                customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_change).setOnLongClickListener(v -> {
+                                customDialog.findViewById(R.id.dialog_advancedSearch_video_dateRange_change).setOnLongClickListener(v -> {
                                     resetDateRange.run();
                                     return true;
                                 });
@@ -680,8 +680,8 @@ public class VideoActivity extends AppCompatActivity {
                                     String duration_mode = duration_keysByValue.toArray(new String[0])[0];
                                     String duration_text = duration_edit.getText().toString();
 
-                                    boolean sinceExists = CustomUtility.stringExists(since_text) || since_mode.contains("_");
-                                    boolean durationExists = CustomUtility.stringExists(duration_text);
+                                    boolean sinceExists = (CustomUtility.stringExists(since_text) && !since_text.equals("-")) || since_mode.contains("_");
+                                    boolean durationExists = CustomUtility.stringExists(duration_text) && !duration_text.equals("-");
 
                                     if (durationExists) {
                                         duration[0] = (duration_mode.contains("_") ? "_" : "") + duration_text + duration_mode.replaceAll("_", "");
@@ -693,6 +693,22 @@ public class VideoActivity extends AppCompatActivity {
                                         pivot[0] = "";
                                         duration[0] = "";
                                     }
+
+                                    if (CustomUtility.stringExists(duration[0])) {
+                                        String dateDurationFilter;
+                                        if (CustomUtility.stringExists(pivot[0]))
+                                            dateDurationFilter = String.format(Locale.getDefault(), "%s;%s", pivot[0], duration[0]);
+                                        else
+                                            dateDurationFilter = duration[0];
+                                        Pair<Date, Date> parseResult = durationCriteria.parse(dateDurationFilter);
+                                        if (parseResult != null) {
+                                            Date today = CustomUtility.removeTime(new Date());
+                                            dialog_advancedSearch_viewed_text.setText(String.format("%s - %s",
+                                                    parseResult.first.equals(today) ? "Heute" : Utility.formatDate(Utility.DateFormat.DATE_DOT, parseResult.first),
+                                                    parseResult.second.equals(today) ? "Heute" : Utility.formatDate(Utility.DateFormat.DATE_DOT, parseResult.second)));
+                                        }
+                                    } else
+                                        dialog_advancedSearch_viewed_text.setText("Nicht ausgewählt");
                                 };
 
                                 since_edit.addTextChangedListener(new TextWatcher() {
@@ -1100,7 +1116,12 @@ public class VideoActivity extends AppCompatActivity {
                     ((TextView) itemView.findViewById(R.id.listItem_video_Titel)).setText(Helpers.SpannableStringHelper.highlightText(CustomUtility.stringExistsOrElse(titleSub, searchQuery), video.getName()));
                     if (!video.getDateList().isEmpty()) {
                         itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.VISIBLE);
-                        ((TextView) itemView.findViewById(R.id.listItem_video_Views)).setText(String.valueOf(video.getDateList().size()));
+                        if (CustomUtility.stringExists(this.searchQuery) && advancedQueryHelper != null && advancedQueryHelper.has(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION)) {
+                            final Pair<Date, Date>[] datePair = new Pair[]{null};
+                            datePair[0] = (Pair<Date, Date>) advancedQueryHelper.parse(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION);
+                            ((TextView) itemView.findViewById(R.id.listItem_video_Views)).setText(String.valueOf(video.getDateList().stream().filter(date -> !date.before(datePair[0].first) && !date.after(datePair[0].second)).count()));
+                        } else
+                            ((TextView) itemView.findViewById(R.id.listItem_video_Views)).setText(String.valueOf(video.getDateList().size()));
                     } else
                         itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.GONE);
 
@@ -1184,14 +1205,29 @@ public class VideoActivity extends AppCompatActivity {
                                 return "Keine Bewertung";
                             return rating + " ☆";
                         case LATEST:
-                            Date max = video.getDateList().stream().max(Date::compareTo).orElse(null);
+                            CustomList<Date> dateList = new CustomList<>(video.getDateList());
+                            if (CustomUtility.stringExists(searchQuery) && advancedQueryHelper != null && advancedQueryHelper.has(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION)) {
+                                final Pair<Date, Date>[] datePair = new Pair[]{null};
+                                final Pair<Long, Long>[] datePairTime = new Pair[]{null};
+
+                                if ((datePair[0] = (Pair<Date, Date>) advancedQueryHelper.parse(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION)) != null)
+                                    datePairTime[0] = Pair.create(datePair[0].first.getTime(), datePair[0].second.getTime());
+
+                                dateList.filter(date -> {
+                                    long time = CustomUtility.removeTime(date).getTime();
+                                    return time >= datePairTime[0].first && time <= datePairTime[0].second;
+                                }, true);
+                            }
+                            Date max = dateList.stream().max(Date::compareTo).orElse(null);
                             if (max != null)
                                 return dateFormat.format(max);
                             return "Keine Ansicht";
+
                         default:
                             return null;
                     }
                 })
+                .setPadding(16)
                 .generate();
     }
 
@@ -1552,7 +1588,7 @@ public class VideoActivity extends AppCompatActivity {
                     }, false);
                 })
                 .setItemLayout(R.layout.list_item_intersection)
-                .enableDivider()
+                .enableDivider(12)
                 .disableCustomRipple()
                 .setSetItemContent((customRecycler1, itemView, triple, index) -> {
                     ((TextView) itemView.findViewById(R.id.listItem_intersection_count)).setText(String.format("(%d)", triple.first));
@@ -1604,7 +1640,7 @@ public class VideoActivity extends AppCompatActivity {
                                         CustomRecycler<Video> selectRecycler = new CustomRecycler<Video>(context)
                                                 .setObjectList(allMatchesList)
                                                 .setItemLayout(R.layout.list_item_select)
-                                                .enableDivider()
+                                                .enableDivider(12)
                                                 .removeLastDivider()
                                                 .setSetItemContent((customRecycler2, itemView, video, index1) -> {
                                                     ImageView imageView = itemView.findViewById(R.id.selectList_thumbnail);
@@ -1645,7 +1681,7 @@ public class VideoActivity extends AppCompatActivity {
 //                                        .setText(selectedMatchesList.join("\n", com.finn.androidUtilities.ParentClass::getName))
 //                                        .show();
 //                            }, false)
-                                    ;
+                            ;
                         });
                     };
 
@@ -1663,7 +1699,7 @@ public class VideoActivity extends AppCompatActivity {
                                     CustomRecycler<ParentClass> selectRecycler = new CustomRecycler<ParentClass>(context)
                                             .setObjectList(Utility.getMapFromDatabase(category).values().stream().sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList()))
                                             .setItemLayout(R.layout.list_item_select)
-                                            .enableDivider()
+                                            .enableDivider(12)
                                             .removeLastDivider()
                                             .enableFastScroll()
                                             .setSetItemContent((customRecycler2, itemView, parentClass, index1) -> {
@@ -1683,7 +1719,7 @@ public class VideoActivity extends AppCompatActivity {
                                                     return;
                                                 }
                                                 boolean result = ParentClass_Alias.addAlias(parentClass, text);
-                                                Toast.makeText(context, result ?  "Erfolgreich Hinzugefügt" : "Fehler", Toast.LENGTH_SHORT).show();
+                                                Toast.makeText(context, result ? "Erfolgreich Hinzugefügt" : "Fehler", Toast.LENGTH_SHORT).show();
                                                 customRecycler1.reload();
                                                 customDialog.dismiss();
                                                 Database.saveAll();
@@ -1698,7 +1734,7 @@ public class VideoActivity extends AppCompatActivity {
 
                     CustomDialog.Builder(context)
                             .setTitle("Aktion Auswählen")
-                            .setText(new Helpers.SpannableStringHelper().appendBoldItalic("Hinzufügen: " ).append(triple.third).append("\n").appendMultiple("(Für Alias lange alle  Buttons klicken)", multipleSpans -> multipleSpans.italic().relativeSize(.75f)).get())
+                            .setText(new Helpers.SpannableStringHelper().appendBoldItalic("Hinzufügen: ").append(triple.third).append("\n").appendMultiple("(Für Alias lange alle  Buttons klicken)", multipleSpans -> multipleSpans.italic().relativeSize(.75f)).get())
                             .enableTextAlignmentCenter()
                             .addButton("Darsteller Hinzufügen", customDialog -> showAddCategoryDialog.run(CategoriesActivity.CATEGORIES.DARSTELLER))
                             .setLastAddedButtonEnabled(Utility.findObjectByName(CategoriesActivity.CATEGORIES.DARSTELLER, triple.third, true) == null)

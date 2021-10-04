@@ -263,6 +263,9 @@ public class VersionControl {
                 "Viele weitere kleine Änderungen");
         addChange("3.1", "Fast-Scroll-Popup hinzugefügt",
                 "Fast-Scroll zu allen Aktivitäten hinzugefügt");
+        addChange("3.2", "Bottom-Padding zu Recyclern hinzugefügt",
+                "Verschlüsselungs-Bug behoben",
+                "Divider in Listen angepasst");
     };
 
     private static void addChange(String version, String... changes) {

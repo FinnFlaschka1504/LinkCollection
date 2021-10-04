@@ -353,7 +353,7 @@ public class ShowActivity extends AppCompatActivity {
                 } else {
                     com.finn.androidUtilities.CustomDialog selectDialog = com.finn.androidUtilities.CustomDialog.Builder(this);
                     com.finn.androidUtilities.CustomRecycler<String> customRecycler = new com.finn.androidUtilities.CustomRecycler<String>(this)
-                            .enableDivider()
+                            .enableDivider(12)
                             .removeLastDivider()
                             .disableCustomRipple()
                             .setGetActiveObjectList(customRecycler1 -> showList.stream().map(ParentClass::getName).collect(Collectors.toList()))
@@ -679,6 +679,7 @@ public class ShowActivity extends AppCompatActivity {
                             return null;
                     }
                 })
+                .setPadding(16)
                 .generate();
     }
 
@@ -1171,31 +1172,31 @@ public class ShowActivity extends AppCompatActivity {
 
         final Show editShow = show == null ? new Show("") : show.clone();
 
-        CustomDialog returnDialog = CustomDialog.Builder(this)
+        return CustomDialog.Builder(this)
                 .setTitle(show == null ? "Neu: " + singular : singular + " Bearbeiten")
-                .setView(R.layout.dialog_edit_or_add_show);
-
-        if (show != null) {
-            returnDialog.addButton(R.drawable.ic_delete, customDialog -> {
-                CustomDialog.Builder(this)
-                        .setTitle("Löschen")
-                        .setText("Willst du wirklich '" + show.getName() + "' löschen?")
-                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
-                        .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
-                            database.showMap.remove(show.getUuid());
-                            reLoadRecycler();
-                            customDialog.dismiss();
-                            Object payload = customDialog.getPayload();
-                            if (payload != null) {
-                                ((CustomDialog) payload).dismiss();
-                            }
-                        })
-                        .show();
-            }, false)
-                    .alignPreviousButtonsLeft();
-        }
-        return returnDialog
+                .setView(R.layout.dialog_edit_or_add_show)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                .addOptionalModifications(customDialog0 -> {
+                    if (show != null) {
+                        customDialog0.addButton(R.drawable.ic_delete, customDialog -> {
+                            CustomDialog.Builder(this)
+                                    .setTitle("Löschen")
+                                    .setText("Willst du wirklich '" + show.getName() + "' löschen?")
+                                    .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                    .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
+                                        database.showMap.remove(show.getUuid());
+                                        reLoadRecycler();
+                                        customDialog.dismiss();
+                                        Object payload = customDialog.getPayload();
+                                        if (payload != null) {
+                                            ((CustomDialog) payload).dismiss();
+                                        }
+                                    })
+                                    .show();
+                        }, false)
+                                .alignPreviousButtonsLeft();
+                    }
+                })
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     boolean checked = ((CheckBox) customDialog.findViewById(R.id.dialog_editOrAdd_show_watchLater)).isChecked();
                     saveShow(customDialog, checked, show, editShow);
@@ -1236,6 +1237,8 @@ public class ShowActivity extends AppCompatActivity {
                             apiDetailRequest(this, show.getTmdbId(), editShow, customDialog::reloadView, true);
                     } else {
 //                        view.findViewById(R.id.dialog_editOrAdd_show_watchLater).setVisibility(View.VISIBLE);
+                        if (CustomUtility.stringExists(searchQuery))
+                            dialog_editOrAdd_show_title.setText(searchQuery);
                         dialog_editOrAdd_show_title.requestFocus();
                         Utility.changeWindowKeyboard(customDialog.getDialog().getWindow(), true);
 //                        editShow = new Show();
@@ -1278,7 +1281,7 @@ public class ShowActivity extends AppCompatActivity {
                 .enableDoubleClickOutsideToDismiss(customDialog -> {
                     String title = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_show_title)).getText().toString().trim();
                     if (show == null)
-                        return !title.isEmpty() || !editShow.getGenreIdList().isEmpty();
+                        return (!title.isEmpty() && !title.equals(searchQuery)) || !editShow.getGenreIdList().isEmpty();
                     else
                         return !title.equals(show.getName()) || !editShow.equals(show);
                 })

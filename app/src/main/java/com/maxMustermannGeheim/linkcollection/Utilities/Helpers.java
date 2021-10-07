@@ -1591,6 +1591,7 @@ public class Helpers {
         private com.finn.androidUtilities.CustomDialog.OnDialogCallback optionalModifications;
         private AppCompatActivity context;
         private EditText editText;
+        private TextWatcher colorationWatcher;
 
         /**
          * ------------------------- Constructor ------------------------->
@@ -1712,6 +1713,15 @@ public class Helpers {
             this.dialogLayoutId = dialogLayoutId;
             this.optionalModifications = optionalModifications;
             return this;
+        }
+
+        public AdvancedQueryHelper<T> setSearchView(SearchView searchView) {
+            this.searchView = searchView;
+            return this;
+        }
+
+        public SearchView getSearchView() {
+            return searchView;
         }
         /**  <------------------------- Getter & Setter -------------------------  */
 
@@ -1939,7 +1949,7 @@ public class Helpers {
 //            ((LinearLayout) ((LinearLayout) ((LinearLayout) searchView.getChildAt(0)).getChildAt(2)).getChildAt(1)).getChildAt(0);
 
 //            Utility.RecursiveGenericReturnInterface getEditText =
-            editText.addTextChangedListener(new TextWatcher() {
+            editText.addTextChangedListener(colorationWatcher = new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
@@ -1952,10 +1962,15 @@ public class Helpers {
 
                 @Override
                 public void afterTextChanged(Editable s) {
-                    String BREAKPOINT = null;
                     applyColoration(s);
                 }
             });
+            return this;
+        }
+
+        public AdvancedQueryHelper<T> disableColoration() {
+            if (colorationWatcher != null)
+                editText.removeTextChangedListener(colorationWatcher);
             return this;
         }
 

@@ -352,11 +352,15 @@ public class ShowActivity extends AppCompatActivity {
                     }
                 } else {
                     com.finn.androidUtilities.CustomDialog selectDialog = com.finn.androidUtilities.CustomDialog.Builder(this);
-                    com.finn.androidUtilities.CustomRecycler<String> customRecycler = new com.finn.androidUtilities.CustomRecycler<String>(this)
+                    com.finn.androidUtilities.CustomRecycler<Show> customRecycler = new CustomRecycler<Show>(this)
                             .enableDivider(12)
-                            .removeLastDivider()
+                            .setItemLayout(R.layout.list_item_select_next_episode)
+                            .setSetItemContent((customRecycler1, itemView, show1, index) -> {
+                                Utility.simpleLoadUrlIntoImageView(this, itemView.findViewById(R.id.listItem_selectNextEpisode_image), show1.getImagePath(), show1.getImagePath(), 4);
+                                ((TextView) itemView.findViewById(R.id.listItem_selectNextEpisode_name)).setText(show1.getName());
+                            })
                             .disableCustomRipple()
-                            .setGetActiveObjectList(customRecycler1 -> showList.stream().map(ParentClass::getName).collect(Collectors.toList()))
+                            .setGetActiveObjectList(customRecycler1 -> showList)
                             .setOnClickListener((customRecycler1, itemView, s, index) -> {
                                 show[0] = showList.get(index);
                                 onDecided.run();
@@ -365,7 +369,7 @@ public class ShowActivity extends AppCompatActivity {
 
                     selectDialog
                             .setTitle("Serie Auswählen")
-                            .alignPreviousButtonsLeft()
+//                            .alignPreviousButtonsLeft()
                             .setButtonConfiguration(com.finn.androidUtilities.CustomDialog.BUTTON_CONFIGURATION.BACK)
                             .setView(customRecycler.generateRecyclerView())
                             .disableScroll()

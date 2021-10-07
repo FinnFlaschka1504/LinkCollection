@@ -265,7 +265,9 @@ public class VersionControl {
                 "Fast-Scroll zu allen Aktivitäten hinzugefügt");
         addChange("3.2", "Bottom-Padding zu Recyclern hinzugefügt",
                 "Verschlüsselungs-Bug behoben",
-                "Divider in Listen angepasst");
+                "Divider in Listen angepasst",
+                "Video-Kalender kann gefiltert werden",
+                "Auswahldialog nächste Episode überarbeitet");
     };
 
     private static void addChange(String version, String... changes) {

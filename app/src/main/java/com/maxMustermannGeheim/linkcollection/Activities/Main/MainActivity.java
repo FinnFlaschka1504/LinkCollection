@@ -5,14 +5,9 @@ import android.content.SharedPreferences;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 import android.content.res.Configuration;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
-import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
+import android.text.InputType;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -21,8 +16,8 @@ import android.view.ViewParent;
 import android.view.ViewStub;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.SearchView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -30,21 +25,10 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.DataSource;
-import com.bumptech.glide.load.engine.DiskCacheStrategy;
-import com.bumptech.glide.load.engine.GlideException;
-import com.bumptech.glide.request.RequestListener;
-import com.bumptech.glide.request.target.CustomTarget;
-import com.bumptech.glide.request.target.DrawableImageViewTarget;
-import com.bumptech.glide.request.target.SimpleTarget;
-import com.bumptech.glide.request.target.SizeReadyCallback;
-import com.bumptech.glide.request.target.Target;
-import com.bumptech.glide.request.transition.Transition;
 import com.finn.androidUtilities.CustomDialog;
+import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomUtility;
 import com.finn.androidUtilities.Helpers;
-import com.github.chrisbanes.photoview.PhotoView;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -59,27 +43,24 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.CollectionActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
-import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaEvent;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomInternetHelper;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomPopupWindow;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
-import com.maxMustermannGeheim.linkcollection.Utilities.ImageCropUtility;
 import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.maxMustermannGeheim.linkcollection.Utilities.VersionControl;
-import com.theartofdev.edmodo.cropper.CropImage;
-import com.theartofdev.edmodo.cropper.CropImageView;
 
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 // --> \/\/(?!  (-|<))
@@ -131,11 +112,11 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     private View main_offline;
     private Utility.OnSwipeTouchListener touchListener;
 
-    public static MainActivity activity;
+//    public static MainActivity activity;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        activity = this;
+//        activity = this;
         super.onCreate(savedInstanceState);
 //        isLoadingLayout = savedInstanceState == null;
 
@@ -730,22 +711,88 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         if (!Database.isReady())
             return;
 
-        calenderDialog = com.finn.androidUtilities.CustomDialog.Builder(this)
+        CustomList<Video> allVideos = new CustomList<>(database.videoMap.values());
+        CustomList<Video> shownVideos = new CustomList<>(allVideos);
+        Utility.GenericReturnInterface<CompactCalendarView, Date> getCurrentDate = compactCalendarView -> (Date) CustomUtility.reflectionGet(compactCalendarView, "compactCalendarController", "currentDate");
+        Utility.DoubleGenericInterface<CompactCalendarView, Date> setCurrentDate = (compactCalendarView, date) -> {
+            CompactCalendarView.CompactCalendarViewListener listener = (CompactCalendarView.CompactCalendarViewListener) CustomUtility.reflectionGet(compactCalendarView, "compactCalendarController", "listener");
+            if (listener != null) {
+                listener.onDayClick(date);
+                listener.onMonthScroll(date);
+            }
+        };
+        final com.maxMustermannGeheim.linkcollection.Utilities.Helpers.AdvancedQueryHelper<Video>[] advancedQueryHelper = new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.AdvancedQueryHelper[]{null};
+
+        calenderDialog = CustomDialog.Builder(this)
                 .setTitle(currentSpace.getName() + " Kalender")
                 .setView(R.layout.dialog_edit_views)
                 .setSetViewContent((customDialog, view, reload) -> {
-                    ViewStub stub_groups = view.findViewById(R.id.dialog_editViews_calender);
-                    stub_groups.setLayoutResource(R.layout.fragment_calender);
-                    stub_groups.inflate();
+                    if (!reload) {
+                        ViewStub stub_groups = view.findViewById(R.id.dialog_editViews_calender);
+                        stub_groups.setLayoutResource(R.layout.fragment_calender);
+                        stub_groups.inflate();
+                    }
                     CompactCalendarView calendarView = view.findViewById(R.id.fragmentCalender_calendar);
+
+                    Date currentDate = null;
+                    if (reload) {
+                        currentDate = getCurrentDate.run(calendarView);
+                    }
+
                     calendarView.setFirstDayOfWeek(Calendar.MONDAY);
-                    Utility.setupFilmCalender(this, calendarView, ((FrameLayout) view), new ArrayList<>(database.videoMap.values()), true);
-//                    ViewCompat.setNestedScrollingEnabled(view.findViewById(R.id.fragmentCalender_videoList), false);
+                    Utility.setupFilmCalender(this, calendarView, ((FrameLayout) view), shownVideos, true);
+                    if (currentDate != null)
+                        setCurrentDate.run(calendarView, currentDate);
 
                 })
                 .disableScroll()
                 .setDimensionsFullscreen()
                 .enableTitleBackButton()
+                .enableTitleRightButton( R.drawable.ic_filter, customDialog -> {
+
+                    if (advancedQueryHelper[0] == null) {
+                        HashSet<VideoActivity.FILTER_TYPE> filterTypeSet = new HashSet<>();
+                        filterTypeSet.add(VideoActivity.FILTER_TYPE.NAME);
+                        filterTypeSet.add(VideoActivity.FILTER_TYPE.ACTOR);
+                        filterTypeSet.add(VideoActivity.FILTER_TYPE.GENRE);
+                        filterTypeSet.add(VideoActivity.FILTER_TYPE.STUDIO);
+                        filterTypeSet.add(VideoActivity.FILTER_TYPE.COLLECTION);
+
+                        SearchView searchView = new SearchView(this);
+                        searchView.setIconified(false);
+                        searchView.setQueryHint(currentSpace.getPlural() + " Filtern");
+                        searchView.setPadding(0, CustomUtility.dpToPx(4), 0, CustomUtility.dpToPx(8));
+                        searchView.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+                        searchView.setIconifiedByDefault(false);
+
+                        advancedQueryHelper[0] = VideoActivity.getAdvancedQueryHelper(this, searchView, shownVideos, filterTypeSet);
+                        advancedQueryHelper[0].disableColoration();
+                    }
+//                    else
+//                        advancedQueryHelper[0].setSearchView(searchView);
+
+                    CustomDialog.Builder(this)
+                            .setTitle("Kalender Filtern")
+                            .setView(advancedQueryHelper[0].getSearchView())
+                            .setSetViewContent((customDialog1, view, reload) -> view.requestFocus())
+                            .addButton(R.drawable.ic_settings_dialog, customDialog1 -> advancedQueryHelper[0].showAdvancedSearchDialog(), false)
+                            .alignPreviousButtonsLeft()
+                            .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
+                            .addButton("Filtern", customDialog1 -> {
+                                shownVideos.replaceWith(allVideos);
+                                advancedQueryHelper[0].filterFull(shownVideos);
+                                customDialog.reloadView();
+                            })
+                            .addIconDecorationToLastAddedButton(R.drawable.ic_filter, CustomDialog.IconDecorationPosition.LEFT)
+                            .colorLastAddedButton()
+                            .setOnDialogDismiss(customDialog1 -> {
+                                SearchView searchView = advancedQueryHelper[0].getSearchView();
+                                ((ViewGroup) searchView.getParent()).removeView(searchView);
+                            })
+                            .show();
+//                    Toast.makeText(this, "Filter", Toast.LENGTH_SHORT).show();
+//                    shownVideos.filter(video -> video.getName().toLowerCase().contains("the"), true);
+                })
                 .show();
     }
 

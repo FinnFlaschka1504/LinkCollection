@@ -103,14 +103,17 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:layout_weight="1">
-                    <Button
+
+                    <ImageView
                         android:id="@+id/dialog_items_delete"
-                        style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                        style="@style/ImageButtonStyle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Löschen"
+                        android:layout_gravity="center_vertical"
+                        android:tint="@color/colorAccent"
                         android:visibility="gone"
-                        tools:visibility="visible"/>
+                        app:srcCompat="@drawable/ic_delete"
+                        tools:visibility="visible" />
 
                 </LinearLayout>
                 <Button
@@ -122,7 +125,7 @@
 
                 <Button
                     android:id="@+id/dialog_items_save"
-                    style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                    style="@style/Widget.AppCompat.Button.Colored"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:enabled="false"

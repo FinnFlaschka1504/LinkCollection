@@ -26,7 +26,6 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
-import android.text.Editable;
 import android.text.InputType;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -52,7 +51,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -60,8 +58,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SearchView;
-import android.widget.SeekBar;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -98,14 +94,12 @@ import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
-import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.innovattic.rangeseekbar.RangeSeekBar;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Media.MediaActivity;
@@ -127,7 +121,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image;
-import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tree;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
@@ -1506,6 +1499,7 @@ public class Utility {
             @Override
             public void onDayClick(Date dateClicked) {
                 currentDate = dateClicked;
+                calendarView.setCurrentDate(currentDate);
                 setButtons(layout, calendarView.getEvents(dateClicked).size(), calendarView, videoList, customRecycler);
                 loadVideoList(calendarView.getEvents(dateClicked), layout, customRecycler);
             }

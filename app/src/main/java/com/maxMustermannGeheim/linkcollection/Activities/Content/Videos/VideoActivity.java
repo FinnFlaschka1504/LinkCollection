@@ -295,7 +295,7 @@ public class VideoActivity extends AppCompatActivity {
             videos_search = findViewById(R.id.search);
             Utility.applySelectionSearch(this, CategoriesActivity.CATEGORIES.VIDEO, Utility.getEditTextFromSearchView(videos_search));
 
-            advancedQueryHelper = getAdvancedQueryHelper(this, videos_search, filteredVideoList, filterTypeSet);
+            advancedQueryHelper = getAdvancedQueryHelper(this, videos_search, filterTypeSet);
 
             loadVideoRecycler();
 
@@ -439,13 +439,13 @@ public class VideoActivity extends AppCompatActivity {
             whenLoaded.run();
     }
 
-    public static Helpers.AdvancedQueryHelper<Video> getAdvancedQueryHelper(AppCompatActivity context, SearchView searchView, CustomList<Video> videoList, HashSet<VideoActivity.FILTER_TYPE> filterTypeSet) {
+    public static Helpers.AdvancedQueryHelper<Video> getAdvancedQueryHelper(AppCompatActivity context, SearchView searchView, HashSet<FILTER_TYPE> filterTypeSet) {
         return new Helpers.AdvancedQueryHelper<Video>(context, searchView)
                 .setRestFilter((restQuery, videos) -> {
                     if (restQuery.contains("|")) {
-                        videoList.filterOr(restQuery.split("\\|"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), true);
+                        videos.filterOr(restQuery.split("\\|"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), true);
                     } else {
-                        videoList.filterAnd(restQuery.split("&"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), true);
+                        videos.filterAnd(restQuery.split("&"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), true);
                     }
                 })
                 .addCriteria_defaultName(R.id.dialog_advancedSearch_video_name)
@@ -2048,14 +2048,14 @@ public class VideoActivity extends AppCompatActivity {
                     };
                     view.findViewById(R.id.dialog_editOrAddVideo_internet).setOnClickListener(v -> {
                         String url = dialog_editOrAddVideo_Url_layout.getEditText().getText().toString();
-                        Utility.showInternetDialog(this, url, internetDialogClick, false, onImagePathResult, onTitleResult, null);
+                        Utility.showInternetDialog(this, url, internetDialogClick, false, false, onImagePathResult, null, onTitleResult, null);
                     });
                     view.findViewById(R.id.dialog_editOrAddVideo_internet).setOnLongClickListener(v -> {
                         String title = dialog_editOrAddVideo_Title_layout.getEditText().getText().toString();
 
                         title = "https://www.google.com/search?tbm=isch&q=" + CustomUtility.encodeTextForUrl(title);
 
-                        Utility.showInternetDialog(this, title, internetDialogLongClick, true, onImagePathResult, onTitleResult, (webView, isThumbnails, onResult) -> {
+                        Utility.showInternetDialog(this, title, internetDialogLongClick, true, false, onImagePathResult, null, onTitleResult, (webView, isThumbnails, onResult) -> {
                             if (isThumbnails) {
                                 List<String> urls = new ArrayList<>();
                                 webView.evaluateJavascript("(function() {\n" +
@@ -2274,7 +2274,7 @@ public class VideoActivity extends AppCompatActivity {
                         dialog_editOrAddVideo_watchLater.setVisibility(View.VISIBLE);
                         editVideo[0] = new Video("");
                         if (Utility.stringExists(searchQuery))
-                            dialog_editOrAddVideo_Title_layout.getEditText().setText(searchQuery);
+                            dialog_editOrAddVideo_Title_layout.getEditText().setText(advancedQueryHelper.getFreeSearchOrName());
                     }
 
                     ((LazyDatePicker) view.findViewById(R.id.dialog_editOrAddVideo_datePicker)).setOnDatePickListener(dateSelected -> {

@@ -48,6 +48,8 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -287,7 +289,7 @@ public class Utility {
 
 
     /**  ------------------------- Internet Dialog ------------------------->  */
-    public static CustomDialog showInternetDialog(Context context, String url, @NonNull CustomDialog[] internetDialog, boolean mobileView, @Nullable DoubleGenericInterface<CustomDialog, String> onImageSelected, @Nullable DoubleGenericInterface<CustomDialog, String> onTextSelected, @Nullable TripleGenericInterface<WebView, Boolean, DoubleGenericInterface<List<String>, Boolean>> optionalParser) {
+    public static CustomDialog showInternetDialog(Context context, String url, @NonNull CustomDialog[] internetDialog, boolean mobileView, boolean disableForwarding, @Nullable DoubleGenericInterface<CustomDialog, String> onImageSelected, @Nullable DoubleGenericInterface<CustomDialog, String> onVideoSelected, @Nullable DoubleGenericInterface<CustomDialog, String> onTextSelected, @Nullable TripleGenericInterface<WebView, Boolean, DoubleGenericInterface<List<String>, Boolean>> optionalParser) {
         if (internetDialog[0] == null) {
             internetDialog[0] = CustomDialog.Builder(context)
                     .setView(R.layout.dialog_video_internet)
@@ -295,7 +297,14 @@ public class Utility {
                     .setSetViewContent((customDialog, view, reload) -> {
                         WebView webView = view.findViewById(R.id.dialog_videoInternet_webView);
                         webView.loadUrl(CustomUtility.stringExists(url) ? url : "https://www.google.de/");
-                        webView.setWebViewClient(new WebViewClient());
+//                        webView.setWebViewClient(new WebViewClient() {
+//                            @Override
+//                            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+////                                return super.shouldOverrideUrlLoading(view, request);
+//                                CustomUtility.logD(null, "shouldOverrideUrlLoading: %s", request.getUrl().toString());
+//                                return true;
+//                            }
+//                        });
                         WebSettings webSettings = webView.getSettings();
                         webSettings.setJavaScriptEnabled(true);
                         if (!mobileView)
@@ -311,12 +320,54 @@ public class Utility {
 
                         // ---------------
 
+                        com.finn.androidUtilities.CustomList<String> videoUrls = onVideoSelected != null ? new com.finn.androidUtilities.CustomList<>() : null;
+                        Runnable getVideos = () -> {
+                            if (videoUrls != null) {
+                                if (videoUrls.isEmpty()) {
+                                    Toast.makeText(context, "Nichts Gefunden", Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
+                                String domainName = CustomUtility.getDomainName(webView.getUrl());
+                                CustomDialog.Builder(context)
+                                        .setTitle("Gefundene Videos")
+                                        .setView(customDialog1 -> new CustomRecycler<String>((AppCompatActivity) context)
+                                                .setGetActiveObjectList(customRecycler1 -> videoUrls.stream().sorted((o1, o2) -> {
+                                                    if (domainName == null)
+                                                        return 0;
+                                                    if (o1.contains(domainName) && !o2.contains(domainName))
+                                                        return -1;
+                                                    if (!o1.contains(domainName) && o2.contains(domainName))
+                                                        return 1;
+                                                    return 0;
+                                                }).collect(Collectors.toList()))
+                                                .setItemLayout(R.layout.list_item_select_next_episode)
+                                                .setSetItemContent((customRecycler1, itemView, videoUrl, index) -> {
+                                                    Utility.simpleLoadUrlIntoImageView(context, itemView.findViewById(R.id.listItem_selectNextEpisode_image), videoUrl, videoUrl, 4);
+
+                                                    ((TextView) itemView.findViewById(R.id.listItem_selectNextEpisode_name)).setText(videoUrl);
+                                                })
+                                                .disableCustomRipple()
+                                                .enableDivider(12)
+                                                .setOnClickListener((customRecycler1, itemView, videoUrl, index) -> onVideoSelected.run(customDialog, videoUrl))
+                                                .generateRecyclerView())
+                                        .show();
+                            }
+                        };
+
+
                         FloatingActionButton dialog_videoInternet_getThumbnails = view.findViewById(R.id.dialog_videoInternet_getThumbnails);
-                        if (onImageSelected != null) {
+                        if (onImageSelected != null || onVideoSelected != null) {
                             dialog_videoInternet_getThumbnails.setVisibility(View.VISIBLE);
-                            dialog_videoInternet_getThumbnails.setOnClickListener(v1 -> {
-                                showSelectThumbnailDialog(context, webView, null, s -> onImageSelected.run(customDialog, s), optionalParser != null ? (webView1, onResult) -> optionalParser.run(webView1, true, onResult) : null);
-                            });
+                            if (onImageSelected != null) {
+                                dialog_videoInternet_getThumbnails.setOnClickListener(v1 -> showSelectThumbnailDialog(context, webView, null, s -> onImageSelected.run(customDialog, s), optionalParser != null ? (webView1, onResult) -> optionalParser.run(webView1, true, onResult) : null));
+                                if (onVideoSelected != null)
+                                    dialog_videoInternet_getThumbnails.setOnLongClickListener(v -> {
+                                        getVideos.run();
+                                        return true;
+                                    });
+                            } else
+                                dialog_videoInternet_getThumbnails.setOnClickListener(v -> getVideos.run());
+
                         } else
                             dialog_videoInternet_getThumbnails.setVisibility(View.GONE);
 
@@ -383,6 +434,27 @@ public class Utility {
                             @Override
                             public void onPageFinished(WebView view, String url) {
                                 dialog_videoInternet_url.setText(url);
+                                if (videoUrls != null && view.getProgress() == 100)
+                                    videoUrls.clear();
+                            }
+
+                            @Override
+                            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+//                                return super.shouldOverrideUrlLoading(view, request);
+                                CustomUtility.logD(null, "shouldOverrideUrlLoading: %s", request.getUrl().toString());
+                                return disableForwarding;
+                            }
+
+                            @Nullable
+                            @Override
+                            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                                String url = request.getUrl().toString();
+                                if (onVideoSelected != null && url.contains(".mp4")) {
+                                    CustomUtility.logD(null, "shouldInterceptRequest: %s", url);
+                                    videoUrls.add(url);
+                                    videoUrls.distinct();
+                                }
+                                return super.shouldInterceptRequest(view, request);
                             }
                         });
 
@@ -832,6 +904,7 @@ public class Utility {
                                 .putExtra(CategoriesActivity.EXTRA_SEARCH, CategoriesActivity.escapeForSearchExtra(charSequence.toString()))
                                 .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, category));
                     })
+                    .enableButtonDividerAll()
                     .enableStackButtons()
                     .show();
         };

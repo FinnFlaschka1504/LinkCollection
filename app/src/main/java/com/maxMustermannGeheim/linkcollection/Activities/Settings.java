@@ -282,7 +282,7 @@ public class Settings extends AppCompatActivity {
                         };
 
                         CustomDialog.Builder(settingsContext)
-                                .setTitle("Bilder Finden")
+                                .setTitle("Bilder Und Video Finden")
                                 .addButton("Auf Webseite", customDialog1 -> {
                                     CustomDialog[] internetDialog = {null};
                                     CustomDialog.Builder(settingsContext)
@@ -291,10 +291,10 @@ public class Settings extends AppCompatActivity {
                                             .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                                             .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog2 -> {
                                                 String url = customDialog2.getEditText();
-                                                Utility.showInternetDialog(settingsContext, url, internetDialog, false, (customDialog3, s) -> {
+                                                Utility.showInternetDialog(settingsContext, url, internetDialog, false, true, (customDialog3, s) -> {
 //                                                    Toast.makeText(settingsContext, s, Toast.LENGTH_SHORT).show();
                                                     showResult.run(s);
-                                                }, null, null);
+                                                }, (customDialog3, s) -> Utility.openUrl(context, s, true), null, null);
                                             }, false)
                                             .disableLastAddedButton()
                                             .show();
@@ -307,6 +307,7 @@ public class Settings extends AppCompatActivity {
                                     });
                                 })
                                 .enableStackButtons()
+                                .enableButtonDividerAll()
                                 .show();
 
                     });

@@ -765,7 +765,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                         searchView.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
                         searchView.setIconifiedByDefault(false);
 
-                        advancedQueryHelper[0] = VideoActivity.getAdvancedQueryHelper(this, searchView, shownVideos, filterTypeSet);
+                        advancedQueryHelper[0] = VideoActivity.getAdvancedQueryHelper(this, searchView, filterTypeSet);
                         advancedQueryHelper[0].disableColoration();
                     }
 //                    else

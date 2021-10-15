@@ -6,9 +6,12 @@ import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.ParcelableSpan;
+import android.text.Selection;
+import android.text.SpanWatcher;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -26,6 +29,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.accessibility.AccessibilityEvent;
 import android.view.inputmethod.EditorInfo;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -1593,20 +1597,18 @@ public class Helpers {
         private EditText editText;
         private TextWatcher colorationWatcher;
 
-        /**
-         * ------------------------- Constructor ------------------------->
-         */
+        /** ------------------------- Constructor -------------------------> */
         public AdvancedQueryHelper(AppCompatActivity context, SearchView searchView) {
             this.searchView = searchView;
             editText = searchView.findViewById(Resources.getSystem().getIdentifier("search_src_text", "id", "android"));
-            this.context = context;
+
+
+            applySelectionHelper(context);
         }
         /**  <------------------------- Constructor -------------------------  */
 
 
-        /**
-         * ------------------------- Getter & Setter ------------------------->
-         */
+        /** ------------------------- Getter & Setter -------------------------> */
         public <Result> AdvancedQueryHelper<T> addCriteria(Utility.GenericReturnInterface<AdvancedQueryHelper<T>, SearchCriteria<T, Result>> getCriteria) {
             criteriaList.add(getCriteria.run(this));
             return this;
@@ -1618,8 +1620,12 @@ public class Helpers {
 
         public AdvancedQueryHelper<T> addCriteria_defaultName(@Nullable @IdRes Integer editTextId) {
             SearchCriteria<T, String> criteria = new SearchCriteria<T, String>(ADVANCED_SEARCH_CRITERIA_NAME, "[^]]+?")
-                    .setParser(String::toLowerCase)
-                    .setBuildPredicate(sub -> t -> ((ParentClass) t).getName().toLowerCase().contains(sub));
+                    .setParser(s -> s)
+                    .setBuildPredicate(sub -> {
+                        sub = sub.toLowerCase();
+                        String finalSub = sub;
+                        return t -> ((ParentClass) t).getName().toLowerCase().contains(finalSub);
+                    });
             if (editTextId != null) {
                 criteria.setApplyDialog((customDialog, s, criteria1) -> {
                     EditText editText = customDialog.findViewById(editTextId);
@@ -1747,6 +1753,14 @@ public class Helpers {
             return fullQuery.toString().replaceAll(advancedQueryPattern.pattern(), "").trim();
         }
 
+        public String getFreeSearchOrName() {
+            String freeSearch = removeAdvancedSearch(getQuery());
+            String nameCriteria = CustomUtility.stringExistsOrElse(((String) parse(ADVANCED_SEARCH_CRITERIA_NAME)), "");
+            if (CustomUtility.stringExists(freeSearch) && CustomUtility.stringExists(nameCriteria))
+                freeSearch += " ";
+            return freeSearch + nameCriteria;
+        }
+
         public boolean istExtraSearch(String extraSearch) {
             String query = getQuery();
             if (query.equals(extraSearch))
@@ -1825,6 +1839,38 @@ public class Helpers {
 
         public SearchCriteria getSearchCriteriaByKey(String key) {
             return criteriaList.stream().filter(criteria -> criteria.key.equals(key)).findFirst().orElse(null);
+        }
+
+        private void applySelectionHelper(AppCompatActivity context) {
+            int[] oldSelection = {0, 0};
+            editText.setAccessibilityDelegate(new View.AccessibilityDelegate(){
+                @Override
+                public void sendAccessibilityEvent(View host, int eventType) {
+                    super.sendAccessibilityEvent(host, eventType);
+                    if (eventType == AccessibilityEvent.TYPE_VIEW_TEXT_SELECTION_CHANGED) {
+                        int selectionStart = editText.getSelectionStart();
+                        int selectionEnd = editText.getSelectionEnd();
+                        CustomUtility.logD(null, "Selection: s:%d | e:%d", selectionStart, selectionEnd);
+                        if (selectionStart != selectionEnd && oldSelection[0] == oldSelection[1]) {
+                            oldSelection[0] = selectionStart;
+                            oldSelection[1] = selectionEnd;
+                            CustomUtility.logD(null, "sendAccessibilityEvent: new Selection");
+                            String selectionString = editText.getText().toString().substring(selectionStart, selectionEnd);
+                            Matcher matcher = Pattern.compile("(\\w+:)([^\\]]+)").matcher(selectionString);
+                            if (matcher.find()) {
+                                new Handler(Looper.myLooper()).postDelayed(() -> {
+                                    editText.setSelection(selectionStart + matcher.group(1).length(), selectionEnd);
+                                    CustomUtility.logD(null, "sendAccessibilityEvent: newSelection");
+                                }, 500);
+                            }
+                        } else {
+                            oldSelection[0] = selectionStart;
+                            oldSelection[1] = selectionEnd;
+                        }
+                    }
+                }
+            });
+            this.context = context;
         }
         /**  ------------------------- Convenience ------------------------->  */
 
@@ -2112,14 +2158,14 @@ public class Helpers {
                 else
                     return null;
             }
-            /**  <------------------------- Convenience -------------------------  */
+
+            /** <------------------------- Convenience ------------------------- */
 
             public interface ApplyDialogInterface<T, Result> {
                 Utility.GenericReturnInterface<com.finn.androidUtilities.CustomDialog, String> runApplyDialog(com.finn.androidUtilities.CustomDialog customDialog, Result result, SearchCriteria<T, Result> criteria);
             }
         }
     }
-
     /** <------------------------- AdvancedSearch ------------------------- */
 
 

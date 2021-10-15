@@ -707,7 +707,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="5dp"
-                    android:text="Findet alle Bild-Urls auf einer Webseite, oder in einer Datei"
+                    android:text="Findet alle Bild- oder Video-Urls auf einer Webseite, oder in einer Datei"
                     android:textSize="12sp" />
 
             </LinearLayout>
@@ -717,7 +717,7 @@
                 style="@style/Widget.AppCompat.Button.Borderless.Colored"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Importieren" />
+                android:text="Finden" />
         </LinearLayout>
 
         <View

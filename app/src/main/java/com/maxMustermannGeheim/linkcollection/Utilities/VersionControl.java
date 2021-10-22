@@ -267,7 +267,9 @@ public class VersionControl {
                 "Verschlüsselungs-Bug behoben",
                 "Divider in Listen angepasst",
                 "Video-Kalender kann gefiltert werden",
-                "Auswahldialog nächste Episode überarbeitet");
+                "Auswahldialog nächste Episode überarbeitet",
+                "AdvancedSearch zu den KategorienHinzugefügt",
+                "AdvancedSearchQueries können negiert werden");
     };
 
     private static void addChange(String version, String... changes) {

@@ -24,6 +24,7 @@ import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
 import android.util.Pair;
+import android.util.TimingLogger;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -1619,12 +1620,16 @@ public class Helpers {
         }
 
         public AdvancedQueryHelper<T> addCriteria_defaultName(@Nullable @IdRes Integer editTextId) {
+            return addCriteria_defaultName(editTextId, t -> ((ParentClass) t).getName());
+        }
+
+        public AdvancedQueryHelper<T> addCriteria_defaultName(@Nullable @IdRes Integer editTextId, Utility.GenericReturnInterface<T, String> toString) {
             SearchCriteria<T, String> criteria = new SearchCriteria<T, String>(ADVANCED_SEARCH_CRITERIA_NAME, "[^]]+?")
                     .setParser(s -> s)
                     .setBuildPredicate(sub -> {
                         sub = sub.toLowerCase();
                         String finalSub = sub;
-                        return t -> ((ParentClass) t).getName().toLowerCase().contains(finalSub);
+                        return t -> toString.run(t).toLowerCase().contains(finalSub);
                     });
             if (editTextId != null) {
                 criteria.setApplyDialog((customDialog, s, criteria1) -> {
@@ -1735,17 +1740,18 @@ public class Helpers {
         /**
          * <------------------------- Convenience -------------------------
          */
+        public AdvancedQueryHelper<T> optionalModification(Utility.GenericInterface<AdvancedQueryHelper<T>> optional) {
+            optional.run(this);
+            return this;
+        }
+
         public String getQuery() {
             return searchView.getQuery().toString().trim();
         }
 
         public AdvancedQueryHelper<T> clean() {
             fullQuery = advancedQuery = restQuery = "";
-            criteriaList.forEach(criteria -> {
-                criteria.sub = "";
-                criteria.predicate = null;
-                criteria.tempResult = null;
-            });
+            criteriaList.forEach(SearchCriteria::clear);
             return this;
         }
 
@@ -1837,30 +1843,39 @@ public class Helpers {
             return null;
         }
 
+        public boolean isNegated(String... keys) {
+            for (String key : keys) {
+                SearchCriteria criteria = getSearchCriteriaByKey(key);
+                if (criteria == null)
+                    continue;
+                boolean negated = criteria.isNegated();
+                if (negated)
+                    return true;
+            }
+            return false;
+        }
+
         public SearchCriteria getSearchCriteriaByKey(String key) {
             return criteriaList.stream().filter(criteria -> criteria.key.equals(key)).findFirst().orElse(null);
         }
 
         private void applySelectionHelper(AppCompatActivity context) {
             int[] oldSelection = {0, 0};
-            editText.setAccessibilityDelegate(new View.AccessibilityDelegate(){
+            editText.setAccessibilityDelegate(new View.AccessibilityDelegate() {
                 @Override
                 public void sendAccessibilityEvent(View host, int eventType) {
                     super.sendAccessibilityEvent(host, eventType);
                     if (eventType == AccessibilityEvent.TYPE_VIEW_TEXT_SELECTION_CHANGED) {
                         int selectionStart = editText.getSelectionStart();
                         int selectionEnd = editText.getSelectionEnd();
-                        CustomUtility.logD(null, "Selection: s:%d | e:%d", selectionStart, selectionEnd);
                         if (selectionStart != selectionEnd && oldSelection[0] == oldSelection[1]) {
                             oldSelection[0] = selectionStart;
                             oldSelection[1] = selectionEnd;
-                            CustomUtility.logD(null, "sendAccessibilityEvent: new Selection");
                             String selectionString = editText.getText().toString().substring(selectionStart, selectionEnd);
                             Matcher matcher = Pattern.compile("(\\w+:)([^\\]]+)").matcher(selectionString);
                             if (matcher.find()) {
                                 new Handler(Looper.myLooper()).postDelayed(() -> {
                                     editText.setSelection(selectionStart + matcher.group(1).length(), selectionEnd);
-                                    CustomUtility.logD(null, "sendAccessibilityEvent: newSelection");
                                 }, 500);
                             }
                         } else {
@@ -1900,10 +1915,12 @@ public class Helpers {
         }
 
         public AdvancedQueryHelper<T> filterAdvanced(CustomList<T> list) {
-            criteriaList.forEach(SearchCriteria::buildPredicate);
+            CustomList<SearchCriteria> filteredCriteriaList = criteriaList.filter(SearchCriteria::has, false);
+            filteredCriteriaList.forEach(SearchCriteria::buildPredicate);
             list.filter(t -> {
-                for (SearchCriteria criteria : criteriaList) {
-                    if (!criteria.matchObject(t))
+                for (SearchCriteria criteria : filteredCriteriaList) {
+                    boolean matchResult = criteria.matchObject(t) ^ criteria.isNegated();
+                    if (!matchResult)
                         return false;
                 }
                 return true;
@@ -2020,7 +2037,7 @@ public class Helpers {
             return this;
         }
 
-        private void applyColoration(Editable editable) {
+        private void applyColoration(Editable editable) { // ToDo: negation Fett markieren
             new CustomList<>(editable.getSpans(0, editable.length(), StyleSpan.class)).forEach(editable::removeSpan);
             new CustomList<>(editable.getSpans(0, editable.length(), ForegroundColorSpan.class)).forEach(editable::removeSpan);
 
@@ -2040,7 +2057,7 @@ public class Helpers {
                 int incompleteTextColor = context.getColor(R.color.colorPrimary);
 
                 for (SearchCriteria criteria : criteriaList) {
-                    Matcher criteriaMatcher = Pattern.compile(String.format("\\[%s: ?%s\\s*\\]", criteria.key, criteria.regEx)).matcher(queryResult.group());
+                    Matcher criteriaMatcher = Pattern.compile(String.format("\\[!?%s: ?(%s)\\s*\\]", criteria.key, criteria.regEx)).matcher(queryResult.group());
                     if (criteriaMatcher.find()) {
                         MatchResult criteriaResult = criteriaMatcher.toMatchResult();
                         editable.setSpan(new ForegroundColorSpan(criteria.tempResult == null ? incompleteTextColor : normalTextColor), criteriaResult.start() + queryStart, criteriaResult.end() + queryStart, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -2057,7 +2074,9 @@ public class Helpers {
             public Result tempResult;
             public String key;
             public String regEx;
+            public String full;
             public String sub;
+            public Boolean negated;
             private Utility.GenericReturnInterface<String, Result> parser;
             private Utility.GenericReturnInterface<Result, Predicate<T>> buildPredicate;
             public Predicate<T> predicate;
@@ -2065,9 +2084,7 @@ public class Helpers {
             private CategoriesActivity.CATEGORIES category;
             // ToDo: In und aus Dialog
 
-            /**
-             * ------------------------- Constructor ------------------------->
-             */
+            /**  ------------------------- Constructor -------------------------> */
             public SearchCriteria(String key, @Language("RegExp") String regEx) {
                 this.key = key;
                 this.regEx = regEx;
@@ -2075,9 +2092,7 @@ public class Helpers {
             /**  <------------------------- Constructor -------------------------  */
 
 
-            /**
-             * ------------------------- Getter & Setter ------------------------->
-             */
+            /**  ------------------------- Getter & Setter -------------------------> */
             public SearchCriteria<T, Result> setParser(Utility.GenericReturnInterface<String, Result> parser) {
                 this.parser = parser;
                 return this;
@@ -2111,18 +2126,18 @@ public class Helpers {
             /**  <------------------------- Getter & Setter -------------------------  */
 
 
-            /**
-             * ------------------------- Convenience ------------------------->
-             */
+            /**  ------------------------- Convenience -------------------------> */
             public Pattern getPattern() {
-                return Pattern.compile(String.format("(?<=\\[%s: ?)%s(?=\\s*\\])", key, regEx));
+                return Pattern.compile(String.format("\\[!?%s: ?(%s)\\s*\\]", key, regEx));
             }
 
-            public String matchQuery(String query) {
-                if (query.contains("[" + key + ":")) {
-                    Matcher ratingMatcher = getPattern().matcher(query);
-                    if (ratingMatcher.find())
-                        return sub = ratingMatcher.group(0);
+            public String matchQuery(String query) { // ToDo: vielleicht auch mehrere gleiche Filter erlauben
+                if (query.contains("[" + key + ":") || query.contains("[!" + key + ":")) {
+                    Matcher matcher = getPattern().matcher(query);
+                    if (matcher.find()) {
+                        full = matcher.group();
+                        return sub = matcher.group(1);
+                    }
                 }
                 return "";
             }
@@ -2159,6 +2174,17 @@ public class Helpers {
                     return null;
             }
 
+            public boolean isNegated() {
+                return full != null && ((negated != null && negated) || (negated = full.startsWith("[!")));
+            }
+
+            public void clear() {
+                full = "";
+                sub = "";
+                predicate = null;
+                tempResult = null;
+                negated = null;
+            }
             /** <------------------------- Convenience ------------------------- */
 
             public interface ApplyDialogInterface<T, Result> {
@@ -2166,6 +2192,7 @@ public class Helpers {
             }
         }
     }
+
     /** <------------------------- AdvancedSearch ------------------------- */
 
 

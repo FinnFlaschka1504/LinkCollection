@@ -439,6 +439,8 @@ public class VideoActivity extends AppCompatActivity {
             whenLoaded.run();
     }
 
+
+    /**  ------------------------- AdvancedQuery ------------------------->  */
     public static Helpers.AdvancedQueryHelper<Video> getAdvancedQueryHelper(AppCompatActivity context, SearchView searchView, HashSet<FILTER_TYPE> filterTypeSet) {
         return new Helpers.AdvancedQueryHelper<Video>(context, searchView)
                 .setRestFilter((restQuery, videos) -> {
@@ -451,7 +453,7 @@ public class VideoActivity extends AppCompatActivity {
                 .addCriteria_defaultName(R.id.dialog_advancedSearch_video_name)
                 .enableColoration()
                 .setDialogOptions(R.layout.dialog_advanced_search_video, null)
-                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Float, Float>>(ADVANCED_SEARCH_CRITERIA_RATING, "(([0-4]((.|,)\\d{1,2})?)|5((.|,)00?)?)(-(([0-4]((\\4|\\6)(?<=[,.])\\d{1,2})?)|5((\\4|\\6)(?<=[,.])00?)?))?")
+                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Float, Float>>(ADVANCED_SEARCH_CRITERIA_RATING, "(([0-4]((\\.|,)\\d{1,2})?)|5((\\.|,)00?)?)(-(([0-4]((\\5|\\7|(?<![,.]\\d{1,2}-\\d)[,.])\\d{1,2})?)|5((\\5|\\7|(?<![,.]\\d{1,2}-\\d)[,.])00?)?))?")
                         .setParser(sub -> {
                             String[] range = sub.replaceAll(",", ".").split("-");
                             float min = Float.parseFloat(range[0]);
@@ -554,14 +556,8 @@ public class VideoActivity extends AppCompatActivity {
                                     return null;
                             };
                         }))
-                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Integer, Integer>>(ADVANCED_SEARCH_CRITERIA_LENGTH, "(((\\d+)?-?(\\d+))|((\\d+)-?(\\d+)?))")
-                        .setParser(sub -> {
-                            String[] range = sub.split("-");
-                            int min = range.length > 0 ? Integer.parseInt(CustomUtility.isNotValueOrElse(range[0], "", "-1")) : -1;
-                            int max = range.length > 1 ? Integer.parseInt(CustomUtility.isNotValueOrElse(range[1], "", "-1")) : (sub.endsWith("-") ? -1 : min);
-
-                            return Pair.create(min, max);
-                        })
+                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Integer, Integer>>(ADVANCED_SEARCH_CRITERIA_LENGTH, "(((\\d+)-?(\\d+)?)|((\\d+)?-?(\\d+)))")
+                        .setParser(getNumberRangeParser())
                         .setBuildPredicate(lengthMinMax -> video -> video.getLength() >= lengthMinMax.first && (lengthMinMax.second == -1 || video.getLength() <= lengthMinMax.second))
                         .setApplyDialog((customDialog, lengthMinMax, criteria) -> {
                             final Integer[] minLength = {null};
@@ -636,60 +632,7 @@ public class VideoActivity extends AppCompatActivity {
                             );
                         }))
                 .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Date, Date>>(ADVANCED_SEARCH_CRITERIA_DURATION, "((-?\\d+[dmy])|(-?\\d+[dmy]|_(-?\\d+)?[my])(;-?\\d+[dmy]))")
-                        .setParser(sub -> {
-                            String[] range = sub.split(";"); // ToDo: evl. Flags hinzufügen?
-                            Date pivot;
-                            Calendar cal = Calendar.getInstance();
-                            cal.set(Calendar.HOUR_OF_DAY, 0);
-                            cal.set(Calendar.MINUTE, 0);
-                            cal.set(Calendar.SECOND, 0);
-                            cal.set(Calendar.MILLISECOND, 0);
-                            Map<String, Integer> modeMap = new HashMap<>();
-                            modeMap.put("d", Calendar.DAY_OF_MONTH);
-                            modeMap.put("m", Calendar.MONTH);
-                            modeMap.put("y", Calendar.YEAR);
-
-
-                            if (range.length > 1) {
-                                String pivotString = range[0];
-                                if (pivotString.startsWith("_")) {
-                                    if (pivotString.endsWith("m")) {
-                                        if (pivotString.length() > 2)
-                                            cal.add(Calendar.MONTH, Integer.parseInt(CustomUtility.subString(pivotString, 1, -1)) * -1);
-                                        cal.set(Calendar.DAY_OF_MONTH, 1);
-                                        pivot = cal.getTime();
-                                    } else {
-                                        if (pivotString.length() > 2)
-                                            cal.add(Calendar.YEAR, Integer.parseInt(CustomUtility.subString(pivotString, 1, -1)) * -1);
-                                        cal.set(Calendar.DAY_OF_YEAR, 1);
-                                        pivot = cal.getTime();
-                                    }
-                                } else {
-                                    cal.add(modeMap.get(CustomUtility.subString(pivotString, -1)), Integer.parseInt(CustomUtility.subString(pivotString, 0, -1)) * -1);
-                                    pivot = cal.getTime();
-                                }
-                            } else
-                                pivot = cal.getTime();
-
-                            String durationString = range.length > 1 ? range[1] : range[0];
-                            int durationInt = Integer.parseInt(CustomUtility.subString(durationString, 0, -1));
-                            String durationMode = CustomUtility.subString(durationString, -1);
-                            if (durationMode.equals("d"))
-                                durationInt = (Math.abs(durationInt) - 1) * (durationInt < 0 ? -1 : 1);
-                            cal.add(modeMap.get(durationMode), durationInt * -1);
-
-                            Date duration = cal.getTime();
-
-                            Pair<Date, Date> datePair = pivot.before(duration) ? Pair.create(pivot, duration) : Pair.create(duration, pivot);
-
-                            if (!durationMode.equals("d")) {
-                                cal.setTime(datePair.second);
-                                cal.add(Calendar.DAY_OF_MONTH, -1);
-                                datePair = Pair.create(datePair.first, cal.getTime());
-                            }
-
-                            return datePair;
-                        })
+                        .setParser(getDurationParser())
                         .setBuildPredicate_fromLastAdded(helper)
                         .setApplyDialog((customDialog, dateDatePair, durationCriteria) -> {
                             Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Date, Date>> dateCriteria = helper.getSearchCriteriaByKey(ADVANCED_SEARCH_CRITERIA_DATE);
@@ -942,6 +885,74 @@ public class VideoActivity extends AppCompatActivity {
                         .setBuildPredicate(sub -> video -> Utility.containedInCollection(sub, video.getUuid(), true)));
     }
 
+    public static Utility.GenericReturnInterface<String, Pair<Integer, Integer>> getNumberRangeParser() {
+        return sub -> {
+            String[] range = sub.split("-");
+            int min = range.length > 0 ? Integer.parseInt(CustomUtility.isNotValueOrElse(range[0], "", "-1")) : -1;
+            int max = range.length > 1 ? Integer.parseInt(CustomUtility.isNotValueOrElse(range[1], "", "-1")) : (sub.endsWith("-") ? -1 : min);
+
+            return Pair.create(min, max);
+        };
+    }
+
+    public static Utility.GenericReturnInterface<String, Pair<Date, Date>> getDurationParser() {
+        return sub -> {
+            String[] range = sub.split(";");
+            Date pivot;
+            Calendar cal = Calendar.getInstance();
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+            Map<String, Integer> modeMap = new HashMap<>();
+            modeMap.put("d", Calendar.DAY_OF_MONTH);
+            modeMap.put("m", Calendar.MONTH);
+            modeMap.put("y", Calendar.YEAR);
+
+
+            if (range.length > 1) {
+                String pivotString = range[0];
+                if (pivotString.startsWith("_")) {
+                    if (pivotString.endsWith("m")) {
+                        if (pivotString.length() > 2)
+                            cal.add(Calendar.MONTH, Integer.parseInt(CustomUtility.subString(pivotString, 1, -1)) * -1);
+                        cal.set(Calendar.DAY_OF_MONTH, 1);
+                        pivot = cal.getTime();
+                    } else {
+                        if (pivotString.length() > 2)
+                            cal.add(Calendar.YEAR, Integer.parseInt(CustomUtility.subString(pivotString, 1, -1)) * -1);
+                        cal.set(Calendar.DAY_OF_YEAR, 1);
+                        pivot = cal.getTime();
+                    }
+                } else {
+                    cal.add(modeMap.get(CustomUtility.subString(pivotString, -1)), Integer.parseInt(CustomUtility.subString(pivotString, 0, -1)) * -1);
+                    pivot = cal.getTime();
+                }
+            } else
+                pivot = cal.getTime();
+
+            String durationString = range.length > 1 ? range[1] : range[0];
+            int durationInt = Integer.parseInt(CustomUtility.subString(durationString, 0, -1));
+            String durationMode = CustomUtility.subString(durationString, -1);
+//            if (durationMode.equals("d"))
+//                durationInt = (Math.abs(durationInt) - 1) * (durationInt < 0 ? -1 : 1);
+            cal.add(modeMap.get(durationMode), durationInt * -1);
+
+            Date duration = cal.getTime();
+
+            Pair<Date, Date> datePair = pivot.before(duration) ? Pair.create(pivot, duration) : Pair.create(duration, pivot);
+
+//            if (!durationMode.equals("d")) {
+//                cal.setTime(datePair.second);
+//                cal.add(Calendar.DAY_OF_MONTH, -1);
+//                datePair = Pair.create(datePair.first, cal.getTime());
+//            }
+
+            return datePair;
+        };
+    }
+    /**  <------------------------- AdvancedQuery -------------------------  */
+
     private List<Video> filterList() {
         filteredVideoList = new com.finn.androidUtilities.CustomList<>(allVideoList);
 
@@ -984,16 +995,30 @@ public class VideoActivity extends AppCompatActivity {
             case LATEST:
                 final Pair<Date, Date>[] datePair = new Pair[]{null};
                 final Pair<Long, Long>[] datePairTime = new Pair[]{null};
-
+                boolean[] negated = {false};
 
                 if (CustomUtility.stringExists(searchQuery) && advancedQueryHelper != null && (advancedQueryHelper.has(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION))) {
-                    if ((datePair[0] = (Pair<Date, Date>) advancedQueryHelper.parse(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION)) != null)
+                    if ((datePair[0] = (Pair<Date, Date>) advancedQueryHelper.parse(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION)) != null) {
                         datePairTime[0] = Pair.create(datePair[0].first.getTime(), datePair[0].second.getTime());
+                        negated[0] = advancedQueryHelper.isNegated(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION);
+                    }
                 }
 
                 videoList.sort((video1, video2) -> {
                     List<Date> dateList1 = video1.getDateList();
                     List<Date> dateList2 = video2.getDateList();
+
+                    if (datePairTime[0] != null) {
+                        dateList1 = dateList1.parallelStream().filter(date -> {
+                            long time = CustomUtility.removeTime(date).getTime();
+                            return (time >= datePairTime[0].first && time <= datePairTime[0].second) ^ negated[0];
+                        }).collect(Collectors.toList());
+                        dateList2 = dateList2.parallelStream().filter(date -> {
+                            long time = CustomUtility.removeTime(date).getTime();
+                            return (time >= datePairTime[0].first && time <= datePairTime[0].second) ^ negated[0];
+                        }).collect(Collectors.toList());
+                    }
+
                     if (dateList1.isEmpty() && dateList2.isEmpty()) {
                         if (video1.isUpcoming() && video2.isUpcoming())
                             return video1.getRelease().compareTo(video2.getRelease());
@@ -1008,16 +1033,6 @@ public class VideoActivity extends AppCompatActivity {
                     else if (dateList2.isEmpty())
                         return reverse ? 1 : -1;
 
-                    if (datePairTime[0] != null) {
-                        dateList1 = dateList1.parallelStream().filter(date -> {
-                            long time = CustomUtility.removeTime(date).getTime();
-                            return time >= datePairTime[0].first && time <= datePairTime[0].second;
-                        }).collect(Collectors.toList());
-                        dateList2 = dateList2.parallelStream().filter(date -> {
-                            long time = CustomUtility.removeTime(date).getTime();
-                            return time >= datePairTime[0].first && time <= datePairTime[0].second;
-                        }).collect(Collectors.toList());
-                    }
 
                     Date new1 = Collections.max(dateList1);
                     Date new2 = Collections.max(dateList2);
@@ -1057,14 +1072,17 @@ public class VideoActivity extends AppCompatActivity {
                         if (CustomUtility.stringExists(searchQuery) && advancedQueryHelper != null && advancedQueryHelper.has(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION)) {
                             final Pair<Date, Date>[] datePair = new Pair[]{null};
                             final Pair<Long, Long>[] datePairTime = new Pair[]{null};
+                            boolean[] negated = {false};
 
-                            if ((datePair[0] = (Pair<Date, Date>) advancedQueryHelper.parse(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION)) != null)
+                            if ((datePair[0] = (Pair<Date, Date>) advancedQueryHelper.parse(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION)) != null) {
                                 datePairTime[0] = Pair.create(datePair[0].first.getTime(), datePair[0].second.getTime());
+                                negated[0] = advancedQueryHelper.isNegated(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION);
+                            }
 
                             filteredList.forEach(video -> {
                                 int videoViews = (int) video.getDateList().stream().filter(date -> {
                                     long time = CustomUtility.removeTime(date).getTime();
-                                    return time >= datePairTime[0].first && time <= datePairTime[0].second;
+                                    return (time >= datePairTime[0].first && time <= datePairTime[0].second) ^ negated[0];
                                 }).count();
                                 viewSum[0] += videoViews;
                                 watchedMinutes[0] += video.getLength() * videoViews;
@@ -1122,8 +1140,10 @@ public class VideoActivity extends AppCompatActivity {
                         itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.VISIBLE);
                         if (CustomUtility.stringExists(this.searchQuery) && advancedQueryHelper != null && advancedQueryHelper.has(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION)) {
                             final Pair<Date, Date>[] datePair = new Pair[]{null};
+                            boolean[] negated = {false};
                             datePair[0] = (Pair<Date, Date>) advancedQueryHelper.parse(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION);
-                            ((TextView) itemView.findViewById(R.id.listItem_video_Views)).setText(String.valueOf(video.getDateList().stream().filter(date -> !date.before(datePair[0].first) && !date.after(datePair[0].second)).count()));
+                            negated[0] = advancedQueryHelper.isNegated(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION);
+                            ((TextView) itemView.findViewById(R.id.listItem_video_Views)).setText(String.valueOf(video.getDateList().stream().filter(date -> (!date.before(datePair[0].first) && !date.after(datePair[0].second)) ^ negated[0]).count()));
                         } else
                             ((TextView) itemView.findViewById(R.id.listItem_video_Views)).setText(String.valueOf(video.getDateList().size()));
                     } else
@@ -1213,13 +1233,16 @@ public class VideoActivity extends AppCompatActivity {
                             if (CustomUtility.stringExists(searchQuery) && advancedQueryHelper != null && advancedQueryHelper.has(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION)) {
                                 final Pair<Date, Date>[] datePair = new Pair[]{null};
                                 final Pair<Long, Long>[] datePairTime = new Pair[]{null};
+                                boolean[] negated = {false};
 
-                                if ((datePair[0] = (Pair<Date, Date>) advancedQueryHelper.parse(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION)) != null)
+                                if ((datePair[0] = (Pair<Date, Date>) advancedQueryHelper.parse(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION)) != null) {
                                     datePairTime[0] = Pair.create(datePair[0].first.getTime(), datePair[0].second.getTime());
+                                    negated[0] = advancedQueryHelper.isNegated(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION);
+                                }
 
                                 dateList.filter(date -> {
                                     long time = CustomUtility.removeTime(date).getTime();
-                                    return time >= datePairTime[0].first && time <= datePairTime[0].second;
+                                    return (time >= datePairTime[0].first && time <= datePairTime[0].second) ^ negated[0];
                                 }, true);
                             }
                             Date max = dateList.stream().max(Date::compareTo).orElse(null);
@@ -1429,6 +1452,7 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     public void showCalenderDialog(List<Video> videoList, CustomDialog detailDialog) {
+        List<Date> oldDates = Utility.concatenateCollections(videoList, Video::getDateList);
         CustomDialog.Builder(this)
                 .setTitle("Ansichten Bearbeiten")
                 .setView(R.layout.dialog_edit_views)
@@ -1447,6 +1471,11 @@ public class VideoActivity extends AppCompatActivity {
                     this.reLoadVideoRecycler();
                 })
                 .enableTitleBackButton()
+                .addOnDialogDismiss(customDialog -> {
+                    List<Date> newDates = Utility.concatenateCollections(videoList, Video::getDateList);
+                    if (!oldDates.equals(newDates))
+                        setResult(RESULT_OK);
+                })
                 .show();
 
     }

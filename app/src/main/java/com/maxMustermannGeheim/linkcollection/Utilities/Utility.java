@@ -450,7 +450,7 @@ public class Utility {
                             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                                 String url = request.getUrl().toString();
                                 if (onVideoSelected != null && url.contains(".mp4")) {
-                                    CustomUtility.logD(null, "shouldInterceptRequest: %s", url);
+//                                    CustomUtility.logD(null, "shouldInterceptRequest: %s", url);
                                     videoUrls.add(url);
                                     videoUrls.distinct();
                                 }

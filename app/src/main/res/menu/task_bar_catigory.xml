@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:android="http://schemas.android.com/apk/res/android">
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <item
         android:id="@+id/taskBar_category_add"
@@ -46,6 +47,14 @@
         android:id="@+id/taskBar_category_random"
         android:icon="@drawable/ic_random"
         android:title="Zufall" />
+    <item
+        android:id="@+id/taskBar_category_showTime"
+        android:icon="@drawable/ic_time"
+        android:iconTint="#ffffff"
+        android:checkable="true"
+        android:visible="false"
+        tools:visible="true"
+        android:title="Zeit Anzeigen" />
     <item
         android:id="@+id/taskBar_category_showAs"
         android:icon="@drawable/ic_show_as_list"

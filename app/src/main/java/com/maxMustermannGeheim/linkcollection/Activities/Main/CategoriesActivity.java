@@ -81,6 +81,8 @@ public class CategoriesActivity extends AppCompatActivity {
     public static final int START_CATEGORY_SEARCH = 001;
     public static final String EXTRA_SEARCH_CATEGORY = "EXTRA_SEARCH_CATEGORY";
     public static final String EXTRA_SEARCH = "EXTRA_SEARCH";
+    private static final String ADVANCED_SEARCH_CRITERIA_DURATION = "du";
+    private static final String ADVANCED_SEARCH_CRITERIA_COUNT = "c";
     @Language("RegExp")
     public static String pictureRegex = "(https?:|\\/)(([\\w$\\-_.+!*'(),/?=&@:%#]|(?<=\\S)\\s(?=\\S))+?)\\.(jpe?g|png|svg|gif)"; //"(https?:|\\/)(([^\\s\\\\<>{}]|(?<=\\S)\\s(?=\\S))+?)\\.(jpe?g|png|svg)";//"((https:)|/)[^\\n]+?\\.(?:jpe?g|png|svg)";
     //    public static String pictureRegex = "((https:)|/)([,+%&?=()/|.|\\w|\\s|-])+\\.(?:jpe?g|png|svg)";
@@ -89,6 +91,7 @@ public class CategoriesActivity extends AppCompatActivity {
     public static final String uuidRegex = "\\b([a-zA-Z]+_)?[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b";
     private Helpers.SortHelper<Pair<ParentClass, Integer>> sortHelper;
     private boolean reverse = false;
+    private boolean showTime = false;
     private Menu toolBarMenu;
 
     enum SORT_TYPE {
@@ -149,6 +152,7 @@ public class CategoriesActivity extends AppCompatActivity {
 
     private List<Pair<ParentClass, Integer>> allDatenObjektPairList = new ArrayList<>();
     private Map<String, Integer> treeObjectCountMap = new HashMap<>();
+    private Helpers.AdvancedQueryHelper<Pair<ParentClass, Integer>> advancedQueryHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -157,7 +161,7 @@ public class CategoriesActivity extends AppCompatActivity {
         if (database == null)
             setContentView(R.layout.loading_screen);
         else
-            setContentView(R.layout.activity_catigorys);
+            setContentView(R.layout.activity_catigories);
         Settings.startSettings_ifNeeded(this);
         mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
@@ -195,6 +199,7 @@ public class CategoriesActivity extends AppCompatActivity {
         loadDatabase();
     }
 
+    @Nullable
     private Date getDateFromParentClass(ParentClass parentClass) {
         List<Video> allRelatedVideos = new CustomList<>();
         switch (category) {
@@ -222,7 +227,9 @@ public class CategoriesActivity extends AppCompatActivity {
 
     private void loadDatabase() {
         Runnable whenLoaded = () -> {
-            setContentView(R.layout.activity_catigorys);
+            setContentView(R.layout.activity_catigories);
+
+            setAdvancedQuery();
 
             setObjectAndCount();
             if (!isTreeCategory)
@@ -239,6 +246,38 @@ public class CategoriesActivity extends AppCompatActivity {
         }
         else
             whenLoaded.run();
+    }
+
+    private void setAdvancedQuery() {
+        advancedQueryHelper = new Helpers.AdvancedQueryHelper<Pair<ParentClass, Integer>>(this, findViewById(R.id.search))
+                .setRestFilter((restQuery, pairList) -> {
+                    if (!restQuery.equals("")) {
+                        String lowerCase = restQuery.toLowerCase();
+                        pairList.filter(pair -> ParentClass_Alias.containsQuery(pair.first, lowerCase), true);
+                    }
+                })
+                .addCriteria_defaultName(null, pair -> pair.first.getName())
+                .enableColoration()
+                .optionalModification(helper -> {
+                    if (!category.getSearchIn().equals(VideoActivity.class))
+                        return;
+                    helper
+                            .addCriteria(helper1 -> new Helpers.AdvancedQueryHelper.SearchCriteria<Pair<ParentClass, Integer>, Pair<Date, Date>>(ADVANCED_SEARCH_CRITERIA_DURATION, "((-?\\d+[dmy])|(-?\\d+[dmy]|_(-?\\d+)?[my])(;-?\\d+[dmy]))")
+                                    .setParser(VideoActivity.getDurationParser())
+                                    .setBuildPredicate(dateDatePair -> {
+                                        Pair<Long, Long> dateMinMaxTime = Pair.create(dateDatePair.first.getTime(), dateDatePair.second.getTime());
+                                        return pair -> {
+                                            Date date = getDateFromParentClass(pair.first);
+                                            if (date == null)
+                                                return false;
+                                            return date.getTime() >= dateMinMaxTime.first && date.getTime() <= dateMinMaxTime.second;
+                                        };
+
+                                    }));
+                })
+                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Pair<ParentClass, Integer>, Pair<Integer, Integer>>(ADVANCED_SEARCH_CRITERIA_COUNT, "(((\\d+)-?(\\d+)?)|((\\d+)?-?(\\d+)))")
+                        .setParser(VideoActivity.getNumberRangeParser())
+                        .setBuildPredicate(countMinMax -> pair -> pair.second >= countMinMax.first && (countMinMax.second == -1 || pair.second <= countMinMax.second)));
     }
 
     private void setLayout() {
@@ -283,10 +322,10 @@ public class CategoriesActivity extends AppCompatActivity {
     }
 
     private List<Pair<ParentClass, Integer>> filterList(List<Pair<ParentClass, Integer>> datenObjektPairList) {
-        if (!searchQuery.equals("")) {
-            return datenObjektPairList.stream().filter(datenObjektIntegerPair -> ParentClass_Alias.containsQuery(datenObjektIntegerPair.first, searchQuery.toLowerCase())).collect(Collectors.toList());
-        } else
-            return new ArrayList<>(datenObjektPairList);
+        com.finn.androidUtilities.CustomList<Pair<ParentClass, Integer>> filteredList = new com.finn.androidUtilities.CustomList<>(datenObjektPairList);
+        if (CustomUtility.stringExists(searchQuery))
+            advancedQueryHelper.filterFull(filteredList);
+        return filteredList;
     }
 
     private List<Pair<ParentClass, Integer>> sortList(List<Pair<ParentClass, Integer>> datenObjektPairList) {
@@ -416,6 +455,11 @@ public class CategoriesActivity extends AppCompatActivity {
     //  ------------------------- Recycler ------------------------->
     private void loadRecycler() {
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+        int topMargin = CustomUtility.dpToPx(5);
+        int bottomMargin = CustomUtility.dpToPx(21);
+        int defaultMargin = CustomUtility.dpToPx(3);
+        int itemHeight = CustomUtility.dpToPx(70);
+        final int[] size = new int[1];
         customRecycler = new CustomRecycler<Pair<ParentClass, Integer>>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_catigory_item)
                 .setGetActiveObjectList((customRecycler) -> {
@@ -423,17 +467,28 @@ public class CategoriesActivity extends AppCompatActivity {
 
                     TextView noItem = findViewById(R.id.no_item);
                     String text = categories_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche";
-                    int size = filteredList.size();
+                    size[0] = filteredList.size();
 
-                    noItem.setText(size == 0 ? text : "");
-                    String elementCountText = size > 1 ? size + " Elemente" : (size == 1 ? "Ein" : "Kein") + " Element";
+                    noItem.setText(size[0] == 0 ? text : "");
+                    String elementCountText = size[0] > 1 ? size[0] + " Elemente" : (size[0] == 1 ? "Ein" : "Kein") + " Element";
                     elementCount.setText(elementCountText);
                     return filteredList;
 
                 })
                 .setSetItemContent((customRecycler, itemView, parentClassIntegerPair, index) -> {
+                    FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, itemHeight);
+                    if (index < columnCount)
+                        params.setMargins(defaultMargin, topMargin, defaultMargin, defaultMargin);
+                    else if (index + 1 >= size[0] - ((size[0] - 1) % columnCount))
+                        params.setMargins(defaultMargin, defaultMargin, defaultMargin, bottomMargin);
+                    else
+                        params.setMargins(defaultMargin, defaultMargin, defaultMargin, defaultMargin);
+                    itemView.setLayoutParams(params);
+
+                    // ---------------
+
                     ParentClass parentClass = parentClassIntegerPair.first;
-                    ((TextView) itemView.findViewById(R.id.listItem_catigoryItem_name)).setText(parentClass.getName());
+                    ((TextView) itemView.findViewById(R.id.listItem_categoryItem_name)).setText(parentClass.getName());
 
                     if (category == CATEGORIES.PERSON) {
                         final double[] allOwn = {0};
@@ -459,9 +514,16 @@ public class CategoriesActivity extends AppCompatActivity {
                         if (stringBuilder.toString().isEmpty())
                             stringBuilder.append("<Keine Schulden>", new StyleSpan(Typeface.ITALIC), Spannable.SPAN_COMPOSING);
 
-                        ((TextView) itemView.findViewById(R.id.userlistItem_catigoryItem_count)).setText(stringBuilder);
-                    } else
-                        ((TextView) itemView.findViewById(R.id.userlistItem_catigoryItem_count)).setText(String.valueOf(parentClassIntegerPair.second));
+                        ((TextView) itemView.findViewById(R.id.userListItem_categoryItem_count)).setText(stringBuilder);
+                    } else {
+                        TextView itemCountTextView = itemView.findViewById(R.id.userListItem_categoryItem_count);
+                        String timeExtra = "";
+                        Date date;
+                        if (showTime && (date = getDateFromParentClass(parentClass)) != null) {
+                            timeExtra = " – " + Helpers.DurationFormatter.formatDefault(date, new Date(), "'%d% d'");
+                        }
+                        itemCountTextView.setText(parentClassIntegerPair.second + timeExtra);
+                    }
 
                     ImageView listItem_categoryItem_image = itemView.findViewById(R.id.listItem_categoryItem_image);
                     if (parentClass instanceof ParentClass_Image && Utility.stringExists(((ParentClass_Image) parentClass).getImagePath())) {
@@ -511,7 +573,7 @@ public class CategoriesActivity extends AppCompatActivity {
                         reLoadRecycler();
                     }, null);
                 })
-                .enableFastScroll((customRecycler1, pair, integer) -> {
+                .enableFastScroll(Pair.create(topMargin, bottomMargin), (customRecycler1, pair, integer) -> {
                     switch (sort_type) {
                         case NAME:
                             return pair.first.getName().substring(0, 1);
@@ -527,9 +589,7 @@ public class CategoriesActivity extends AppCompatActivity {
                     }
                 })
                 .generate();
-
     }
-
 
     private void loadTreeRecycler() {
         // ToDo: Löschen doppelt bestätigen wenn Kinder noch vorhanden
@@ -942,6 +1002,7 @@ public class CategoriesActivity extends AppCompatActivity {
 
         if (setToolbarTitle != null) setToolbarTitle.run();
         menu.findItem(R.id.taskBar_category_sortByTime).setVisible(category.getSearchIn().equals(VideoActivity.class));
+        menu.findItem(R.id.taskBar_category_showTime).setVisible(category.getSearchIn().equals(VideoActivity.class));
         menu.findItem(R.id.taskBar_category_sortTree).setVisible(isTreeCategory);
         if (isTreeCategory) {
             menu.findItem(R.id.taskBar_category_random).setVisible(false);
@@ -1041,14 +1102,18 @@ public class CategoriesActivity extends AppCompatActivity {
                 }
                 customRecycler.setRowOrColumnCount(columnCount).reloadNew();
                 break;
-
+            case R.id.taskBar_category_showTime:
+                showTime = !item.isChecked();
+                item.setChecked(showTime);
+                reLoadRecycler();
+                break;
             case R.id.taskBar_category_sortTree:
                 ParentClass_Tree.showReorderTreeDialog(this, category, customDialog -> reLoadRecycler());
                 break;
+
             case android.R.id.home:
                 finish();
                 break;
-
         }
         return true;
     }

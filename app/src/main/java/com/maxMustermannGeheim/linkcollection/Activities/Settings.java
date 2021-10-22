@@ -1,5 +1,6 @@
 package com.maxMustermannGeheim.linkcollection.Activities;
 
+import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
@@ -97,8 +98,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import io.fabric.sdk.android.services.concurrency.AsyncTask;
-
+import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 import static com.maxMustermannGeheim.linkcollection.Activities.Settings.Space.allSpaces;
 
 public class Settings extends AppCompatActivity {
@@ -160,6 +160,7 @@ public class Settings extends AppCompatActivity {
     Database.DatabaseReloadListener databaseReloadListener;
     CustomRecycler spaceRecycler_customRecycler;
     private boolean spaceOrderChanged;
+    private SharedPreferences mySPR;
 
     //  ----- Static ----->
     public static boolean startSettings_ifNeeded(AppCompatActivity context) {
@@ -312,15 +313,22 @@ public class Settings extends AppCompatActivity {
 
                     });
 
-                    view.findViewById(R.id.dialogSettingsVideo_more_permutations).setOnClickListener(v -> {
-                        Toast.makeText(context, "Einen Moment bitte...", Toast.LENGTH_SHORT).show();
-                        new AsyncTask<Object, Object, Object>() {
-                            @Override
-                            protected Object doInBackground(Object... objects) {
-                                VideoActivity.showIntersectionsDialog(settingsContext);
-                                return null;
-                            }
-                        }.doInBackground();
+                    view.findViewById(R.id.dialogSettingsVideo_more_intersections).setOnClickListener(v -> {
+                        CustomDialog.Builder(settingsContext)
+                                .setTitle("Überschneidungen Finden")
+                                .setText("Dies kann einen Moment dauern...")
+                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                                .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                                    VideoActivity.showIntersectionsDialog(settingsContext);
+                                })
+                                .show();
+//                        Toast.makeText(context, "Einen Moment bitte...", Toast.LENGTH_SHORT).show();
+//                        new AsyncTask<Object, Object, Object>() {
+//                            @Override
+//                            protected Object doInBackground(Object... objects) {
+//                                return null;
+//                            }
+//                        }.doInBackground();
                     });
 
                     ((TextView) view.findViewById(R.id.dialogSettingsVideo_edit_parseUrl_added)).setText(database.urlParserMap.values().stream().map(UrlParser::getName).collect(Collectors.joining(", ")));
@@ -751,24 +759,42 @@ public class Settings extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_settings);
 
         startSettings_ifNeeded(this);
 
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
-        Utility.applyExpendableToolbar_scrollView(this, findViewById(R.id.scrollView), appBarLayout);
+        if ((database = Database.getInstance()) == null)
+            setContentView(R.layout.loading_screen);
+        else
+            setContentView(R.layout.activity_settings);
 
+        mySPR = getSharedPreferences(SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
-        getViews();
+        loadDatabase();
+    }
 
-        setSettings();
-        setListeners();
+    private void loadDatabase() {
+        @SuppressLint("RestrictedApi") Runnable whenLoaded = () -> {
+            setContentView(R.layout.activity_settings);
 
-//        databaseReloadListener = Database.addDatabaseReloadListener(database1 -> {
-//            Toast.makeText(this, "Datenbank neu geladen", Toast.LENGTH_SHORT).show();
-//        });
+            Toolbar toolbar = findViewById(R.id.toolbar);
+            setSupportActionBar(toolbar);
+            AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
+            Utility.applyExpendableToolbar_scrollView(this, findViewById(R.id.scrollView), appBarLayout);
+
+            getViews();
+
+            setSettings();
+            setListeners();
+        };
+
+        if (database == null || !Database.isReady()) {
+            Database.getInstance(mySPR, newDatabase -> {
+                database = newDatabase;
+                whenLoaded.run();
+            }, false);
+        } else
+            whenLoaded.run();
+
     }
 
     private void getViews() {
@@ -1472,6 +1498,7 @@ public class Settings extends AppCompatActivity {
 
                             }, false)
                             .alignPreviousButtonsLeft()
+                            .disableScroll()
                             .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> layoutId_SetViewContent_OnClick_quadruple.third.runOnClick(customDialog1, this));
                 else
                     customDialog

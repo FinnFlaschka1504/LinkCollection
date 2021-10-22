@@ -174,7 +174,6 @@ public class MediaActivity extends AppCompatActivity {
             return;
         }
 
-
         Settings.startSettings_ifNeeded(this);
         String stringExtra = Settings.getSingleSetting(this, Settings.SETTING_SPACE_NAMES_ + Settings.Space.SPACE_MEDIA);
         if (stringExtra != null) {

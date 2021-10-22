@@ -36,15 +36,17 @@
         android:orientation="vertical">
 
         <TextView
-            android:id="@+id/listItem_catigoryItem_name"
+            android:id="@+id/listItem_categoryItem_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="5dp"
             android:text="Object"
+            android:singleLine="true"
+            android:ellipsize="end"
             android:textAlignment="center" />
 
         <TextView
-            android:id="@+id/userlistItem_catigoryItem_count"
+            android:id="@+id/userListItem_categoryItem_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:focusable="true"

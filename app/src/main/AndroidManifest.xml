@@ -113,7 +113,8 @@
         <activity
             android:name=".Activities.Main.CategoriesActivity"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:theme="@style/AppTheme.NoTitle" />
+            android:theme="@style/AppTheme.NoTitle"
+            android:configChanges="orientation|screenSize"/>
         <activity
             android:name=".Activities.Settings"
             android:configChanges="orientation|screenSize"

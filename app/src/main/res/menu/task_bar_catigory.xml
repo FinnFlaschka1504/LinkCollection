@@ -56,6 +56,11 @@
         tools:visible="true"
         android:title="Zeit Anzeigen" />
     <item
+        android:id="@+id/taskBar_category_advancedQuery"
+        android:icon="@drawable/ic_search"
+        android:iconTint="#ffffff"
+        android:title="Erweiterte Suche" />
+    <item
         android:id="@+id/taskBar_category_showAs"
         android:icon="@drawable/ic_show_as_list"
         android:title="Ansicht ändern" />

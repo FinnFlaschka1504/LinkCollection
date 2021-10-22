@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.InputType;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -20,6 +21,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.SearchView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -33,6 +35,7 @@ import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
@@ -243,8 +246,7 @@ public class CategoriesActivity extends AppCompatActivity {
                 database = newDatabase;
                 whenLoaded.run();
             }, false);
-        }
-        else
+        } else
             whenLoaded.run();
     }
 
@@ -256,28 +258,115 @@ public class CategoriesActivity extends AppCompatActivity {
                         pairList.filter(pair -> ParentClass_Alias.containsQuery(pair.first, lowerCase), true);
                     }
                 })
-                .addCriteria_defaultName(null, pair -> pair.first.getName())
+                .addCriteria_defaultName(R.id.dialog_advancedSearch_category_name, R.id.dialog_advancedSearch_category_negationLayout_name, pair -> pair.first.getName())
                 .enableColoration()
+                .setDialogOptions(R.layout.dialog_advanced_search_category, null)
                 .optionalModification(helper -> {
                     if (!category.getSearchIn().equals(VideoActivity.class))
                         return;
-                    helper
-                            .addCriteria(helper1 -> new Helpers.AdvancedQueryHelper.SearchCriteria<Pair<ParentClass, Integer>, Pair<Date, Date>>(ADVANCED_SEARCH_CRITERIA_DURATION, "((-?\\d+[dmy])|(-?\\d+[dmy]|_(-?\\d+)?[my])(;-?\\d+[dmy]))")
-                                    .setParser(VideoActivity.getDurationParser())
-                                    .setBuildPredicate(dateDatePair -> {
-                                        Pair<Long, Long> dateMinMaxTime = Pair.create(dateDatePair.first.getTime(), dateDatePair.second.getTime());
-                                        return pair -> {
-                                            Date date = getDateFromParentClass(pair.first);
-                                            if (date == null)
-                                                return false;
-                                            return date.getTime() >= dateMinMaxTime.first && date.getTime() <= dateMinMaxTime.second;
-                                        };
+                    helper.addCriteria(helper1 -> new Helpers.AdvancedQueryHelper.SearchCriteria<Pair<ParentClass, Integer>, Pair<Date, Date>>(ADVANCED_SEARCH_CRITERIA_DURATION, "((-?\\d+[dmy])|(-?\\d+[dmy]|_(-?\\d+)?[my])(;-?\\d+[dmy]))")
+                            .setParser(VideoActivity.getDurationParser())
+                            .setBuildPredicate(dateDatePair -> {
+                                Pair<Long, Long> dateMinMaxTime = Pair.create(dateDatePair.first.getTime(), dateDatePair.second.getTime());
+                                return pair -> {
+                                    Date date = getDateFromParentClass(pair.first);
+                                    if (date == null)
+                                        return false;
+                                    return date.getTime() >= dateMinMaxTime.first && date.getTime() <= dateMinMaxTime.second;
+                                };
 
-                                    }));
+                            })
+                            .setApplyDialog((customDialog, dateDatePair, criteria) -> {
+                                customDialog.findViewById(R.id.dialog_advancedSearch_category_dateRangeOrDuration_layout).setVisibility(View.VISIBLE);
+
+                                boolean[] negated = {false};
+                                final String[] pivot = {""};
+                                final String[] duration = {""};
+                                final Runnable[] applyStrings = {() -> {}};
+                                Runnable resetDateRange = () -> {};
+
+                                if (criteria.has()) {
+                                    String[] split = criteria.sub.split(";");
+                                    if (split.length == 1) {
+                                        duration[0] = split[0];
+                                    } else {
+                                        pivot[0] = split[0];
+                                        duration[0] = split[1];
+                                    }
+                                }
+
+
+                                TextView dialog_advancedSearch_viewed_text = customDialog.findViewById(R.id.dialog_advancedSearch_category_dateRange_text);
+                                TextInputEditText since_edit = customDialog.findViewById(R.id.dialog_advancedSearch_category_viewed_since_edit);
+                                Spinner since_unit = customDialog.findViewById(R.id.dialog_advancedSearch_category_viewed_since_unit);
+                                TextInputEditText duration_edit = customDialog.findViewById(R.id.dialog_advancedSearch_category_viewed_duration_edit);
+                                Spinner duration_unit = customDialog.findViewById(R.id.dialog_advancedSearch_category_viewed_duration_unit);
+
+                                VideoActivity.applyDurationDialog(criteria, pivot, duration, applyStrings, dialog_advancedSearch_viewed_text, resetDateRange, since_edit, since_unit, duration_edit, duration_unit);
+
+                                negated[0] = criteria.isNegated();
+                                Helpers.AdvancedQueryHelper.applyNegationButton(customDialog.findViewById(R.id.dialog_advancedSearch_category_negationLayout_dateRangeOrDuration), negated);
+
+                                return customDialog1 -> {
+                                    if (CustomUtility.stringExists(duration[0])) {
+                                        String dateDurationFilter;
+                                        if (CustomUtility.stringExists(pivot[0]))
+                                            dateDurationFilter = String.format(Locale.getDefault(), "%s%s:%s;%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_DURATION, pivot[0], duration[0]);
+                                        else
+                                            dateDurationFilter = String.format(Locale.getDefault(), "%s%s:%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_DURATION, duration[0]);
+                                        return dateDurationFilter;
+                                    }
+
+                                    return null;
+                                };
+                            }));
                 })
                 .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Pair<ParentClass, Integer>, Pair<Integer, Integer>>(ADVANCED_SEARCH_CRITERIA_COUNT, "(((\\d+)-?(\\d+)?)|((\\d+)?-?(\\d+)))")
                         .setParser(VideoActivity.getNumberRangeParser())
-                        .setBuildPredicate(countMinMax -> pair -> pair.second >= countMinMax.first && (countMinMax.second == -1 || pair.second <= countMinMax.second)));
+                        .setBuildPredicate(countMinMax -> pair -> pair.second >= countMinMax.first && (countMinMax.second == -1 || pair.second <= countMinMax.second))
+                        .setApplyDialog((customDialog, countMinMax, criteria) -> {
+                            boolean[] negated = {false};
+                            final Integer[] minCount = {null};
+                            final Integer[] maxCount = {null};
+
+                            // ---------------
+
+                            if (criteria.has()) {
+                                minCount[0] = countMinMax.first;
+                                maxCount[0] = countMinMax.second;
+                                negated[0] = criteria.isNegated();
+                            }
+                            Helpers.AdvancedQueryHelper.applyNegationButton(customDialog.findViewById(R.id.dialog_advancedSearch_category_negationLayout_count), negated);
+
+                            // ---------------
+
+                            TextInputEditText minLength_edit = customDialog.findViewById(R.id.dialog_advancedSearch_category_count_min_edit);
+                            TextInputEditText maxLength_edit = customDialog.findViewById(R.id.dialog_advancedSearch_category_count_max_edit);
+
+                            if (minCount[0] != null) {
+                                minLength_edit.setText(CustomUtility.isNotValueReturnOrElse(minCount[0], -1, String::valueOf, integer -> null));
+                                maxLength_edit.setText(CustomUtility.isNotValueReturnOrElse(maxCount[0], -1, String::valueOf, integer -> null));
+                            }
+
+                            // ---------------
+
+                            return customDialog1 -> {
+                                String minLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_category_count_min_edit)).getText().toString().trim();
+                                String maxLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_category_count_max_edit)).getText().toString().trim();
+
+                                if (CustomUtility.stringExists(minLength_str) && CustomUtility.stringExists(maxLength_str)) {
+                                    if (Objects.equals(minLength_str, maxLength_str))
+                                        return String.format(Locale.getDefault(), "%s:%s", ADVANCED_SEARCH_CRITERIA_COUNT, minLength_str);
+                                    else
+                                        return String.format(Locale.getDefault(), "%s:%s-%s", ADVANCED_SEARCH_CRITERIA_COUNT, minLength_str, maxLength_str);
+                                } else if (CustomUtility.stringExists(minLength_str))
+                                    return String.format(Locale.getDefault(), "%s%s:%s-", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_COUNT, minLength_str);
+                                else if (CustomUtility.stringExists(maxLength_str))
+                                    return String.format(Locale.getDefault(), "%s%s:-%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_COUNT, maxLength_str);
+                                return null;
+                            };
+                        }));
+
     }
 
     private void setLayout() {
@@ -747,12 +836,12 @@ public class CategoriesActivity extends AppCompatActivity {
 
                     com.finn.androidUtilities.Helpers.TextInputHelper helper =
                             new com.finn.androidUtilities.Helpers.TextInputHelper(dialog_editTmdbCategory_name_layout)
-                            .defaultDialogValidation(customDialog)
-                            .setValidation(dialog_editTmdbCategory_name_layout, (validator, text) -> {
-                                ParentClass parentClass = Utility.findObjectByName(category, text);
-                                if (parentClass != null && parentClass != oldObject)
-                                    validator.setInvalid(category.singular + " bereits vorhanden");
-                            });
+                                    .defaultDialogValidation(customDialog)
+                                    .setValidation(dialog_editTmdbCategory_name_layout, (validator, text) -> {
+                                        ParentClass parentClass = Utility.findObjectByName(category, text);
+                                        if (parentClass != null && parentClass != oldObject)
+                                            validator.setInvalid(category.singular + " bereits vorhanden");
+                                    });
 
                     if (editObject instanceof ParentClass_Alias) {
 //                                    helper.setInputType(dialog_editTmdbCategory_name_layout, com.finn.androidUtilities.Helpers.TextInputHelper.INPUT_TYPE.MULTI_LINE);
@@ -1008,6 +1097,17 @@ public class CategoriesActivity extends AppCompatActivity {
             menu.findItem(R.id.taskBar_category_random).setVisible(false);
             menu.findItem(R.id.taskBar_category_showAs).setVisible(false);
         }
+
+        new Handler().post(() -> {
+            final View v = findViewById(R.id.taskBar_category_sort);
+
+            if (v != null) {
+                v.setOnLongClickListener(v1 -> {
+                    advancedQueryHelper.showAdvancedSearchDialog();
+                    return true;
+                });
+            }
+        });
         return true;
     }
 
@@ -1109,6 +1209,9 @@ public class CategoriesActivity extends AppCompatActivity {
                 break;
             case R.id.taskBar_category_sortTree:
                 ParentClass_Tree.showReorderTreeDialog(this, category, customDialog -> reLoadRecycler());
+                break;
+            case R.id.taskBar_category_advancedQuery:
+                advancedQueryHelper.showAdvancedSearchDialog();
                 break;
 
             case android.R.id.home:

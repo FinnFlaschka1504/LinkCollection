@@ -1616,14 +1616,14 @@ public class Helpers {
         }
 
         public AdvancedQueryHelper<T> addCriteria_defaultName() {
-            return addCriteria_defaultName(null);
+            return addCriteria_defaultName(null, null);
         }
 
-        public AdvancedQueryHelper<T> addCriteria_defaultName(@Nullable @IdRes Integer editTextId) {
-            return addCriteria_defaultName(editTextId, t -> ((ParentClass) t).getName());
+        public AdvancedQueryHelper<T> addCriteria_defaultName(@Nullable @IdRes Integer editTextId, @Nullable @IdRes Integer negatedLayoutId) {
+            return addCriteria_defaultName(editTextId, negatedLayoutId, t -> ((ParentClass) t).getName());
         }
 
-        public AdvancedQueryHelper<T> addCriteria_defaultName(@Nullable @IdRes Integer editTextId, Utility.GenericReturnInterface<T, String> toString) {
+        public AdvancedQueryHelper<T> addCriteria_defaultName(@Nullable @IdRes Integer editTextId, @Nullable @IdRes Integer negatedLayoutId, Utility.GenericReturnInterface<T, String> toString) {
             SearchCriteria<T, String> criteria = new SearchCriteria<T, String>(ADVANCED_SEARCH_CRITERIA_NAME, "[^]]+?")
                     .setParser(s -> s)
                     .setBuildPredicate(sub -> {
@@ -1633,13 +1633,18 @@ public class Helpers {
                     });
             if (editTextId != null) {
                 criteria.setApplyDialog((customDialog, s, criteria1) -> {
+                    boolean[] negated = {false};
+                    if (negatedLayoutId != null) {
+                        negated[0] = criteria1.isNegated();
+                        Helpers.AdvancedQueryHelper.applyNegationButton(customDialog.findViewById(negatedLayoutId), negated);
+                    }
                     EditText editText = customDialog.findViewById(editTextId);
                     if (editText != null) {
                         editText.setText(s);
                         return customDialog1 -> {
                             String text = editText.getText().toString();
                             if (CustomUtility.stringExists(text))
-                                return ADVANCED_SEARCH_CRITERIA_NAME + ":" + text;
+                                return (negated[0] ? "!" : "") + ADVANCED_SEARCH_CRITERIA_NAME + ":" + text;
                             else
                                 return null;
                         };
@@ -1995,6 +2000,20 @@ public class Helpers {
 
             return this;
         }
+
+        public static void applyNegationButton(LinearLayout parentLayout, boolean[] isNegated) {
+            if (parentLayout.getChildCount() >= 2) {
+                View child0 = parentLayout.getChildAt(0);
+                View child1 = parentLayout.getChildAt(1);
+                if (child0 instanceof TextView && child1 instanceof TextView) {
+                    child1.setVisibility(isNegated[0] ? View.VISIBLE : View.GONE);
+                    child0.setOnClickListener(v -> {
+                        isNegated[0] ^= true;
+                        child1.setVisibility(isNegated[0] ? View.VISIBLE : View.GONE);
+                    });
+                }
+            }
+        }
         /**
          * <------------------------- Dialog -------------------------
          */
@@ -2192,7 +2211,6 @@ public class Helpers {
             }
         }
     }
-
     /** <------------------------- AdvancedSearch ------------------------- */
 
 

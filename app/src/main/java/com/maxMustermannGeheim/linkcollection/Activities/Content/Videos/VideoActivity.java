@@ -450,7 +450,7 @@ public class VideoActivity extends AppCompatActivity {
                         videos.filterAnd(restQuery.split("&"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), true);
                     }
                 })
-                .addCriteria_defaultName(R.id.dialog_advancedSearch_video_name)
+                .addCriteria_defaultName(R.id.dialog_advancedSearch_video_name, R.id.dialog_advancedSearch_video_negationLayout_name)
                 .enableColoration()
                 .setDialogOptions(R.layout.dialog_advanced_search_video, null)
                 .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Float, Float>>(ADVANCED_SEARCH_CRITERIA_RATING, "(([0-4]((\\.|,)\\d{1,2})?)|5((\\.|,)00?)?)(-(([0-4]((\\5|\\7|(?<![,.]\\d{1,2}-\\d)[,.])\\d{1,2})?)|5((\\5|\\7|(?<![,.]\\d{1,2}-\\d)[,.])00?)?))?")
@@ -463,6 +463,7 @@ public class VideoActivity extends AppCompatActivity {
                         })
                         .setBuildPredicate(ratingMinMax -> video -> video.getRating() >= ratingMinMax.first && video.getRating() <= ratingMinMax.second)
                         .setApplyDialog((customDialog, ratingMinMax, criteria) -> {
+                            boolean[] negated = {false};
                             boolean[] singleMode = {false};
                             final int[] min = {0};
                             final int[] max = {20};
@@ -473,7 +474,9 @@ public class VideoActivity extends AppCompatActivity {
                                 min[0] = Math.round(ratingMinMax.first * 4);
                                 max[0] = Math.round(ratingMinMax.second * 4);
                                 singleMode[0] = ratingMinMax.first.equals(ratingMinMax.second);
+                                negated[0] = criteria.isNegated();
                             }
+                            Helpers.AdvancedQueryHelper.applyNegationButton(customDialog.findViewById(R.id.dialog_advancedSearch_video_negationLayout_rating), negated);
 
                             // ---------------
 
@@ -547,9 +550,9 @@ public class VideoActivity extends AppCompatActivity {
                                 if (min[0] != 0 || max[0] != 20) {
                                     String ratingFilter;
                                     if (singleMode[0])
-                                        ratingFilter = String.format(Locale.getDefault(), "%s:%.2f", ADVANCED_SEARCH_CRITERIA_RATING, min[0] / 4d);
+                                        ratingFilter = String.format(Locale.getDefault(), "%s%s:%.2f", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_RATING, min[0] / 4d);
                                     else
-                                        ratingFilter = String.format(Locale.getDefault(), "%s:%.2f-%.2f", ADVANCED_SEARCH_CRITERIA_RATING, min[0] / 4d, max[0] / 4d);
+                                        ratingFilter = String.format(Locale.getDefault(), "%s%s:%.2f-%.2f", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_RATING, min[0] / 4d, max[0] / 4d);
 
                                     return ratingFilter;
                                 } else
@@ -560,6 +563,7 @@ public class VideoActivity extends AppCompatActivity {
                         .setParser(getNumberRangeParser())
                         .setBuildPredicate(lengthMinMax -> video -> video.getLength() >= lengthMinMax.first && (lengthMinMax.second == -1 || video.getLength() <= lengthMinMax.second))
                         .setApplyDialog((customDialog, lengthMinMax, criteria) -> {
+                            boolean[] negated = {false};
                             final Integer[] minLength = {null};
                             final Integer[] maxLength = {null};
 
@@ -568,7 +572,9 @@ public class VideoActivity extends AppCompatActivity {
                             if (criteria.has()) {
                                 minLength[0] = lengthMinMax.first;
                                 maxLength[0] = lengthMinMax.second;
+                                negated[0] = criteria.isNegated();
                             }
+                            Helpers.AdvancedQueryHelper.applyNegationButton(customDialog.findViewById(R.id.dialog_advancedSearch_video_negationLayout_length), negated);
 
                             // ---------------
 
@@ -592,9 +598,9 @@ public class VideoActivity extends AppCompatActivity {
                                     else
                                         return String.format(Locale.getDefault(), "l:%s-%s", minLength_str, maxLength_str);
                                 } else if (CustomUtility.stringExists(minLength_str))
-                                    return String.format(Locale.getDefault(), "%s:%s-", ADVANCED_SEARCH_CRITERIA_LENGTH, minLength_str);
+                                    return String.format(Locale.getDefault(), "%s%s:%s-", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_LENGTH, minLength_str);
                                 else if (CustomUtility.stringExists(maxLength_str))
-                                    return String.format(Locale.getDefault(), "%s:-%s", ADVANCED_SEARCH_CRITERIA_LENGTH, maxLength_str);
+                                    return String.format(Locale.getDefault(), "%s%s:-%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_LENGTH, maxLength_str);
                                 return null;
                             };
                         }))
@@ -639,6 +645,7 @@ public class VideoActivity extends AppCompatActivity {
 
                             // ---------------
 
+                            boolean[] negated = {false};
                             final Date[] from = {null};
                             final Date[] to = {null};
 
@@ -647,8 +654,7 @@ public class VideoActivity extends AppCompatActivity {
 
                             SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.ENGLISH);
                             int timezoneOffset = new Date().getTimezoneOffset() * 60 * 1000;
-                            final Runnable[] applyStrings = {() -> {
-                            }};
+                            final Runnable[] applyStrings = {() -> {}};
 
                             // ---------------
 
@@ -670,6 +676,8 @@ public class VideoActivity extends AppCompatActivity {
                                 }
                             }
 
+                            negated[0] = durationCriteria.isNegated() || dateCriteria.isNegated();
+                            Helpers.AdvancedQueryHelper.applyNegationButton(customDialog.findViewById(R.id.dialog_advancedSearch_video_negationLayout_dateRangeOrDuration), negated);
 
                             /**  ------------------------- DateRange ------------------------->  */
                             TextView dialog_advancedSearch_viewed_text = customDialog.findViewById(R.id.dialog_advancedSearch_video_dateRange_text);
@@ -726,129 +734,7 @@ public class VideoActivity extends AppCompatActivity {
                             Spinner since_unit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_since_unit);
                             TextInputEditText duration_edit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_duration_edit);
                             Spinner duration_unit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_duration_unit);
-                            Map<String, Integer> modeMap = new HashMap<>();
-                            modeMap.put("d", 0);
-                            modeMap.put("m", 1);
-                            modeMap.put("y", 2);
-                            modeMap.put("_m", 3);
-                            modeMap.put("_y", 4);
-
-                            applyStrings[0] = () -> {
-                                if (CustomUtility.stringExists(duration[0])) {
-                                    duration_edit.setText(CustomUtility.subString(duration[0], 0, -1));
-                                    String durationMode = CustomUtility.subString(duration[0], -1);
-                                    duration_unit.setSelection(modeMap.get(durationMode));
-                                } else {
-                                    if (!duration_edit.getText().toString().equals(""))
-                                        duration_edit.setText("");
-                                    if (duration_unit.getSelectedItemPosition() != 0)
-                                        duration_unit.setSelection(0);
-                                }
-
-                                if (CustomUtility.stringExists(pivot[0])) {
-                                    boolean floored = pivot[0].contains("_");
-                                    since_edit.setText(CustomUtility.subString(pivot[0], floored ? 1 : 0, -1));
-                                    String sinceMode = CustomUtility.subString(pivot[0], -1);
-                                    since_unit.setSelection(modeMap.get((floored ? "_" : "") + sinceMode));
-                                } else {
-                                    if (!since_edit.getText().toString().equals(""))
-                                        since_edit.setText("");
-                                    if (since_unit.getSelectedItemPosition() != 0)
-                                        since_unit.setSelection(0);
-                                }
-                            };
-                            applyStrings[0].run();
-
-                            Runnable updateStrings = () -> {
-                                Set<String> since_keysByValue = Utility.getKeysByValue(modeMap, since_unit.getSelectedItemPosition());
-                                String since_mode = since_keysByValue.toArray(new String[0])[0];
-                                String since_text = since_edit.getText().toString();
-
-                                Set<String> duration_keysByValue = Utility.getKeysByValue(modeMap, duration_unit.getSelectedItemPosition());
-                                String duration_mode = duration_keysByValue.toArray(new String[0])[0];
-                                String duration_text = duration_edit.getText().toString();
-
-                                boolean sinceExists = (CustomUtility.stringExists(since_text) && !since_text.equals("-")) || since_mode.contains("_");
-                                boolean durationExists = CustomUtility.stringExists(duration_text) && !duration_text.equals("-");
-
-                                if (durationExists) {
-                                    duration[0] = (duration_mode.contains("_") ? "_" : "") + duration_text + duration_mode.replaceAll("_", "");
-                                    if (sinceExists)
-                                        pivot[0] = (since_mode.contains("_") ? "_" : "") + since_text + since_mode.replaceAll("_", "");
-                                    else
-                                        pivot[0] = "";
-                                } else {
-                                    pivot[0] = "";
-                                    duration[0] = "";
-                                }
-
-                                if (CustomUtility.stringExists(duration[0])) {
-                                    String dateDurationFilter;
-                                    if (CustomUtility.stringExists(pivot[0]))
-                                        dateDurationFilter = String.format(Locale.getDefault(), "%s;%s", pivot[0], duration[0]);
-                                    else
-                                        dateDurationFilter = duration[0];
-                                    Pair<Date, Date> parseResult = durationCriteria.parse(dateDurationFilter);
-                                    if (parseResult != null) {
-                                        Date today = CustomUtility.removeTime(new Date());
-                                        dialog_advancedSearch_viewed_text.setText(String.format("%s - %s",
-                                                parseResult.first.equals(today) ? "Heute" : Utility.formatDate(Utility.DateFormat.DATE_DOT, parseResult.first),
-                                                parseResult.second.equals(today) ? "Heute" : Utility.formatDate(Utility.DateFormat.DATE_DOT, parseResult.second)));
-                                    }
-                                } else
-                                    dialog_advancedSearch_viewed_text.setText("Nicht ausgewählt");
-                            };
-
-                            since_edit.addTextChangedListener(new TextWatcher() {
-                                @Override
-                                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                                }
-
-                                @Override
-                                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                                }
-
-                                @Override
-                                public void afterTextChanged(Editable s) {
-                                    if (CustomUtility.stringExists(s.toString())) {
-                                        resetDateRange.run();
-                                    } else
-                                        pivot[0] = "";
-
-                                    updateStrings.run();
-                                }
-                            });
-                            duration_edit.addTextChangedListener(new TextWatcher() {
-                                @Override
-                                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                                }
-
-                                @Override
-                                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                                }
-
-                                @Override
-                                public void afterTextChanged(Editable s) {
-                                    if (CustomUtility.stringExists(s.toString()))
-                                        resetDateRange.run();
-
-                                    updateStrings.run();
-                                }
-                            });
-
-                            AdapterView.OnItemSelectedListener spinnerListener = new AdapterView.OnItemSelectedListener() {
-                                @Override
-                                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                                    updateStrings.run();
-                                }
-
-                                @Override
-                                public void onNothingSelected(AdapterView<?> parent) {
-
-                                }
-                            };
-                            since_unit.setOnItemSelectedListener(spinnerListener);
-                            duration_unit.setOnItemSelectedListener(spinnerListener);
+                            applyDurationDialog(durationCriteria, pivot, duration, applyStrings, dialog_advancedSearch_viewed_text, resetDateRange, since_edit, since_unit, duration_edit, duration_unit);
                             /**  <------------------------- Duration -------------------------  */
 
 
@@ -856,9 +742,9 @@ public class VideoActivity extends AppCompatActivity {
                                 if (from[0] != null) {
                                     String dateFilter;
                                     if (to[0] != null)
-                                        dateFilter = String.format(Locale.getDefault(), "%s:%s-%s", ADVANCED_SEARCH_CRITERIA_DATE, dateFormat.format(from[0]), dateFormat.format(to[0]));
+                                        dateFilter = String.format(Locale.getDefault(), "%s%s:%s-%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_DATE, dateFormat.format(from[0]), dateFormat.format(to[0]));
                                     else
-                                        dateFilter = String.format(Locale.getDefault(), "%s:%s", ADVANCED_SEARCH_CRITERIA_DATE, dateFormat.format(from[0]));
+                                        dateFilter = String.format(Locale.getDefault(), "%s%s:%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_DATE, dateFormat.format(from[0]));
 
                                     return dateFilter;
                                 }
@@ -868,9 +754,9 @@ public class VideoActivity extends AppCompatActivity {
                                 if (CustomUtility.stringExists(duration[0])) {
                                     String dateDurationFilter;
                                     if (CustomUtility.stringExists(pivot[0]))
-                                        dateDurationFilter = String.format(Locale.getDefault(), "%s:%s;%s", ADVANCED_SEARCH_CRITERIA_DURATION, pivot[0], duration[0]);
+                                        dateDurationFilter = String.format(Locale.getDefault(), "%s%s:%s;%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_DURATION, pivot[0], duration[0]);
                                     else
-                                        dateDurationFilter = String.format(Locale.getDefault(), "%s:%s", ADVANCED_SEARCH_CRITERIA_DURATION, duration[0]);
+                                        dateDurationFilter = String.format(Locale.getDefault(), "%s%s:%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_DURATION, duration[0]);
                                     return dateDurationFilter;
                                 }
 
@@ -880,9 +766,135 @@ public class VideoActivity extends AppCompatActivity {
                 .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_ACTOR, CategoriesActivity.CATEGORIES.DARSTELLER, Video::getDarstellerList, context, R.id.dialog_advancedSearch_video_actor, R.id.dialog_advancedSearch_video_actor_connector, R.id.dialog_advancedSearch_video_editActor)
                 .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_STUDIO, CategoriesActivity.CATEGORIES.STUDIOS, Video::getStudioList, context, R.id.dialog_advancedSearch_video_studio, R.id.dialog_advancedSearch_video_studio_connector, R.id.dialog_advancedSearch_video_editStudio)
                 .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_GENRE, CategoriesActivity.CATEGORIES.GENRE, Video::getGenreList, context, R.id.dialog_advancedSearch_video_genre, R.id.dialog_advancedSearch_video_genre_connector, R.id.dialog_advancedSearch_video_editGenre)
-                .addCriteria(videoAdvancedQueryHelper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, String>(ADVANCED_SEARCH_CRITERIA_COLLECTION, "[^]]+?")
+                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, String>(ADVANCED_SEARCH_CRITERIA_COLLECTION, "[^]]+?")
                         .setParser(sub -> sub)
                         .setBuildPredicate(sub -> video -> Utility.containedInCollection(sub, video.getUuid(), true)));
+    }
+
+    public static void applyDurationDialog(Helpers.AdvancedQueryHelper.SearchCriteria<?, Pair<Date, Date>> durationCriteria, String[] pivot, String[] duration, Runnable[] applyStrings, TextView dialog_advancedSearch_viewed_text, Runnable resetDateRange, TextInputEditText since_edit, Spinner since_unit, TextInputEditText duration_edit, Spinner duration_unit) {
+        Map<String, Integer> modeMap = new HashMap<>();
+        modeMap.put("d", 0);
+        modeMap.put("m", 1);
+        modeMap.put("y", 2);
+        modeMap.put("_m", 3);
+        modeMap.put("_y", 4);
+
+        applyStrings[0] = () -> {
+            if (CustomUtility.stringExists(duration[0])) {
+                duration_edit.setText(CustomUtility.subString(duration[0], 0, -1));
+                String durationMode = CustomUtility.subString(duration[0], -1);
+                duration_unit.setSelection(modeMap.get(durationMode));
+            } else {
+                if (!duration_edit.getText().toString().equals(""))
+                    duration_edit.setText("");
+                if (duration_unit.getSelectedItemPosition() != 0)
+                    duration_unit.setSelection(0);
+            }
+
+            if (CustomUtility.stringExists(pivot[0])) {
+                boolean floored = pivot[0].contains("_");
+                since_edit.setText(CustomUtility.subString(pivot[0], floored ? 1 : 0, -1));
+                String sinceMode = CustomUtility.subString(pivot[0], -1);
+                since_unit.setSelection(modeMap.get((floored ? "_" : "") + sinceMode));
+            } else {
+                if (!since_edit.getText().toString().equals(""))
+                    since_edit.setText("");
+                if (since_unit.getSelectedItemPosition() != 0)
+                    since_unit.setSelection(0);
+            }
+        };
+        applyStrings[0].run();
+
+        Runnable updateStrings = () -> {
+            Set<String> since_keysByValue = Utility.getKeysByValue(modeMap, since_unit.getSelectedItemPosition());
+            String since_mode = since_keysByValue.toArray(new String[0])[0];
+            String since_text = since_edit.getText().toString();
+
+            Set<String> duration_keysByValue = Utility.getKeysByValue(modeMap, duration_unit.getSelectedItemPosition());
+            String duration_mode = duration_keysByValue.toArray(new String[0])[0];
+            String duration_text = duration_edit.getText().toString();
+
+            boolean sinceExists = (CustomUtility.stringExists(since_text) && !since_text.equals("-")) || since_mode.contains("_");
+            boolean durationExists = CustomUtility.stringExists(duration_text) && !duration_text.equals("-");
+
+            if (durationExists) {
+                duration[0] = (duration_mode.contains("_") ? "_" : "") + duration_text + duration_mode.replaceAll("_", "");
+                if (sinceExists)
+                    pivot[0] = (since_mode.contains("_") ? "_" : "") + since_text + since_mode.replaceAll("_", "");
+                else
+                    pivot[0] = "";
+            } else {
+                pivot[0] = "";
+                duration[0] = "";
+            }
+
+            if (CustomUtility.stringExists(duration[0])) {
+                String dateDurationFilter;
+                if (CustomUtility.stringExists(pivot[0]))
+                    dateDurationFilter = String.format(Locale.getDefault(), "%s;%s", pivot[0], duration[0]);
+                else
+                    dateDurationFilter = duration[0];
+                Pair<Date, Date> parseResult = durationCriteria.parse(dateDurationFilter);
+                if (parseResult != null) {
+                    Date today = CustomUtility.removeTime(new Date());
+                    dialog_advancedSearch_viewed_text.setText(String.format("%s - %s",
+                            parseResult.first.equals(today) ? "Heute" : Utility.formatDate(Utility.DateFormat.DATE_DOT, parseResult.first),
+                            parseResult.second.equals(today) ? "Heute" : Utility.formatDate(Utility.DateFormat.DATE_DOT, parseResult.second)));
+                }
+            } else
+                dialog_advancedSearch_viewed_text.setText("Nicht ausgewählt");
+        };
+
+        since_edit.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (CustomUtility.stringExists(s.toString())) {
+                    resetDateRange.run();
+                } else
+                    pivot[0] = "";
+
+                updateStrings.run();
+            }
+        });
+        duration_edit.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (CustomUtility.stringExists(s.toString()))
+                    resetDateRange.run();
+
+                updateStrings.run();
+            }
+        });
+
+        AdapterView.OnItemSelectedListener spinnerListener = new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                updateStrings.run();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        };
+        since_unit.setOnItemSelectedListener(spinnerListener);
+        duration_unit.setOnItemSelectedListener(spinnerListener);
     }
 
     public static Utility.GenericReturnInterface<String, Pair<Integer, Integer>> getNumberRangeParser() {

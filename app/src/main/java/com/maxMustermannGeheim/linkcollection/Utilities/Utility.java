@@ -428,6 +428,19 @@ public class Utility {
                             }
                         });
 
+                        boolean[] mobileViewCopy = {mobileView};
+                        dialog_videoInternet_goButton.setOnLongClickListener(v -> {
+                            mobileViewCopy[0] = !mobileViewCopy[0];
+//                            if (!mobileViewCopy[0])
+//                                webSettings.setUserAgentString(com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper.USER_AGENT);
+//                            else
+//                                webSettings.setUserAgentString(null);
+                            setDesktopMode(webView, !mobileViewCopy[0]);
+                            webView.reload();
+                            Toast.makeText(context, (mobileViewCopy[0] ? "Mobile" : "Desktop") + " Ansicht", Toast.LENGTH_SHORT).show();
+                            return true;
+                        });
+
                         customDialog.findViewById(R.id.dialog_videoInternet_close).setOnClickListener(v1 -> customDialog.dismiss());
 
                         webView.setWebViewClient(new WebViewClient() {
@@ -478,6 +491,34 @@ public class Utility {
                 webView.loadUrl(CustomUtility.stringExists(url) ? url : "https://www.google.de/");
         }
         return internetDialog[0];
+    }
+
+    static public void setDesktopMode(WebView webView,boolean enabled) { // ToDo: in WebViewHelper integrieren
+        String newUserAgent = webView.getSettings().getUserAgentString();
+        if (enabled) {
+            try {
+                String ua = webView.getSettings().getUserAgentString();
+                String androidOSString = webView.getSettings().getUserAgentString().substring(ua.indexOf("("), ua.indexOf(")") + 1);
+                newUserAgent = webView.getSettings().getUserAgentString().replace(androidOSString, "(X11; Linux x86_64)");
+                newUserAgent = com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper.USER_AGENT;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            newUserAgent = null;
+        }
+
+        webView.getSettings().setSupportZoom(true);
+        webView.getSettings().setBuiltInZoomControls(true);
+        webView.getSettings().setDisplayZoomControls(false);
+
+        webView.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
+        webView.setScrollbarFadingEnabled(false);
+
+        webView.getSettings().setUserAgentString(newUserAgent);
+        webView.getSettings().setUseWideViewPort(enabled);
+        webView.getSettings().setLoadWithOverviewMode(enabled);
+        webView.reload();
     }
 
     private static void showSelectThumbnailDialog(Context context, @Nullable WebView webView, @Nullable String text, GenericInterface<String> onImageSelected, @Nullable DoubleGenericInterface<WebView, DoubleGenericInterface<List<String>, Boolean>> optionalParser) {

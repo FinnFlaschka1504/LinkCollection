@@ -7,6 +7,7 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.finn.androidUtilities.CustomUtility;
 import com.maxMustermannGeheim.linkcollection.R;
 
 import java.util.ArrayList;
@@ -139,6 +140,8 @@ public class CustomMenu {
                         popup_standardList_sub.setClickable(false);
                         popup_standardList_sub.setForeground(null);
                     } else if (onClickListener != null && item.getChild() != null) {
+                        CustomUtility.setMargins(iconView, CustomUtility.dpToPx(13), -1, -1, -1);
+                        CustomUtility.setMargins(itemView.findViewById(R.id.popup_standardList_text), CustomUtility.dpToPx(13), -1, -1, -1);
                         itemView.findViewById(R.id.popup_standardList_sub).setVisibility(View.VISIBLE);
                         itemView.findViewById(R.id.popup_standardList_divider).setVisibility(View.VISIBLE);
                     }

@@ -234,13 +234,13 @@ public class VideoActivity extends AppCompatActivity {
                 .setMenus((customMenu, items) -> {
                     items.add(new CustomMenu.MenuItem(String.format(Locale.getDefault(), "Bereits gesehen (%d)", seenCount), new Pair<>(new Intent(activity, VideoActivity.class)
                             .putExtra(CategoriesActivity.EXTRA_SEARCH, SEEN_SEARCH)
-                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO), MainActivity.START_SEEN)));
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO), MainActivity.START_SEEN), R.drawable.ic_videos));
                     items.add(new CustomMenu.MenuItem(String.format(Locale.getDefault(), "Später ansehen (%d)", watchLaterCount), new Pair<>(new Intent(activity, VideoActivity.class)
                             .putExtra(CategoriesActivity.EXTRA_SEARCH, WATCH_LATER_SEARCH)
-                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO), MainActivity.START_WATCH_LATER)));
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO), MainActivity.START_WATCH_LATER), R.drawable.ic_time));
                     items.add(new CustomMenu.MenuItem(String.format(Locale.getDefault(), "Bevorstehende (%d)", upcomingCount), new Pair<>(new Intent(activity, VideoActivity.class)
                             .putExtra(CategoriesActivity.EXTRA_SEARCH, UPCOMING_SEARCH)
-                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO), MainActivity.START_UPCOMING)));
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO), MainActivity.START_UPCOMING), R.drawable.ic_calendar));
                 })
                 .setOnClickListener((customRecycler, itemView, item, index) -> {
                     Pair<Intent, Integer> pair = (Pair<Intent, Integer>) item.getContent();
@@ -407,6 +407,8 @@ public class VideoActivity extends AppCompatActivity {
                         reLoadVideoRecycler();
                     } else if (extraSearchCategory == CategoriesActivity.CATEGORIES.VIDEO) {
                         videos_search.setQuery(extraSearch, false);
+                        if (extraSearch.matches("video_[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}"))
+                            database.videoMap.values().stream().filter(video -> video.getUuid().equals(extraSearch)).findFirst().ifPresent(this::showDetailDialog);
                     } else {
                         if (!advancedQueryHelper.wrapAndSetExtraSearch(extraSearchCategory, extraSearch)) {
                             videos_search.setQuery(extraSearch, true);
@@ -767,6 +769,7 @@ public class VideoActivity extends AppCompatActivity {
                 .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_STUDIO, CategoriesActivity.CATEGORIES.STUDIOS, Video::getStudioList, context, R.id.dialog_advancedSearch_video_studio, R.id.dialog_advancedSearch_video_studio_connector, R.id.dialog_advancedSearch_video_editStudio)
                 .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_GENRE, CategoriesActivity.CATEGORIES.GENRE, Video::getGenreList, context, R.id.dialog_advancedSearch_video_genre, R.id.dialog_advancedSearch_video_genre_connector, R.id.dialog_advancedSearch_video_editGenre)
                 .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, String>(ADVANCED_SEARCH_CRITERIA_COLLECTION, "[^]]+?")
+                        .setCategory(CategoriesActivity.CATEGORIES.COLLECTION)
                         .setParser(sub -> sub)
                         .setBuildPredicate(sub -> video -> Utility.containedInCollection(sub, video.getUuid(), true)));
     }
@@ -3203,10 +3206,15 @@ public class VideoActivity extends AppCompatActivity {
         int markButtonId = View.generateViewId();
         int unmarkButtonId = View.generateViewId();
 
+        com.finn.androidUtilities.Helpers.DoubleClickHelper doubleClickHelper = com.finn.androidUtilities.Helpers.DoubleClickHelper.create();
+
         CustomDialog.OnDialogCallback showMarkedFilms = customDialog -> {
-            if (markedVideos.isEmpty())
-                customDialog.dismiss();
-            else {
+            if (markedVideos.isEmpty()) {
+                if (doubleClickHelper.check()) {
+                    customDialog.dismiss();
+                } else
+                    Toast.makeText(this, "Doppelklick zum Schließen", Toast.LENGTH_SHORT).show();
+            } else {
                 CustomDialog.Builder(this)
                         .setTitle(String.format(Locale.getDefault(), "Markierte %s (%d)", plural, markedVideos.size()))
                         .setView(new com.finn.androidUtilities.CustomRecycler<Video>(this, customDialog.findViewById(R.id.dialogDetail_collection_videos))

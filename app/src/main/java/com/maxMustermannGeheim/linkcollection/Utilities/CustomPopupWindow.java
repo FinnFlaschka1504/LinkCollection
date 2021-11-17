@@ -7,6 +7,10 @@ import android.view.WindowManager;
 import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.finn.androidUtilities.CustomUtility;
+
 public class CustomPopupWindow {
     enum LAYOUT_PARAMS {
         MATCH_PARENT(-1), WRAP_CONTENT(-2);
@@ -98,6 +102,15 @@ public class CustomPopupWindow {
                 case DEFAULT:
                     xoff = 0;
                     yoff = 0;
+                    Integer screenHeight = CustomUtility.getScreenSize((AppCompatActivity) anchor.getContext()).second;
+                    int[] coords = new int[2];
+                    anchor.getLocationOnScreen(coords);
+                    int anchorPosY = coords[1];
+                    view.measure(0, 0);
+                    int viewHeight = view.getMeasuredHeight();
+                    int offset = (anchorPosY + view.getMeasuredHeight()) - screenHeight;
+                    if (offset > 0)
+                        yoff = -(offset + anchor.getMeasuredHeight() + CustomUtility.dpToPx(16));
                     break;
                 case TOP:
                     xoff = 0;
@@ -120,6 +133,8 @@ public class CustomPopupWindow {
                     break;
             }
         }
+
+        CustomUtility.logD(null, "show: %d", yoff);
 
         if (centerOnScreen)
             popupWindow.showAtLocation(anchor, Gravity.CENTER, xoff, yoff);

@@ -269,7 +269,8 @@ public class VersionControl {
                 "Video-Kalender kann gefiltert werden",
                 "Auswahldialog nächste Episode überarbeitet",
                 "AdvancedSearch zu den KategorienHinzugefügt",
-                "AdvancedSearchQueries können negiert werden");
+                "AdvancedSearchQueries können negiert werden",
+                "Video-Modus-Menu Poristion gefixt");
     };
 
     private static void addChange(String version, String... changes) {

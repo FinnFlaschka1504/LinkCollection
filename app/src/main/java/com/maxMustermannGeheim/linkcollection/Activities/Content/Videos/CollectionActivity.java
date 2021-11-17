@@ -452,6 +452,7 @@ public class CollectionActivity extends AppCompatActivity {
                             return null;
                     }
                 })
+                .setPadding(16)
                 .generate();
     }
 

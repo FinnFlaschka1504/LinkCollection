@@ -813,6 +813,7 @@ public class Utility {
                                     .addButton("Kategorie Öffnen", customDialog -> openCategoriesActivity.run())
                                     .addButton("Filme Aktuallisieren", customDialog ->
                                             VideoActivity.addActorToAll(activity, ((ParentClass_Tmdb) parentClass), category))
+                                    .enableButtonDividerAll()
                                     .show();
                         }
 

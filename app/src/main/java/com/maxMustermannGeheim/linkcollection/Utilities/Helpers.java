@@ -1,6 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Utilities;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.graphics.Color;
@@ -53,8 +54,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.R;
@@ -1584,6 +1587,7 @@ public class Helpers {
 
     /** ------------------------- AdvancedSearch -------------------------> */
     public static class AdvancedQueryHelper<T> {
+        public static final String ADVANCED_SEARCH_HISTORY = "ADVANCED_SEARCH_HISTORY";
         public static final String ADVANCED_SEARCH_CRITERIA_NAME = "n";
         @Language("RegExp")
         public static final String PARENT_CLASS_PATTERN = "([^|&\\[\\]]+?)([|&][^|&\\[\\]]+?)*";
@@ -1597,6 +1601,7 @@ public class Helpers {
         private AppCompatActivity context;
         private EditText editText;
         private TextWatcher colorationWatcher;
+        private String historyKey;
 
         /** ------------------------- Constructor -------------------------> */
         public AdvancedQueryHelper(AppCompatActivity context, SearchView searchView) {
@@ -1738,6 +1743,11 @@ public class Helpers {
 
         public SearchView getSearchView() {
             return searchView;
+        }
+
+        public AdvancedQueryHelper<T> enableHistory(String historyKey) {
+            this.historyKey = historyKey;
+            return this;
         }
         /**  <------------------------- Getter & Setter -------------------------  */
 
@@ -1972,6 +1982,13 @@ public class Helpers {
                             onSaveList.add(onSave);
                     }))
                     .addOptionalModifications(customDialog -> {
+                        if (CustomUtility.stringExists(historyKey))
+                            customDialog
+                                    .addButton(R.drawable.ic_time, customDialog1 -> {
+                                        if (showHistoryDialog(context, historyKey, this))
+                                            customDialog1.dismiss();
+                                    }, false)
+                                    .alignPreviousButtonsLeft();
                         if (preSelected) {
                             customDialog
                                     .addButton(R.drawable.ic_reset, customDialog1 -> {
@@ -1987,7 +2004,23 @@ public class Helpers {
                         String restQuery = removeAdvancedSearch(getQuery());
                         CustomList<String> filterList = onSaveList.map(onSave -> onSave.run(customDialog)).filter(Objects::nonNull, true).map(s -> "[" + s + "]");
                         String newQuery = Utility.isNotValueReturnOrElse(restQuery, "", s -> s + " ", null);
-                        newQuery += filterList.isEmpty() ? "" : String.format("{%s}", String.join(" ", filterList));
+                        String advancedQuery = filterList.isEmpty() ? "" : String.format("{%s}", String.join(" ", filterList));
+                        if (CustomUtility.stringExists(historyKey) && CustomUtility.stringExists(advancedQuery)) {
+                            SharedPreferences sharedPreferences = context.getSharedPreferences(ADVANCED_SEARCH_HISTORY, Context.MODE_PRIVATE);
+                            String historyString = sharedPreferences.getString(historyKey, null);
+                            CustomList<String> list;
+                            Gson gson = new Gson();
+                            if (CustomUtility.stringExists(historyString))
+                                list = gson.fromJson(historyString, CustomList.class);
+                            else
+                                list = new CustomList<>();
+
+                            list.add(advancedQuery);
+                            list.distinct();
+                            historyString = gson.toJson(list);
+                            sharedPreferences.edit().putString(historyKey, historyString).apply();
+                        }
+                        newQuery += advancedQuery;
                         searchView.setQuery(newQuery, false);
                     })
                     .addOptionalModifications(customDialog -> {
@@ -2013,6 +2046,39 @@ public class Helpers {
                     });
                 }
             }
+        }
+
+        private static <T> boolean showHistoryDialog(AppCompatActivity context, String historyKey, AdvancedQueryHelper<T> helper) {
+            SharedPreferences sharedPreferences = context.getSharedPreferences(ADVANCED_SEARCH_HISTORY, Context.MODE_PRIVATE);
+            String historyString = sharedPreferences.getString(historyKey, null);
+            if (!CustomUtility.stringExists(historyString) || historyString.equals("[]")) {
+                Toast.makeText(context, "Kein Verlauf", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+            ArrayList<String> list = new Gson().fromJson(historyString, ArrayList.class);
+            com.finn.androidUtilities.CustomDialog.Builder(context)
+                    .setTitle("Verlauf")
+                    .setDimensionsFullscreen()
+                    .disableScroll()
+                    .setView(customDialog -> new CustomRecycler<String>(context)
+                            .setObjectList(list)
+                            .enableDivider(12)
+                            .enableSwiping((objectList, direction, s) -> {
+                                String newHistoryString = new Gson().toJson(list);
+                                sharedPreferences.edit().putString(historyKey, newHistoryString).apply();
+                                if (objectList.isEmpty())
+                                    customDialog.dismiss();
+                            }, true, true)
+                            .setOnClickListener((customRecycler, itemView, s, index) -> {
+                                String restQuery = removeAdvancedSearch(helper.getQuery());
+                                String newQuery = Utility.isNotValueReturnOrElse(restQuery, "", s1 -> s1 + " ", null);
+                                newQuery += s;
+                                helper.searchView.setQuery(newQuery, false);
+                                customDialog.dismiss();
+                            })
+                            .generateRecyclerView())
+                    .show();
+            return true;
         }
         /**
          * <------------------------- Dialog -------------------------

@@ -1075,6 +1075,7 @@ public class ShowActivity extends AppCompatActivity {
                                     .addButton("IMDB", customDialog1 -> Utility.openUrl(this, "https://www.imdb.com/title/" + show.getImdbId(), true))
                                     .disableButtonAllCaps()
                                     .enableExpandButtons()
+                                    .enableButtonDividerAll()
                                     .show();
                     });
                     view.findViewById(R.id.dialog_detailShow_internet).setOnLongClickListener(v -> {
@@ -1772,6 +1773,7 @@ public class ShowActivity extends AppCompatActivity {
                                     .addButton("TMDb", customDialog1 -> Utility.openUrl(this, tmdbUrl, true))
                                     .addButton("IMDB", customDialog1 -> Utility.openUrl(this, "https://www.imdb.com/title/" + episode.getImdbId(), true))
                                     .enableExpandButtons()
+                                    .enableButtonDividerAll()
                                     .show();
 
                     });
@@ -2411,12 +2413,12 @@ String BREAKPOINT = null;
                     for (String sub : s.split("\\\\n")) {
                         if (sub.matches("^\\d{1,2}$|^TV-(Y|G|Y7|PG|14|MA)$")) {
                             episodeList.get(counter[0]).setAgeRating(sub);
-                        } else if (sub.matches("(\\d+h ?)?(\\d{1,2}min)?")) {
+                        } else if (sub.matches("(\\d+h ?)?(\\d{1,2}m(in)?)?")) {
                             int length = 0;
-                            Matcher hourMatcher = Pattern.compile("\\d+(?=h( \\d{1,2}min)?)").matcher(sub);
+                            Matcher hourMatcher = Pattern.compile("\\d+(?=h( \\d{1,2}m(in)?)?)").matcher(sub);
                             if (hourMatcher.find())
                                 length += Integer.parseInt(hourMatcher.group(0)) * 60;
-                            Matcher minuteMatcher = Pattern.compile("\\d{1,2}(?=min)").matcher(sub);
+                            Matcher minuteMatcher = Pattern.compile("\\d{1,2}(?=m(in)?)").matcher(sub);
                             if (minuteMatcher.find())
                                 length += Integer.parseInt(minuteMatcher.group(0));
                             episodeList.get(counter[0]).setLength(length);

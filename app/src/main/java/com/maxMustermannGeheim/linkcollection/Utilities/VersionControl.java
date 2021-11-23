@@ -270,7 +270,8 @@ public class VersionControl {
                 "Auswahldialog nächste Episode überarbeitet",
                 "AdvancedSearch zu den KategorienHinzugefügt",
                 "AdvancedSearchQueries können negiert werden",
-                "Video-Modus-Menu Poristion gefixt");
+                "Video-Modus-Menu Poristion gefixt",
+                "Verlauf zu AdvancedSearch hinzugefügt");
     };
 
     private static void addChange(String version, String... changes) {

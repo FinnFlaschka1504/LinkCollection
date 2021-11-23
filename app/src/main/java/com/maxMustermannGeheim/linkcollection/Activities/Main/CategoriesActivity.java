@@ -30,6 +30,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.Volley;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
@@ -54,6 +58,8 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tree;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
+import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
@@ -66,6 +72,9 @@ import com.unnamed.b.atv.model.TreeNode;
 import com.unnamed.b.atv.view.AndroidTreeView;
 
 import org.intellij.lang.annotations.Language;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -76,6 +85,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
@@ -260,6 +270,7 @@ public class CategoriesActivity extends AppCompatActivity {
                 })
                 .addCriteria_defaultName(R.id.dialog_advancedSearch_category_name, R.id.dialog_advancedSearch_category_negationLayout_name, pair -> pair.first.getName())
                 .enableColoration()
+                .enableHistory("ADVANCED_QUERY_CATEGORIES")
                 .setDialogOptions(R.layout.dialog_advanced_search_category, null)
                 .optionalModification(helper -> {
                     if (!category.getSearchIn().equals(VideoActivity.class))
@@ -852,7 +863,36 @@ public class CategoriesActivity extends AppCompatActivity {
                         if (editObject instanceof ParentClass_Tmdb) {
                             ImageView dialog_editTmdbCategory_internet = view1.findViewById(R.id.dialog_editTmdbCategory_internet);
                             if (((ParentClass_Tmdb) editObject).getTmdbId() != 0) {
-                                dialog_editTmdbCategory_internet.setOnClickListener(v -> Utility.openUrl(context, "https://www.themoviedb.org/person/" + ((ParentClass_Tmdb) editObject).getTmdbId(), true));
+                                dialog_editTmdbCategory_internet.setOnClickListener(v -> {
+                                    CustomDialog.Builder(context)
+                                            .setTitle("Öffnen mit...")
+                                            .addButton("TMDB", customDialog1 -> Utility.openUrl(context, "https://www.themoviedb.org/person/" + ((ParentClass_Tmdb) editObject).getTmdbId(), true))
+                                            .addButton("IMDB", customDialog1 -> {
+                                                String requestUrl = "https://api.themoviedb.org/3/person/" +
+                                                        ((ParentClass_Tmdb) editObject).getTmdbId() +
+                                                        "/external_ids?api_key=09e015a2106437cbc33bf79eb512b32d&language=de";
+                                                RequestQueue requestQueue = Volley.newRequestQueue(context);
+
+                                                Toast.makeText(context, "Einen Moment bitte..", Toast.LENGTH_SHORT).show();
+
+
+                                                JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {
+                                                    try {
+                                                        String imdb_id = response.getString("imdb_id");
+                                                        Utility.openUrl(context, "https://www.imdb.com/name/" + imdb_id, true);
+                                                    } catch (JSONException ignored) {
+                                                    }
+
+                                                }, error -> Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show());
+
+                                                requestQueue.add(jsonArrayRequest);
+
+                                            })
+                                            .enableButtonDividerAll()
+                                            .enableExpandButtons()
+                                            .enableButtonDividerAll()
+                                            .show();
+                                });
                                 dialog_editTmdbCategory_internet.setVisibility(View.VISIBLE);
                             }
                         }

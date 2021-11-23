@@ -249,10 +249,10 @@
             <LinearLayout
 
                 android:id="@+id/dialog_video_release_layout"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="3"
                 android:gravity="center_vertical"
+                android:layout_weight="1"
                 android:orientation="horizontal">
 
                 <TextView
@@ -264,19 +264,17 @@
 
                 <TextView
                     android:id="@+id/dialog_video_release"
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginRight="8dp"
-                    android:layout_weight="1"
                     tools:text="13.11.2019" />
 
             </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/dialog_video_ageRating_layout"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="5"
                 android:orientation="horizontal">
 
                 <TextView
@@ -298,10 +296,9 @@
 
             <LinearLayout
                 android:id="@+id/dialog_video_length_layout"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="4"
-                android:gravity="end"
+                android:layout_gravity="end"
                 android:orientation="horizontal">
 
                 <TextView

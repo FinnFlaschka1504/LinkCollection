@@ -454,6 +454,7 @@ public class VideoActivity extends AppCompatActivity {
                 })
                 .addCriteria_defaultName(R.id.dialog_advancedSearch_video_name, R.id.dialog_advancedSearch_video_negationLayout_name)
                 .enableColoration()
+                .enableHistory("ADVANCED_QUERY_VIDEO")
                 .setDialogOptions(R.layout.dialog_advanced_search_video, null)
                 .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Float, Float>>(ADVANCED_SEARCH_CRITERIA_RATING, "(([0-4]((\\.|,)\\d{1,2})?)|5((\\.|,)00?)?)(-(([0-4]((\\5|\\7|(?<![,.]\\d{1,2}-\\d)[,.])\\d{1,2})?)|5((\\5|\\7|(?<![,.]\\d{1,2}-\\d)[,.])00?)?))?")
                         .setParser(sub -> {
@@ -1450,6 +1451,7 @@ public class VideoActivity extends AppCompatActivity {
                                     .addButton("IMDB", customDialog1 -> Utility.openUrl(this, "https://www.imdb.com/title/" + video.getImdbId(), true))
                                     .disableButtonAllCaps()
                                     .enableExpandButtons()
+                                    .enableButtonDividerAll()
                                     .show();
                         });
                     else
@@ -3230,10 +3232,11 @@ public class VideoActivity extends AppCompatActivity {
                                         thumbnail.setVisibility(View.VISIBLE);
 
                                         thumbnail.setOnLongClickListener(v -> {
-                                            startActivityForResult(new Intent(this, VideoActivity.class)
-                                                            .putExtra(CategoriesActivity.EXTRA_SEARCH, video.getUuid())
-                                                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO),
-                                                    CategoriesActivity.START_CATEGORY_SEARCH);
+                                            showDetailDialog(video);
+//                                            startActivityForResult(new Intent(this, VideoActivity.class)
+//                                                            .putExtra(CategoriesActivity.EXTRA_SEARCH, video.getUuid())
+//                                                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO),
+//                                                    CategoriesActivity.START_CATEGORY_SEARCH);
 
                                             return true;
                                         });

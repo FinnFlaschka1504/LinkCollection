@@ -889,7 +889,7 @@ public class Settings extends AppCompatActivity {
                         Database.databaseCall_read(dataSnapshot -> {
                             if (dataSnapshot.getValue() == null) {
                                 CustomDialog.Builder(this)
-                                        .setTitle("Batenbank Noch Nicht Vorhanden")
+                                        .setTitle("Datenbank Noch Nicht Vorhanden")
                                         .setText(new Helpers.SpannableStringHelper().append("Die Datenbank '").appendBold(databaseCode).append("' existiert noch nicht.\nMochtest du sie hinzufügen?").get())
                                         .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
                                         .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
@@ -932,7 +932,7 @@ public class Settings extends AppCompatActivity {
                                     } else {
                                         CustomDialog.Builder(this)
                                                 .setTitle("Passwort Eingeben")
-                                                .setText("Die Datenbank enthält verschlüsselte Bereiche und das hinterlegte Passwort sitmmt nicht mit dem der Datenbank überein.\nBitte das richtige Passwort eingeben.")
+                                                .setText("Die Datenbank enthält verschlüsselte Bereiche und das hinterlegte Passwort stimmt nicht mit dem der Datenbank überein.\nBitte das richtige Passwort eingeben.")
                                                 .setEdit(new CustomDialog.EditBuilder().setInputType(Helpers.TextInputHelper.INPUT_TYPE.PASSWORD))
                                                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                                                 .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
@@ -991,7 +991,7 @@ public class Settings extends AppCompatActivity {
                             }
 
                             Database.databaseCall_read(dataSnapshot1 -> {
-                                Database.accessChilds(Database.databaseReference, newCode).setValue(dataSnapshot1.getValue(), (databaseError, databaseReference) -> {
+                                Database.accessChildren(Database.databaseReference, newCode).setValue(dataSnapshot1.getValue(), (databaseError, databaseReference) -> {
                                     if (databaseError != null) {
                                         Toast.makeText(Settings.this, "Fehler: " + databaseError.getMessage(), Toast.LENGTH_SHORT).show();
                                         return;
@@ -1074,11 +1074,11 @@ public class Settings extends AppCompatActivity {
             final long[] time = {System.currentTimeMillis()};
             CustomDialog.Builder(this)
                     .setTitle("Datenbank Löschen")
-                    .setText("Willst du wirklich die Datenbank löschen?\nEine wiederherstellung der Daten ist aufwändig und nur für ca. 30 Tage möglich!\nMit einem Doppelclick bestätigen und die App startet danach neu.")
+                    .setText("Willst du wirklich die Datenbank löschen?\nEine wiederherstellung der Daten ist aufwändig und nur für ca. 30 Tage möglich!\nMit einem Doppelklick bestätigen und die App startet danach neu.")
                     .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
                     .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog -> {
                         if (System.currentTimeMillis() - time[0] > 300) {
-                            Toast.makeText(this, "Doppelclick zum bestätigen", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(this, "Doppelklick zum bestätigen", Toast.LENGTH_SHORT).show();
                             time[0] = System.currentTimeMillis();
                             return;
                         }
@@ -1675,7 +1675,7 @@ public class Settings extends AppCompatActivity {
                 settingsMap.put(key, importedMap.get(key));
         }
         saveSettings();
-        Utility.showCenteredToast(this, "Einstellungen erfolgreich importiert\nApp wird neugestartet");
+        Utility.showCenteredToast(this, "Einstellungen erfolgreich importiert\nApp wird neu gestartet");
         new Handler().postDelayed(() -> Utility.restartApp(this), 1500);
 
 ////        CustomDialog.Builder(this)

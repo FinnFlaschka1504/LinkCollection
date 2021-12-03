@@ -506,7 +506,7 @@ public class CollectionActivity extends AppCompatActivity {
                             }, true)
                             .generate();
 
-                    view.findViewById(R.id.dialogDetail_collection_edtiVideos).setOnClickListener(v -> {
+                    view.findViewById(R.id.dialogDetail_collection_editVideos).setOnClickListener(v -> {
                         Utility.showEditItemDialog(this, collection.getFilmIdList(), CategoriesActivity.CATEGORIES.COLLECTION, (customDialog1, selectedIds) -> {
                             collection.setFilmIdList(selectedIds);
                             videoRecycler.reload();
@@ -566,7 +566,7 @@ public class CollectionActivity extends AppCompatActivity {
                                     filmList.add(detailList);
                                 }
 
-                                CustomList<List<String>> notImprtedList = filmList.filter(stringList -> database.videoMap.values().stream().noneMatch(video -> Objects.equals(video.getImdbId(), stringList.get(0))), false);
+                                CustomList<List<String>> notImportedList = filmList.filter(stringList -> database.videoMap.values().stream().noneMatch(video -> Objects.equals(video.getImdbId(), stringList.get(0))), false);
 
                                 Runnable applyImport = () -> {
                                     Map<String, Video> videoMap = database.videoMap.values().stream().filter(video -> Utility.stringExists(video.getImdbId())).collect(Collectors.toMap(Video::getImdbId, video -> video));
@@ -610,7 +610,7 @@ public class CollectionActivity extends AppCompatActivity {
                                                     .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
                                                     .generateRecyclerView())
                                             .addButton("Neue Filme Importieren", customDialog1 -> {
-                                                CustomList<String> importList = notImprtedList.map(stringList -> stringList.get(0));
+                                                CustomList<String> importList = notImportedList.map(stringList -> stringList.get(0));
 
                                                 CustomDialog allFilmsDialog = CustomDialog.Builder(this);
                                                 allFilmsDialog
@@ -618,7 +618,7 @@ public class CollectionActivity extends AppCompatActivity {
                                                         .setView(new CustomRecycler<List<String>>(this)
                                                                 .setItemLayout(R.layout.list_item_select)
                                                                 .setMultiClickEnabled(true)
-                                                                .setObjectList(notImprtedList)
+                                                                .setObjectList(notImportedList)
                                                                 .setSetItemContent((customRecycler, itemView, detailList, index) -> {
                                                                     ImageView thumbnail = itemView.findViewById(R.id.selectList_thumbnail);
                                                                     String imagePath = detailList.get(2);
@@ -765,7 +765,7 @@ public class CollectionActivity extends AppCompatActivity {
                                                         .show();
                                             }, false)
                                             .addOptionalModifications(customDialog1 -> {
-                                                if (notImprtedList.isEmpty())
+                                                if (notImportedList.isEmpty())
                                                     customDialog1.disableLastAddedButton();
                                             })
                                             .addButton("Anwenden", customDialog1 -> applyImport.run())

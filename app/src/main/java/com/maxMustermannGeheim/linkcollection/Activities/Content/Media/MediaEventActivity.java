@@ -666,7 +666,7 @@ public class MediaEventActivity extends AppCompatActivity {
                                 .addConfirmationDialogToLastAddedButton("", "", customDialog1 -> {
                                     customDialog1
                                             .setTitle(singular + " Löschen")
-                                            .setText(new Helpers.SpannableStringHelper().append("Möchstest du wirklich '").appendBold(oldEvent.getName()).append("' löschen?").get());
+                                            .setText(new Helpers.SpannableStringHelper().append("Möchtest du wirklich '").appendBold(oldEvent.getName()).append("' löschen?").get());
                                 });
                         if (!oldEvent.getChildren().isEmpty()) {
 //                            Toast.makeText(this, "Ein Event mit Kindern kann nicht gelöscht werden", Toast.LENGTH_SHORT).show();

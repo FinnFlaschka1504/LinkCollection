@@ -36,7 +36,7 @@
         </FrameLayout>
 
         <LinearLayout
-            android:id="@+id/dialogDetail_collection_edtiVideos"
+            android:id="@+id/dialogDetail_collection_editVideos"
             style="@style/ImageButtonStyle.Wide"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

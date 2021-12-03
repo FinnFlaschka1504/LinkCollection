@@ -811,7 +811,7 @@ public class Utility {
                                             .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, category)
                                             .putExtra(CategoriesActivity.EXTRA_SEARCH, s)))
                                     .addButton("Kategorie Öffnen", customDialog -> openCategoriesActivity.run())
-                                    .addButton("Filme Aktuallisieren", customDialog ->
+                                    .addButton("Filme Aktualisieren", customDialog ->
                                             VideoActivity.addActorToAll(activity, ((ParentClass_Tmdb) parentClass), category))
                                     .enableButtonDividerAll()
                                     .show();
@@ -1156,8 +1156,8 @@ public class Utility {
 
                         Runnable showProviders = () -> {
                             try {
-                                RecyclerView recycler = dialog.findViewById(R.id.dielog_werStreamtEs_providers);
-                                TextView empty = dialog.findViewById(R.id.dielog_werStreamtEs_empty);
+                                RecyclerView recycler = dialog.findViewById(R.id.dialog_werStreamtEs_providers);
+                                TextView empty = dialog.findViewById(R.id.dialog_werStreamtEs_empty);
                                 if (currentSelected[0].get("provider") instanceof JSONObject) {
                                     recycler.setVisibility(View.VISIBLE);
                                     empty.setVisibility(View.GONE);
@@ -1196,7 +1196,7 @@ public class Utility {
                                 .disableScroll()
                                 .setView(R.layout.dialog_wer_streamt_es)
                                 .setSetViewContent((customDialog2, view1, reload1) -> {
-                                    new com.finn.androidUtilities.CustomRecycler<JSONObject>(context, customDialog2.findViewById(R.id.dielog_werStreamtEs_results))
+                                    new com.finn.androidUtilities.CustomRecycler<JSONObject>(context, customDialog2.findViewById(R.id.dialog_werStreamtEs_results))
                                             .setObjectList(resList)
                                             .setOrientation(com.finn.androidUtilities.CustomRecycler.ORIENTATION.HORIZONTAL)
                                             .setItemLayout(R.layout.list_item_wer_streamt_es_results)
@@ -2322,7 +2322,7 @@ public class Utility {
                 })
                 .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
                 .setOnClickListener((customRecycler, view, object, index) -> Toast.makeText(context, "Swipe nach Oben zum abwählen", Toast.LENGTH_SHORT).show())
-                .enableSwiping((objectList, direction, s) -> customRecycler_selectList.reload(), true, false)
+                .enableSwiping((customRecycler, objectList, direction, s, index) -> customRecycler_selectList.reload(), true, false)
                 .generate();
 
 
@@ -2439,7 +2439,7 @@ public class Utility {
                                 Toast.makeText(context,
                                         "Swipe nach Oben zum abwählen", Toast.LENGTH_SHORT).show();
                             })
-                            .enableSwiping((objectList, direction, s) -> {
+                            .enableSwiping((customRecycler, objectList, direction, s, index) -> {
                                 ParentClass_Tree.buildTreeView(editCategoryLayout, category, selectedIds, searchQuery[0], updateSelectedRecycler, treeComparator, emptyTextView, null, null);
                             }, true, false)
                             .generate();
@@ -4411,7 +4411,7 @@ public class Utility {
     }
     /**  <------------------------- GetOpenGraphFromWebsite -------------------------  */
 
-    /**  ------------------------- Videos Aktuallisieren ------------------------->  */
+    /**  ------------------------- Videos Aktualisieren ------------------------->  */
     public static void updateVideos(Context context, CustomList<Video> updateList) {
         Database database = Database.getInstance();
         RequestQueue requestQueue = Volley.newRequestQueue(context);
@@ -4643,7 +4643,7 @@ public class Utility {
         loadDetails[0].run();
 
     }
-    /**  <------------------------- Videos Aktuallisieren -------------------------  */
+    /**  <------------------------- Videos Aktualisieren -------------------------  */
 
 
     /**  ------------------------- ExpendableToolbar ------------------------->  */

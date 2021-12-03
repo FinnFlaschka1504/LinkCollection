@@ -56,7 +56,7 @@ import javax.annotation.CheckForNull;
 public class Database {
     private static final String TAG = "Database";
 
-    public static final String SUCCSESS = "SUCCSESS";
+    public static final String SUCCESS = "SUCCESS";
     public static final String FAILED = "FAILED";
 
     private static Database database;
@@ -183,7 +183,7 @@ public class Database {
     // ToDo: Offline Modus mit Firebase https://firebase.google.com/docs/database/android/offline-capabilities
 
     private Database(boolean online) {
-        Log.d(TAG, "Database: Construktor");
+        Log.d(TAG, "Database: Constructor");
         Database.database = Database.this;
         if (online)
             startLoadDataFromFirebase();
@@ -460,8 +460,11 @@ public class Database {
 
     public Map<String, Object> deepCopySimpleContentMap(boolean includeOnline, boolean includeOffline) {
         Map<String, Object> deepCopy = new HashMap<>();
+//        CustomUtility.GenericInterface<Boolean> logTiming = CustomUtility.logTiming();
         Map<String, Object> simpleContentMap = database.getSimpleContentMap(includeOnline, includeOffline);
+//        logTiming.run(true);
         HashMap<String, Object> hashMap = gson.fromJson(gson.toJson(simpleContentMap, HashMap.class), HashMap.class);
+//        logTiming.run(true);
         for (Map.Entry<String, Object> entry : hashMap.entrySet()) {
             if (!(entry.getValue() instanceof LinkedTreeMap)) {
                 deepCopy.put(entry.getKey(), entry.getValue());
@@ -472,6 +475,7 @@ public class Database {
                 deepCopy.put(entry.getKey(), map);
             }
         }
+//        logTiming.run(false);
         return deepCopy;
     }
 
@@ -496,15 +500,64 @@ public class Database {
 
     @CheckForNull public static Boolean saveAll(boolean forceAll) {
         Log.d(TAG, "saveAll: ");
+//        CustomUtility.GenericInterface<Boolean> logTiming = CustomUtility.logTiming();
+
+//        Thread th = new Thread(() -> {
+//            if (!Database.isReady() || !database.isOnline())
+//            return;
+//        else if (!forceAll && !Database.hasChanges())
+//            return;
+//
+////        logTiming.run(true);
+//
+//        // ToDo: speicherung darf bereits vorhandene Objekte nicht verändern
+//
+////        Thread th1 = new Thread(() -> {
+//            database.saveDatabase_offline(mySPR_daten);
+////        });
+////        th1.setPriority(Thread.MIN_PRIORITY);
+////        th1.start();
+//
+////        logTiming.run(true);
+//        if (Utility.isOnline()) {
+//            if (updateList.isEmpty() || forceAll)
+//                database.writeAllToFirebase(forceAll);
+//            else
+//                database.writeAllToFirebase(updateList);
+//        } else {
+//            updateList.clear();
+//            return ;
+//        }
+////        logTiming.run(true);
+//
+//        updateList.clear();
+//
+////        Thread th = new Thread(() -> {
+//            lastUploaded_contentMap = database.deepCopySimpleContentMap(true, true);
+////        });
+////        th.setPriority(Thread.MIN_PRIORITY);
+////        th.start();
+//
+//        });
+//        th.setPriority(Thread.MIN_PRIORITY);
+//        th.start();
 
         if (!Database.isReady() || !database.isOnline())
             return null;
         else if (!forceAll && !Database.hasChanges())
             return false;
 
+//        logTiming.run(true);
+
         // ToDo: speicherung darf bereits vorhandene Objekte nicht verändern
 
-        database.saveDatabase_offline(mySPR_daten);
+        Thread th1 = new Thread(() -> {
+            database.saveDatabase_offline(mySPR_daten);
+        });
+        th1.setPriority(Thread.MIN_PRIORITY);
+        th1.start();
+
+//        logTiming.run(true);
         if (Utility.isOnline()) {
             if (updateList.isEmpty() || forceAll)
                 database.writeAllToFirebase(forceAll);
@@ -514,10 +567,17 @@ public class Database {
             updateList.clear();
             return null;
         }
+//        logTiming.run(true);
 
         updateList.clear();
-        lastUploaded_contentMap = database.deepCopySimpleContentMap(true, true);
 
+        Thread th = new Thread(() -> {
+            lastUploaded_contentMap = database.deepCopySimpleContentMap(true, true);
+        });
+        th.setPriority(Thread.MIN_PRIORITY);
+        th.start();
+
+//        logTiming.run(false);
         return true;
     }
 
@@ -835,7 +895,7 @@ public class Database {
     }
 
     public static void databaseCall_read(OnDatabaseCallFinished onDatabaseCallFinished, String... stepList) {
-        accessChilds(databaseReference, stepList).addListenerForSingleValueEvent(new ValueEventListener() {
+        accessChildren(databaseReference, stepList).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 onDatabaseCallFinished.onFinished(dataSnapshot);
@@ -849,7 +909,7 @@ public class Database {
     }
 
     public static void databaseCall_read(OnDatabaseCallFinished onDatabaseCallFinished, OnDatabaseCallFailed onDatabaseCallFailed, String... stepList) {
-        accessChilds(databaseReference, stepList).addListenerForSingleValueEvent(new ValueEventListener() {
+        accessChildren(databaseReference, stepList).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 onDatabaseCallFinished.onFinished(dataSnapshot);
@@ -863,18 +923,18 @@ public class Database {
     }
 
     public static void databaseCall_write(Object object, String... stepList) {
-        accessChilds(databaseReference, stepList).setValue(object);
+        accessChildren(databaseReference, stepList).setValue(object);
     }
 
     public static void databaseCall_delete(String... stepList) {
-        accessChilds(databaseReference, stepList).removeValue();
+        accessChildren(databaseReference, stepList).removeValue();
     }
 
-    public static DatabaseReference accessChilds(DatabaseReference databaseReference, String... steps) {
+    public static DatabaseReference accessChildren(DatabaseReference databaseReference, String... steps) {
         List<String> newSteps = new ArrayList<>(Arrays.asList(steps));
         if (newSteps.size() > 0) {
             DatabaseReference newDatabaseReference = databaseReference.child(newSteps.remove(0));
-            return accessChilds(newDatabaseReference, newSteps.toArray(new String[0]));
+            return accessChildren(newDatabaseReference, newSteps.toArray(new String[0]));
         }
         return databaseReference;
     }
@@ -929,11 +989,11 @@ public class Database {
         }
 
         private void addOnChangeListener_firebase() {
-            accessChilds(databaseReference, (String[]) this.listenerPath.toArray()).addValueEventListener(onChangeListener);
+            accessChildren(databaseReference, (String[]) this.listenerPath.toArray()).addValueEventListener(onChangeListener);
         }
 
         private void removeOnChangeListener_firebase() {
-            accessChilds(databaseReference, (String[]) this.listenerPath.toArray()).removeEventListener(onChangeListener);
+            accessChildren(databaseReference, (String[]) this.listenerPath.toArray()).removeEventListener(onChangeListener);
         }
 
         public OnChangeListener addOnChangeListener(OnChangeListener onChangeListener) {

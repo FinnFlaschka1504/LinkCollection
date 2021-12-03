@@ -5,7 +5,7 @@
     android:orientation="vertical">
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/dielog_werStreamtEs_results"
+        android:id="@+id/dialog_werStreamtEs_results"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
@@ -19,7 +19,7 @@
         android:layout_height="match_parent">
 
         <TextView
-            android:id="@+id/dielog_werStreamtEs_empty"
+            android:id="@+id/dialog_werStreamtEs_empty"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="32dp"
@@ -28,7 +28,7 @@
             android:textStyle="bold|italic" />
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/dielog_werStreamtEs_providers"
+            android:id="@+id/dialog_werStreamtEs_providers"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 

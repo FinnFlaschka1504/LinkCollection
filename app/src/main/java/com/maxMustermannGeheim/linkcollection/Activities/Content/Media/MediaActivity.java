@@ -815,7 +815,7 @@ public class MediaActivity extends AppCompatActivity {
                                     String singOrPlur = newMedia.size() > 1 ? plural : singular;
                                     customDialog1
                                             .setTitle(singOrPlur + " Löschen")
-                                            .setText("Möchstest du wirklich " + newMedia.size() + " " + singOrPlur + " löschen?");
+                                            .setText("Möchtest du wirklich " + newMedia.size() + " " + singOrPlur + " löschen?");
                                 });
                     }
                 })
@@ -1155,7 +1155,7 @@ public class MediaActivity extends AppCompatActivity {
                         loadPathIntoImageView(media.getImagePath(), itemView, CustomUtility.dpToPx(120), 1);
                         itemView.findViewById(R.id.listItem_image_selected).setVisibility(subSelectedMedia != null && subSelectedMedia.contains(media) ? View.VISIBLE : View.GONE);
                     })
-                    .enableSwiping((objectList, direction, media) -> {
+                    .enableSwiping((customRecycler, objectList, direction, media, index) -> {
                         selectedMedia.remove(media);
                         emptyText.setVisibility(selectedMedia.isEmpty() ? View.VISIBLE : View.GONE);
                         if (subSelectedMedia != null) {

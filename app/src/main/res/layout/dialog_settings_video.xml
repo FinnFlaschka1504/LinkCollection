@@ -565,7 +565,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Auswälen ob und wo der Such-Knopf angezeigt werden soll"
+                            android:text="Auswählen ob und wo der Such-Knopf angezeigt werden soll"
                             android:textSize="12sp" />
 
                     </LinearLayout>

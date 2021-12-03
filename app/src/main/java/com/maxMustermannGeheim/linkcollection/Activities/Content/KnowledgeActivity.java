@@ -665,7 +665,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                         if (item.hasChild_real()) {
                             CustomDialog.Builder(this)
                                     .setTitle("Stichpunkt löschen")
-                                    .setText("Der Stichpunkt besitzt selber noch Unter-Spichpunkte\nWillst du trotzdem löschen?")
+                                    .setText("Der Stichpunkt besitzt selber noch Unter-Stichpunkte\nWillst du trotzdem löschen?")
                                     .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
                                     .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customRecycler1 -> onDelete.run())
                                     .show();
@@ -951,7 +951,7 @@ public class KnowledgeActivity extends AppCompatActivity {
     }
 
     private SpannableString applyFormatting_text(String s) {
-        // ^ Überschrift; * fett;  ~ durch;  / kursiv; _ unterstr
+        // ^ Überschrift; * fett;  ~ durch;  / kursiv; _ unterstrichen
         List<Pair<Integer, Integer>> captionMatches = new ArrayList<>();
         List<Pair<Integer, Integer>> boldMatches = new ArrayList<>();
         List<Pair<Integer, Integer>> strikeMatches = new ArrayList<>();
@@ -1011,7 +1011,7 @@ public class KnowledgeActivity extends AppCompatActivity {
     }
 
     private void applyFormatting_edit(Editable s) {
-        // ^ Überschrift; * fett;  ~ durch;  / kursiv; _ unterstr
+        // ^ Überschrift; * fett;  ~ durch;  / kursiv; _ unterstrichen
         new CustomList<>(s.getSpans(0, s.length(), StyleSpan.class)).forEach(s::removeSpan);
         new CustomList<>(s.getSpans(0, s.length(), UnderlineSpan.class)).forEach(s::removeSpan);
         new CustomList<>(s.getSpans(0, s.length(), StrikethroughSpan.class)).forEach(s::removeSpan);

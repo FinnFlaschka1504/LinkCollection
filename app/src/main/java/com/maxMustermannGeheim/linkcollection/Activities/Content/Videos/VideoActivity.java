@@ -81,6 +81,7 @@ import com.maxMustermannGeheim.linkcollection.Utilities.MinDimensionLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.mikhaellopez.lazydatepicker.LazyDatePicker;
 
+import org.intellij.lang.annotations.Language;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 import org.json.JSONArray;
@@ -372,7 +373,7 @@ public class VideoActivity extends AppCompatActivity {
                             Video video = optional.get();
                             CustomDialog.Builder(this)
                                     .setTitle("URL Bereits Vorhanden")
-                                    .setText(new Helpers.SpannableStringHelper().append("Die geteilte URL ist bereits bei dem " + singular + " '").appendBold(video.getName()).append("' hinterlegt. Was möschtest du tun?").get())
+                                    .setText(new Helpers.SpannableStringHelper().append("Die geteilte URL ist bereits bei dem " + singular + " '").appendBold(video.getName()).append("' hinterlegt. Was möchtest du tun?").get())
                                     .addButton("Die Video Details öffnen", customDialog -> {
                                         isShared = false;
                                         detailDialog = showDetailDialog(video);
@@ -1579,18 +1580,26 @@ public class VideoActivity extends AppCompatActivity {
 
     public static void showIntersectionsDialog(AppCompatActivity context) {
         CustomList<String> resultList = new CustomList<>();
+        final CustomList<CustomUtility.Triple<Integer, Integer, String>>[] tripleList = new CustomList[1];
+        Runnable[] showDialog = {null};
 
-        for (Video video : new CustomList<>(Database.getInstance().videoMap.values()))
-            resultList.addAll(CustomUtility.getAllSubTextMutations(video.getName()).distinct());
+        Thread th = new Thread(() -> {
+            for (Video video : new CustomList<>(Database.getInstance().videoMap.values()))
+                resultList.addAll(CustomUtility.getAllSubTextMutations(video.getName()).distinct());
 
-        CustomList<CustomUtility.Triple<Integer, Integer, String>> tripleList = resultList.stream().distinct().map(s -> CustomUtility.Triple.create(Collections.frequency(resultList, s), s.split(" ").length, s)).sorted((o1, o2) -> {
-            int compResult;
-            if ((compResult = o1.second.compareTo(o2.second)) != 0)
-                return compResult * -1;
-            if ((compResult = o1.first.compareTo(o2.first)) != 0)
-                return compResult * -1;
-            return o1.third.compareTo(o2.third);
-        }).filter(pair -> pair.first > 1).collect(Collectors.toCollection(CustomList::new));
+            tripleList[0] = resultList.stream().distinct().map(s -> CustomUtility.Triple.create(Collections.frequency(resultList, s), s.split(" ").length, s)).sorted((o1, o2) -> {
+                int compResult;
+                if ((compResult = o1.second.compareTo(o2.second)) != 0)
+                    return compResult * -1;
+                if ((compResult = o1.first.compareTo(o2.first)) != 0)
+                    return compResult * -1;
+                return o1.third.compareTo(o2.third);
+            }).filter(pair -> pair.first > 1).collect(Collectors.toCollection(CustomList::new));
+
+            context.runOnUiThread(showDialog[0]);
+        });
+        th.setPriority(Thread.NORM_PRIORITY);
+        th.start();
 
 //                CustomList<CustomUtility.Triple<Integer, Integer, String>> tripleList = Stream.iterate(1, count -> count + 1).limit(300).map(integer -> CustomUtility.Triple.create(integer, integer, "Test " + integer)).collect(Collectors.toCollection(CustomList::new));
         Utility.GenericReturnInterface<String, Boolean> alreadyExists = text -> {
@@ -1604,291 +1613,300 @@ public class VideoActivity extends AppCompatActivity {
                 return false;
         };
 
-        int maxLength = tripleList.stream().mapToInt(value -> value.second).max().orElse(0);
-        int[] lengthRange = {0, maxLength};
-        int[] countRange = {2, 11};
-        final String[] regex = {""};
-        final boolean[] isBlacklist = {true};
 
-        Utility.GenericInterface<View> setLengthTexts = view -> {
-            ((TextView) view.findViewById(R.id.dialog_intersections_maxLength)).setText("" + maxLength);
-            ((TextView) view.findViewById(R.id.dialog_intersections_minMaxLength)).setText(String.format("%d–%d", lengthRange[0], lengthRange[1]));
-        };
+        showDialog[0] = () -> {
+            int maxLength = tripleList[0].stream().mapToInt(value -> value.second).max().orElse(0);
+            int[] lengthRange = {0, maxLength};
+            int[] countRange = {3, 11};
+            final String[] regex = {""};
+            final boolean[] isBlacklist = {true};
 
-        Utility.GenericInterface<View> setCountTexts = view -> {
-            ((TextView) view.findViewById(R.id.dialog_intersections_minMaxCount)).setText(String.format("%d–%s", countRange[0], countRange[1] != 11 ? countRange[1] + "" : "Max."));
-        };
+            Utility.GenericInterface<View> setLengthTexts = view -> {
+                ((TextView) view.findViewById(R.id.dialog_intersections_maxLength)).setText("" + maxLength);
+                ((TextView) view.findViewById(R.id.dialog_intersections_minMaxLength)).setText(String.format("%d–%d", lengthRange[0], lengthRange[1]));
+            };
 
-        CustomRecycler<CustomUtility.Triple<Integer, Integer, String>> customRecycler = new CustomRecycler<CustomUtility.Triple<Integer, Integer, String>>(context)
-                .setGetActiveObjectList(customRecycler1 -> {
-                    return tripleList.filter(triple -> {
-                        if (triple.second < lengthRange[0] || triple.second > lengthRange[1])
-                            return false;
-                        if (triple.first < countRange[0] || (triple.first > countRange[1] && countRange[1] != 11))
-                            return false;
-                        if (CustomUtility.stringExists(regex[0]))
-                            try {
-                                if (triple.third.matches("(?i).*(" + regex[0] + ").*")) {
-                                    return !isBlacklist[0];
-                                } else
-                                    return isBlacklist[0];
-                            } catch (Exception ignored) {
-                            }
-                        return true;
-                    }, false);
-                })
-                .setItemLayout(R.layout.list_item_intersection)
-                .enableDivider(12)
-                .disableCustomRipple()
-                .setSetItemContent((customRecycler1, itemView, triple, index) -> {
-                    ((TextView) itemView.findViewById(R.id.listItem_intersection_count)).setText(String.format("(%d)", triple.first));
-                    ((TextView) itemView.findViewById(R.id.listItem_intersection_text)).setText(triple.third);
+            Utility.GenericInterface<View> setCountTexts = view -> {
+                ((TextView) view.findViewById(R.id.dialog_intersections_minMaxCount)).setText(String.format("%d–%s", countRange[0], countRange[1] != 11 ? countRange[1] + "" : "Max."));
+            };
 
-                    itemView.findViewById(R.id.listItem_intersection_exists).setVisibility(alreadyExists.run(triple.third) ? View.VISIBLE : View.GONE);
-                })
-                .setOnClickListener((customRecycler1, itemView, triple, index) -> {
-                    context.startActivity(
-                            new Intent(context, VideoActivity.class)
-                                    .putExtra(CategoriesActivity.EXTRA_SEARCH, triple.third)
-                                    .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO)
-                    );
-                })
-                .setOnLongClickListener((customRecycler1, view, triple, index) -> {
+            CustomRecycler<CustomUtility.Triple<Integer, Integer, String>> customRecycler = new CustomRecycler<CustomUtility.Triple<Integer, Integer, String>>(context)
+                    .setGetActiveObjectList(customRecycler1 -> {
+                        return tripleList[0].filter(triple -> {
+                            if (triple.second < lengthRange[0] || triple.second > lengthRange[1])
+                                return false;
+                            if (triple.first < countRange[0] || (triple.first > countRange[1] && countRange[1] != 11))
+                                return false;
+                            if (CustomUtility.stringExists(regex[0]))
+                                try {
+                                    if (triple.third.matches("(?i).*(" + regex[0] + ").*")) {
+                                        return !isBlacklist[0];
+                                    } else
+                                        return isBlacklist[0];
+                                } catch (Exception ignored) {
+                                }
+                            return true;
+                        }, false);
+                    })
+                    .setItemLayout(R.layout.list_item_intersection)
+                    .enableDivider(12)
+                    .disableCustomRipple()
+                    .setSetItemContent((customRecycler1, itemView, triple, index) -> {
+                        ((TextView) itemView.findViewById(R.id.listItem_intersection_count)).setText(String.format("(%d)", triple.first));
+                        ((TextView) itemView.findViewById(R.id.listItem_intersection_text)).setText(triple.third);
 
-                    CustomUtility.GenericInterface<CategoriesActivity.CATEGORIES> showAddCategoryDialog = category -> {
-                        CustomList<Video> allMatchesList = new CustomList<>();
-                        CustomList<Video> selectedMatchesList = new CustomList<>();
-                        CategoriesActivity.showEditCategoryDialog(context, category, null, parentClass -> {
-                            if (!selectedMatchesList.isEmpty()) {
-                                selectedMatchesList.forEach(video -> {
-                                    switch (category) {
-                                        case DARSTELLER:
-                                            video.getDarstellerList().add(parentClass.getUuid());
-                                            break;
-                                        case STUDIOS:
-                                            video.getStudioList().add(parentClass.getUuid());
-                                            break;
-                                        case GENRE:
-                                            video.getGenreList().add(parentClass.getUuid());
-                                            break;
-                                    }
-                                });
-                            }
-                            customRecycler1.reload();
-                        }, null, customDialog -> {
-                            customDialog
-                                    .addOnDialogShown(customDialog1 -> ((EditText) customDialog1.findViewById(R.id.dialog_editTmdbCategory_name)).setText(CustomUtility.capitalizeFirstAllFirstLetter(triple.third)))
-                                    .transformLastAddedButtonToImageButton()
-                                    .enableTransformAutoGeneratedButtonsToImageButtons()
-                                    .addButton(R.drawable.ic_add, customDialog1 -> {
-                                        if (allMatchesList.isEmpty()) {
-                                            allMatchesList.addAll(Database.getInstance().videoMap.values().stream()
-                                                    .filter(video -> video.getName().replaceAll("[^\\wöäüß]+", " ").toLowerCase().matches(".*(\\b" + triple.third + "\\b).*"))
-                                                    .sorted((o1, o2) -> o1.getName().compareTo(o2.getName()))
-                                                    .collect(Collectors.toList()));
+                        itemView.findViewById(R.id.listItem_intersection_exists).setVisibility(alreadyExists.run(triple.third) ? View.VISIBLE : View.GONE);
+                    })
+                    .setOnClickListener((customRecycler1, itemView, triple, index) -> {
+                        context.startActivity(
+                                new Intent(context, VideoActivity.class)
+                                        .putExtra(CategoriesActivity.EXTRA_SEARCH, triple.third)
+                                        .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO)
+                        );
+                    })
+                    .setOnLongClickListener((customRecycler1, view, triple, index) -> {
+
+                        CustomUtility.GenericInterface<CategoriesActivity.CATEGORIES> showAddCategoryDialog = category -> {
+                            CustomList<Video> allMatchesList = new CustomList<>();
+                            CustomList<Video> selectedMatchesList = new CustomList<>();
+                            CategoriesActivity.showEditCategoryDialog(context, category, null, parentClass -> {
+                                if (!selectedMatchesList.isEmpty()) {
+                                    selectedMatchesList.forEach(video -> {
+                                        switch (category) {
+                                            case DARSTELLER:
+                                                video.getDarstellerList().add(parentClass.getUuid());
+                                                break;
+                                            case STUDIOS:
+                                                video.getStudioList().add(parentClass.getUuid());
+                                                break;
+                                            case GENRE:
+                                                video.getGenreList().add(parentClass.getUuid());
+                                                break;
                                         }
-                                        CustomRecycler<Video> selectRecycler = new CustomRecycler<Video>(context)
-                                                .setObjectList(allMatchesList)
-                                                .setItemLayout(R.layout.list_item_select)
-                                                .enableDivider(12)
-                                                .removeLastDivider()
-                                                .setSetItemContent((customRecycler2, itemView, video, index1) -> {
-                                                    ImageView imageView = itemView.findViewById(R.id.selectList_thumbnail);
-                                                    imageView.setVisibility(View.VISIBLE);
-                                                    Utility.simpleLoadUrlIntoImageView(context, imageView, video.getImagePath(), video.getImagePath(), 4);
-                                                    ((TextView) itemView.findViewById(R.id.selectList_name)).setText(video.getName());
-                                                    ((CheckBox) itemView.findViewById(R.id.selectList_selected)).setChecked(selectedMatchesList.contains(video));
-                                                })
-                                                .setOnClickListener((customRecycler2, itemView, video, index1) -> {
-                                                    if (selectedMatchesList.contains(video))
-                                                        selectedMatchesList.remove(video);
-                                                    else
-                                                        selectedMatchesList.add(video);
-                                                    customRecycler2.update(index1);
-                                                });
+                                    });
+                                }
+                                customRecycler1.reload();
+                            }, null, customDialog -> {
+                                customDialog
+                                        .addOnDialogShown(customDialog1 -> ((EditText) customDialog1.findViewById(R.id.dialog_editTmdbCategory_name)).setText(CustomUtility.capitalizeFirstAllFirstLetter(triple.third)))
+                                        .transformLastAddedButtonToImageButton()
+                                        .enableTransformAutoGeneratedButtonsToImageButtons()
+                                        .addButton(R.drawable.ic_add, customDialog1 -> {
+                                            if (allMatchesList.isEmpty()) {
+                                                allMatchesList.addAll(Database.getInstance().videoMap.values().stream()
+                                                        .filter(video -> video.getName().replaceAll("[^\\wöäüß]+", " ").toLowerCase().matches(".*(\\b" + triple.third + "\\b).*"))
+                                                        .sorted((o1, o2) -> o1.getName().compareTo(o2.getName()))
+                                                        .collect(Collectors.toList()));
+                                            }
+                                            CustomRecycler<Video> selectRecycler = new CustomRecycler<Video>(context)
+                                                    .setObjectList(allMatchesList)
+                                                    .setItemLayout(R.layout.list_item_select)
+                                                    .enableDivider(12)
+                                                    .removeLastDivider()
+                                                    .setSetItemContent((customRecycler2, itemView, video, index1) -> {
+                                                        ImageView imageView = itemView.findViewById(R.id.selectList_thumbnail);
+                                                        imageView.setVisibility(View.VISIBLE);
+                                                        Utility.simpleLoadUrlIntoImageView(context, imageView, video.getImagePath(), video.getImagePath(), 4);
+                                                        ((TextView) itemView.findViewById(R.id.selectList_name)).setText(video.getName());
+                                                        ((CheckBox) itemView.findViewById(R.id.selectList_selected)).setChecked(selectedMatchesList.contains(video));
+                                                    })
+                                                    .setOnClickListener((customRecycler2, itemView, video, index1) -> {
+                                                        if (selectedMatchesList.contains(video))
+                                                            selectedMatchesList.remove(video);
+                                                        else
+                                                            selectedMatchesList.add(video);
+                                                        customRecycler2.update(index1);
+                                                    });
 
-                                        CustomDialog.Builder(context)
-                                                .setTitle("Kategorie Zu Videos Hinzufügen")
+                                            CustomDialog.Builder(context)
+                                                    .setTitle("Kategorie Zu Videos Hinzufügen")
 //                                                .setText(allMatchesList.join("\n", com.finn.androidUtilities.ParentClass::getName))
-                                                .setView(customDialog2 -> selectRecycler.generateRecyclerView())
-                                                .addButton("Alle", customDialog2 -> {
-                                                    selectedMatchesList.replaceWith(allMatchesList);
-                                                    selectRecycler.reload();
-                                                }, false)
-                                                .addButton("Keine", customDialog2 -> {
-                                                    selectedMatchesList.clear();
-                                                    selectRecycler.reload();
-                                                }, false)
-                                                .alignPreviousButtonsLeft()
-                                                .addButton(CustomDialog.BUTTON_TYPE.CLOSE_BUTTON)
-                                                .show();
-                                    }, false)
-                                    .addOptionalModifications(customDialog1 -> customDialog1.getLastAddedButton().enableAlignLeft())
-                                    .moveLastAddedButton(1)
+                                                    .setView(customDialog2 -> selectRecycler.generateRecyclerView())
+                                                    .addButton("Alle", customDialog2 -> {
+                                                        selectedMatchesList.replaceWith(allMatchesList);
+                                                        selectRecycler.reload();
+                                                    }, false)
+                                                    .addButton("Keine", customDialog2 -> {
+                                                        selectedMatchesList.clear();
+                                                        selectRecycler.reload();
+                                                    }, false)
+                                                    .alignPreviousButtonsLeft()
+                                                    .addButton(CustomDialog.BUTTON_TYPE.CLOSE_BUTTON)
+                                                    .show();
+                                        }, false)
+                                        .addOptionalModifications(customDialog1 -> customDialog1.getLastAddedButton().enableAlignLeft())
+                                        .moveLastAddedButton(1)
 //                            .addButton("Test", customDialog1 -> {
 //                                CustomDialog.Builder(context)
 //                                        .setTitle("Result")
 //                                        .setText(selectedMatchesList.join("\n", com.finn.androidUtilities.ParentClass::getName))
 //                                        .show();
 //                            }, false)
-                            ;
-                        });
-                    };
+                                ;
+                            });
+                        };
 
-                    CustomUtility.GenericInterface<CategoriesActivity.CATEGORIES> showAddAliasDialog = category -> {
+                        CustomUtility.GenericInterface<CategoriesActivity.CATEGORIES> showAddAliasDialog = category -> {
+                            CustomDialog.Builder(context)
+                                    .setTitle("Alias Hinzufügen")
+                                    .setEdit((customDialog, editBuilder) -> editBuilder
+                                            .setText(CustomUtility.capitalizeFirstAllFirstLetter(triple.third))
+                                            .setHint(category.getSingular() + " Alias")
+                                            .setValidation((validator, text) -> {
+                                                if (Utility.findObjectByName(category, text, true) != null)
+                                                    validator.setInvalid("Der Name ist bereits vorhanden");
+                                            }))
+                                    .setView(customDialog -> {
+                                        CustomRecycler<ParentClass> selectRecycler = new CustomRecycler<ParentClass>(context)
+                                                .setObjectList(Utility.getMapFromDatabase(category).values().stream().sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList()))
+                                                .setItemLayout(R.layout.list_item_select)
+                                                .enableDivider(12)
+                                                .removeLastDivider()
+                                                .enableFastScroll()
+                                                .setSetItemContent((customRecycler2, itemView, parentClass, index1) -> {
+                                                    ImageView imageView = itemView.findViewById(R.id.selectList_thumbnail);
+                                                    if (parentClass instanceof ParentClass_Image) {
+                                                        imageView.setVisibility(View.VISIBLE);
+                                                        Utility.simpleLoadUrlIntoImageView(context, imageView, ((ParentClass_Image) parentClass).getImagePath(), ((ParentClass_Image) parentClass).getImagePath(), 4);
+                                                    } else
+                                                        imageView.setVisibility(View.GONE);
+                                                    ((TextView) itemView.findViewById(R.id.selectList_name)).setText(parentClass.getName());
+                                                    itemView.findViewById(R.id.selectList_selected).setVisibility(View.GONE);
+                                                })
+                                                .setOnClickListener((customRecycler2, itemView, parentClass, index1) -> {
+                                                    String text = customDialog.getEditText();
+                                                    if (!CustomUtility.stringExists(text) || !customDialog.isEditValid()) {
+                                                        Toast.makeText(context, "Ungültige Eingabe", Toast.LENGTH_SHORT).show();
+                                                        return;
+                                                    }
+                                                    boolean result = ParentClass_Alias.addAlias(parentClass, text);
+                                                    Toast.makeText(context, result ? "Erfolgreich Hinzugefügt" : "Fehler", Toast.LENGTH_SHORT).show();
+                                                    customRecycler1.reload();
+                                                    customDialog.dismiss();
+                                                    Database.saveAll();
+                                                });
+                                        return selectRecycler.generateRecyclerView();
+                                    })
+                                    .disableScroll()
+                                    .setDimensionsFullscreen()
+                                    .show();
+
+                        };
+
                         CustomDialog.Builder(context)
-                                .setTitle("Alias Hinzufügen")
-                                .setEdit((customDialog, editBuilder) -> editBuilder
-                                        .setText(CustomUtility.capitalizeFirstAllFirstLetter(triple.third))
-                                        .setHint(category.getSingular() + " Alias")
-                                        .setValidation((validator, text) -> {
-                                            if (Utility.findObjectByName(category, text, true) != null)
-                                                validator.setInvalid("Der Name ist bereits vorhanden");
-                                        }))
-                                .setView(customDialog -> {
-                                    CustomRecycler<ParentClass> selectRecycler = new CustomRecycler<ParentClass>(context)
-                                            .setObjectList(Utility.getMapFromDatabase(category).values().stream().sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList()))
-                                            .setItemLayout(R.layout.list_item_select)
-                                            .enableDivider(12)
-                                            .removeLastDivider()
-                                            .enableFastScroll()
-                                            .setSetItemContent((customRecycler2, itemView, parentClass, index1) -> {
-                                                ImageView imageView = itemView.findViewById(R.id.selectList_thumbnail);
-                                                if (parentClass instanceof ParentClass_Image) {
-                                                    imageView.setVisibility(View.VISIBLE);
-                                                    Utility.simpleLoadUrlIntoImageView(context, imageView, ((ParentClass_Image) parentClass).getImagePath(), ((ParentClass_Image) parentClass).getImagePath(), 4);
-                                                } else
-                                                    imageView.setVisibility(View.GONE);
-                                                ((TextView) itemView.findViewById(R.id.selectList_name)).setText(parentClass.getName());
-                                                itemView.findViewById(R.id.selectList_selected).setVisibility(View.GONE);
-                                            })
-                                            .setOnClickListener((customRecycler2, itemView, parentClass, index1) -> {
-                                                String text = customDialog.getEditText();
-                                                if (!CustomUtility.stringExists(text) || !customDialog.isEditValid()) {
-                                                    Toast.makeText(context, "Ungültige Eingabe", Toast.LENGTH_SHORT).show();
-                                                    return;
-                                                }
-                                                boolean result = ParentClass_Alias.addAlias(parentClass, text);
-                                                Toast.makeText(context, result ? "Erfolgreich Hinzugefügt" : "Fehler", Toast.LENGTH_SHORT).show();
-                                                customRecycler1.reload();
-                                                customDialog.dismiss();
-                                                Database.saveAll();
-                                            });
-                                    return selectRecycler.generateRecyclerView();
-                                })
-                                .disableScroll()
-                                .setDimensionsFullscreen()
+                                .setTitle("Aktion Auswählen")
+                                .setText(new Helpers.SpannableStringHelper().appendBoldItalic("Hinzufügen: ").append(triple.third).append("\n").appendMultiple("(Für Alias lange Button klicken)", multipleSpans -> multipleSpans.italic().relativeSize(.75f)).get())
+                                .enableTextAlignmentCenter()
+                                .addButton("Darsteller Hinzufügen", customDialog -> showAddCategoryDialog.run(CategoriesActivity.CATEGORIES.DARSTELLER))
+                                .setLastAddedButtonEnabled(Utility.findObjectByName(CategoriesActivity.CATEGORIES.DARSTELLER, triple.third, true) == null)
+                                .addOnDisabledLongClickToLastAddedButton(customDialog -> showAddAliasDialog.run(CategoriesActivity.CATEGORIES.DARSTELLER))
+                                .addOnLongClickToLastAddedButton(customDialog -> showAddAliasDialog.run(CategoriesActivity.CATEGORIES.DARSTELLER))
+                                .addButton("Studio Hinzufügen", customDialog -> showAddCategoryDialog.run(CategoriesActivity.CATEGORIES.STUDIOS))
+                                .setLastAddedButtonEnabled(Utility.findObjectByName(CategoriesActivity.CATEGORIES.STUDIOS, triple.third, true) == null)
+                                .addOnDisabledLongClickToLastAddedButton(customDialog -> showAddAliasDialog.run(CategoriesActivity.CATEGORIES.STUDIOS))
+                                .addOnLongClickToLastAddedButton(customDialog -> showAddAliasDialog.run(CategoriesActivity.CATEGORIES.STUDIOS))
+                                .addButton("Genre Hinzufügen", customDialog -> showAddCategoryDialog.run(CategoriesActivity.CATEGORIES.GENRE))
+                                .setLastAddedButtonEnabled(Utility.findObjectByName(CategoriesActivity.CATEGORIES.GENRE, triple.third, true) == null)
+                                .addOnDisabledLongClickToLastAddedButton(customDialog -> showAddAliasDialog.run(CategoriesActivity.CATEGORIES.GENRE))
+                                .addOnLongClickToLastAddedButton(customDialog -> showAddAliasDialog.run(CategoriesActivity.CATEGORIES.GENRE))
+                                .addButtonDivider(3)
+                                .disableLastAddedButton()
+                                .addButton("Websuche", customDialog -> Utility.searchQueryOnInternet(context, triple.third))
+                                .enableStackButtons()
+                                .enableButtonDividerAll()
                                 .show();
+                    })
+                    .enableFastScroll()
+                    .generate();
 
-                    };
+            CustomDialog.Builder(context)
+                    .setTitle("Überschneidungen")
+                    .setView(R.layout.dialog_intersection)
+                    .setSetViewContent((customDialog, view, reload) -> {
+                        RangeSeekBar lengthSeekBar = view.findViewById(R.id.dialog_intersections_lengthLimit);
+                        lengthSeekBar.setMax(maxLength + 1);
+                        setLengthTexts.run(view);
+                        lengthSeekBar.setSeekBarChangeListener(new RangeSeekBar.SeekBarChangeListener() {
+                            @Override
+                            public void onStartedSeeking() {
 
-                    CustomDialog.Builder(context)
-                            .setTitle("Aktion Auswählen")
-                            .setText(new Helpers.SpannableStringHelper().appendBoldItalic("Hinzufügen: ").append(triple.third).append("\n").appendMultiple("(Für Alias lange alle  Buttons klicken)", multipleSpans -> multipleSpans.italic().relativeSize(.75f)).get())
-                            .enableTextAlignmentCenter()
-                            .addButton("Darsteller Hinzufügen", customDialog -> showAddCategoryDialog.run(CategoriesActivity.CATEGORIES.DARSTELLER))
-                            .setLastAddedButtonEnabled(Utility.findObjectByName(CategoriesActivity.CATEGORIES.DARSTELLER, triple.third, true) == null)
-                            .addOnDisabledLongClickToLastAddedButton(customDialog -> showAddAliasDialog.run(CategoriesActivity.CATEGORIES.DARSTELLER))
-                            .addOnLongClickToLastAddedButton(customDialog -> showAddAliasDialog.run(CategoriesActivity.CATEGORIES.DARSTELLER))
-                            .addButton("Studio Hinzufügen", customDialog -> showAddCategoryDialog.run(CategoriesActivity.CATEGORIES.STUDIOS))
-                            .setLastAddedButtonEnabled(Utility.findObjectByName(CategoriesActivity.CATEGORIES.STUDIOS, triple.third, true) == null)
-                            .addOnDisabledLongClickToLastAddedButton(customDialog -> showAddAliasDialog.run(CategoriesActivity.CATEGORIES.STUDIOS))
-                            .addOnLongClickToLastAddedButton(customDialog -> showAddAliasDialog.run(CategoriesActivity.CATEGORIES.STUDIOS))
-                            .addButton("Genre Hinzufügen", customDialog -> showAddCategoryDialog.run(CategoriesActivity.CATEGORIES.GENRE))
-                            .setLastAddedButtonEnabled(Utility.findObjectByName(CategoriesActivity.CATEGORIES.GENRE, triple.third, true) == null)
-                            .addOnDisabledLongClickToLastAddedButton(customDialog -> showAddAliasDialog.run(CategoriesActivity.CATEGORIES.GENRE))
-                            .addOnLongClickToLastAddedButton(customDialog -> showAddAliasDialog.run(CategoriesActivity.CATEGORIES.GENRE))
-                            .addButtonDivider(3)
-                            .disableLastAddedButton()
-                            .addButton("Websuche", customDialog -> Utility.searchQueryOnInternet(context, triple.third))
-                            .enableStackButtons()
-                            .enableButtonDividerAll()
-                            .show();
-                })
-                .enableFastScroll()
-                .generate();
+                            }
 
-        CustomDialog.Builder(context)
-                .setTitle("Überschneidungen")
-                .setView(R.layout.dialog_intersection)
-                .setSetViewContent((customDialog, view, reload) -> {
-                    RangeSeekBar lengthSeekBar = view.findViewById(R.id.dialog_intersections_lengthLimit);
-                    lengthSeekBar.setMax(maxLength);
-                    setLengthTexts.run(view);
-                    lengthSeekBar.setSeekBarChangeListener(new RangeSeekBar.SeekBarChangeListener() {
-                        @Override
-                        public void onStartedSeeking() {
+                            @Override
+                            public void onStoppedSeeking() {
 
-                        }
+                            }
 
-                        @Override
-                        public void onStoppedSeeking() {
+                            @Override
+                            public void onValueChanged(int i, int i1) {
+                                lengthRange[0] = i;
+                                lengthRange[1] = i1 - 1;
+                                customRecycler.reload();
+                                setLengthTexts.run(view);
+                            }
+                        });
 
-                        }
+                        RangeSeekBar countSeekBar = view.findViewById(R.id.dialog_intersections_countLimit);
+                        setCountTexts.run(view);
+                        countSeekBar.setSeekBarChangeListener(new RangeSeekBar.SeekBarChangeListener() {
+                            @Override
+                            public void onStartedSeeking() {
 
-                        @Override
-                        public void onValueChanged(int i, int i1) {
-                            lengthRange[0] = i;
-                            lengthRange[1] = i1;
+                            }
+
+                            @Override
+                            public void onStoppedSeeking() {
+
+                            }
+
+                            @Override
+                            public void onValueChanged(int i, int i1) {
+                                countRange[0] = i + 1;
+                                countRange[1] = i1;
+                                customRecycler.reload();
+                                setCountTexts.run(view);
+                            }
+                        });
+
+                        EditText regexEdit = view.findViewById(R.id.dialog_intersections_regex);
+                        regexEdit.addTextChangedListener(new TextWatcher() {
+                            @Override
+                            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                            }
+
+                            @Override
+                            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                            }
+
+                            @Override
+                            public void afterTextChanged(Editable s) {
+                                regex[0] = s.toString();
+                                customRecycler.reload();
+                            }
+                        });
+                        view.findViewById(R.id.dialog_intersections_regexSwap).setOnClickListener(v -> {
+                            isBlacklist[0] = !isBlacklist[0];
+                            ((TextInputLayout) view.findViewById(R.id.dialog_intersections_regex_layout)).setHint(isBlacklist[0] ? "BlackList-RegEx" : "WhiteList-RegEx");
                             customRecycler.reload();
-                            setLengthTexts.run(view);
-                        }
-                    });
+                        });
+                        view.findViewById(R.id.dialog_intersections_regexSwap).setOnLongClickListener(v -> {
+                            ((TextInputLayout) view.findViewById(R.id.dialog_intersections_regex_layout)).getEditText().setText("(^|\\s)(is|a|the|are|and|\\d)($|\\s)");
+                            return true;
+                        });
 
-                    RangeSeekBar countSeekBar = view.findViewById(R.id.dialog_intersections_countLimit);
-                    setCountTexts.run(view);
-                    countSeekBar.setSeekBarChangeListener(new RangeSeekBar.SeekBarChangeListener() {
-                        @Override
-                        public void onStartedSeeking() {
+                        customRecycler.setRecycler(view.findViewById(R.id.dialog_intersections_list)).generate();
+                    })
+                    .setDimensionsFullscreen()
+                    .disableScroll()
+                    .enableTitleBackButton()
+                    .setOnBackPressedListener(customDialog -> {
+                        Toast.makeText(context, "TitleBackButton benutzen", Toast.LENGTH_SHORT).show();
+                        return true;
+                    })
+                    .show();
+        };
 
-                        }
-
-                        @Override
-                        public void onStoppedSeeking() {
-
-                        }
-
-                        @Override
-                        public void onValueChanged(int i, int i1) {
-                            countRange[0] = i;
-                            countRange[1] = i1;
-                            customRecycler.reload();
-                            setCountTexts.run(view);
-                        }
-                    });
-
-                    EditText regexEdit = view.findViewById(R.id.dialog_intersections_regex);
-                    regexEdit.addTextChangedListener(new TextWatcher() {
-                        @Override
-                        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                        }
-
-                        @Override
-                        public void onTextChanged(CharSequence s, int start, int before, int count) {
-                        }
-
-                        @Override
-                        public void afterTextChanged(Editable s) {
-                            regex[0] = s.toString();
-                            customRecycler.reload();
-                        }
-                    });
-                    view.findViewById(R.id.dialog_intersections_regexSwap).setOnClickListener(v -> {
-                        isBlacklist[0] = !isBlacklist[0];
-                        ((TextInputLayout) view.findViewById(R.id.dialog_intersections_regex_layout)).setHint(isBlacklist[0] ? "BlackList-RegEx" : "WhiteList-RegEx");
-                        customRecycler.reload();
-                    });
-
-                    customRecycler.setRecycler(view.findViewById(R.id.dialog_intersections_list)).generate();
-                })
-                .setDimensionsFullscreen()
-                .disableScroll()
-                .enableTitleBackButton()
-                .setOnBackPressedListener(customDialog -> {
-                    Toast.makeText(context, "TitleBackButton benutzen", Toast.LENGTH_SHORT).show();
-                    return true;
-                })
-                .show();
+        Toast.makeText(context, "Einen Moment...", Toast.LENGTH_SHORT).show();
     }
 
 
@@ -2208,7 +2226,7 @@ public class VideoActivity extends AppCompatActivity {
                             else {
                                 CustomDialog.Builder(this)
                                         .setTitle("Details Oder Bearbeiten")
-                                        .setText("Möchtest du 'Details', oder 'Bearbeiten' öffen?")
+                                        .setText("Möchtest du 'Details', oder 'Bearbeiten' öffnen?")
                                         .addButton("Details", customDialog1 -> {
                                             editDialog.dismiss();
                                             detailDialog = showDetailDialog(oldVideo);
@@ -3206,7 +3224,7 @@ public class VideoActivity extends AppCompatActivity {
         int previousButtonId = View.generateViewId();
         int nextButtonId = View.generateViewId();
         int markButtonId = View.generateViewId();
-        int unmarkButtonId = View.generateViewId();
+        int unmarkedButtonId = View.generateViewId();
 
         com.finn.androidUtilities.Helpers.DoubleClickHelper doubleClickHelper = com.finn.androidUtilities.Helpers.DoubleClickHelper.create();
 
@@ -3279,18 +3297,18 @@ public class VideoActivity extends AppCompatActivity {
 
                 })
                 .addButton(R.drawable.ic_bookmark_empty, customDialog -> {
-                    customDialog.getButton(unmarkButtonId).setVisibility(View.VISIBLE);
+                    customDialog.getButton(unmarkedButtonId).setVisibility(View.VISIBLE);
                     customDialog.getButton(markButtonId).setVisibility(View.GONE);
                     if (!markedVideos.contains(randomVideo))
                         markedVideos.add(randomVideo);
                     Toast.makeText(this, String.format(Locale.getDefault(), "Markierung hinzugefügt (%d)", markedVideos.size()), Toast.LENGTH_SHORT).show();
                 }, markButtonId, false)
                 .addButton(R.drawable.ic_bookmark_filled, customDialog -> {
-                    customDialog.getButton(unmarkButtonId).setVisibility(View.GONE);
+                    customDialog.getButton(unmarkedButtonId).setVisibility(View.GONE);
                     customDialog.getButton(markButtonId).setVisibility(View.VISIBLE);
                     markedVideos.remove(randomVideo);
                     Toast.makeText(this, String.format(Locale.getDefault(), "Markierung entfernt (%d)", markedVideos.size()), Toast.LENGTH_SHORT).show();
-                }, unmarkButtonId, false)
+                }, unmarkedButtonId, false)
                 .alignPreviousButtonsLeft()
                 .addButton("Zurück", customDialog -> {
                     randomVideo = randomList.previous(randomVideo, false);
@@ -3331,7 +3349,7 @@ public class VideoActivity extends AppCompatActivity {
                     customDialog.getButton(previousButtonId).setEnabled(!randomList.isFirst(randomVideo));
                     customDialog.getButton(nextButtonId).setEnabled(!randomList.isLast(randomVideo));
                     customDialog.getButton(markButtonId).setVisibility(markedVideos.contains(randomVideo) ? View.GONE : View.VISIBLE);
-                    customDialog.getButton(unmarkButtonId).setVisibility(markedVideos.contains(randomVideo) ? View.VISIBLE : View.GONE);
+                    customDialog.getButton(unmarkedButtonId).setVisibility(markedVideos.contains(randomVideo) ? View.VISIBLE : View.GONE);
 
                 })
                 .addOnDialogDismiss(customDialog -> {

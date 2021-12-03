@@ -69,7 +69,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
     public static final String EXTRA_OWN_OR_OTHER = "EXTRA_OWN_OR_OTHER";
     public static final String EXTRA_OPEN = "EXTRA_OPEN";
     private final String ADVANCED_SEARCH_CRITERIA_PERSON = "p";
-    private static final int CALCULATOR_REQUESTCODE_AMOUNT = 1;
+    private static final int CALCULATOR_REQUEST_CODE_AMOUNT = 1;
     CustomDialog sourcesDialog;
 
     enum SORT_TYPE{
@@ -758,7 +758,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                         CalcDialog calcDialog = new CalcDialog();
                         calcDialog.getSettings()
                                 .setInitialValue(BigDecimal.valueOf(CustomUtility.boolOr(amount_string,"", ".") ? 0 : Double.parseDouble(amount_string)))
-                                .setRequestCode(CALCULATOR_REQUESTCODE_AMOUNT)
+                                .setRequestCode(CALCULATOR_REQUEST_CODE_AMOUNT)
                                 .setExpressionShown(true)
                                 .setExpressionEditable(true);
                         calcDialog.show(getSupportFragmentManager(), "calc_dialog");
@@ -924,7 +924,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
 
     @Override
     public void onValueEntered(int requestCode, @Nullable BigDecimal value) {
-        if (requestCode == CALCULATOR_REQUESTCODE_AMOUNT)
+        if (requestCode == CALCULATOR_REQUEST_CODE_AMOUNT)
             ((TextInputLayout) sourcesDialog.findViewById(R.id.dialog_items_amount)).getEditText().setText(value.toString());
     }
 
@@ -963,7 +963,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
     }
 //  <----- Items -----
 
-    public static void showPopupwindow(AppCompatActivity context, View view) {
+    public static void showPopupWindow(AppCompatActivity context, View view) {
         String ownOrOther = "Eigen/Fremd";
         String status = "Status";
 
@@ -977,7 +977,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                         });
                         customMenu1.setDynamicSubMenus(items1, (item, subItems) -> {
                             subItems.add(new CustomMenu.MenuItem(item.getName() + " & " + "Offene", new Pair<>(item.getContent(), true)));
-                            subItems.add(new CustomMenu.MenuItem(item.getName() + " & " + "Abgeschlosene", new Pair<>(item.getContent(), false)));
+                            subItems.add(new CustomMenu.MenuItem(item.getName() + " & " + "Abgeschlossene", new Pair<>(item.getContent(), false)));
                         }, (customRecycler, itemView, item, index) -> {
                             Pair<Owe.OWN_OR_OTHER, Boolean> contentPair = (Pair) item.getContent();
                             context.startActivityForResult(new Intent(context, OweActivity.class).putExtra(EXTRA_OWN_OR_OTHER, contentPair.first)
@@ -986,7 +986,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
                     }));
                     items.add(new CustomMenu.MenuItem(status).setSubMenus(customMenu, (customMenu1, items1) -> {
                         items1.add(new CustomMenu.MenuItem("Offene", true));
-                        items1.add(new CustomMenu.MenuItem("Abgeschlosene", false));
+                        items1.add(new CustomMenu.MenuItem("Abgeschlossene", false));
                         customMenu1.setOnClickListener((customRecycler, itemView, item, index) -> {
                             customMenu1.getContext().startActivityForResult(new Intent(customMenu1.getContext(), OweActivity.class).putExtra(EXTRA_OPEN, (Boolean) item.getContent()), MainActivity.START_OWE);
                         });

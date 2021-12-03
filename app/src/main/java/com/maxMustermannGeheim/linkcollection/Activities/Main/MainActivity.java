@@ -523,7 +523,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //    }
 
     interface OnDatabaseCodeFinish {
-        void runOndatabaseCodeFinish(String databaseCode);
+        void runOnDatabaseCodeFinish(String databaseCode);
     }
 
     public void getDatabaseCode(OnDatabaseCodeFinish onFinish) {
@@ -582,7 +582,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                                     .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
                                         Settings.resetEncryption();
                                         customDialog.dismiss();
-                                        onFinish.runOndatabaseCodeFinish(databaseCode);
+                                        onFinish.runOnDatabaseCodeFinish(databaseCode);
                                         Database.databaseCall_write(Hashing.sha256().hashString(password, StandardCharsets.UTF_8).toString(), Database.databaseCode, Database.PASSWORD);
                                     })
                                     .disableLastAddedButton()
@@ -601,18 +601,18 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                                 if (value == null) {
                                     setEncryptedSpaces.run();
                                     Settings.resetEncryption();
-                                    onFinish.runOndatabaseCodeFinish(databaseCode);
+                                    onFinish.runOnDatabaseCodeFinish(databaseCode);
                                     customDialog.dismiss();
                                 } else if (Utility.hash(Settings.getSingleSetting(this, Settings.SETTING_SPACE_ENCRYPTION_PASSWORD)).equals(((HashMap) dataSnapshot1.getValue()).get(Database.ENCRYPTION_PASSWORD))) {
                                     encryptedSpaces.addAll((Collection<? extends String>) ((HashMap) dataSnapshot1.getValue()).get(Database.ENCRYPTED_SPACES));
                                     setEncryptedSpaces.run();
 
-                                    onFinish.runOndatabaseCodeFinish(databaseCode);
+                                    onFinish.runOnDatabaseCodeFinish(databaseCode);
                                     customDialog.dismiss();
                                 } else {
                                     CustomDialog.Builder(this)
                                             .setTitle("Passwort Eingeben")
-                                            .setText("Die Datenbank enthält verschlüsselte Bereiche und das hinterlegte Passwort sitmmt nicht.\nBitte das richtige Passwort eingeben.")
+                                            .setText("Die Datenbank enthält verschlüsselte Bereiche und das hinterlegte Passwort stimmt nicht.\nBitte das richtige Passwort eingeben.")
                                             .setEdit(new CustomDialog.EditBuilder().setInputType(Helpers.TextInputHelper.INPUT_TYPE.PASSWORD))
                                             .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                                             .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
@@ -623,7 +623,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                                                     encryptedSpaces.addAll((Collection<? extends String>) ((HashMap) dataSnapshot1.getValue()).get(Database.ENCRYPTED_SPACES));
                                                     setEncryptedSpaces.run();
 
-                                                    onFinish.runOndatabaseCodeFinish(databaseCode);
+                                                    onFinish.runOnDatabaseCodeFinish(databaseCode);
                                                     customDialog.dismiss();
                                                     customDialog1.dismiss();
                                                 } else
@@ -843,8 +843,8 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         startActivityForResult(intent, START_PERSON);
     }
 
-    public void showPopupwindow(View view) {
-        OweActivity.showPopupwindow(this, view);
+    public void showPopupWindow(View view) {
+        OweActivity.showPopupWindow(this, view);
     }
 
     public void showTradeOffDialog(View view) {

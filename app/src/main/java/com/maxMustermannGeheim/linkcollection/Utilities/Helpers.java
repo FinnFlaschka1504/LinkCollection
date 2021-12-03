@@ -11,8 +11,6 @@ import android.os.Looper;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.ParcelableSpan;
-import android.text.Selection;
-import android.text.SpanWatcher;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -25,7 +23,6 @@ import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
 import android.util.Pair;
-import android.util.TimingLogger;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -53,6 +50,7 @@ import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.ItemTouchHelper;
 
 import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
@@ -179,7 +177,7 @@ public class Helpers {
         public TextInputHelper addValidator(@NonNull TextInputLayout... textInputLayouts) {
             for (TextInputLayout textInputLayout : textInputLayouts) {
                 inputValidationMap.put(textInputLayout, new Validator(textInputLayout));
-                applyValidationListerner(textInputLayout);
+                applyValidationListener(textInputLayout);
                 if (textInputLayout.getEditText().getInputType() == (InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE))
                     textInputLayout.getEditText().setInputType(defaultInputType.code);
             }
@@ -189,14 +187,14 @@ public class Helpers {
         public void applyValidationListeners(TextInputLayout... inputLayouts) {
             if (inputLayouts.length > 0) {
                 for (TextInputLayout inputLayout : inputLayouts)
-                    applyValidationListerner(inputLayout);
+                    applyValidationListener(inputLayout);
             } else {
                 for (TextInputLayout inputLayout : inputValidationMap.keySet())
-                    applyValidationListerner(inputLayout);
+                    applyValidationListener(inputLayout);
             }
         }
 
-        private void applyValidationListerner(TextInputLayout textInputLayout) {
+        private void applyValidationListener(TextInputLayout textInputLayout) {
             textInputLayout.getEditText().addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -1213,7 +1211,7 @@ public class Helpers {
         private List<Pair<String, Utility.GenericInterface<String>>> requestList = new ArrayList<>();
         private ExecuteBeforeJavaScript executeBeforeJavaScript;
         private boolean alreadyLoaded;
-        private boolean isRedirekted;
+        private boolean isRedirected;
         private Utility.GenericInterface<WebSettings> setSettings;
         private boolean showToasts = true;
         private int urlsIndex;
@@ -2015,8 +2013,9 @@ public class Helpers {
                             else
                                 list = new CustomList<>();
 
-                            list.add(advancedQuery);
+                            list.add(0, advancedQuery);
                             list.distinct();
+                            list.sorted(CustomUtility.comparatorSimpleBool(s1 -> s1.startsWith("☆")));
                             historyString = gson.toJson(list);
                             sharedPreferences.edit().putString(historyKey, historyString).apply();
                         }
@@ -2063,12 +2062,31 @@ public class Helpers {
                     .setView(customDialog -> new CustomRecycler<String>(context)
                             .setObjectList(list)
                             .enableDivider(12)
-                            .enableSwiping((objectList, direction, s) -> {
+                            .enableSwiping((customRecycler, objectList, direction, s, index) -> {
+                                if (direction == ItemTouchHelper.START) {
+                                    if (s.startsWith("☆"))
+                                        objectList.set(index, s.substring(2));
+                                    else
+                                        objectList.set(index, "☆ " + s);
+                                    objectList.sort(CustomUtility.comparatorSimpleBool(s1 -> s1.startsWith("☆")));
+                                } else if (direction == ItemTouchHelper.END && s.startsWith("☆")) {
+                                    Toast.makeText(context, "Favoriten können nicht gelöscht werden", Toast.LENGTH_SHORT).show();
+                                    objectList.add(index, s);
+                                    customRecycler.reload();
+                                }
                                 String newHistoryString = new Gson().toJson(list);
                                 sharedPreferences.edit().putString(historyKey, newHistoryString).apply();
                                 if (objectList.isEmpty())
                                     customDialog.dismiss();
                             }, true, true)
+                            .setSwipeBackgroundHelper(new CustomRecycler.SwipeBackgroundHelper<String>(R.drawable.ic_delete, Color.RED)
+                                    .enableBouncyThreshold(2, true, false)
+                                    .setDynamicResources((swipeBackgroundHelper, episode) -> {
+                                        swipeBackgroundHelper
+                                                .setIconResId_left(/*episode.isWatched() ? R.drawable.ic_notification_active :*/ R.drawable.ic_star)
+                                                .setFarEnoughColor_circle_left(context.getColor(R.color.colorYellow));
+                                    })
+                            )
                             .setOnClickListener((customRecycler, itemView, s, index) -> {
                                 String restQuery = removeAdvancedSearch(helper.getQuery());
                                 String newQuery = Utility.isNotValueReturnOrElse(restQuery, "", s1 -> s1 + " ", null);

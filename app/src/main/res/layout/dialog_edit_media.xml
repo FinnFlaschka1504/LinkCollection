@@ -69,7 +69,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginRight="8dp"
                 android:enabled="false"
-                android:text="Ketegorien:"
+                android:text="Kategorien:"
                 android:textStyle="bold" />
 
             <TextView

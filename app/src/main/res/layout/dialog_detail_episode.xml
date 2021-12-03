@@ -183,7 +183,7 @@
                 android:clickable="true"
                 android:foreground="@drawable/ripple"
                 android:padding="5dp"
-                app:srcCompat="@drawable/ic_kallendar_grey" />
+                app:srcCompat="@drawable/ic_calendar_grey" />
 
 <!--            <FrameLayout-->
 <!--                android:layout_width="wrap_content"-->
@@ -249,7 +249,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:layout_marginRight="8dp"
-                android:text="Bewerting:"
+                android:text="Bewertung:"
                 android:textStyle="bold" />
 
             <FrameLayout

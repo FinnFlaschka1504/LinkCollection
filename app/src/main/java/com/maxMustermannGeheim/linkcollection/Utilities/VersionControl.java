@@ -60,7 +60,7 @@ public class VersionControl {
      * Provider in Manifest hinterlegt?
      * 'provider_paths.xml' existiert?
      * Speicherberechtigungen überprüfen & 'onRequestPermissionsResult' implementieren
-     * Sicherstellen, dass die App Parkete installieren darf
+     * Sicherstellen, dass die App Pakete installieren darf
      */
 
     public static void checkForUpdate(Activity activity, boolean visible) {
@@ -159,9 +159,9 @@ public class VersionControl {
                             Settings.changeSetting(Settings.UPDATE_FILE_NAME, uriString);
 
                             Uri uriFile = FileProvider.getUriForFile(context, BuildConfig.APPLICATION_ID + ".provider", file);
-                            String mimetype = downloadManager.getMimeTypeForDownloadedFile(downloadId);
+                            String mimeType = downloadManager.getMimeTypeForDownloadedFile(downloadId);
                             Intent myIntent = new Intent(Intent.ACTION_VIEW);
-                            myIntent.setDataAndType(uriFile, mimetype);
+                            myIntent.setDataAndType(uriFile, mimeType);
                             myIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
                             myIntent.putExtra(Intent.EXTRA_NOT_UNKNOWN_SOURCE, true);
                             myIntent.putExtra(Intent.EXTRA_INSTALLER_PACKAGE_NAME, context.getApplicationInfo().packageName);
@@ -251,7 +251,7 @@ public class VersionControl {
                 "BugFix: Episoden-Ansichten können nun auch über die Detailansicht hinzugefügt werden");
         addChange("2.5", "Darsteller und Studios können aus der TMDb importiert werden",
                 "Design der Listenelemente in Videos, Serien, Wissen und Schulden verbessert");
-        addChange("2.6", "Edit-Dialoge können jetzt nicht mehr ausversehen abgebrochen werden",
+        addChange("2.6", "Edit-Dialoge können jetzt nicht mehr aus Versehen abgebrochen werden",
                 "Detail-Dialoge überarbeitet",
                 "Beim Öffnen der Tastatur passt sich automatisch die Höhe des EditVideo-Dialog an");
         addChange("2.7", "Dropdown in EditVideos past sich dynamisch der verfügbaren Höhe an",
@@ -270,8 +270,10 @@ public class VersionControl {
                 "Auswahldialog nächste Episode überarbeitet",
                 "AdvancedSearch zu den KategorienHinzugefügt",
                 "AdvancedSearchQueries können negiert werden",
-                "Video-Modus-Menu Poristion gefixt",
-                "Verlauf zu AdvancedSearch hinzugefügt");
+                "Video-Modus-Menü Position gefixt",
+                "Verlauf zu AdvancedSearch hinzugefügt",
+                "Speichervorgang optimiert",
+                "Rechtschreibung überprüft");
     };
 
     private static void addChange(String version, String... changes) {

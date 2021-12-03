@@ -21,8 +21,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.maxMustermannGeheim.linkcollection.R;
 
-import org.json.JSONException;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -159,7 +157,7 @@ public class CustomRecycler<T>{
         return this;
     }
 
-    public CustomRecycler<T> deaktivateCustomRipple() {
+    public CustomRecycler<T> deactivateCustomRipple() {
         this.useCustomRipple = false;
         return this;
     }
@@ -292,7 +290,7 @@ public class CustomRecycler<T>{
                 T t = objectList.remove(index);
 //                mAdapter.notifyItemRangeChanged(index, 1);
                 mAdapter.notifyDataSetChanged();
-                onSwiped.runSwyped(objectList, direction, t);
+                onSwiped.runSwiped(objectList, direction, t);
             }
         };
         ItemTouchHelper helper = new ItemTouchHelper(itemTouchHelperCallback);
@@ -304,7 +302,7 @@ public class CustomRecycler<T>{
     }
 
     public interface OnSwiped<T> {
-        void runSwyped(List<T> objectList, int direction, T t);
+        void runSwiped(List<T> objectList, int direction, T t);
     }
 
     public CustomRecycler<T> setDividerMargin_inDp(int dividerMargin_inDp) {
@@ -546,16 +544,16 @@ public class CustomRecycler<T>{
     }
     public CustomRecycler<T> goTo(GoToFilter<T> goToFilter, String search) {
         final T[] currentObject = (T[]) new Object[1];
-        CustomList<T> filterdObjectList = new CustomList<>();
+        CustomList<T> filteredObjectList = new CustomList<>();
         List<T> allObjectList = getObjectList();
 
         if (search != null) {
-            filterdObjectList.clear();
-            filterdObjectList.addAll(allObjectList.stream().filter(t -> goToFilter.runGoToFilter(search, t)).collect(Collectors.toList()));
-            if (filterdObjectList.isEmpty())
+            filteredObjectList.clear();
+            filteredObjectList.addAll(allObjectList.stream().filter(t -> goToFilter.runGoToFilter(search, t)).collect(Collectors.toList()));
+            if (filteredObjectList.isEmpty())
                 Toast.makeText(context, "Kein Eintrag für diese Suche", Toast.LENGTH_SHORT).show();
-            else if (filterdObjectList.size() == 1) {
-                scrollTo(allObjectList.indexOf(filterdObjectList.get(0)), true);
+            else if (filteredObjectList.size() == 1) {
+                scrollTo(allObjectList.indexOf(filteredObjectList.get(0)), true);
                 return this;
             }
         }
@@ -564,26 +562,26 @@ public class CustomRecycler<T>{
         goToDialog
                 .setTitle("Gehe Zu")
                 .addButton("Zurück", customDialog1 -> {
-                    currentObject[0] = filterdObjectList.previous(currentObject[0]);
+                    currentObject[0] = filteredObjectList.previous(currentObject[0]);
                     customDialog1.reloadView();
                 }, false)
                 .addButton("Weiter", customDialog1 -> {
-                    currentObject[0] = filterdObjectList.next(currentObject[0]);
+                    currentObject[0] = filteredObjectList.next(currentObject[0]);
                     customDialog1.reloadView();
                 }, false)
                 .addButton(CustomDialog.BUTTON_TYPE.GO_TO_BUTTON, customDialog1 -> scrollTo(allObjectList.indexOf(currentObject[0]), true))
                 .setView(getLayoutId())
                 .setEdit(new CustomDialog.EditBuilder().setHint("Filter").setFireActionDirectly(search != null && !search.isEmpty()).setText(search != null ? search : "").allowEmpty()
                         .setOnAction((textInputHelper, textInputLayout, actionId, text1) -> {
-                    filterdObjectList.clear();
-                    filterdObjectList.addAll(allObjectList.stream().filter(t -> goToFilter.runGoToFilter(text1, t)).collect(Collectors.toList()));
-                    if (filterdObjectList.isEmpty())
+                    filteredObjectList.clear();
+                    filteredObjectList.addAll(allObjectList.stream().filter(t -> goToFilter.runGoToFilter(text1, t)).collect(Collectors.toList()));
+                    if (filteredObjectList.isEmpty())
                         Toast.makeText(context, "Kein Eintrag für diese Suche", Toast.LENGTH_SHORT).show();
-                    else if (filterdObjectList.size() == 1) {
-                        scrollTo(allObjectList.indexOf(filterdObjectList.get(0)), true);
+                    else if (filteredObjectList.size() == 1) {
+                        scrollTo(allObjectList.indexOf(filteredObjectList.get(0)), true);
                         goToDialog.dismiss();
                     } else {
-                        currentObject[0] = filterdObjectList.get(0);
+                        currentObject[0] = filteredObjectList.get(0);
                         goToDialog.reloadView();
                     }
                 }, Helpers.TextInputHelper.IME_ACTION.SEARCH))
@@ -593,7 +591,7 @@ public class CustomRecycler<T>{
                     if (currentObject[0] == null)
                         layoutView.setVisibility(View.GONE);
                     else{
-                        setItemContent.runSetCellContent(CustomRecycler.this, layoutView, currentObject[0], filterdObjectList.indexOf(currentObject[0]));
+                        setItemContent.runSetCellContent(CustomRecycler.this, layoutView, currentObject[0], filteredObjectList.indexOf(currentObject[0]));
                         layoutView.setVisibility(View.VISIBLE);
                     }
                 })

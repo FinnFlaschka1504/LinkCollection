@@ -58,8 +58,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tree;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
-import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
-import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
@@ -72,9 +70,7 @@ import com.unnamed.b.atv.model.TreeNode;
 import com.unnamed.b.atv.view.AndroidTreeView;
 
 import org.intellij.lang.annotations.Language;
-import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -85,7 +81,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
@@ -640,7 +635,7 @@ public class CategoriesActivity extends AppCompatActivity {
                     } else
                         listItem_categoryItem_image.setVisibility(View.GONE);
 
-                    CheckBox userListItem_categoryItem_check = itemView.findViewById(R.id.userlistItem_catigoryItem_ckeck);
+                    CheckBox userListItem_categoryItem_check = itemView.findViewById(R.id.userListItem_categoryItem_check);
                     userListItem_categoryItem_check.setVisibility(multiSelectMode ? View.VISIBLE : View.GONE);
                     userListItem_categoryItem_check.setChecked(selectedList.contains(parentClass));
                 })
@@ -1048,24 +1043,24 @@ public class CategoriesActivity extends AppCompatActivity {
 
     private void showRandomDialog() {
         // ToDo: auch Bilder anzeigen
-        CustomList<Pair<ParentClass, Integer>> filterdDatenObjektPairList = new CustomList<>(sortList(filterList(allDatenObjektPairList)));
-        if (filterdDatenObjektPairList.isEmpty()) {
+        CustomList<Pair<ParentClass, Integer>> filteredDatenObjektPairList = new CustomList<>(sortList(filterList(allDatenObjektPairList)));
+        if (filteredDatenObjektPairList.isEmpty()) {
             Toast.makeText(this, "Die Auswahl ist leer", Toast.LENGTH_SHORT).show();
             return;
         }
         removeFocusFromSearch();
-        final Pair<ParentClass, Integer>[] randomPair = new Pair[]{filterdDatenObjektPairList.removeRandom()};
+        final Pair<ParentClass, Integer>[] randomPair = new Pair[]{filteredDatenObjektPairList.removeRandom()};
         CustomDialog
                 .Builder(this)
                 .setTitle("Zufall")
                 .setText(randomPair[0].first.getName() + " (" + randomPair[0].second + ")")
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Nochmal", customDialog -> {
-                    if (filterdDatenObjektPairList.isEmpty()) {
+                    if (filteredDatenObjektPairList.isEmpty()) {
                         Toast.makeText(this, "Alle wurden bereits vorgeschlagen", Toast.LENGTH_SHORT).show();
                         return;
                     }
-                    randomPair[0] = filterdDatenObjektPairList.removeRandom();
+                    randomPair[0] = filteredDatenObjektPairList.removeRandom();
                     CustomDialog.changeText(customDialog, randomPair[0].first.getName() + " (" + randomPair[0].second + ")");
                 }, false)
                 .addButton("Suchen", customDialog -> {

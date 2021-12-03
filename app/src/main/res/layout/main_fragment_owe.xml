@@ -202,7 +202,7 @@
                 android:elevation="3dp"
                 android:foreground="@drawable/ripple"
                 android:gravity="center"
-                android:onClick="showPopupwindow"
+                android:onClick="showPopupWindow"
                 android:orientation="vertical">
 
                 <androidx.constraintlayout.widget.ConstraintLayout

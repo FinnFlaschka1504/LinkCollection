@@ -56,7 +56,7 @@
 
     <CheckBox
 
-        android:id="@+id/userlistItem_catigoryItem_ckeck"
+        android:id="@+id/userListItem_categoryItem_check"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_alignParentTop="true"

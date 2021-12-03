@@ -896,7 +896,7 @@ public class ShowActivity extends AppCompatActivity {
 
                                     })
                                     .setItemLayout(R.layout.list_item_episode)
-                                    .enableSwiping((objectList, direction, episode) -> {
+                                    .enableSwiping((customRecycler1, objectList, direction, episode, index) -> {
                                         if (direction == 32) {
                                             Show show = database.showMap.get(episode.getShowId());
                                             show.setAlreadyAiredList(show.getAlreadyAiredList().stream().filter(episode1 -> episode.getTmdbId() != episode1.getTmdbId()).collect(Collectors.toList()));
@@ -936,9 +936,9 @@ public class ShowActivity extends AppCompatActivity {
                     final int[] pending = {showList.size()};
 
                     if (showList.isEmpty())
-                        Toast.makeText(activity, "Nichts zum aktuallisieren markiert", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(activity, "Nichts zum aktualisieren markiert", Toast.LENGTH_SHORT).show();
                     else
-                        Toast.makeText(activity, "Aktuallisieren", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(activity, "Aktualisieren", Toast.LENGTH_SHORT).show();
 
                     showList.forEach(show ->
                             ShowActivity.apiDetailRequest(activity, show.getTmdbId(), show, () -> {
@@ -946,7 +946,7 @@ public class ShowActivity extends AppCompatActivity {
                                     pending[0]--;
                                     return;
                                 }
-                                Toast.makeText(activity, "Alle aktuallisiert", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(activity, "Alle aktualisiert", Toast.LENGTH_SHORT).show();
                                 expandableCustomRecycler.reload();
                             }, true));
                 }, false)
@@ -1132,7 +1132,7 @@ public class ShowActivity extends AppCompatActivity {
                         customDialog.setOnDialogDismiss(customDialog1 -> reLoadRecycler());
                     });
                     view.findViewById(R.id.dialog_detailShow_sync).setOnClickListener(v -> {
-                        Toast.makeText(this, "Show wird aktuallisiert", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Show wird aktualisiert", Toast.LENGTH_SHORT).show();
                         apiDetailRequest(this, show.getTmdbId(), show, () -> {
                             customDialog.reloadView();
                             Toast.makeText(this, "Fertig", Toast.LENGTH_SHORT).show();
@@ -1650,7 +1650,7 @@ public class ShowActivity extends AppCompatActivity {
             return;
         }
 //        setResult(RESULT_OK); // vielleich wichtig?
-        final Runnable[] destroyGetIimdbIdAndDetails = {null};
+        final Runnable[] destroyGetImdbIdAndDetails = {null};
         final float[] currentRating = {-1};
 
         int index = customRecycler != null ? customRecycler.getObjectList().indexOf(episode) : -1;
@@ -1882,11 +1882,11 @@ String BREAKPOINT = null;
                 })
                 .addOnDialogShown(customDialog -> {
                     if (!episode.hasAnyExtraDetails()) {
-                        destroyGetIimdbIdAndDetails[0] = getImdbIdAndDetails(new CustomList<>(episode), false, customDialog::reloadView);
+                        destroyGetImdbIdAndDetails[0] = getImdbIdAndDetails(new CustomList<>(episode), false, customDialog::reloadView);
                     }
                 })
                 .setOnDialogDismiss(customDialog -> {
-                    Utility.runRunnable(destroyGetIimdbIdAndDetails[0]);
+                    Utility.runRunnable(destroyGetImdbIdAndDetails[0]);
                     if (customRecycler != null && !cloneEpisode.equals(episode))
                         customRecycler.update(index);
                     if (startedDirectly)

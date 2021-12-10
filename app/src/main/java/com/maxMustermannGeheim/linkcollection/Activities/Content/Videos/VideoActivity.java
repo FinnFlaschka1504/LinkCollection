@@ -81,7 +81,6 @@ import com.maxMustermannGeheim.linkcollection.Utilities.MinDimensionLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.mikhaellopez.lazydatepicker.LazyDatePicker;
 
-import org.intellij.lang.annotations.Language;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 import org.json.JSONArray;
@@ -586,8 +585,8 @@ public class VideoActivity extends AppCompatActivity {
                             TextInputEditText maxLength_edit = customDialog.findViewById(R.id.dialog_advancedSearch_video_length_max_edit);
 
                             if (minLength[0] != null) {
-                                minLength_edit.setText(CustomUtility.isNotValueReturnOrElse(minLength[0], -1, String::valueOf, integer -> null));
-                                maxLength_edit.setText(CustomUtility.isNotValueReturnOrElse(maxLength[0], -1, String::valueOf, integer -> null));
+                                minLength_edit.setText(CustomUtility.isNotValueReturnOrElse(minLength[0], String::valueOf, integer -> null, -1));
+                                maxLength_edit.setText(CustomUtility.isNotValueReturnOrElse(maxLength[0], String::valueOf, integer -> null, -1));
                             }
 
                             // ---------------
@@ -905,8 +904,8 @@ public class VideoActivity extends AppCompatActivity {
     public static Utility.GenericReturnInterface<String, Pair<Integer, Integer>> getNumberRangeParser() {
         return sub -> {
             String[] range = sub.split("-");
-            int min = range.length > 0 ? Integer.parseInt(CustomUtility.isNotValueOrElse(range[0], "", "-1")) : -1;
-            int max = range.length > 1 ? Integer.parseInt(CustomUtility.isNotValueOrElse(range[1], "", "-1")) : (sub.endsWith("-") ? -1 : min);
+            int min = range.length > 0 ? Integer.parseInt(CustomUtility.isNotValueOrElse(range[0], "-1", "")) : -1;
+            int max = range.length > 1 ? Integer.parseInt(CustomUtility.isNotValueOrElse(range[1], "-1", "")) : (sub.endsWith("-") ? -1 : min);
 
             return Pair.create(min, max);
         };

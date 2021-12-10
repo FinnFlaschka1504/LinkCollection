@@ -3,14 +3,16 @@
 buildscript {
     repositories {
         google()
+        mavenCentral()
         jcenter()
-        maven {url 'https://maven.fabric.io/public'}
+//        maven {url 'https://maven.fabric.io/public'}
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.0.1'
-        classpath 'com.google.gms:google-services:4.3.3'
-        classpath 'io.fabric.tools:gradle:1.31.2'
+        classpath 'com.android.tools.build:gradle:4.2.2'
+        classpath 'com.google.gms:google-services:4.3.10'
+//        classpath 'io.fabric.tools:gradle:1.31.2'
+//        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.8.1'
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
@@ -19,10 +21,20 @@ buildscript {
 allprojects {
     repositories {
         google()
+        mavenCentral()
         jcenter()
-        maven { url 'https://jitpack.io' }
-        maven {url 'https://maven.fabric.io/public'}
-        maven { url 'http://dl.bintray.com/beanshell/Beanshell'}
+        maven {
+            url 'https://jitpack.io'
+            allowInsecureProtocol = true
+        }
+//        maven {
+//            url 'https://maven.fabric.io/public'
+//            allowInsecureProtocol = true
+//        }
+        maven {
+            url 'http://dl.bintray.com/beanshell/Beanshell'
+            allowInsecureProtocol = true
+        }
 //        HashMap<String, Object> test = new HashMap<String, Object>()
 //        test.put("id", "bintray-beanshell-Beanshell")
 //        test.put("name", "bintray")

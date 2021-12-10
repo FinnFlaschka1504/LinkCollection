@@ -104,10 +104,11 @@ public class CustomList<E> extends ArrayList<E> {
         return this;
     }
 
-//    public CustomList<E> addAll(@NonNull Collection<? extends E> c) {
-//        super.addAll(c);
-//        return this;
-//    }
+    @NonNull
+    @Override
+    public CustomList<E> subList(int fromIndex, int toIndex) {
+        return new CustomList<>(super.subList(fromIndex, toIndex));
+    }
 
     public boolean isFirst(E e) {
         if (e == null || isEmpty())

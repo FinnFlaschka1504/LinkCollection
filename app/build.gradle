@@ -1,16 +1,17 @@
 apply plugin: 'com.android.application'
 apply plugin: 'com.google.gms.google-services'
-apply plugin: 'io.fabric'
+//apply plugin: 'io.fabric'
+//apply plugin: 'com.google.firebase.crashlytics'
 
 android {
     compileSdkVersion 30
-    buildToolsVersion "29.0.2"
+    buildToolsVersion "30.0.2"
     defaultConfig {
         applicationId "com.maxMustermannGeheim.linkcollection"
         minSdkVersion 27
-        targetSdkVersion 29
-        versionCode 9
-        versionName "3.1"
+        targetSdkVersion 30
+        versionCode 10
+        versionName "3.2"
         testInstrumentationRunner "androidx.dialog_poster.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -27,9 +28,9 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'androidx.appcompat:appcompat:1.3.1'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.0'
-    implementation 'com.google.firebase:firebase-database:20.0.1'
+    implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.2'
+    implementation 'com.google.firebase:firebase-database:20.0.3'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.navigation:navigation-fragment:2.3.5'
     implementation 'androidx.navigation:navigation-ui:2.3.5'
@@ -48,26 +49,28 @@ dependencies {
     implementation 'com.maltaisn:calcdialog:2.1.0'
 
     // Crash
-    implementation 'com.google.firebase:firebase-crash:16.2.1'
-    implementation 'com.google.firebase:firebase-analytics:19.0.1'
-    implementation 'com.crashlytics.sdk.android:crashlytics:2.10.1'
+//    implementation 'com.google.firebase:firebase-crash:16.2.1'
+//    implementation 'com.google.firebase:firebase-analytics:20.0.0'
+//    implementation 'com.crashlytics.sdk.android:crashlytics:17.2.2'
+//    implementation platform('com.google.firebase:firebase-bom:29.0.1')
+//    implementation 'com.google.firebase:firebase-crashlytics'
+//    implementation 'com.google.firebase:firebase-analytics'
 
     // Eigene
     implementation project(':AndroidUtilities')
-
 //    implementation 'com.github.FinnFlaschka1504:AndroidUtilities:3.6.5'
 
     implementation 'com.github.duanhong169:drawabletoolbox:1.0.7'
-    implementation "androidx.browser:browser:1.3.0"
+    implementation "androidx.browser:browser:1.3.0" // <-- vorsicht beim upgraden
 
     implementation 'com.github.bumptech.glide:glide:4.11.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
-    implementation 'com.android.support:support-core-utils:28.0.0'
+    implementation 'androidx.legacy:legacy-support-core-utils:1.0.0'
     implementation 'joda-time:joda-time:2.10.5'
     implementation 'com.scottyab:aescrypt:0.0.1'
     implementation 'me.zhanghai.android.materialratingbar:library:1.4.0'
     implementation 'com.squareup.okhttp3:okhttp:3.12.1'
-    implementation 'com.pixplicity.sharp:library:1.1.0'
+//    implementation 'com.pixplicity.sharp:library:1.1.0'
 //    implementation 'com.github.stfalcon:StfalconPriceRangeBar:0.1.2'
     implementation 'com.github.Innovattic:range-seek-bar:v1.0.6'
     implementation 'com.github.johndeverall:opengraph-java:2d69b89c1a'
@@ -83,7 +86,7 @@ dependencies {
     implementation 'me.zhanghai.android.fastscroll:library:1.1.7'
 
     implementation 'com.github.pchmn:MaterialChipsInput:1.0.8'
-    api 'com.theartofdev.edmodo:android-image-cropper:2.8.+'
+    api 'com.theartofdev.edmodo:android-image-cropper:2.8.0'
 
     implementation group: 'org.apache-extras.beanshell', name: 'bsh', version: '2.0b6'
     implementation group: 'com.google.guava', name: 'guava', version: '28.2-android'

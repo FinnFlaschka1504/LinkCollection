@@ -91,7 +91,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -561,10 +560,16 @@ public class ShowActivity extends AppCompatActivity {
                     int views = getViews(episodeList);
                     String viewsCountText = (views > 1 ? views + " Episoden" : (views == 1 ? "Eine" : "Keine") + " Episode") + " angesehen";
                     SpannableStringBuilder builder = new SpannableStringBuilder().append(elementCountText).append("\n", new RelativeSizeSpan(0.5f), Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
-                    int watchedMinutes = Utility.concatenateCollections(filteredList, this::getEpisodeList).stream().mapToInt(episode -> Utility.isNotValueOrElse(episode.getLength(), -1, 0) * episode.getDateList().size()).sum();
+
+                    int watchedMinutes = filteredList.stream().mapToInt(show -> {
+                        int averageRuntime = CustomUtility.isNotValueOrElse(show.getAverageRuntime(), 0, -1);
+                        List<Show.Episode> episodeList1 = getEpisodeList(show);
+                        return episodeList1.stream().mapToInt(episode -> CustomUtility.isNotValueOrElse(episode.getLength(), averageRuntime, -1, 0) * episode.getDateList().size()).sum();
+                    }).sum();
                     String timeString = Utility.formatDuration(Duration.ofMinutes(watchedMinutes), null);
                     if (Utility.stringExists(timeString))
                         builder.append(timeString).append("\n");
+
                     elementCount.setText(builder.append(viewsCountText));
                     return filteredList;
                 })
@@ -932,7 +937,6 @@ public class ShowActivity extends AppCompatActivity {
                 .addButton(R.drawable.ic_sync, customDialog1 -> {
 
                     List<Show> showList = database.showMap.values().stream().filter(Show::isNotifyNew).collect(Collectors.toList());
-                    showList = new CustomList<>(new CustomList<>(showList).filter(show -> show.getTmdbId() == 1429, false));
                     final int[] pending = {showList.size()};
 
                     if (showList.isEmpty())
@@ -941,14 +945,15 @@ public class ShowActivity extends AppCompatActivity {
                         Toast.makeText(activity, "Aktualisieren", Toast.LENGTH_SHORT).show();
 
                     showList.forEach(show ->
-                            ShowActivity.apiDetailRequest(activity, show.getTmdbId(), show, () -> {
+                            apiDetailRequest(activity, show.getTmdbId(), show, () -> {
                                 if (pending[0] > 1) {
                                     pending[0]--;
                                     return;
                                 }
                                 Toast.makeText(activity, "Alle aktualisiert", Toast.LENGTH_SHORT).show();
+                                Database.saveAll();
                                 expandableCustomRecycler.reload();
-                            }, true));
+                            }, true, false));
                 }, false)
                 .alignPreviousButtonsLeft()
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
@@ -1136,7 +1141,7 @@ public class ShowActivity extends AppCompatActivity {
                         apiDetailRequest(this, show.getTmdbId(), show, () -> {
                             customDialog.reloadView();
                             Toast.makeText(this, "Fertig", Toast.LENGTH_SHORT).show();
-                        }, true);
+                        }, true, true);
                     });
                     view.findViewById(R.id.dialog_detailShow_sync).setOnLongClickListener(v -> {
                         Utility.GenericInterface<Boolean> updateEpisodes = all -> {
@@ -1151,7 +1156,7 @@ public class ShowActivity extends AppCompatActivity {
                                 .addButton("Alle", customDialog1 -> updateEpisodes.run(true))
                                 .addButton("Wo Nötig", customDialog1 -> updateEpisodes.run(false))
                                 .markLastAddedButtonAsActionButton()
-                                .enableExpandButtons()
+                                .enableExpandButtons(false)
                                 .show();
                         return true;
                     });
@@ -1164,7 +1169,7 @@ public class ShowActivity extends AppCompatActivity {
 
 
                     if (show.getLastUpdated() == null || System.currentTimeMillis() - show.getLastUpdated().getTime() > 86400000)
-                        apiDetailRequest(this, show.getTmdbId(), show, customDialog::reloadView, true);
+                        apiDetailRequest(this, show.getTmdbId(), show, customDialog::reloadView, true, true);
                 })
                 .show();
     }
@@ -1239,7 +1244,7 @@ public class ShowActivity extends AppCompatActivity {
 
 
                         if (!reload && (editShow.getLastUpdated() == null || System.currentTimeMillis() - editShow.getLastUpdated().getTime() > 86400000))
-                            apiDetailRequest(this, show.getTmdbId(), editShow, customDialog::reloadView, true);
+                            apiDetailRequest(this, show.getTmdbId(), editShow, customDialog::reloadView, true, true);
                     } else {
 //                        view.findViewById(R.id.dialog_editOrAdd_show_watchLater).setVisibility(View.VISIBLE);
                         if (CustomUtility.stringExists(searchQuery))
@@ -1452,7 +1457,7 @@ public class ShowActivity extends AppCompatActivity {
                 .show();
 
         if (show.getLastUpdated() == null || System.currentTimeMillis() - show.getLastUpdated().getTime() > 86400000)
-            apiDetailRequest(this, show.getTmdbId(), show, customDialog::reloadView, true);
+            apiDetailRequest(this, show.getTmdbId(), show, customDialog::reloadView, true, true);
 
         return seasonRecycler;
     }
@@ -1867,7 +1872,7 @@ String BREAKPOINT = null;
                     ((TextView) view.findViewById(R.id.dialog_detailEpisode_release)).setText(Utility.isNullReturnOrElse(episode.getAirDate(), "", date -> new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(date)));
 
 
-                    RatingBar dialog_detailEpisode_rating = new Helpers.RatingHelper(view.findViewById(R.id.customRating_layout)).setRating(Utility.isNotValueOrElse(currentRating[0], -1f, episode.getRating())).getRatingBar();
+                    RatingBar dialog_detailEpisode_rating = new Helpers.RatingHelper(view.findViewById(R.id.customRating_layout)).setRating(CustomUtility.isNotValueOrElse(currentRating[0], episode.getRating(), -1f)).getRatingBar();
 //                    dialog_detailEpisode_rating.setRating(episode.getRating());
                     CustomDialog.ButtonHelper actionButton = customDialog.getActionButton();
                     dialog_detailEpisode_rating.setOnRatingBarChangeListener((ratingBar, rating, fromUser) -> {
@@ -2164,7 +2169,7 @@ String BREAKPOINT = null;
 
                 CustomList uuidList = integerList.map((Function<Integer, Object>) idUuidMap::get).filter(Objects::nonNull, false);
                 show.setGenreIdList(uuidList);
-                apiDetailRequest(this, show.getTmdbId(), show, customDialog::reloadView, false);
+                apiDetailRequest(this, show.getTmdbId(), show, customDialog::reloadView, false, true);
                 Utility.getImdbIdFromTmdbId(this, show.getTmdbId(), "show", s -> {
                     if (Utility.stringExists(s))
                         show.setImdbId(s);
@@ -2226,7 +2231,7 @@ String BREAKPOINT = null;
 
     }
 
-    private static void apiDetailRequest(AppCompatActivity activity, int id, Show show, Runnable onFinish, boolean update) {
+    public static void apiDetailRequest(AppCompatActivity activity, int id, Show show, Runnable onFinish, boolean update, boolean saveOnCompletion) {
         if (!Utility.isOnline(activity))
             return;
 
@@ -2255,6 +2260,9 @@ String BREAKPOINT = null;
                     show.setStatus(response.getString("status"));
                 if (response.has("poster_path"))
                     show.setImagePath(response.getString("poster_path"));
+                JSONArray episode_run_time;
+                if (response.has("episode_run_time") && (episode_run_time = response.getJSONArray("episode_run_time")).length() > 0)
+                    show.setAverageRuntime(episode_run_time.getInt(0));
 
                 JSONArray seasonArray_json = response.getJSONArray("seasons");
                 List<Show.Season> seasonList = new ArrayList<>();
@@ -2296,7 +2304,8 @@ String BREAKPOINT = null;
 
                 show.setLastUpdated(new Date());
                 onFinish.run();
-                Database.saveAll();
+                if (saveOnCompletion)
+                    Database.saveAll();
                 if (activity instanceof ShowActivity)
                     ((ShowActivity) activity).reLoadRecycler();
                 else if (activity instanceof MainActivity)

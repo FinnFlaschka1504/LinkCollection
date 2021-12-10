@@ -67,6 +67,7 @@ public class Show extends ParentClass {
     private String language;
     private String imdbId;
     private REQUEST_IMDB_ID_TYPE requestImdbIdType = REQUEST_IMDB_ID_TYPE.TMDB;
+    private int averageRuntime = -1;
 
     public Show(String name) {
         uuid = "show_" + UUID.randomUUID().toString();
@@ -231,6 +232,14 @@ public class Show extends ParentClass {
     public Show setRequestImdbIdType(REQUEST_IMDB_ID_TYPE requestImdbIdType) {
         this.requestImdbIdType = requestImdbIdType;
         return this;
+    }
+
+    public int getAverageRuntime() {
+        return averageRuntime;
+    }
+
+    public void setAverageRuntime(int averageRuntime) {
+        this.averageRuntime = averageRuntime;
     }
 
     @Override

@@ -27,7 +27,9 @@ import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.finn.androidUtilities.CustomDialog;
+import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomRecycler;
+import com.finn.androidUtilities.CustomUtility;
 import com.google.gson.JsonObject;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.BuildConfig;
@@ -85,7 +87,7 @@ public class VersionControl {
                 final String version = getVersion(activity);
                 final String newVersion = response.getJSONArray("elements").getJSONObject(0).getString("versionName");
 
-                if (version.equals(newVersion)) {
+                if (compareVersions(version, CustomUtility.isNotNullOrElse(newVersion, "0")) != -1) {
                     if (visible)
                         CustomDialog.Builder(activity)
                                 .setTitle("Kein Update Verfügbar")
@@ -229,7 +231,30 @@ public class VersionControl {
     }
 
     public static int compareVersions(String thisVers, String thatVers) {
-        return thisVers.compareTo(thatVers);
+        String[] thisSplits = thisVers.split("\\.");
+        String[] thatSplits = thatVers.split("\\.");
+
+        for (int i = 0; i < thisSplits.length; i++) {
+            if (i == thisSplits.length - 1 && i == thatSplits.length - 1) {
+                return Integer.compare(Integer.parseInt(thisSplits[i]), Integer.parseInt(thatSplits[i]));
+            } else if (i > thatSplits.length - 1) {
+                if (new com.finn.androidUtilities.CustomList<>(thisSplits).subList(i + 1, thisSplits.length).join("").matches(".*[1-9].*"))
+                    return 1;
+                else
+                    return 0;
+            } else if (i == thisSplits.length - 1) {
+                if (new CustomList<>(thatSplits).subList(i + 1, thatSplits.length).join("").matches(".*[1-9].*"))
+                    return -1;
+                else
+                    return 0;
+            } else {
+                int compare = Integer.compare(Integer.parseInt(thisSplits[i]), Integer.parseInt(thatSplits[i]));
+                if (compare != 0)
+                    return compare;
+            }
+        }
+        return 0;
+//        return thisVers.compareTo(thatVers);
     }
     //  <----- Version -----
 
@@ -268,12 +293,13 @@ public class VersionControl {
                 "Divider in Listen angepasst",
                 "Video-Kalender kann gefiltert werden",
                 "Auswahldialog nächste Episode überarbeitet",
-                "AdvancedSearch zu den KategorienHinzugefügt",
+                "AdvancedSearch zu den Kategorien hinzugefügt",
                 "AdvancedSearchQueries können negiert werden",
                 "Video-Modus-Menü Position gefixt",
                 "Verlauf zu AdvancedSearch hinzugefügt",
                 "Speichervorgang optimiert",
-                "Rechtschreibung überprüft");
+                "Rechtschreibung überprüft",
+                "Standardlängen zu Serien hinzugefügt");
     };
 
     private static void addChange(String version, String... changes) {

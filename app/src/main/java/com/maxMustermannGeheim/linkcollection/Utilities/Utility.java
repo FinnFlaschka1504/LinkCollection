@@ -133,7 +133,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.pixplicity.sharp.Sharp;
+//import com.pixplicity.sharp.Sharp;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
@@ -639,23 +639,29 @@ public class Utility {
                 .setView(customDialog -> new CustomRecycler<String>((AppCompatActivity) context)
                         .setItemLayout(R.layout.list_item_select_thumbnail)
                         .setObjectList(imageUrlList)
-                        .setSetItemContent((customRecycler, itemView, s, index) -> {
+                        .setSetItemContent((customRecycler, itemView, imageUrl, index) -> {
                             ImageView thumbnail = itemView.findViewById(R.id.listItem_selectThumbnail_thumbnail);
                             thumbnail.setVisibility(View.VISIBLE);
                             View editUrlLayout = itemView.findViewById(R.id.listItem_selectThumbnail_editLayout);
                             editUrlLayout.setVisibility(View.GONE);
                             TextInputLayout listItem_selectThumbnail_url_layout = itemView.findViewById(R.id.listItem_selectThumbnail_url_layout);
                             EditText listItem_selectThumbnail_url = listItem_selectThumbnail_url_layout.getEditText();
-                            listItem_selectThumbnail_url.setText(s);
+                            listItem_selectThumbnail_url.setText(imageUrl);
                             Button listItem_selectThumbnail_test = itemView.findViewById(R.id.listItem_selectThumbnail_test);
 
-                            Utility.loadUrlIntoImageView(context, thumbnail, s, null, () -> {
+                            Runnable showFailedTextBox = () -> {
                                 thumbnail.setVisibility(View.GONE);
                                 editUrlLayout.setVisibility(View.VISIBLE);
                                 new Helpers.TextInputHelper(listItem_selectThumbnail_test::setEnabled, listItem_selectThumbnail_url_layout)
                                         .setValidation(listItem_selectThumbnail_url_layout, (validator, text1) -> validator.setRegEx(CategoriesActivity.pictureRegexAll));
+                            };
 
-                            });
+                            if (imageUrl.startsWith("https")) {
+                                Utility.loadUrlIntoImageView(context, thumbnail, imageUrl, null, showFailedTextBox);
+                            } else {
+                                /*imageUrl.startsWith("http://") || imageUrl.startsWith("data:image")*/
+                                showFailedTextBox.run();
+                            }
 
                             listItem_selectThumbnail_test.setOnClickListener(v2 -> {
                                 String newUrl = listItem_selectThumbnail_url.getText().toString().trim();
@@ -2135,7 +2141,10 @@ public class Utility {
     /**  ------------------------- Toast ------------------------->  */
     public static Toast centeredToast(Context context, String text) {
         Toast toast = Toast.makeText(context, text, Toast.LENGTH_SHORT);
-        TextView v = toast.getView().findViewById(android.R.id.message);
+        View toastView = toast.getView();
+        if (toastView == null)
+            return toast;
+        TextView v = toastView.findViewById(android.R.id.message);
         if (v != null) v.setGravity(Gravity.CENTER);
         return toast;
     }
@@ -2146,7 +2155,10 @@ public class Utility {
 
     public static void showOnClickToast(Context context, String text, View.OnClickListener onClickListener) {
         Toast toast = centeredToast(context, text);
-        View view = toast.getView().findViewById(android.R.id.message);
+        View toastView = toast.getView();
+        if (toastView == null)
+            return;
+        TextView view = toastView.findViewById(android.R.id.message);
         if (view != null) view.setOnClickListener(onClickListener);
         toast.show();
     }
@@ -4309,7 +4321,7 @@ public class Utility {
             public void onResponse(Call call, Response response) throws IOException {
                 InputStream stream = response.body().byteStream();
                 try {
-                    Sharp.loadInputStream(stream).into(target);
+//                    Sharp.loadInputStream(stream).into(target);
                 } catch (Exception e) {
                     runOnFailure.run();
                 }

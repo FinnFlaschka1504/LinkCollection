@@ -92,7 +92,9 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -447,63 +449,112 @@ public class Settings extends AppCompatActivity {
                 .setSettingsDialog(new Utility.Triple<>(R.layout.dialog_settings_show, (customDialog, view, space) -> {
                     ((Spinner) view.findViewById(R.id.dialogSettingsShow_episodes_preview)).setSelection(Integer.parseInt(getSingleSetting(context, SETTING_SHOW_EPISODE_PREVIEW)));
                     view.findViewById(R.id.dialogSettingsShow_episodes_update).setOnClickListener(v -> {
-                        com.finn.androidUtilities.CustomList<Show.Episode> episodes = new com.finn.androidUtilities.CustomList<>(Utility.concatenateCollections(Utility.concatenateCollections(database.showMap.values(), Show::getSeasonList), season -> season.getEpisodeMap().values())).filter(episode -> !Utility.stringExists(episode.getImdbId()), false);
 
-//                        episodes.forEach(episode -> {
-//                            if (episode.getImdbId() != null && episode.getImdbId().equals("null"))
-//                                episode.setImdbId(null);
-//                        });
-//
-//                        Database.saveAll();
-//                        if (true)
-//                            return;
+                        CustomDialog.Builder(view.getContext())
+                                .setTitle("Episoden Aktualisieren")
+                                .setText("Sollen alle Episoden ohne Details aktualisiert werden?\nDies kann eine Weile dauern.")
+                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog0 -> {
+                                    com.finn.androidUtilities.CustomList<Show.Episode> episodes = new com.finn.androidUtilities.CustomList<>(Utility.concatenateCollections(Utility.concatenateCollections(database.showMap.values(), Show::getSeasonList), season -> season.getEpisodeMap().values())).filter(episode -> !Utility.stringExists(episode.getImdbId()), false);
 
-                        int length = episodes.size();
-                        final int[] doneCount = {0};
+                                    int length = episodes.size();
+                                    final int[] doneCount = {0};
 
-                        final Show.Episode[] currentEpisode = {episodes.getFirst()};
-                        final Runnable[] loadDetails = {null};
+                                    final Show.Episode[] currentEpisode = {episodes.getFirst()};
+                                    final Runnable[] loadDetails = {null};
 
-                        CustomDialog statusDialog = CustomDialog.Builder(view.getContext())
-                                .setTitle("Status")
-                                .setText("Fortschritt: 0/" + length)
-                                .addButton("Fertig")
-                                .markLastAddedButtonAsActionButton()
-                                .hideLastAddedButton()
-                                .addOnDialogDismiss(customDialog1 -> {
-                                    loadDetails[0] = () -> {
+                                    CustomDialog statusDialog = CustomDialog.Builder(view.getContext())
+                                            .setTitle("Status")
+                                            .setText("Fortschritt: 0/" + length)
+                                            .addButton("Fertig")
+                                            .markLastAddedButtonAsActionButton()
+                                            .hideLastAddedButton()
+                                            .addOnDialogDismiss(customDialog1 -> {
+                                                loadDetails[0] = () -> {
+                                                };
+                                            })
+                                            .show();
+
+                                    Runnable updateStatus = () -> {
+                                        statusDialog.setText("Fortschritt: " + doneCount[0] + "/" + length);
+
+                                        if (doneCount[0] < length) {
+                                            currentEpisode[0] = episodes.next(currentEpisode[0], false);
+                                            loadDetails[0].run();
+                                        }
+                                        else {
+                                            Database.saveAll();
+                                            Toast.makeText(context, "Aktualisierung abgeschlossen", Toast.LENGTH_SHORT).show();
+                                            statusDialog.getActionButton().setVisibility(View.VISIBLE);
+                                        }
                                     };
+
+                                    loadDetails[0] = () -> {
+                                        Utility.getImdbIdFromTmdbId(context, currentEpisode[0].getTmdbId(), "episode", s -> {
+                                            currentEpisode[0].setImdbId(s);
+                                            doneCount[0]++;
+                                            updateStatus.run();
+                                        });
+                                    };
+
+                                    loadDetails[0].run();
                                 })
                                 .show();
 
-                        Runnable updateStatus = () -> {
-                            statusDialog.setText("Fortschritt: " + doneCount[0] + "/" + length);
-
-                            if (doneCount[0] < length) {
-                                currentEpisode[0] = episodes.next(currentEpisode[0], false);
-                                loadDetails[0].run();
-                            }
-                            else {
-                                Database.saveAll();
-                                Toast.makeText(context, "Aktualisierung abgeschlossen", Toast.LENGTH_SHORT).show();
-                                statusDialog.getActionButton().setVisibility(View.VISIBLE);
-                            }
-                        };
-
-                        loadDetails[0] = () -> {
-                            Utility.getImdbIdFromTmdbId(context, currentEpisode[0].getTmdbId(), "episode", s -> {
-                                currentEpisode[0].setImdbId(s);
-                                doneCount[0]++;
-                                updateStatus.run();
-                            });
-                        };
-
-                        loadDetails[0].run();
 
                     });
                     view.findViewById(R.id.dialogSettingsShow_edit_importGenres).setOnClickListener(v -> {
                         Utility.importTmdbGenre(customDialog.getDialog().getContext(), false, false);
                         context.setResult(RESULT_OK);
+                    });
+                    view.findViewById(R.id.dialogSettingsShow_general_updateShowDetails).setOnClickListener(v -> {
+                        CustomDialog.Builder(v.getContext())
+                                .setTitle("Shows Aktualisieren")
+                                .setText("Sollen die Details aller Shows aktualisiert werden?\nDies kann einen Moment dauern")
+                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
+                                    List<String> resultList = new ArrayList<>();
+                                    Runnable showResultDialog = () -> {
+                                        CustomDialog.Builder(v.getContext())
+                                                .setTitle("Ergebnisse")
+                                                .setText("Folgende Serien wurden aktualisiert:\n\n" + String.join("\n", resultList))
+                                                .enableTitleBackButton()
+                                                .show();
+                                    };
+
+                                    CustomList<Show> showList = database.showMap.values().stream().sorted(ParentClass::compareByName).collect(Collectors.toCollection(CustomList::new));
+//                                            .subList(0, 2);
+                                    Iterator<Show>[] iterator = new Iterator[]{showList.iterator()};
+                                    CustomDialog progressDialog = CustomDialog.Builder(v.getContext())
+                                            .setTitle("Aktualisierungs Fortschritt")
+                                            .setText("Fortschritt: -/-")
+                                            .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON, customDialog2 -> {
+                                                iterator[0] = null;
+                                            })
+                                            .show();
+
+                                    Runnable makeStep = new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            if (iterator[0] != null && iterator[0].hasNext()) {
+                                                Show show = iterator[0].next();
+                                                ShowActivity.apiDetailRequest((AppCompatActivity) v.getContext(), show.getTmdbId(), show, () -> {
+                                                    resultList.add(show.getName());
+                                                    progressDialog.setText(String.format(Locale.getDefault(), "Fortschritt: %d/%d", resultList.size(), showList.size()));
+                                                    this.run();
+                                                }, true, false);
+
+                                            } else {
+                                                progressDialog.dismiss();
+                                                showResultDialog.run();
+                                            }
+                                        }
+                                    };
+
+                                    makeStep.run();
+
+                                })
+                                .show();
                     });
                 }, new Space.OnClick() {
                     @Override

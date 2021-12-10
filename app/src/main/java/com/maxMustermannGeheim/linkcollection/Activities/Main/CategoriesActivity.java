@@ -350,8 +350,8 @@ public class CategoriesActivity extends AppCompatActivity {
                             TextInputEditText maxLength_edit = customDialog.findViewById(R.id.dialog_advancedSearch_category_count_max_edit);
 
                             if (minCount[0] != null) {
-                                minLength_edit.setText(CustomUtility.isNotValueReturnOrElse(minCount[0], -1, String::valueOf, integer -> null));
-                                maxLength_edit.setText(CustomUtility.isNotValueReturnOrElse(maxCount[0], -1, String::valueOf, integer -> null));
+                                minLength_edit.setText(CustomUtility.isNotValueReturnOrElse(minCount[0], String::valueOf, integer -> null, -1));
+                                maxLength_edit.setText(CustomUtility.isNotValueReturnOrElse(maxCount[0], String::valueOf, integer -> null, -1));
                             }
 
                             // ---------------
@@ -573,9 +573,9 @@ public class CategoriesActivity extends AppCompatActivity {
                 .setSetItemContent((customRecycler, itemView, parentClassIntegerPair, index) -> {
                     FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, itemHeight);
                     if (index < columnCount)
-                        params.setMargins(defaultMargin, topMargin, defaultMargin, defaultMargin);
+                        params.setMargins(defaultMargin, topMargin + defaultMargin, defaultMargin, defaultMargin);
                     else if (index + 1 >= size[0] - ((size[0] - 1) % columnCount))
-                        params.setMargins(defaultMargin, defaultMargin, defaultMargin, bottomMargin);
+                        params.setMargins(defaultMargin, defaultMargin, defaultMargin, bottomMargin + defaultMargin);
                     else
                         params.setMargins(defaultMargin, defaultMargin, defaultMargin, defaultMargin);
                     itemView.setLayoutParams(params);
@@ -839,6 +839,7 @@ public class CategoriesActivity extends AppCompatActivity {
                 .setSetViewContent((customDialog, view1, reload) -> {
                     TextInputLayout dialog_editTmdbCategory_name_layout = view1.findViewById(R.id.dialog_editTmdbCategory_name_layout);
                     dialog_editTmdbCategory_name_layout.getEditText().setText(ParentClass_Alias.combineNameAndAlias(editObject));
+                    Utility.applySelectionSearch(context, category, dialog_editTmdbCategory_name_layout.getEditText());
 
                     com.finn.androidUtilities.Helpers.TextInputHelper helper =
                             new com.finn.androidUtilities.Helpers.TextInputHelper(dialog_editTmdbCategory_name_layout)

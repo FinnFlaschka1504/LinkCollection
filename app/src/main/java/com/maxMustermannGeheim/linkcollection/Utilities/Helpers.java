@@ -2090,6 +2090,8 @@ public class Helpers {
                             .setOnClickListener((customRecycler, itemView, s, index) -> {
                                 String restQuery = removeAdvancedSearch(helper.getQuery());
                                 String newQuery = Utility.isNotValueReturnOrElse(restQuery, "", s1 -> s1 + " ", null);
+                                if (s.startsWith("☆"))
+                                    s = s.substring(2);
                                 newQuery += s;
                                 helper.searchView.setQuery(newQuery, false);
                                 customDialog.dismiss();

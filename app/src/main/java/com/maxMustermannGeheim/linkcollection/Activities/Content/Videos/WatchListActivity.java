@@ -3,8 +3,11 @@ package com.maxMustermannGeheim.linkcollection.Activities.Content.Videos;
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
+import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -14,6 +17,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -22,6 +26,7 @@ import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -38,18 +43,23 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.WatchList;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
+import com.maxMustermannGeheim.linkcollection.Utilities.ImageCropUtility;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 public class WatchListActivity extends AppCompatActivity {
 
@@ -191,14 +201,24 @@ public class WatchListActivity extends AppCompatActivity {
 
     private CustomList<WatchList> sortList(CustomList<WatchList> mediaEventList) {
 
-        mediaEventList.sort(ParentClass::compareByName);
+        mediaEventList.sort((watchList1, watchList2) -> {
+            int result = 0;
+            if ((result = Boolean.compare(watchList1._isAllWatched(), watchList2._isAllWatched())) != 0)
+                return result;
+            if ((result = watchList1.getLastModified().compareTo(watchList2.getLastModified())) != 0)
+                return result * -1;
+
+            return watchList1.compareByName(watchList2);
+        });
         return mediaEventList;
     }
+
+    CustomList<PorterDuff.Mode> modes = new CustomList<>(PorterDuff.Mode.values());
+    PorterDuff.Mode currentMode = modes.get(0);
 
     private void loadRecycler() {
         RecyclerView recyclerView = findViewById(R.id.recycler);
         int imageWidth = CustomUtility.dpToPx(68);
-
 
         recycler = new CustomRecycler<WatchList>(this, recyclerView)
                 .setItemLayout(R.layout.list_item_media_event)
@@ -226,79 +246,57 @@ public class WatchListActivity extends AppCompatActivity {
                     itemView.findViewById(R.id.listItem_mediaEvent_description).setVisibility(View.GONE);
 
                     RecyclerView recycler1 = itemView.findViewById(R.id.listItem_mediaEvent_content);
+                    CustomUtility.setPadding(recycler1, 4, -1);
                     recycler1.setNestedScrollingEnabled(false);
-                    CustomRecycler<String> recycler = new CustomRecycler<String>(this, recycler1)
-                            .setObjectList(watchList.getVideoIdList())
+                    new CustomRecycler<String>(this, recycler1)
+                            .setObjectList(CustomList.cast(watchList.getVideoIdList()).sorted(Comparator.comparing(id -> watchList.getWatchedVideoIdList().contains(id))))
                             .setItemLayout(R.layout.list_item_collection_video)
                             .setSetItemContent((customRecycler1, itemView1, videoId, index1) -> {
                                 Video video = (Video) Utility.findObjectById(CategoriesActivity.CATEGORIES.VIDEO, videoId);
 
                                 String imagePath = video.getImagePath();
                                 ImageView thumbnail = itemView1.findViewById(R.id.listItem_collectionVideo_thumbnail);
-                                thumbnail.setLayoutParams(new LinearLayout.LayoutParams(imageWidth, LinearLayout.LayoutParams.WRAP_CONTENT));
+                                thumbnail.setLayoutParams(new FrameLayout.LayoutParams(imageWidth, LinearLayout.LayoutParams.WRAP_CONTENT));
                                 if (Utility.stringExists(imagePath)) {
                                     Utility.loadUrlIntoImageView(this, thumbnail,
-                                            Utility.getTmdbImagePath_ifNecessary(imagePath, "w500"), Utility.getTmdbImagePath_ifNecessary(imagePath, true), null, () -> Utility.roundImageView(thumbnail, 8));
+                                            Utility.getTmdbImagePath_ifNecessary(imagePath, "w500"), null, null, () -> Utility.roundImageView(thumbnail, 8));
                                     thumbnail.setVisibility(View.VISIBLE);
                                 } else
                                     thumbnail.setImageResource(R.drawable.ic_no_image);
+
+                                if (watchList.getWatchedVideoIdList().contains(videoId)) {
+                                    itemView1.findViewById(R.id.listItem_collectionVideo_check).setVisibility(View.VISIBLE);
+                                    int[][] states = {{ android.R.attr.state_enabled}};
+                                    int[] colors = {0x66000000};
+                                    thumbnail.setImageTintList(new ColorStateList(states, colors));
+                                } else {
+                                    itemView1.findViewById(R.id.listItem_collectionVideo_check).setVisibility(View.GONE);
+                                    int[][] states = {{ android.R.attr.state_enabled}};
+                                    int[] colors = {0x00000000};
+                                    thumbnail.setImageTintList(new ColorStateList(states, colors));
+                                }
 
                                 thumbnail.setOnLongClickListener(v -> {
                                     editWatchList(this, watchList);
                                     return true;
                                 });
 
+                                thumbnail.setOnClickListener(v -> showDetailDialog(watchList));
+
                                 CustomUtility.setPadding(itemView1, 4, 0);
 
                                 ((TextView) itemView1.findViewById(R.id.listItem_collectionVideo_text)).setVisibility(View.GONE);
-
-//                    loadPathIntoImageView(media.getImagePath(), itemView, CustomUtility.dpToPx(120), 1);
                             })
                             .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
-//                .addOptionalModifications(customRecycler -> {
-//                    if (subSelectedMedia != null) {
-//                        customRecycler
-//                                .setOnClickListener((customRecycler1, itemView, media, index) -> {
-//                                    if (!subSelectedMedia.remove(media))
-//                                        subSelectedMedia.add(media);
-//                                    customRecycler.getAdapter().notifyItemChanged(index);
-//                                    onSubSelectionChanged.run(subSelectedMedia);
-//                                });
-//                    }
-//                })
+                            .setOnClickListener((customRecycler1, itemView1, s, index1) -> showDetailDialog(watchList))
                             .generate();
 
                 })
-//                .setOnClickListener((customRecycler, itemView, mediaEvent, index) -> {
-//                    if (mediaEvent.getChildren().isEmpty()) {
-//                        if (mediaEvent._isDummy() && parent != null)
-//                            mediaEvent = parent;
-//                        startActivityForResult(new Intent(this, MediaActivity.class)
-//                                        .putExtra(CategoriesActivity.EXTRA_SEARCH, CategoriesActivity.escapeForSearchExtra(mediaEvent.getName()))
-//                                        .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.MEDIA_EVENT),
-//                                START_SEARCH_MEDIA_EVENT);
-//                    } else {
-//                        startActivityForResult(new Intent(this, MediaEventActivity.class)
-//                                        .putExtra(CategoriesActivity.EXTRA_SEARCH, CategoriesActivity.escapeForSearchExtra(mediaEvent.getName()))
-//                                        .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.MEDIA_EVENT),
-//                                START_OPEN_MEDIA_EVENT);
-//                    }
-//                })
+                .setOnClickListener((customRecycler, itemView, watchList, index) -> showDetailDialog(watchList))
                 .setOnLongClickListener((customRecycler, view, mediaEvent, index) -> editWatchList(this, mediaEvent))
-//                .enableFastScroll(scrollRange, heightList)
-                .enableFastScroll(/*WatchList::_getHeight*/)
+                .enableFastScroll()
                 .setPadding(16)
                 .generate();
-
-//        FastScroller[] fastScroller = {null};
-//        FastScrollerBuilder fastScrollerBuilder = new FastScrollerBuilder(recyclerView)
-//                .setThumbDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_thumb)))
-//                .setTrackDrawable(Objects.requireNonNull(getDrawable(R.drawable.fast_scroll_track)));
-////        fastScrollerBuilder.disableScrollbarAutoHide();
-//        fastScroller[0] = fastScrollerBuilder
-//                .setPadding(0, 20, 0, 50)
-//                .setViewHelper(new FastScrollRecyclerViewHelper(eventRecycler, fastScroller, scrollRange, heightList, false, null))
-//                .build();
 
     }
 
@@ -306,6 +304,76 @@ public class WatchListActivity extends AppCompatActivity {
         recycler.reload();
     }
     /**  <------------------------- Recycler -------------------------  */
+
+
+
+    /**  ------------------------- Detail ------------------------->  */
+    private void showDetailDialog(@NonNull WatchList watchList) {
+        removeFocusFromSearch();
+
+        int oldHashCode = watchList.hashCode();
+
+        CustomDialog.Builder(this)
+                .setTitle(watchList.getName())
+                .setText("Zuletzt Geändert: " + Utility.formatDate("dd.MM.yyyy HH:mm 'Uhr'", watchList.getLastModified()))
+                .setView(customDialog -> new CustomRecycler<Video>(this)
+                        .setItemLayout(R.layout.list_item_select)
+                        .setGetActiveObjectList(customRecycler -> CustomList.map(watchList.getVideoIdList(), id -> (Video) Utility.findObjectById(CategoriesActivity.CATEGORIES.VIDEO, id)))
+                        .enableDivider(12)
+                        .setSetItemContent((customRecycler, itemView, video, index) -> {
+                            ImageView thumbnail = itemView.findViewById(R.id.selectList_thumbnail);
+                            String imagePath;
+                            if (CustomUtility.stringExists(imagePath = video.getImagePath())) {
+                                Utility.simpleLoadUrlIntoImageView(this, thumbnail, imagePath, imagePath, 4);
+                                thumbnail.setVisibility(View.VISIBLE);
+                            } else
+                                thumbnail.setVisibility(View.GONE);
+
+                            ((TextView) itemView.findViewById(R.id.selectList_name)).setText(video.getName());
+
+                            ((CheckBox) itemView.findViewById(R.id.selectList_selected)).setChecked(watchList.getWatchedVideoIdList().contains(video.getUuid()));
+                        })
+                        .setOnClickListener((customRecycler, view, parentClass, index) -> {
+                            CheckBox checkBox = view.findViewById(R.id.selectList_selected);
+                            checkBox.setChecked(!checkBox.isChecked());
+                            List<String> watchedVideoIdList = watchList.getWatchedVideoIdList();
+
+                            if (watchedVideoIdList.contains(parentClass.getUuid())) {
+                                watchedVideoIdList.remove(parentClass.getUuid());
+                                Toast.makeText(this, "Eintrag geöffnet", Toast.LENGTH_SHORT).show();
+                            } else {
+                                watchedVideoIdList.add(parentClass.getUuid());
+                                Toast.makeText(this, "Eintrag abgeschlossen", Toast.LENGTH_SHORT).show();
+                            }
+
+//                            if (watchedVideoIdList.size() <= 0) {
+//                                dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.VISIBLE);
+//                            } else {
+//                                dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.GONE);
+//                            }
+//                            dialog_AddActorOrGenre.findViewById(saveButtonId).setEnabled(true);
+
+//                            customRecycler_selectedList.reload();
+                        })
+                        .enableFastScroll(/*(parentClassCustomRecycler, parentClass, integer) -> parentClass.getName().substring(0, 1).toUpperCase()*/)
+                        .generateRecyclerView())
+                .disableScroll()
+                .setDimensionsFullscreen()
+                .addOnDialogDismiss(customDialog -> {
+                    int newHashCode = watchList.hashCode();
+
+                    if (newHashCode != oldHashCode) {
+                        watchList.setLastModified(new Date());
+
+                        Boolean saveResult = Database.saveAll(this, CustomUtility.Triple.create(null, "", null));
+                        if (saveResult != null && saveResult)
+                            reloadRecycler();
+                    }
+                })
+                .show();
+    }
+    /**  <------------------------- Detail -------------------------  */
+
 
 
     /**  ------------------------- Edit ------------------------->  */
@@ -410,7 +478,9 @@ public class WatchListActivity extends AppCompatActivity {
         TextView emptyText = view.findViewById(R.id.fragment_selectMediaHelper_selection_empty);
         parentView.addView(view);
         int imageWidth = CustomUtility.dpToPx(64);
-        CustomRecycler<String> recycler = new CustomRecycler<String>(context, view.findViewById(R.id.fragment_selectMediaHelper_selection_recycler))
+        RecyclerView recyclerView = view.findViewById(R.id.fragment_selectMediaHelper_selection_recycler);
+        CustomUtility.setPadding(recyclerView, -1, -1, 46, -1);
+        CustomRecycler<String> recycler = new CustomRecycler<String>(context, recyclerView)
                 .setGetActiveObjectList(customRecycler -> {
                     emptyText.setVisibility(selectedVideoIds.isEmpty() ? View.VISIBLE : View.GONE);
                     return selectedVideoIds;
@@ -421,7 +491,7 @@ public class WatchListActivity extends AppCompatActivity {
 
                     String imagePath = video.getImagePath();
                     ImageView thumbnail = itemView.findViewById(R.id.listItem_collectionVideo_thumbnail);
-                    thumbnail.setLayoutParams(new LinearLayout.LayoutParams(imageWidth, LinearLayout.LayoutParams.WRAP_CONTENT));
+                    thumbnail.setLayoutParams(new FrameLayout.LayoutParams(imageWidth, LinearLayout.LayoutParams.WRAP_CONTENT));
                     if (Utility.stringExists(imagePath)) {
                         Utility.loadUrlIntoImageView(context, thumbnail,
                                 Utility.getTmdbImagePath_ifNecessary(imagePath, "w500"), Utility.getTmdbImagePath_ifNecessary(imagePath, true), null, () -> Utility.roundImageView(thumbnail, 8));
@@ -478,6 +548,11 @@ public class WatchListActivity extends AppCompatActivity {
         if (isAdd) {
             database.watchListMap.put(editWatchList.getUuid(), editWatchList);
         } else {
+            editWatchList.getWatchedVideoIdList().removeIf(id -> !editWatchList.getVideoIdList().contains(id));
+
+            if (!editWatchList.equals(oldWatchList))
+                editWatchList.setLastModified(new Date());
+
             oldWatchList.getChangesFrom(editWatchList);
         }
 
@@ -487,6 +562,7 @@ public class WatchListActivity extends AppCompatActivity {
             ((WatchListActivity) context).reloadRecycler();
     }
     /**  <------------------------- Edit -------------------------  */
+
 
 
     /**  ------------------------- Toolbar ------------------------->  */

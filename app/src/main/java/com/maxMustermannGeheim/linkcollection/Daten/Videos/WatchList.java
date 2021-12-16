@@ -3,12 +3,14 @@ package com.maxMustermannGeheim.linkcollection.Daten.Videos;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
 public class WatchList extends ParentClass {
-    List<String> videoIdList = new ArrayList<>();
-    List<String> watchedVideoIdList = new ArrayList<>();
+    private Date lastModified;
+    private List<String> videoIdList = new ArrayList<>();
+    private List<String> watchedVideoIdList = new ArrayList<>();
 
     /**  <------------------------- Constructor -------------------------  */
     public WatchList() {
@@ -29,6 +31,24 @@ public class WatchList extends ParentClass {
 
     public WatchList setVideoIdList(List<String> videoIdList) {
         this.videoIdList = videoIdList;
+        return this;
+    }
+
+    public List<String> getWatchedVideoIdList() {
+        return watchedVideoIdList;
+    }
+
+    public WatchList setWatchedVideoIdList(List<String> watchedVideoIdList) {
+        this.watchedVideoIdList = watchedVideoIdList;
+        return this;
+    }
+
+    public Date getLastModified() {
+        return lastModified;
+    }
+
+    public WatchList setLastModified(Date lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
     /**  <------------------------- Getter & Setter -------------------------  */
@@ -54,6 +74,10 @@ public class WatchList extends ParentClass {
 //        else
 //            return 563 + 36;
         return 1;
+    }
+
+    public boolean _isAllWatched() {
+        return watchedVideoIdList.size() == videoIdList.size();
     }
     /**  <------------------------- Convenience -------------------------  */
 }

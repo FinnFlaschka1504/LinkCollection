@@ -629,7 +629,8 @@ public class Database {
                 text = "Speichern Fehlgeschlagen";
         }
 
-        Toast.makeText(context, text, Toast.LENGTH_SHORT).show();
+        if (CustomUtility.stringExists(text))
+            Toast.makeText(context, text, Toast.LENGTH_SHORT).show();
         return result;
     }
 

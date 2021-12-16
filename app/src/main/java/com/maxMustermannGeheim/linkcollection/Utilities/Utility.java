@@ -1351,6 +1351,8 @@ public class Utility {
         if (filterTypeSet.contains(VideoActivity.FILTER_TYPE.NAME)) {
             if (containedInVideo(video.getName(), query, filterTypeSet.size() == 1))
                 return true;
+            if (containedInTranslation(video.getTranslationList(), query, filterTypeSet.size() == 1))
+                return true;
         }
         if (filterTypeSet.contains(VideoActivity.FILTER_TYPE.ACTOR)) {
             if (containedInActors(query, video.getDarstellerList(), filterTypeSet.size() == 1))
@@ -1376,6 +1378,13 @@ public class Utility {
             return all.equals(sub);
         else
             return all.toLowerCase().contains(sub.toLowerCase());
+    }
+
+    private static boolean containedInTranslation(List<String> all, String sub, boolean exact) {
+        if (exact)
+            return all.stream().anyMatch(s -> s.equals(sub));
+        else
+            return all.stream().anyMatch(s -> s.toLowerCase().contains(sub.toLowerCase()));
     }
 
     private static boolean containedInActors(String query, List<String> actorUuids, boolean exact) {
@@ -2343,11 +2352,11 @@ public class Utility {
                 .setGetActiveObjectList(customRecycler -> {
                     List<ParentClass> resultList;
                     if (searchQuery[0].equals("")) {
-                        allObjectsList.sort((o1, o2) -> o1.getName().compareTo(o2.getName()));
+                        allObjectsList.sort(ParentClass::compareByName);
                         resultList = allObjectsList;
                     } else
                         resultList = allObjectsList.stream().filter(parentClass -> ParentClass_Alias.containsQuery(parentClass, searchQuery[0]))
-                            .sorted((o1, o2) -> o1.getName().compareTo(o2.getName())).collect(Collectors.toList());
+                            .sorted(ParentClass::compareByName).collect(Collectors.toList());
 
                     if (resultList.isEmpty()) {
                         emptyTextView.setVisibility(View.VISIBLE);

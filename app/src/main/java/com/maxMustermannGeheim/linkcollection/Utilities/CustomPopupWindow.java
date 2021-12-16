@@ -134,8 +134,6 @@ public class CustomPopupWindow {
             }
         }
 
-        CustomUtility.logD(null, "show: %d", yoff);
-
         if (centerOnScreen)
             popupWindow.showAtLocation(anchor, Gravity.CENTER, xoff, yoff);
         else

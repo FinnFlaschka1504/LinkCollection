@@ -10,15 +10,33 @@
     android:paddingHorizontal="8dp"
     android:paddingVertical="8dp">
 
-    <ImageView
-        android:id="@+id/listItem_collectionVideo_thumbnail"
-        android:layout_width="100dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:adjustViewBounds="true"
-        android:maxHeight="150dp"
-        app:srcCompat="@drawable/ic_download"
-        tools:srcCompat="@drawable/ic_no_image" />
+    <FrameLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/listItem_collectionVideo_thumbnail"
+            android:layout_width="100dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:adjustViewBounds="true"
+            android:maxHeight="150dp"
+            android:tintMode="src_atop"
+            app:srcCompat="@drawable/ic_download"
+            tools:srcCompat="@drawable/simpsons_movie_poster"
+            tools:tint="#66000000" />
+
+        <ImageView
+            android:id="@+id/listItem_collectionVideo_check"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            app:srcCompat="@drawable/ic_check"
+            app:tint="#4CAF50"
+            tools:visibility="visible" />
+
+    </FrameLayout>
 
     <TextView
         android:id="@+id/listItem_collectionVideo_text"

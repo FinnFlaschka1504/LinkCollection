@@ -109,9 +109,7 @@ public class ParentClass extends com.finn.androidUtilities.ParentClass implement
     }
     //  <------------------------- GetChangesFrom -------------------------
 
-    /**
-     * ------------------------- Compare ------------------------->
-     */
+    /**  ------------------------- Compare ------------------------->  */
     public int compareByName(ParentClass parentClass) {
         return name.compareTo(parentClass.getName());
     }

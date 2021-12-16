@@ -78,8 +78,7 @@
                     android:id="@+id/dialog_detailShow_release"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    tools:text="Datum" />
+                    tools:text="11.12.2021" />
 
 
             </LinearLayout>

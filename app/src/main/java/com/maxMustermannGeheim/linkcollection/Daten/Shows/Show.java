@@ -238,6 +238,10 @@ public class Show extends ParentClass {
         return averageRuntime;
     }
 
+    public boolean hasAverageRuntime() {
+        return averageRuntime != -1 && averageRuntime != 0;
+    }
+
     public void setAverageRuntime(int averageRuntime) {
         this.averageRuntime = averageRuntime;
     }

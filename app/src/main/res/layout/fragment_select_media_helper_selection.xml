@@ -12,7 +12,8 @@
         android:layout_weight="1"
         android:clipToPadding="false"
         android:orientation="horizontal"
-        android:paddingHorizontal="6dp" />
+        android:paddingStart="6dp"
+        android:paddingEnd="49dp"/>
 
     <ImageView
         android:id="@+id/fragment_selectMediaHelper_selection_add"
@@ -23,8 +24,8 @@
         android:layout_marginEnd="8dp"
         android:alpha=".70"
         android:background="@drawable/grey_rounded_corners"
-        android:tint="@color/colorTileBackground"
-        app:srcCompat="@drawable/ic_add" />
+        app:srcCompat="@drawable/ic_add"
+        app:tint="@color/colorTileBackground" />
 
     <TextView
         android:id="@+id/fragment_selectMediaHelper_selection_empty"

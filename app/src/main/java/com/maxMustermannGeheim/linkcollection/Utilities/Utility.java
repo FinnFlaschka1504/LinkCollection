@@ -2393,6 +2393,7 @@ public class Utility {
 
                     customRecycler_selectedList.reload();
                 })
+                .enableFastScroll((parentClassCustomRecycler, parentClass, integer) -> parentClass.getName().substring(0, 1).toUpperCase())
                 .generate();
 
         searchView.setQueryHint(category.getPlural() + " durchsuchen");
@@ -2522,6 +2523,8 @@ public class Utility {
                 return database.genreMap;
             case PERSON:
                 return database.personMap;
+            case WATCH_LIST:
+                return database.watchListMap;
             case SHOW:
                 return database.showMap;
             case KNOWLEDGE_CATEGORIES:

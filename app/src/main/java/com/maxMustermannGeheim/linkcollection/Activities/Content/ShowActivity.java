@@ -1310,6 +1310,12 @@ public class ShowActivity extends AppCompatActivity {
             builder.append("Folgen: ", new StyleSpan(Typeface.BOLD_ITALIC), Spanned.SPAN_COMPOSING)
                     .append(String.valueOf(show.getAllEpisodesCount()));
         }
+        if (show.hasAverageRuntime()) {
+            if (!builder.toString().isEmpty())
+                builder.append(", ");
+            builder.append("je: ", new StyleSpan(Typeface.BOLD_ITALIC), Spanned.SPAN_COMPOSING)
+                    .append(Helpers.DurationFormatter.formatDefault(Duration.ofMinutes(show.getAverageRuntime()), "'%h% h~ ~''%m% min~ ~'"));
+        }
         return builder;
     }
 
@@ -1545,7 +1551,7 @@ public class ShowActivity extends AppCompatActivity {
                         itemView.findViewById(R.id.listItem_episode_extraInformation_layout).setVisibility(View.GONE);
 
                     ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(Utility.isNullReturnOrElse(episode.getAirDate(), "", date -> new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(date)));
-                    ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode.getRating() != -1 && episode.isWatched() ? episode.getRating() + " ☆" : "");
+                    ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(!CustomUtility.boolOr(episode.getRating(), -1f, 0f) && episode.isWatched() ? episode.getRating() + " ☆" : "");
                     ((TextView) itemView.findViewById(R.id.listItem_episode_viewCount)).setText(
                             episode.getDateList().size() >= 2 || (!episode.getDateList().isEmpty() && !episode.isWatched()) ? "| " + episode.getDateList().size() : "");
 
@@ -1730,7 +1736,17 @@ public class ShowActivity extends AppCompatActivity {
                                 .disableLastAddedButton()
                                 .show();
                     });
-                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_length)).setText(episode.hasLength() ? Utility.formatDuration(Duration.ofMinutes(episode.getLength()), "'%h% h~ ~''%m% min~ ~'") : "");
+                    CharSequence episodeLength;
+                    Show show;
+                    if (episode.hasLength())
+                        episodeLength = Utility.formatDuration(Duration.ofMinutes(episode.getLength()), "'%h% h~ ~''%m% min~ ~'");
+                    else if ((show = database.showMap.get(episode.getShowId())) != null && show.hasAverageRuntime())
+                        episodeLength = com.finn.androidUtilities.Helpers.SpannableStringHelper.quickColor(
+                                Helpers.DurationFormatter.formatDefault(Duration.ofMinutes(show.getAverageRuntime()), "'%h% h~ ~''%m% min~ ~'"),
+                                CustomUtility.setAlphaOfColor(getColor(R.color.colorText), 100));
+                    else
+                        episodeLength = "";
+                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_length)).setText(episodeLength);
                     TextView dialog_detailEpisode_length_label = view.findViewById(R.id.dialog_detailEpisode_length_label);
                     dialog_detailEpisode_length_label.setTextColor(episode.getLength() != -1 ? getColorStateList(R.color.clickable_text_color_normal) : getColorStateList(R.color.clickable_text_color));
                     dialog_detailEpisode_length_label.setOnClickListener(v -> {

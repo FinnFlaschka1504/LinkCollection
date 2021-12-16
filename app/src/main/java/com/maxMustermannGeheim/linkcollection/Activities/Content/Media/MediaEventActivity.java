@@ -240,20 +240,15 @@ public class MediaEventActivity extends AppCompatActivity {
 
     private CustomList<MediaEvent> sortList(CustomList<MediaEvent> mediaEventList) {
 
-        mediaEventList.sort((media1, media2) -> {
-//            File file1 = new File(media1.getContent().getImagePath());
-//            File file2 = new File(media2.getContent().getImagePath());
-//            return Long.compare(file1.lastModified(), file2.lastModified()) * -1;
-            return media1.getName().compareTo(media2.getName());
-        });
+        mediaEventList.sort(ParentClass::compareByName);
         return mediaEventList;
     }
 
     private void loadRecycler() {
         RecyclerView recyclerView = findViewById(R.id.recycler);
 
-        final CustomList<Integer>[] heightList = new CustomList[]{new CustomList<>()};
-        final Integer[] scrollRange = {0};
+//        final CustomList<Integer>[] heightList = new CustomList[]{new CustomList<>()};
+//        final Integer[] scrollRange = {0};
 
         eventRecycler = new CustomRecycler<MediaEvent>(this, recyclerView)
                 .setItemLayout(R.layout.list_item_media_event)
@@ -289,8 +284,8 @@ public class MediaEventActivity extends AppCompatActivity {
                     SpannableStringBuilder builder = new SpannableStringBuilder().append(elementCountText).append("\n", new RelativeSizeSpan(0.5f), Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
                     elementCount.setText(builder);
 
-                    heightList[0] = filteredList.stream().map(MediaEvent::_getHeight).collect(Collectors.toCollection(CustomList::new));;
-                    scrollRange[0] = heightList[0].stream().mapToInt(Integer::intValue).sum();
+//                    heightList[0] = filteredList.stream().map(MediaEvent::_getHeight).collect(Collectors.toCollection(CustomList::new));;
+//                    scrollRange[0] = heightList[0].stream().mapToInt(Integer::intValue).sum();
                     return filteredList;
                 })
                 .setSetItemContent((customRecycler, itemView, mediaEvent, index) -> {

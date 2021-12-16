@@ -132,7 +132,7 @@ public class VersionControl {
 
         request.allowScanningByMediaScanner();
         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, FILE_NAME + " (Vers. " + newVersion + ").apk");
+        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, FILE_NAME + " " + newVersion + ".apk");
 
         long enq = downloadManager.enqueue(request);
 
@@ -300,6 +300,7 @@ public class VersionControl {
                 "Speichervorgang optimiert",
                 "Rechtschreibung überprüft",
                 "Standardlängen zu Serien hinzugefügt");
+        addChange("3.3", "WatchLists zu Videos hinzugefügt");
     };
 
     private static void addChange(String version, String... changes) {

@@ -39,6 +39,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.WatchList;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -92,6 +93,7 @@ public class Database {
     public static final String URL_PARSER_MAP = "URL_PARSER_MAP";
     public static final String WATCH_LATER_LIST = "WATCH_LATER_LIST";
     public static final String COLLECTION_MAP = "COLLECTION_MAP";
+    public static final String WATCH_LIST_MAP = "WATCH_LIST_MAP";
     public Map<String, Video> videoMap = new HashMap<>();
     public Map<String, Darsteller> darstellerMap = new HashMap<>();
     public Map<String, Studio> studioMap = new HashMap<>();
@@ -99,6 +101,7 @@ public class Database {
     public Map<String, UrlParser> urlParserMap = new HashMap<>();
     //    public List<String> watchLaterList = new ArrayList<>();
     public Map<String, Collection> collectionMap = new HashMap<>();
+    public Map<String, WatchList> watchListMap = new HashMap<>();
 
     public static final String KNOWLEDGE = "KNOWLEDGE";
     public static final String KNOWLEDGE_MAP = "KNOWLEDGE_MAP";
@@ -151,6 +154,7 @@ public class Database {
                 new Content<Map, Genre>(Genre.class, genreMap, databaseCode_content, VIDEOS, GENRE_MAP),
                 new Content<Map, UrlParser>(UrlParser.class, urlParserMap, databaseCode_content, VIDEOS, URL_PARSER_MAP),
                 new Content<Map, Collection>(Collection.class, collectionMap, databaseCode_content, VIDEOS, COLLECTION_MAP),
+                new Content<Map, WatchList>(WatchList.class, watchListMap, databaseCode_content, VIDEOS, WATCH_LIST_MAP),
 
                 new Content<Map, Knowledge>(Knowledge.class, knowledgeMap, databaseCode_content, KNOWLEDGE, KNOWLEDGE_MAP),
                 new Content<Map, KnowledgeCategory>(KnowledgeCategory.class, knowledgeCategoryMap, databaseCode_content, KNOWLEDGE, KNOWLEDGE_CATEGORY_MAP),

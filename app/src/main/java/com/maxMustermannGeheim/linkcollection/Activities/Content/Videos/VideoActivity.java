@@ -68,6 +68,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.WatchList;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAutoCompleteAdapter;
@@ -1731,6 +1732,16 @@ public class VideoActivity extends AppCompatActivity {
                                                     }, false)
                                                     .alignPreviousButtonsLeft()
                                                     .addButton(CustomDialog.BUTTON_TYPE.CLOSE_BUTTON)
+                                                    .addOnDialogDismiss(customDialog2 -> {
+                                                        String text;
+                                                        if (selectedMatchesList.isEmpty())
+                                                            text = "Kien Video ausgewählt";
+                                                        else if (selectedMatchesList.size() == allMatchesList.size())
+                                                            text = "Alle Videos ausgewählt";
+                                                        else
+                                                            text = (selectedMatchesList.size() == 1 ? "Ein Video" : selectedMatchesList.size() + " Videos") + " ausgewählt";
+                                                        Toast.makeText(context, text, Toast.LENGTH_SHORT).show();
+                                                    })
                                                     .show();
                                         }, false)
                                         .addOptionalModifications(customDialog1 -> customDialog1.getLastAddedButton().enableAlignLeft())
@@ -3236,7 +3247,7 @@ public class VideoActivity extends AppCompatActivity {
             } else {
                 CustomDialog.Builder(this)
                         .setTitle(String.format(Locale.getDefault(), "Markierte %s (%d)", plural, markedVideos.size()))
-                        .setView(new com.finn.androidUtilities.CustomRecycler<Video>(this, customDialog.findViewById(R.id.dialogDetail_collection_videos))
+                        .setView(new CustomRecycler<Video>(this, customDialog.findViewById(R.id.dialogDetail_collection_videos))
                                 .setItemLayout(R.layout.list_item_collection_video)
                                 .setGetActiveObjectList(customRecycler -> markedVideos)
                                 .setSetItemContent((customRecycler1, itemView, video, index) -> {
@@ -3263,9 +3274,14 @@ public class VideoActivity extends AppCompatActivity {
 
                                     ((TextView) itemView.findViewById(R.id.listItem_collectionVideo_text)).setText(video.getName());
                                 })
-                                .setOrientation(com.finn.androidUtilities.CustomRecycler.ORIENTATION.HORIZONTAL)
+                                .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
                                 .generateRecyclerView()
                         )
+                        .enableTitleBackButton()
+                        .enableTitleRightButton(R.drawable.ic_save, customDialog1 -> {
+                            WatchListActivity.editWatchList(this, new WatchList().setVideoIdList(markedVideos.map(com.finn.androidUtilities.ParentClass::getUuid)));
+//                            Toast.makeText(this, "Videos: " + markedVideos.map(com.finn.androidUtilities.ParentClass::getName).join(", "), Toast.LENGTH_SHORT).show();
+                        })
                         .show();
             }
         };

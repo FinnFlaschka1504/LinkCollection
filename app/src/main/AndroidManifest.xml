@@ -24,13 +24,17 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme.NoTitle"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".Activities.Content.Media.MediaEventActivity"
-            android:parentActivityName=".Activities.Main.MainActivity"
-            android:configChanges="orientation|screenSize"/>
+        <activity
+            android:name=".Activities.Content.Videos.WatchListActivity"
+            android:exported="false" />
+        <activity
+            android:name=".Activities.Content.Media.MediaEventActivity"
+            android:configChanges="orientation|screenSize"
+            android:parentActivityName=".Activities.Main.MainActivity" />
         <activity
             android:name=".Activities.Content.Media.VideoPlayerActivity"
-            android:parentActivityName=".Activities.Content.Media.MediaActivity"
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize"
+            android:parentActivityName=".Activities.Content.Media.MediaActivity" />
         <activity
             android:name=".Activities.Content.Media.MediaActivity"
             android:configChanges="orientation|screenSize"
@@ -41,7 +45,9 @@
                 android:label="Medien hinzufügen">
                 <action android:name="android.intent.action.SEND" />
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
+
                 <category android:name="android.intent.category.DEFAULT" />
+
                 <data android:mimeType="image/* video/*" />
             </intent-filter>
         </activity>
@@ -71,7 +77,9 @@
                 android:icon="@drawable/ic_videos"
                 android:label="Video hinzufügen">
                 <action android:name="android.intent.action.SEND" />
+
                 <category android:name="android.intent.category.DEFAULT" />
+
                 <data android:mimeType="text/*" />
             </intent-filter>
         </activity>
@@ -94,7 +102,9 @@
                 android:icon="@drawable/ic_knowledge"
                 android:label="Quelle hinzufügen">
                 <action android:name="android.intent.action.SEND" />
+
                 <category android:name="android.intent.category.DEFAULT" />
+
                 <data android:mimeType="text/*" />
             </intent-filter>
         </activity>
@@ -112,9 +122,9 @@
             android:theme="@style/DialogActivityTheme.NoTitle" />
         <activity
             android:name=".Activities.Main.CategoriesActivity"
+            android:configChanges="orientation|screenSize"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:theme="@style/AppTheme.NoTitle"
-            android:configChanges="orientation|screenSize"/>
+            android:theme="@style/AppTheme.NoTitle" />
         <activity
             android:name=".Activities.Settings"
             android:configChanges="orientation|screenSize"

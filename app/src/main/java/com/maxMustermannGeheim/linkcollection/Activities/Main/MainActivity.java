@@ -42,6 +42,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.CollectionActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.WatchListActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
@@ -84,6 +85,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     public static final int START_WATCH_LATER = ++count;
     public static final int START_UPCOMING = ++count;
     public static final int START_CATEGORIES = ++count;
+    public static final int START_WATCH_LIST = ++count;
     public static final int START_SETTINGS = ++count;
     public static final int START_KNOWLEDGE = ++count;
     public static final int START_KNOWLEDGE_CATEGORY = ++count;
@@ -805,6 +807,13 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
             return;
         Intent intent = new Intent(this, CollectionActivity.class);
         startActivityForResult(intent, START_CATEGORIES);
+    }
+
+    public void openWatchListActivity(View view) {
+        if (!Database.isReady())
+            return;
+        Intent intent = new Intent(this, WatchListActivity.class);
+        startActivityForResult(intent, START_WATCH_LIST);
     }
 //  <----- VIDEO -----
 

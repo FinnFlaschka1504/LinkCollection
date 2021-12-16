@@ -125,6 +125,7 @@ public class Settings extends AppCompatActivity {
     public static final String SETTING_VIDEO_WEB_SHORTCUT = "SETTING_VIDEO_WEB_SHORTCUT";
     public static final String SETTING_VIDEO_QUICK_SEARCH = "SETTING_VIDEO_SHOW_SEARCH";
     public static final String SETTING_VIDEO_SHOW_COLLECTIONS = "SETTING_VIDEO_SHOW_COLLECTIONS";
+    public static final String SETTING_VIDEO_SHOW_WATCH_LIST = "SETTING_VIDEO_SHOW_WATCH_LIST";
     public static final String SETTING_VIDEO_SHOW_IMAGES = "SETTING_VIDEO_SHOW_IMAGES";
     public static final String SETTING_VIDEO_SCROLL = "SETTING_VIDEO_SCROLL";
     public static final String SETTING_VIDEO_CLICK_MODE = "SETTING_VIDEO_CLICK_MODE";
@@ -195,6 +196,7 @@ public class Settings extends AppCompatActivity {
         settingsMap.put(SETTING_VIDEO_LOAD_CAST_AND_STUDIOS, "true");
         settingsMap.put(SETTING_VIDEO_QUICK_SEARCH, "0");
         settingsMap.put(SETTING_VIDEO_SHOW_COLLECTIONS, "true");
+        settingsMap.put(SETTING_VIDEO_SHOW_WATCH_LIST, "true");
         settingsMap.put(SETTING_VIDEO_SHOW_IMAGES, "true");
         settingsMap.put(SETTING_VIDEO_SCROLL, "true");
         settingsMap.put(SETTING_VIDEO_CLICK_MODE, "0");
@@ -254,10 +256,16 @@ public class Settings extends AppCompatActivity {
                     database.videoMap.values().forEach(video -> video.getDateList().forEach(date -> dateSet.add(Utility.removeTime(date))));
                     ((TextView) view.findViewById(R.id.main_daysCount)).setText(String.valueOf(dateSet.size()));
                     ((TextView) view.findViewById(R.id.main_watchLaterCount)).setText(String.valueOf(Utility.getWatchLaterList().size()));
+
                     Boolean showCollection = getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_COLLECTIONS);
                     if (showCollection)
                         ((TextView) view.findViewById(R.id.main_collectionCount)).setText(String.valueOf(database.collectionMap.size()));
                     CustomUtility.ifNotNull((View) view.findViewById(R.id.main_collection_layout), o -> o.setVisibility(showCollection ? View.VISIBLE : View.INVISIBLE));
+
+                    Boolean showWatchList = getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_WATCH_LIST);
+                    if (showWatchList)
+                        ((TextView) view.findViewById(R.id.main_watchListCount)).setText(String.valueOf(database.watchListMap.size()));
+                    CustomUtility.ifNotNull((View) view.findViewById(R.id.main_watchList_layout), o -> o.setVisibility(showWatchList ? View.VISIBLE : View.INVISIBLE));
                 })
                 .setAssociatedClasses(Video.class, Darsteller.class, Studio.class, Genre.class, UrlParser.class)
                 .setSettingsDialog(new Utility.Triple<>(R.layout.dialog_settings_video, (customDialog, view, space) -> {
@@ -274,6 +282,7 @@ public class Settings extends AppCompatActivity {
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_loadCastAndStudios)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_LOAD_CAST_AND_STUDIOS));
                     ((Spinner) view.findViewById(R.id.dialogSettingsVideo_more_showSearch)).setSelection(Integer.parseInt(getSingleSetting(context, SETTING_VIDEO_QUICK_SEARCH)));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_more_showCollections)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_COLLECTIONS));
+                    ((Switch) view.findViewById(R.id.dialogSettingsVideo_more_showWatchList)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_WATCH_LIST));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_warnEmptyURL)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_WARN_EMPTY_URL));
 
                     view.findViewById(R.id.dialogSettingsVideo_more_findImages).setOnClickListener(v -> {
@@ -412,6 +421,7 @@ public class Settings extends AppCompatActivity {
                         changeSetting(SETTING_VIDEO_LOAD_CAST_AND_STUDIOS, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_loadCastAndStudios)).isChecked()));
                         changeSetting(SETTING_VIDEO_QUICK_SEARCH, String.valueOf(((Spinner) customDialog.findViewById(R.id.dialogSettingsVideo_more_showSearch)).getSelectedItemPosition()));
                         changeSetting(SETTING_VIDEO_SHOW_COLLECTIONS, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_more_showCollections)).isChecked()));
+                        changeSetting(SETTING_VIDEO_SHOW_WATCH_LIST, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_more_showWatchList)).isChecked()));
                         changeSetting(SETTING_VIDEO_WARN_EMPTY_URL, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_warnEmptyURL)).isChecked()));
                         Toast.makeText(context, space.getName() + " Einstellungen gespeichert", Toast.LENGTH_SHORT).show();
                     }
@@ -1534,7 +1544,7 @@ public class Settings extends AppCompatActivity {
                     customDialog
                             .setView(layoutId_SetViewContent_OnClick_quadruple.first)
                             .setSetViewContent((customDialog1, view, reload) -> layoutId_SetViewContent_OnClick_quadruple.second.runSetViewContent(customDialog1, view, this))
-                            .addButton("Umbenennen", customDialog1 -> {
+                            .addButton(R.drawable.ic_rename, customDialog1 -> {
                                 CustomDialog renameDialog = CustomDialog.Builder(context1).setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                                         .setTitle("Bereich Umbenennen")
                                         .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog2 -> {

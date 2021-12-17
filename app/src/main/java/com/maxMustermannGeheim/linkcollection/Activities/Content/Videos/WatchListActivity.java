@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.style.RelativeSizeSpan;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -256,7 +257,7 @@ public class WatchListActivity extends AppCompatActivity {
 
                                 String imagePath = video.getImagePath();
                                 ImageView thumbnail = itemView1.findViewById(R.id.listItem_collectionVideo_thumbnail);
-                                thumbnail.setLayoutParams(new FrameLayout.LayoutParams(imageWidth, LinearLayout.LayoutParams.WRAP_CONTENT));
+                                thumbnail.setLayoutParams(new FrameLayout.LayoutParams(imageWidth, LinearLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
                                 if (Utility.stringExists(imagePath)) {
                                     Utility.loadUrlIntoImageView(this, thumbnail,
                                             Utility.getTmdbImagePath_ifNecessary(imagePath, "w500"), null, null, () -> Utility.roundImageView(thumbnail, 8));
@@ -316,6 +317,7 @@ public class WatchListActivity extends AppCompatActivity {
         CustomDialog.Builder(this)
                 .setTitle(watchList.getName())
                 .setText("Zuletzt Geändert: " + Utility.formatDate("dd.MM.yyyy HH:mm 'Uhr'", watchList.getLastModified()))
+                .enableTextAlignmentCenter()
                 .setView(customDialog -> new CustomRecycler<Video>(this)
                         .setItemLayout(R.layout.list_item_select)
                         .setGetActiveObjectList(customRecycler -> CustomList.map(watchList.getVideoIdList(), id -> (Video) Utility.findObjectById(CategoriesActivity.CATEGORIES.VIDEO, id)))
@@ -446,6 +448,7 @@ public class WatchListActivity extends AppCompatActivity {
                                 if (context instanceof WatchListActivity)
                                     ((WatchListActivity) context).reloadRecycler();
                                 Toast.makeText(context, "WatchList gelöscht", Toast.LENGTH_SHORT).show();
+                                Database.saveAll(context);
                             })
                             .transformLastAddedButtonToImageButton()
                             .addConfirmationDialogToLastAddedButton("Löschen Bestätigen", Helpers.SpannableStringHelper.Builder(spanBuilder -> spanBuilder.append("Möchtest du wirklich '").appendBold(editWatchList.getName()).append("' löschen?")))
@@ -546,6 +549,7 @@ public class WatchListActivity extends AppCompatActivity {
         editWatchList.setName(((EditText) editDialog.findViewById(R.id.dialog_editWatchList_title)).getText().toString());
 
         if (isAdd) {
+            editWatchList.setLastModified(new Date());
             database.watchListMap.put(editWatchList.getUuid(), editWatchList);
         } else {
             editWatchList.getWatchedVideoIdList().removeIf(id -> !editWatchList.getVideoIdList().contains(id));

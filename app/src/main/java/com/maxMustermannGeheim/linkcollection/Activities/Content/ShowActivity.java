@@ -1655,7 +1655,7 @@ public class ShowActivity extends AppCompatActivity {
         newMap.putAll(oldMap);
     }
 
-    private void showEpisodeDetailDialog(@Nullable CustomRecycler customRecycler , Show.Episode episode, boolean startedDirectly) {
+    public void showEpisodeDetailDialog(@Nullable CustomRecycler customRecycler , Show.Episode episode, boolean startedDirectly) {
         if (episode == null) {
             Toast.makeText(this, "Es ist ein Fehler aufgetreten", Toast.LENGTH_SHORT).show();
             return;

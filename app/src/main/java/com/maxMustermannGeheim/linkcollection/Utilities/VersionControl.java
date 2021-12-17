@@ -300,7 +300,8 @@ public class VersionControl {
                 "Speichervorgang optimiert",
                 "Rechtschreibung überprüft",
                 "Standardlängen zu Serien hinzugefügt");
-        addChange("3.3", "WatchLists zu Videos hinzugefügt");
+        addChange("3.3", "WatchLists zu Videos hinzugefügt",
+                "Hintergrund zu PNGs hinzugefügt");
     };
 
     private static void addChange(String version, String... changes) {

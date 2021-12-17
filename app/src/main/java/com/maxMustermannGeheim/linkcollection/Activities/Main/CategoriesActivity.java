@@ -404,7 +404,7 @@ public class CategoriesActivity extends AppCompatActivity {
             public boolean onQueryTextChange(String s) {
                 searchQuery = s.trim();
 
-                reLoadRecycler();
+                reloadRecycler();
                 return true;
             }
         };
@@ -661,11 +661,11 @@ public class CategoriesActivity extends AppCompatActivity {
 
                     ParentClass parentClass = item.first;
                     removeFocusFromSearch();
-                    showEditCategoryDialog(this, category, parentClass, editObject -> reLoadRecycler(), editObject -> {
+                    showEditCategoryDialog(this, category, parentClass, editObject -> reloadRecycler(), editObject -> {
                         allDatenObjektPairList.removeIf(pair -> Objects.equals(pair.first, parentClass));
                         treeObjectCountMap.remove(editObject.getUuid());
                         setResult(RESULT_OK);
-                        reLoadRecycler();
+                        reloadRecycler();
                     }, null);
                 })
                 .enableFastScroll(Pair.create(topMargin, bottomMargin), (customRecycler1, pair, integer) -> {
@@ -703,11 +703,11 @@ public class CategoriesActivity extends AppCompatActivity {
 
                         ParentClass parentClass = (ParentClass) value;
                         removeFocusFromSearch();
-                        showEditCategoryDialog(this, category, parentClass, editObject -> reLoadRecycler(), editObject -> {
+                        showEditCategoryDialog(this, category, parentClass, editObject -> reloadRecycler(), editObject -> {
                             allDatenObjektPairList.removeIf(pair -> Objects.equals(pair.first, parentClass));
                             treeObjectCountMap.remove(editObject.getUuid());
                             setResult(RESULT_OK);
-                            reLoadRecycler();
+                            reloadRecycler();
                         }, null);
                         return true;
                     });
@@ -745,7 +745,7 @@ public class CategoriesActivity extends AppCompatActivity {
 
     }
 
-    private void reLoadRecycler() {
+    private void reloadRecycler() {
         customRecycler.reload();
     }
     //  <------------------------- Recycler -------------------------
@@ -1152,19 +1152,25 @@ public class CategoriesActivity extends AppCompatActivity {
         int id = item.getItemId();
         switch (id) {
             case R.id.taskBar_category_add:
+//                Utility.currentMode = Utility.modeList.next(Utility.currentMode, true);
+//                Toast.makeText(this, Utility.currentMode.name(), Toast.LENGTH_LONG).show();
+//                reloadRecycler();
+//
+//                if (true)
+//                    return true;
                 removeFocusFromSearch();
                 showEditCategoryDialog(this, category, null, parentClass -> {
                     if (parentClass instanceof ParentClass_Tree)
                         treeObjectCountMap.put(parentClass.getUuid(), 0);
                     else
                         allDatenObjektPairList.add(new Pair<>(parentClass, 0));
-                    reLoadRecycler();
+                    reloadRecycler();
                 }, null, null);
                 break;
             case R.id.taskBar_category_multiSelect:
                 if ((selectedList.isEmpty() || isTreeCategory) && selectedTreeList.isEmpty()) {
                     multiSelectMode = !multiSelectMode;
-                    reLoadRecycler();
+                    reloadRecycler();
                 } else {
                     if (!selectedTreeList.isEmpty())
                         selectedList.replaceWith(selectedTreeList.map(uuid -> (ParentClass) ParentClass_Tree.findObjectById(category, uuid)));
@@ -1181,7 +1187,7 @@ public class CategoriesActivity extends AppCompatActivity {
                             .addButton("Zurücksetzen", customDialog -> {
                                 multiSelectMode = false;
                                 selectedList.clear();
-                                reLoadRecycler();
+                                reloadRecycler();
                             })
                             .alignPreviousButtonsLeft()
                             .addButton("&", customDialog -> {
@@ -1207,25 +1213,25 @@ public class CategoriesActivity extends AppCompatActivity {
             case R.id.taskBar_category_sortByName:
                 sort_type = SORT_TYPE.NAME;
                 item.setChecked(true);
-                reLoadRecycler();
+                reloadRecycler();
                 break;
             case R.id.taskBar_category_sortByViews:
                 sort_type = SORT_TYPE.COUNT;
                 item.setChecked(true);
-                reLoadRecycler();
+                reloadRecycler();
                 break;
             case R.id.taskBar_category_sortByTime:
                 sort_type = SORT_TYPE.TIME;
                 item.setChecked(true);
                 reverse = true;
                 toolBarMenu.findItem(R.id.taskBar_category_sortReverse).setChecked(true);
-                reLoadRecycler();
+                reloadRecycler();
                 break;
             case R.id.taskBar_category_sortReverse:
                 boolean checked = !item.isChecked();
                 item.setChecked(checked);
                 reverse = checked;
-                reLoadRecycler();
+                reloadRecycler();
                 break;
 
             case R.id.taskBar_category_showAs:
@@ -1241,10 +1247,10 @@ public class CategoriesActivity extends AppCompatActivity {
             case R.id.taskBar_category_showTime:
                 showTime = !item.isChecked();
                 item.setChecked(showTime);
-                reLoadRecycler();
+                reloadRecycler();
                 break;
             case R.id.taskBar_category_sortTree:
-                ParentClass_Tree.showReorderTreeDialog(this, category, customDialog -> reLoadRecycler());
+                ParentClass_Tree.showReorderTreeDialog(this, category, customDialog -> reloadRecycler());
                 break;
             case R.id.taskBar_category_advancedQuery:
                 advancedQueryHelper.showAdvancedSearchDialog();
@@ -1294,7 +1300,7 @@ public class CategoriesActivity extends AppCompatActivity {
         if (resultCode == RESULT_OK /*&& requestCode == START_VIDEOS*/) {
             setObjectAndCount();
             textListener.onQueryTextChange(categories_search.getQuery().toString());
-            reLoadRecycler();
+            reloadRecycler();
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
@@ -1309,7 +1315,7 @@ public class CategoriesActivity extends AppCompatActivity {
             multiSelectMode = false;
             selectedList.clear();
             selectedTreeList.clear();
-            reLoadRecycler();
+            reloadRecycler();
             return;
         }
 

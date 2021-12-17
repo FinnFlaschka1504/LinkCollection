@@ -1284,7 +1284,6 @@ public class VideoActivity extends AppCompatActivity {
     private CustomDialog showDetailDialog(@NonNull Video video) {
         removeFocusFromSearch();
         final int[] views = {video.getDateList().size()};
-//        int openWithButtonId = View.generateViewId();
         CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle(video.getName())
                 .setView(R.layout.dialog_detail_video)
@@ -1296,7 +1295,6 @@ public class VideoActivity extends AppCompatActivity {
                 })
                 .addButton(CustomDialog.BUTTON_TYPE.EDIT_BUTTON, customDialog -> addOrEditDialog = showEditOrNewDialog(video).first, false)
                 .markLastAddedButtonAsActionButton()
-//                .addButton("Öffnen mit...", customDialog -> openUrl(video.getUrl(), true), openWithButtonId, false)
                 .setSetViewContent((customDialog, view, reload) -> {
                     if (reload && views[0] != video.getDateList().size()) {
                         if (views[0] < video.getDateList().size() && Utility.getWatchLaterList().contains(video)) {

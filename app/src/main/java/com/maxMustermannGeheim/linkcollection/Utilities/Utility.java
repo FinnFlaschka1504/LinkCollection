@@ -21,6 +21,7 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -71,6 +72,7 @@ import androidx.appcompat.widget.ActionMenuView;
 import androidx.appcompat.widget.AppCompatImageButton;
 import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.content.ContextCompat;
 import androidx.core.widget.NestedScrollView;
 import androidx.lifecycle.Lifecycle;
 import androidx.recyclerview.widget.RecyclerView;
@@ -136,6 +138,8 @@ import com.maxMustermannGeheim.linkcollection.R;
 //import com.pixplicity.sharp.Sharp;
 
 import org.jetbrains.annotations.NotNull;
+import org.joda.time.Days;
+import org.joda.time.LocalDate;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -1569,13 +1573,13 @@ public class Utility {
         Boolean showImages = Settings.getSingleSetting_boolean(context, Settings.SETTING_VIDEO_SHOW_IMAGES);
 
         Database database = Database.getInstance();
-        CustomRecycler customRecycler = new CustomRecycler<>((AppCompatActivity) context, layout.findViewById(R.id.fragmentCalender_videoList))
+        CustomRecycler<Event> customRecycler = new CustomRecycler<Event>((AppCompatActivity) context, layout.findViewById(R.id.fragmentCalender_videoList))
                 .setItemLayout(R.layout.list_item_video)
-                .setSetItemContent((customRecycler1, itemView, object, index) -> {
+                .setSetItemContent((customRecycler1, itemView, event, index) -> {
                     itemView.findViewById(R.id.listItem_video_internetOrDetails).setVisibility(View.GONE);
-                    itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.GONE);
+                    itemView.findViewById(R.id.listItem_video_Views_layout).setVisibility(View.VISIBLE);
 
-                    Video video = ((Video) ((Event) object).getData());
+                    Video video = ((Video) event.getData());
 
                     MinDimensionLayout listItem_video_image_layout = itemView.findViewById(R.id.listItem_video_image_layout);
                     if (showImages && CustomUtility.stringExists(video.getImagePath())) {
@@ -1585,6 +1589,21 @@ public class Utility {
                         listItem_video_image_layout.setVisibility(View.GONE);
 
                     ((TextView) itemView.findViewById(R.id.listItem_video_Titel)).setText(video.getName());
+                    TextView daysTextView = (TextView) itemView.findViewById(R.id.listItem_video_Views);
+                    daysTextView.setText("");
+                    Runnable setDaysText = () -> {
+                        String daysText;
+                        long days = Days.daysBetween(new LocalDate(event.getTimeInMillis()), new LocalDate(new Date())).getDays();
+                        if (daysTextView.getText().toString().matches("\\d+ d")) {
+                            daysText = com.maxMustermannGeheim.linkcollection.Utilities.Helpers.DurationFormatter.formatDefault(Duration.ofDays(days), "'%y% y~, ~''%w% w~, ~''%d% d~, ~'");
+                        } else {
+                            daysText = days + " d";
+                        }
+                        daysTextView.setText(daysText);
+                    };
+                    itemView.findViewById(R.id.listItem_video_Views_layout).setOnClickListener(v -> setDaysText.run());
+                    daysTextView.setTextColor(ContextCompat.getColorStateList(context, R.color.clickable_text_color_normal));
+                    setDaysText.run();
 
                     List<String> darstellerNames = new ArrayList<>();
                     video.getDarstellerList().forEach(uuid -> darstellerNames.add(database.darstellerMap.get(uuid).getName()));
@@ -1707,8 +1726,25 @@ public class Utility {
 
                     ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(episode.getEpisodeNumber()));
                     ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode.getName());
-                    ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(Utility.isNullReturnOrElse(episode.getAirDate(), "", date -> new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(date)));
                     ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode.getRating() != -1 ? episode.getRating() + " ☆" : "");
+                    ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(Utility.isNullReturnOrElse(episode.getAirDate(), "", date -> new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(date)));
+
+                    TextView daysTextView = (TextView) itemView.findViewById(R.id.listItem_episode_viewCount);
+                    daysTextView.setText("");
+                    Runnable setDaysText = () -> {
+                        String daysText;
+                        long days = Days.daysBetween(new LocalDate(event.getTimeInMillis()), new LocalDate(new Date())).getDays();
+                        if (daysTextView.getText().toString().matches("\\| \\d+ d")) {
+                            daysText = com.maxMustermannGeheim.linkcollection.Utilities.Helpers.DurationFormatter.formatDefault(Duration.ofDays(days), "'%y% y~, ~''%w% w~, ~''%d% d~, ~'");
+                        } else {
+                            daysText = days + " d";
+                        }
+                        daysTextView.setText("| " + daysText);
+                    };
+                    daysTextView.setOnClickListener(v -> setDaysText.run());
+                    daysTextView.setTextColor(ContextCompat.getColorStateList(context, R.color.clickable_text_color_normal));
+                    setDaysText.run();
+
 
                 });
 
@@ -1716,10 +1752,14 @@ public class Utility {
             customRecycler.setOnClickListener((customRecycler1, view, event, index) ->
             {
                 Show.Episode episode = (Show.Episode) event.getData();
-                ((AppCompatActivity) context).startActivityForResult(new Intent(context, ShowActivity.class)
-                        .putExtra(CategoriesActivity.EXTRA_SEARCH, episode.getShowId())
-                        .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.EPISODE)
-                        .putExtra(ShowActivity.EXTRA_EPISODE, new Gson().toJson(episode)), MainActivity.START_SHOW_FROM_CALENDER);
+                if (context instanceof ShowActivity) {
+                    ((ShowActivity) context).showEpisodeDetailDialog(null, episode, true);
+                } else {
+                    ((AppCompatActivity) context).startActivityForResult(new Intent(context, ShowActivity.class)
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH, episode.getShowId())
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.EPISODE)
+                            .putExtra(ShowActivity.EXTRA_EPISODE, new Gson().toJson(episode)), MainActivity.START_SHOW_FROM_CALENDER);
+                }
             });
 
         for (Show.Episode episode : episodeList) {
@@ -4192,6 +4232,7 @@ public class Utility {
         loadUrlIntoImageView(context, imageView, null, imagePath, fullScreenPath, onFail_onSuccess_onFullscreen);
     }
 
+    // ToDo: Rounded Corners direkt mit Glide umsetzen
     public static void loadUrlIntoImageView(Context context, ImageView imageView, @Nullable GenericInterface<RequestBuilder<Drawable>> requestModifications, String imagePath, @Nullable String fullScreenPath, Runnable... onFail_onSuccess_onFullscreen) {
 //        if (imagePath.matches(ActivityResultHelper.uriRegex)) {
 ////            CustomUtility.ifNotNull(getBitmapFromUri(Uri.parse(imagePath), context), imageView::setImageBitmap);
@@ -4233,9 +4274,12 @@ public class Utility {
                             if (resource == null)
                                 return;
                             super.setResource(resource);
+
+                            if (imagePath.contains(".png"))
+                                setImageViewBackgroundColor(imageView, 0x77ffffff, 24);
+
                             if (onFail_onSuccess_onFullscreen.length > 1 && onFail_onSuccess_onFullscreen[1] != null)
                                 onFail_onSuccess_onFullscreen[1].run();
-
                         }
                     });
 //                    .into(imageView);
@@ -4252,8 +4296,8 @@ public class Utility {
                         PhotoView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
                         dialog_poster_poster.setMaximumScale(6f);
                         dialog_poster_poster.setMediumScale(2.5f);
-                        if (fullScreenPath.endsWith(".png") || fullScreenPath.endsWith(".svg"))
-                            dialog_poster_poster.setPadding(0, 0, 0, 0);
+//                        if (fullScreenPath.endsWith(".png") || fullScreenPath.endsWith(".svg"))
+//                            dialog_poster_poster.setPadding(0, 0, 0, 0);
 
                         if (fullScreenPath.endsWith(".svg")) {
                             Utility.fetchSvg(context, fullScreenPath, dialog_poster_poster, onFail_onSuccess_onFullscreen);
@@ -4270,6 +4314,32 @@ public class Utility {
                                     .error(R.drawable.ic_broken_image)
                                     .placeholder(R.drawable.ic_download)
                                     .into(dialog_poster_poster);
+//                                    .into(new DrawableImageViewTarget(dialog_poster_poster) {
+//                                        @Override
+//                                        protected void setResource(@Nullable Drawable resource) {
+//                                            if (resource == null)
+//                                                return;
+//                                            super.setResource(resource);
+//
+//                                            if (fullScreenPath.contains(".png")) {
+////                                                setImageViewBackgroundColor(dialog_poster_poster, 0x99ffffff, 0);
+////                                                Utility.roundImageView(dialog_poster_poster, 18);
+//                                            }
+//                                        }
+//                                    });
+//                                    .into(dialog_poster_poster/*new DrawableImageViewTarget(dialog_poster_poster) {
+//                                        @Override
+//                                        protected void setResource(@Nullable Drawable resource) {
+//                                            if (resource == null)
+//                                                return;
+//                                            super.setResource(resource);
+//
+//                                            if (fullScreenPath.contains(".png")) {
+////                                                setImageViewBackgroundColor(dialog_poster_poster, 0x99ffffff, 0);
+////                                                Utility.roundImageView(dialog_poster_poster, 18);
+//                                            }
+//                                        }
+//                                    }*/);
                         }
 
                         dialog_poster_poster.setOnContextClickListener(v1 -> {
@@ -4279,13 +4349,49 @@ public class Utility {
                         dialog_poster_poster.setOnOutsidePhotoTapListener(imageView1 -> customDialog1.dismiss());
                     })
                     .addOptionalModifications(customDialog -> {
-                        if (!(fullScreenPath.endsWith(".png") || fullScreenPath.endsWith(".svg")))
+                        if ((!fullScreenPath.contains(".png") && !fullScreenPath.contains(".svg"))) {
                             customDialog.removeBackground_and_margin();
+                        }
+                    })
+                    .addOnDialogShown(customDialog -> {
+                        if ((fullScreenPath.contains(".png") || fullScreenPath.contains(".svg"))) {
+                            Window window = customDialog.getDialog().getWindow();
+                            if (window != null) {
+                                window.setBackgroundDrawable(new ColorDrawable(0x99ffffff));
+                            }
+                        }
                     })
                     .disableScroll()
                     .setDimensionsFullscreen()
                     .show();
         });
+    }
+
+    private static void setImageViewBackgroundColor(ImageView imageView, int color, int borderPx) {
+        imageView.setDrawingCacheEnabled(true);
+        imageView.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        imageView.layout(0, 0, imageView.getMeasuredWidth(), imageView.getMeasuredHeight());
+        imageView.buildDrawingCache(true);
+        Bitmap bitmap;
+        bitmap = imageView.getDrawingCache();
+        if (bitmap == null) {
+            Drawable drawable = imageView.getDrawable();
+            if (drawable instanceof BitmapDrawable)
+                bitmap = ((BitmapDrawable) drawable).getBitmap();
+        }
+        if (bitmap == null)
+            return;
+
+        Bitmap old = Bitmap.createBitmap(bitmap);
+        Bitmap newBitmap = Bitmap.createBitmap(old.getWidth() + borderPx, old.getHeight() + borderPx, old.getConfig());
+        Canvas canvas = new Canvas(newBitmap);
+        canvas.drawColor(color);
+        float centreX = (canvas.getWidth()  - old.getWidth()) / 2F;
+        float centreY = (canvas.getHeight() - old.getHeight()) / 2F;
+        canvas.drawBitmap(old, centreX, centreY, null);
+        imageView.setDrawingCacheEnabled(false);
+//        newBitmap.getByteCount()
+        imageView.setImageBitmap(newBitmap);
     }
 
     private static OkHttpClient httpClient;
@@ -4384,7 +4490,16 @@ public class Utility {
         imageView.layout(0, 0,
                 imageView.getMeasuredWidth(), imageView.getMeasuredHeight());
         imageView.buildDrawingCache(true);
-        Bitmap oldBitmap = Bitmap.createBitmap(imageView.getDrawingCache());
+        Bitmap bitmap;
+        bitmap = imageView.getDrawingCache();
+        if (bitmap == null) {
+            Drawable drawable = imageView.getDrawable();
+            if (drawable instanceof BitmapDrawable)
+                bitmap = ((BitmapDrawable) drawable).getBitmap();
+        }
+        if (bitmap == null)
+            return;
+        Bitmap oldBitmap = Bitmap.createBitmap(bitmap);
         imageView.setDrawingCacheEnabled(false);
         imageView.setImageBitmap(ImageHelper.getRoundedCornerBitmap(oldBitmap, radius));
     }

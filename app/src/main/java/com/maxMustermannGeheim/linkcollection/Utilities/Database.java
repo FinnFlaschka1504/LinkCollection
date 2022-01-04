@@ -19,6 +19,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
+import com.maxMustermannGeheim.linkcollection.Daten.CustomCode;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
@@ -91,6 +92,7 @@ public class Database {
     public static final String DARSTELLER_MAP = "DARSTELLER_MAP";
     public static final String GENRE_MAP = "GENRE_MAP";
     public static final String URL_PARSER_MAP = "URL_PARSER_MAP";
+    public static final String CUSTOM_CODE_VIDEO_MAP = "CUSTOM_CODE_VIDEO_MAP";
     public static final String WATCH_LATER_LIST = "WATCH_LATER_LIST";
     public static final String COLLECTION_MAP = "COLLECTION_MAP";
     public static final String WATCH_LIST_MAP = "WATCH_LIST_MAP";
@@ -99,6 +101,7 @@ public class Database {
     public Map<String, Studio> studioMap = new HashMap<>();
     public Map<String, Genre> genreMap = new HashMap<>();
     public Map<String, UrlParser> urlParserMap = new HashMap<>();
+    public Map<String, CustomCode.CustomCode_Video> customCodeVideoMap = new HashMap<>();
     //    public List<String> watchLaterList = new ArrayList<>();
     public Map<String, Collection> collectionMap = new HashMap<>();
     public Map<String, WatchList> watchListMap = new HashMap<>();
@@ -153,6 +156,7 @@ public class Database {
                 new Content<Map, Darsteller>(Darsteller.class, darstellerMap, databaseCode_content, VIDEOS, DARSTELLER_MAP),
                 new Content<Map, Genre>(Genre.class, genreMap, databaseCode_content, VIDEOS, GENRE_MAP),
                 new Content<Map, UrlParser>(UrlParser.class, urlParserMap, databaseCode_content, VIDEOS, URL_PARSER_MAP),
+                new Content<Map, CustomCode.CustomCode_Video>(CustomCode.CustomCode_Video.class, customCodeVideoMap, databaseCode_content, VIDEOS, CUSTOM_CODE_VIDEO_MAP),
                 new Content<Map, Collection>(Collection.class, collectionMap, databaseCode_content, VIDEOS, COLLECTION_MAP),
                 new Content<Map, WatchList>(WatchList.class, watchListMap, databaseCode_content, VIDEOS, WATCH_LIST_MAP),
 
@@ -596,6 +600,10 @@ public class Database {
                 Utility.runVarArgRunnable(2, onSavedNothingFailed);
         }
         return result;
+    }
+
+    @CheckForNull public static Boolean saveAll(Context context, @Nullable String textSaved, @Nullable String textNothing, @Nullable String textFailed , @Nullable Runnable... onSavedNothingFailed) {
+        return saveAllTextOnly(context, saveAll(onSavedNothingFailed), textSaved, textNothing, textFailed);
     }
 
     @CheckForNull public static Boolean saveAll(Context context, @Nullable Runnable... onSavedNothingFailed) {

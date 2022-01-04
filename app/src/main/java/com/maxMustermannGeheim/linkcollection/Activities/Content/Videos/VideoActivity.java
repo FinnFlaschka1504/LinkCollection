@@ -1427,12 +1427,15 @@ public class VideoActivity extends AppCompatActivity {
 
                     view.findViewById(R.id.dialog_video_editViews).setOnClickListener(view1 -> showCalenderDialog(Arrays.asList(video), detailDialog));
                     view.findViewById(R.id.dialog_video_editViews).setOnLongClickListener(view1 -> {
-                        boolean before = video.addDate(new Date(), true);
-                        Utility.showCenteredToast(this, "Ansicht Hinzugefügt" + (before ? "\n(Gestern)" : ""));
-                        Database.saveAll();
-                        setResult(RESULT_OK);
-                        customDialog.reloadView();
-                        reLoadVideoRecycler();
+                        Runnable addView = () -> {
+                            boolean before = video.addDate(new Date(), true);
+                            Utility.showCenteredToast(this, "Ansicht Hinzugefügt" + (before ? "\n(Gestern)" : ""));
+                            Database.saveAll();
+                            setResult(RESULT_OK);
+                            customDialog.reloadView();
+                            reLoadVideoRecycler();
+                        };
+                        WatchListActivity.checkWatchList(this, video, addView);
                         return true;
                     });
                     view.findViewById(R.id.dialog_video_editViews).setOnContextClickListener(view1 -> {
@@ -1935,6 +1938,7 @@ public class VideoActivity extends AppCompatActivity {
 
         com.finn.androidUtilities.Helpers.TextInputHelper helper = new com.finn.androidUtilities.Helpers.TextInputHelper();
         final boolean[] checked = {video != null && video.isWatchLater()}; // Utility.getWatchLaterList().contains(video)};
+
         CustomDialog.OnClick onClickSave = customDialog -> {
             String titel = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_Title)).getText().toString().trim();
             String url = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_url)).getText().toString().trim();
@@ -1949,7 +1953,7 @@ public class VideoActivity extends AppCompatActivity {
                             editVideo[0].setWatchLater(false);
                             checked[0] = false;
                             Utility.showCenteredToast(this, "Ansicht Hinzugefügt" + (before ? "\n(Gestern)" : ""));
-                            saveVideo(customDialog, video, titel, url, checked[0], editVideo[0]);
+                            WatchListActivity.checkWatchList(this, editVideo[0], () -> saveVideo(customDialog, video, titel, url, checked[0], editVideo[0]));
                         })
                         .enableColoredActionButtons()
                         .show();

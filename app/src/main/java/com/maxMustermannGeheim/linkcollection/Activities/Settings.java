@@ -57,6 +57,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity
 import com.maxMustermannGeheim.linkcollection.Activities.Main.DialogActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.BuildConfig;
+import com.maxMustermannGeheim.linkcollection.Daten.CustomCode;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
@@ -89,6 +90,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -342,7 +344,7 @@ public class Settings extends AppCompatActivity {
 //                        }.doInBackground();
                     });
 
-                    ((TextView) view.findViewById(R.id.dialogSettingsVideo_edit_parseUrl_added)).setText(database.urlParserMap.values().stream().map(UrlParser::getName).collect(Collectors.joining(", ")));
+                    ((TextView) view.findViewById(R.id.dialogSettingsVideo_more_parseUrl_added)).setText(database.urlParserMap.values().stream().map(UrlParser::getName).collect(Collectors.joining(", ")));
                     view.findViewById(R.id.dialogSettingsVideo_more_parseUrl_select).setOnClickListener(v -> {
 
                         CustomRecycler<CustomRecycler.Expandable<UrlParser>> customRecycler = new CustomRecycler<CustomRecycler.Expandable<UrlParser>>(context)
@@ -374,7 +376,7 @@ public class Settings extends AppCompatActivity {
                                 })
                                 .setOnLongClickListener((customRecycler1, view1, urlParserExpandable, index) -> showAddOrEditUrlParserDialog(urlParserExpandable.getObject(), settingsContext, customRecycler1))
                                 .setGetActiveObjectList(customRecycler1 -> new CustomRecycler.Expandable.ToExpandableList<UrlParser, UrlParser>()
-                                        .setSort((o1, o2) -> o1.getName().compareTo(o2.getName()))
+                                        .setSort(Comparator.comparing(CustomRecycler.Expandable::getName))
                                         .keepExpandedState(customRecycler1)
                                         .runToExpandableList(new ArrayList<>(database.urlParserMap.values()), null));
 
@@ -390,6 +392,12 @@ public class Settings extends AppCompatActivity {
                                 .setView(customRecycler.generateRecyclerView())
                                 .setOnDialogDismiss(customDialog1 -> UrlParser.webViewMap.clear())
                                 .show();
+                    });
+
+
+                    ((TextView) view.findViewById(R.id.dialogSettingsVideo_more_customCode_added)).setText(database.customCodeVideoMap.values().stream().map(CustomCode::getName).collect(Collectors.joining(", ")));
+                    view.findViewById(R.id.dialogSettingsVideo_more_customCode_edit).setOnClickListener(v -> {
+                        CustomCode.CustomCode_Video.showAllDialoge(settingsContext, space.getName(), (Map) database.customCodeVideoMap, () -> new CustomCode.CustomCode_Video(""));
                     });
 
                     view.findViewById(R.id.dialogSettingsVideo_more_importGenres).setOnClickListener(v -> {

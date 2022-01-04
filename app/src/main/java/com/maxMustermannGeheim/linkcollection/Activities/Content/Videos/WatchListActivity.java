@@ -347,15 +347,12 @@ public class WatchListActivity extends AppCompatActivity {
                                 watchedVideoIdList.add(parentClass.getUuid());
                                 Toast.makeText(this, "Eintrag abgeschlossen", Toast.LENGTH_SHORT).show();
                             }
-
-//                            if (watchedVideoIdList.size() <= 0) {
-//                                dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.VISIBLE);
-//                            } else {
-//                                dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.GONE);
-//                            }
-//                            dialog_AddActorOrGenre.findViewById(saveButtonId).setEnabled(true);
-
-//                            customRecycler_selectedList.reload();
+                        })
+                        .setOnLongClickListener((customRecycler, view, video, index) -> {
+                            startActivityForResult(new Intent(this, VideoActivity.class)
+                                            .putExtra(CategoriesActivity.EXTRA_SEARCH, video.getUuid())
+                                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO),
+                                    CategoriesActivity.START_CATEGORY_SEARCH);
                         })
                         .enableFastScroll(/*(parentClassCustomRecycler, parentClass, integer) -> parentClass.getName().substring(0, 1).toUpperCase()*/)
                         .generateRecyclerView())
@@ -467,7 +464,7 @@ public class WatchListActivity extends AppCompatActivity {
                     else if (isAdd) {
                         return CustomUtility.stringExists(title) || !editWatchList.getVideoIdList().isEmpty();
                     } else {
-                        return !oldWatchList.getName().equals(title) || !oldWatchList.getVideoIdList().equals(editWatchList.getVideoIdList());
+                        return !oldWatchList.getName().trim().equals(title) || !oldWatchList.getVideoIdList().equals(editWatchList.getVideoIdList());
                     }
 
 
@@ -546,7 +543,7 @@ public class WatchListActivity extends AppCompatActivity {
 
         boolean isAdd = oldWatchList == null || oldWatchList.getName() == null;
 
-        editWatchList.setName(((EditText) editDialog.findViewById(R.id.dialog_editWatchList_title)).getText().toString());
+        editWatchList.setName(((EditText) editDialog.findViewById(R.id.dialog_editWatchList_title)).getText().toString().trim());
 
         if (isAdd) {
             editWatchList.setLastModified(new Date());
@@ -566,6 +563,37 @@ public class WatchListActivity extends AppCompatActivity {
             ((WatchListActivity) context).reloadRecycler();
     }
     /**  <------------------------- Edit -------------------------  */
+
+
+    /** ------------------------- Convenience -------------------------> */
+    public static boolean isOpenInWatchList(WatchList watchList, String uuid) {
+        return watchList.getVideoIdList().contains(uuid) && !watchList.getWatchedVideoIdList().contains(uuid);
+    }
+
+    public static CustomList<WatchList> getOpenInWatchLists(String uuid) {
+        return Database.getInstance().watchListMap.values().stream().filter(watchList -> isOpenInWatchList(watchList, uuid)).collect(Collectors.toCollection(CustomList::new));
+    }
+
+    public static void checkWatchList(Context context, Video video, Runnable onSuccess) {
+        CustomList<WatchList> watchLists = getOpenInWatchLists(video.getUuid());
+
+        if (watchLists.isEmpty())
+            onSuccess.run();
+        else
+            CustomDialog.Builder(context)
+                    .setTitle("In WatchList abhaken?")
+                    .setText(new Helpers.SpannableStringHelper().append("Das Video befindet sich in " + (watchLists.size() == 1 ? "folgender WatchList" : "folgenden WatchLists") + ":\n").appendBold(watchLists.join(",\n", com.finn.androidUtilities.ParentClass::getName)).append("\n\n" + (watchLists.size() == 1 ? "Soll der Eintrag" : "Sollen die Einträge") + " abgehakt werden?").get())
+                    .addButton(CustomDialog.BUTTON_TYPE.NO_BUTTON, customDialog1 -> onSuccess.run())
+                    .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
+                        watchLists.forEach(watchList -> {
+                            watchList.getWatchedVideoIdList().add(video.getUuid());
+                            watchList.setLastModified(new Date());
+                        });
+                        onSuccess.run();
+                    })
+                    .show();
+    }
+    /**  <------------------------- Convenience -------------------------  */
 
 
 

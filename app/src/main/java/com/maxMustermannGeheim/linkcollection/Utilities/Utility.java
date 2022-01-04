@@ -28,11 +28,15 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.text.InputType;
+import android.text.Layout;
+import android.text.Spannable;
+import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
+import android.text.style.AlignmentSpan;
 import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.util.Pair;
@@ -67,6 +71,7 @@ import android.widget.Toast;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.ActionMenuView;
 import androidx.appcompat.widget.AppCompatImageButton;
@@ -111,6 +116,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.CollectionActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.WatchListActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
@@ -1667,15 +1673,19 @@ public class Utility {
             return;
 
         layout.findViewById(R.id.dialog_editViews_add).setOnClickListener(view -> {
-            if (currentDate.equals(Utility.removeTime(new Date())))
-                videoList.get(0).addDate(new Date(), true);
-            else
-                videoList.get(0).addDate(currentDate, false);
-            calendarView.addEvent(new Event(context.getColor(R.color.colorDayNightContent)
-                    , currentDate.getTime(), videoList.get(0)));
-            loadVideoList(calendarView.getEvents(currentDate), layout, customRecycler);
-            setButtons(layout, 1, calendarView, videoList, customRecycler);
-            Database.saveAll();
+            Runnable addView = () -> {
+                if (currentDate.equals(Utility.removeTime(new Date())))
+                    videoList.get(0).addDate(new Date(), true);
+                else
+                    videoList.get(0).addDate(currentDate, false);
+                calendarView.addEvent(new Event(context.getColor(R.color.colorDayNightContent)
+                        , currentDate.getTime(), videoList.get(0)));
+                loadVideoList(calendarView.getEvents(currentDate), layout, customRecycler);
+                setButtons(layout, 1, calendarView, videoList, customRecycler);
+                Database.saveAll();
+            };
+            WatchListActivity.checkWatchList(context, videoList.get(0), addView);
+
         });
         layout.findViewById(R.id.dialog_editViews_remove).setOnClickListener(view -> {
             videoList.get(0).removeDate(currentDate);
@@ -2191,10 +2201,20 @@ public class Utility {
     public static Toast centeredToast(Context context, String text) {
         Toast toast = Toast.makeText(context, text, Toast.LENGTH_SHORT);
         View toastView = toast.getView();
-        if (toastView == null)
-            return toast;
-        TextView v = toastView.findViewById(android.R.id.message);
-        if (v != null) v.setGravity(Gravity.CENTER);
+        if (toastView == null) {
+            if (!CustomUtility.stringExists(text))
+                text = " ";
+            Spannable centeredText = new SpannableString(text);
+            centeredText.setSpan(
+                    new AlignmentSpan.Standard(Layout.Alignment.ALIGN_CENTER),
+                    0, text.length() - 1,
+                    Spannable.SPAN_INCLUSIVE_INCLUSIVE
+            );
+            toast = Toast.makeText(context, centeredText, Toast.LENGTH_SHORT);
+        } else {
+            TextView v = toastView.findViewById(android.R.id.message);
+            if (v != null) v.setGravity(Gravity.CENTER);
+        }
         return toast;
     }
 
@@ -2383,7 +2403,11 @@ public class Utility {
                 })
                 .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
                 .setOnClickListener((customRecycler, view, object, index) -> Toast.makeText(context, "Swipe nach Oben zum abwählen", Toast.LENGTH_SHORT).show())
-                .enableSwiping((customRecycler, objectList, direction, s, index) -> customRecycler_selectList.reload(), true, false)
+                .enableSwiping((customRecycler, objectList, direction, s, index) -> {
+                    customRecycler_selectList.reload();
+                    if (selectedUuidList.isEmpty())
+                        dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.VISIBLE);
+                }, true, false)
                 .generate();
 
 
@@ -4382,6 +4406,16 @@ public class Utility {
         if (bitmap == null)
             return;
 
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+//            CustomUtility.GenericInterface<Boolean> logTiming = CustomUtility.logTiming();
+            // ToDo: Optimieren (Vielleicht nur Rand?) und auch für große Version speichern
+            boolean hasAlpha = hasAlpha(bitmap);
+//            CustomUtility.logD(null, "setImageViewBackgroundColor: %s", hasAlpha);
+//            logTiming.run(false);
+            if (!hasAlpha)
+                return;
+        }
+
         Bitmap old = Bitmap.createBitmap(bitmap);
         Bitmap newBitmap = Bitmap.createBitmap(old.getWidth() + borderPx, old.getHeight() + borderPx, old.getConfig());
         Canvas canvas = new Canvas(newBitmap);
@@ -4392,6 +4426,31 @@ public class Utility {
         imageView.setDrawingCacheEnabled(false);
 //        newBitmap.getByteCount()
         imageView.setImageBitmap(newBitmap);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    private static boolean hasAlpha(Bitmap bitmap) {
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        for (int i = 0; i < width; i++) {
+            if (bitmap.getColor(i, 0).alpha() != 1f)
+                return true;
+            if (bitmap.getColor(i, height - 1).alpha() != 1f)
+                return true;
+        }
+        for (int i = 0; i < height; i++) {
+            if (bitmap.getColor(0, i).alpha() != 1f)
+                return true;
+            if (bitmap.getColor(width - 1, i).alpha() != 1f)
+                return true;
+        }
+//        for (int i = 0; i < bitmap.getWidth(); i++) {
+//            for (int i1 = 0; i1 < bitmap.getHeight(); i1++) {
+//                if (bitmap.getColor(i, i1).alpha() != 1f)
+//                    return true;
+//            }
+//        }
+        return false;
     }
 
     private static OkHttpClient httpClient;

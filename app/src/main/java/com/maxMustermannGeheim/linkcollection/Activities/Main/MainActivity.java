@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.graphics.drawable.Icon;
 import android.os.Bundle;
 import android.text.InputType;
@@ -29,6 +30,7 @@ import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomUtility;
 import com.finn.androidUtilities.Helpers;
+import com.finn.androidUtilities.ParentClass;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -44,6 +46,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.Collecti
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.WatchListActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
+import com.maxMustermannGeheim.linkcollection.Daten.CustomCode;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
@@ -55,7 +58,12 @@ import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.maxMustermannGeheim.linkcollection.Utilities.VersionControl;
 
+import org.liquidplayer.javascript.JSContext;
+import org.liquidplayer.javascript.JSFunction;
+import org.liquidplayer.javascript.JSValue;
+
 import java.nio.charset.StandardCharsets;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -63,6 +71,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 // --> \/\/(?!  (-|<))
 public class MainActivity extends AppCompatActivity implements CustomInternetHelper.InternetStateReceiverListener {
@@ -308,6 +319,109 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
             setLayout();
 
             database = database_neu;
+
+
+            new CustomCode.CustomCode_Video().executeCode(this);
+
+            if (true)
+                return;
+
+            JSContext context = new JSContext();
+
+            context.property("a", 5);
+            JSValue aValue = context.property("a");
+            double a = aValue.toNumber();
+            DecimalFormat df = new DecimalFormat(".#");
+            System.out.println(df.format(a)); // 5.0
+
+/*
+            context.evaluateScript("a = 10");
+            JSValue newAValue = context.property("a");
+            System.out.println(df.format(newAValue.toNumber())); // 10.0
+            String script =
+                    "function factorial(x) { var f = 1; for(; x > 1; x--) f *= x; return f; }\n" +
+                            "var fact_a = factorial(a);\n";
+            context.evaluateScript(script);
+            JSValue fact_a = context.property("fact_a");
+            System.out.println(df.format(fact_a.toNumber())); // 3628800.0
+
+            JSFunction factorial = new JSFunction(context,"factorial") {
+                public Integer factorial(Integer x) {
+                    int factorial = 1;
+                    for (; x > 1; x--) {
+                        factorial *= x;
+                    }
+                    return factorial;
+                }
+            };
+
+            context.property("factorial", factorial);
+            context.evaluateScript("var f = factorial(10);");
+            JSValue f = context.property("f");
+            System.out.println(df.format(f.toNumber())); // 3628800.0
+*/
+
+
+            JSFunction complex = new JSFunction(context,"complex") {
+                public List<String> complex(Integer x) {
+                    return database.videoMap.values().stream().filter(video -> video.getRating() > 4.75F).map(ParentClass::getName).collect(Collectors.toCollection(CustomList::new));
+//                    return Stream.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).reduce((integer, integer2) -> integer * integer2).orElse(0);
+                }
+            };
+
+            context.property("complex", complex);
+            context.evaluateScript("var c = complex(10);");
+            context.evaluateScript("var l = complex(10).length;");
+            JSValue c = context.property("c");
+            JSValue l = context.property("l");
+            System.out.println(df.format(c.toString())); // 3628800.0
+
+
+            if (true)
+                return;
+            CustomCode.CustomCode_Video customCodeVideo = new CustomCode.CustomCode_Video();
+            Database database = Database.getInstance();
+            CustomList<Video> videoList = new CustomList<>(database.videoMap.values());
+            videoList.filter(new Predicate<Video>() {
+                public boolean test(Video video) {
+                    return video.getAgeRating() == 18;
+                }
+            }, true);
+            videoList.filter(video -> {
+                if (video.isUpcoming())
+                    return video.getAgeRating() == 18;
+                else
+                    return video.getAgeRating() == 12;
+            },  true);
+
+//            return videoList;
+            String code =
+//            "videoList.filter(video -> video.getAgeRating() == 18, true);\n" +
+//            "return videoList;";
+//            "int[] i = {0};\n" +
+//            "Runnable r = () -> i[0] = 1;\n" +
+//            "r.run();\n" +
+//            "return i[0];\n" ;
+            "videoList.filter(<Video>video -> {\n" +
+                "if (video.isUpcoming())\n" +
+                    "return video.getAgeRating() == 18;\n" +
+                "else\n" +"\n" +
+                    "return video.getAgeRating() == 12;\n" +
+            "},  true);\n" ;
+            videoList.filter(new Predicate<Video>() {public boolean test(Video video) {
+                if (video.isUpcoming())
+                    return video.getAgeRating() == 18;
+                else
+
+                    return video.getAgeRating() == 12;
+            }},   true);
+
+
+            // ToDo: Alternativen: Groovy JavaScript
+            //  https://stackoverflow.com/questions/4389232/run-piece-of-code-contained-in-a-string
+
+            customCodeVideo.setCode(code);
+            customCodeVideo.executeCode(this);
         };
 
         if (Database.isReady()) {
@@ -763,7 +877,15 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                         SearchView searchView = new SearchView(this);
                         searchView.setIconified(false);
                         searchView.setQueryHint(currentSpace.getPlural() + " Filtern");
-                        searchView.setPadding(0, CustomUtility.dpToPx(4), 0, CustomUtility.dpToPx(8));
+                        View searchPlate = searchView.findViewById(getResources().getIdentifier("android:id/search_plate", null, null));
+                        CustomUtility.ifNotNull((View) searchView.findViewById(getResources().getIdentifier("android:id/search_mag_icon", null, null)),
+                                o -> ((LinearLayout.LayoutParams) o.getLayoutParams()).leftMargin = 0);
+//                        searchView.findViewById(getResources().getIdentifier("android:id/search_edit_frame", null, null));
+//                        View viewById2 = searchView.findViewById(androidx.appcompat.R.id.search_badge);
+//                        View viewById3 = searchView.findViewById(androidx.appcompat.R.id.search_button);
+                        if (searchPlate != null)
+                                searchPlate.setBackgroundColor(Color.TRANSPARENT);
+                        searchView.setPadding(-3, CustomUtility.dpToPx(4), 0, CustomUtility.dpToPx(2));
                         searchView.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
                         searchView.setIconifiedByDefault(false);
 

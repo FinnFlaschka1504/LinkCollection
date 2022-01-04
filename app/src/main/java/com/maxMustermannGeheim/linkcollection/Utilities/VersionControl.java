@@ -262,7 +262,7 @@ public class VersionControl {
     //  ----- Change-Log ----->
     private static List<Pair<String, List<String>>> changeList = new ArrayList<>();
 
-    private static Runnable addChanges = () -> {
+    private static final Runnable addChanges = () -> {
         addChange("1.0", "Fast alles");
         addChange("2.0", "VersionControl hinzugefügt");
         addChange("2.1", "Bei der Datenbank anmelden begonnen");

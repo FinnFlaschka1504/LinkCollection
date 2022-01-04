@@ -1201,6 +1201,7 @@ public class ShowActivity extends AppCompatActivity {
                                         if (payload != null) {
                                             ((CustomDialog) payload).dismiss();
                                         }
+                                        Database.saveAll(this, "Show gelöscht", null, null);
                                     })
                                     .show();
                         }, false)

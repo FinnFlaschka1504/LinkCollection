@@ -87,6 +87,11 @@ dependencies {
 
     implementation 'com.github.pchmn:MaterialChipsInput:1.0.8'
     api 'com.theartofdev.edmodo:android-image-cropper:2.8.0'
+    implementation 'com.github.LiquidPlayer:LiquidCore:0.6.2'
+
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.8.5'
+    compile 'com.fasterxml.jackson.core:jackson-core:2.8.5'
+    compile 'com.fasterxml.jackson.core:jackson-annotations:2.8.5'
 
     implementation group: 'org.apache-extras.beanshell', name: 'bsh', version: '2.0b6'
     implementation group: 'com.google.guava', name: 'guava', version: '28.2-android'

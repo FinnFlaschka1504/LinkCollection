@@ -480,6 +480,59 @@
         android:orientation="vertical">
 
 
+        <TextView
+            style="@style/TextButtonStyle.Primary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_weight="1"
+            android:text="CustomCode"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:orientation="horizontal">
+
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/dialog_advancedSearch_video_customCode_parameter_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/dialog_advancedSearch_video_customCode_parameter"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Parameter"
+                    android:inputType="textCapSentences"
+                    android:singleLine="true" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <Spinner
+                android:id="@+id/dialog_advancedSearch_video_customCode_select"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginVertical="12dp"
+        android:background="?android:attr/listDivider" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="16dp"
+        android:orientation="vertical">
+
+
         <LinearLayout
             android:id="@+id/dialog_advancedSearch_video_negationLayout_name"
             android:layout_width="match_parent"

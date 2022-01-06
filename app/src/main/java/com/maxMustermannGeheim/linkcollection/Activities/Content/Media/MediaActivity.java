@@ -674,7 +674,7 @@ public class MediaActivity extends AppCompatActivity {
                     if (index < recyclerMetrics.first)
                         params.setMargins(0, 7, 0, 0);
                     else if (index + 1 >= size[0] - ((size[0] - 1) % recyclerMetrics.first))
-                        params.setMargins(0, 0, 0, CustomUtility.dpToPx(16));
+                        params.setMargins(0, 0, 0, CustomUtility.dpToPx(25));
                     itemView.setLayoutParams(params);
 
                     SelectMediaHelper.loadPathIntoImageView(mediaSelectable.content.getImagePath(), itemView, recyclerMetrics.second, 2d/3d);
@@ -694,7 +694,7 @@ public class MediaActivity extends AppCompatActivity {
                 })
                 .setOnLongClickListener((customRecycler, view, mediaSelectable, index) -> selectHelper.startSelection(index))
                 .setRowOrColumnCount(recyclerMetrics.first)
-                .enableFastScroll(null, false, Pair.create(7, CustomUtility.dpToPx(16)), (customRecycler, mediaSelectable, integer) -> {
+                .enableFastScroll(null, false, Pair.create(7, CustomUtility.dpToPx(25)), (customRecycler, mediaSelectable, integer) -> {
                     long lastModified = new File(mediaSelectable.getContent().getImagePath()).lastModified();
                     if (lastModified != 0)
                         return dateFormat.format(new Date(lastModified));

@@ -108,7 +108,8 @@ public class CategoriesActivity extends AppCompatActivity {
 
     public enum CATEGORIES {
         VIDEO("Video", "Videos", VideoActivity.class), DARSTELLER("Darsteller", "Darsteller", VideoActivity.class), STUDIOS("Studio", "Studios", VideoActivity.class),
-        GENRE("Genre", "Genres", VideoActivity.class), COLLECTION("Sammlung", "Sammlungen", VideoActivity.class), WATCH_LIST("WatchList", "WatchLists", VideoActivity.class), KNOWLEDGE_CATEGORIES("Kategorie", "Kategorien", KnowledgeActivity.class),
+        GENRE("Genre", "Genres", VideoActivity.class), COLLECTION("Sammlung", "Sammlungen", VideoActivity.class), WATCH_LIST("WatchList", "WatchLists", VideoActivity.class),
+        KNOWLEDGE_CATEGORIES("Kategorie", "Kategorien", KnowledgeActivity.class), CUSTOM_CODE_VIDEO("VideoCustomCode", "VideoCustomCodes", VideoActivity.class),
         PERSON("Person", "Personen", OweActivity.class), JOKE_CATEGORIES("Witz", "Witze", JokeActivity.class), SHOW_GENRES("Genre", "Genres", ShowActivity.class),
         SHOW("Serie", "Serien", ShowActivity.class), EPISODE("Episode", "Episoden", ShowActivity.class), MEDIA("Medium", "Medien", MediaActivity.class), MEDIA_PERSON("Person", "Personen", MediaActivity.class),
         MEDIA_CATEGORY("Kategorie", "Kategorien", MediaActivity.class), MEDIA_TAG("Tag", "Tags", MediaActivity.class), MEDIA_EVENT("Event", "Events", MediaActivity.class);

@@ -974,6 +974,10 @@ public class Utility {
         menu.findItem(id).setIconTintList(new ColorStateList(new int[][]{new int[]{android.R.attr.state_enabled}}, new int[]{color}));
     }
 
+    public static CharSequence dialogDeleteText(String name) {
+        return new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.SpannableStringHelper().append("Möchtest du wirklich '").appendBold(name).append("' löschen?").get();
+    }
+
 
     /**  ------------------------- Api ------------------------->  */
     public static void importTmdbGenre(Context context, boolean direct, boolean isVideo) {
@@ -2011,6 +2015,10 @@ public class Utility {
     public static final String imdbPattern_full = "^tt\\d{7,8}$";
     public static final String imdbPattern = "tt\\d{7,8}";
 
+    public static boolean isUuid(String id) {
+        return id.matches("\\w+_[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b");
+    }
+
     public static boolean isPortrait(AppCompatActivity activity) {
         return activity.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
     }
@@ -2598,6 +2606,8 @@ public class Utility {
                 return database.personMap;
             case WATCH_LIST:
                 return database.watchListMap;
+            case CUSTOM_CODE_VIDEO:
+                return database.customCodeVideoMap;
             case SHOW:
                 return database.showMap;
             case KNOWLEDGE_CATEGORIES:

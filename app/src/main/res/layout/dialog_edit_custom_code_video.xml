@@ -18,6 +18,7 @@
                 android:id="@+id/dialog_edit_CustomCodeVideo_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:inputType="textCapSentences"
                 android:hint="Name"
                 android:singleLine="true" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -45,10 +46,24 @@
         android:background="?android:attr/listDivider" />
 
     <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/dialog_edit_CustomCodeVideo_code_layout"
+        android:id="@+id/dialog_edit_CustomCodeVideo_params_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
+        app:errorEnabled="false">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/dialog_edit_CustomCodeVideo_params"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Test Parameter"
+            android:singleLine="true" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/dialog_edit_CustomCodeVideo_code_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         app:errorEnabled="true">
 
         <com.google.android.material.textfield.TextInputEditText

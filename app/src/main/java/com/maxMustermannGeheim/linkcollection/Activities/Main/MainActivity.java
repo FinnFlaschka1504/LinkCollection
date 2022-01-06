@@ -36,6 +36,7 @@ import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.common.hash.Hashing;
+import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Media.MediaActivity;
@@ -71,6 +72,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -320,8 +322,62 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
             database = database_neu;
 
+            if (true)
+                return;
 
-            new CustomCode.CustomCode_Video().executeCode(this);
+            // ---------------
+
+            CustomUtility.logTiming("CustomCode", null);
+
+            JSContext js = new JSContext();
+            CustomUtility.logTiming("CustomCode", true);
+            JSFunction logTiming = new JSFunction(js, "logTiming") {
+                public void logTiming() {
+                    CustomUtility.logTiming("CustomCode", true);
+                }
+            };
+            js.property("logTiming", logTiming);
+            String json = new Gson().toJson(database.videoMap);
+            CustomUtility.logTiming("CustomCode", true);
+            js.property("jsonText", json);
+            CustomUtility.logTiming("CustomCode", true);
+
+            if (false) {
+                JSFunction getAll = new JSFunction(js, "getAll") {
+                    public Map getAll() {
+//                        CustomUtility.logTiming("CustomCode", true);
+//                    CustomList<Video> collect = database.videoMap.values().stream().filter(video -> video.getRating() >= 4.75f).collect(Collectors.toCollection(CustomList::new));
+//                    CustomUtility.logD(null, "getAll: %d", collect.size());
+                        Map map = new Gson().fromJson(new Gson().toJson(database.videoMap), Map.class);
+                        CustomUtility.logD(null, "getAll: %d", map.size());
+//                        CustomUtility.logTiming("CustomCode", true);
+                        return map;
+                    }
+                };
+                js.property("getAll", getAll);
+            } else {
+//                int numLetters = switch (2)
+//                        {
+//                            case 2, 3, 4 -> 6;
+//                            case 5 -> 7;
+//                            case 6, 7 -> 8;
+//                            case 8 -> 9;
+//                        };
+                js.evaluateScript("var getAll = () => {\n" +
+                        "    return JSON.parse(jsonText);\n" +
+                        "}\n");
+            }
+            try {
+                JSValue jsValue = js.evaluateScript("logTiming()\n" +
+                        "var all = getAll()\n" +
+                        "var res = Object.values(all).length\n" +
+                        "logTiming()\n" +
+                        "res");
+                CustomUtility.logD(null, "loadDatabase: %s", jsValue.toJSON());
+            } catch (Exception exception) {
+                CustomUtility.logD(null, "loadDatabase: %s", exception.getMessage());
+            }
+            CustomUtility.logTiming("CustomCode", false);
 
             if (true)
                 return;
@@ -362,7 +418,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 */
 
 
-            JSFunction complex = new JSFunction(context,"complex") {
+            JSFunction complex = new JSFunction(context, "complex") {
                 public List<String> complex(Integer x) {
                     return database.videoMap.values().stream().filter(video -> video.getRating() > 4.75F).map(ParentClass::getName).collect(Collectors.toCollection(CustomList::new));
 //                    return Stream.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).reduce((integer, integer2) -> integer * integer2).orElse(0);
@@ -392,7 +448,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                     return video.getAgeRating() == 18;
                 else
                     return video.getAgeRating() == 12;
-            },  true);
+            }, true);
 
 //            return videoList;
             String code =
@@ -402,23 +458,22 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //            "Runnable r = () -> i[0] = 1;\n" +
 //            "r.run();\n" +
 //            "return i[0];\n" ;
-            "videoList.filter(<Video>video -> {\n" +
-                "if (video.isUpcoming())\n" +
-                    "return video.getAgeRating() == 18;\n" +
-                "else\n" +"\n" +
-                    "return video.getAgeRating() == 12;\n" +
-            "},  true);\n" ;
-            videoList.filter(new Predicate<Video>() {public boolean test(Video video) {
-                if (video.isUpcoming())
-                    return video.getAgeRating() == 18;
-                else
+                    "videoList.filter(<Video>video -> {\n" +
+                            "if (video.isUpcoming())\n" +
+                            "return video.getAgeRating() == 18;\n" +
+                            "else\n" + "\n" +
+                            "return video.getAgeRating() == 12;\n" +
+                            "},  true);\n";
+            videoList.filter(new Predicate<Video>() {
+                public boolean test(Video video) {
+                    if (video.isUpcoming())
+                        return video.getAgeRating() == 18;
+                    else
 
-                    return video.getAgeRating() == 12;
-            }},   true);
+                        return video.getAgeRating() == 12;
+                }
+            }, true);
 
-
-            // ToDo: Alternativen: Groovy JavaScript
-            //  https://stackoverflow.com/questions/4389232/run-piece-of-code-contained-in-a-string
 
             customCodeVideo.setCode(code);
             customCodeVideo.executeCode(this);
@@ -864,7 +919,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 .disableScroll()
                 .setDimensionsFullscreen()
                 .enableTitleBackButton()
-                .enableTitleRightButton( R.drawable.ic_filter, customDialog -> {
+                .enableTitleRightButton(R.drawable.ic_filter, customDialog -> {
 
                     if (advancedQueryHelper[0] == null) {
                         HashSet<VideoActivity.FILTER_TYPE> filterTypeSet = new HashSet<>();
@@ -884,7 +939,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 //                        View viewById2 = searchView.findViewById(androidx.appcompat.R.id.search_badge);
 //                        View viewById3 = searchView.findViewById(androidx.appcompat.R.id.search_button);
                         if (searchPlate != null)
-                                searchPlate.setBackgroundColor(Color.TRANSPARENT);
+                            searchPlate.setBackgroundColor(Color.TRANSPARENT);
                         searchView.setPadding(-3, CustomUtility.dpToPx(4), 0, CustomUtility.dpToPx(2));
                         searchView.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
                         searchView.setIconifiedByDefault(false);

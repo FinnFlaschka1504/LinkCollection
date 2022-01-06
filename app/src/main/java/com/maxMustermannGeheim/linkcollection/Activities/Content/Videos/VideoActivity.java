@@ -18,11 +18,14 @@ import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.text.style.RelativeSizeSpan;
 import android.util.Pair;
+import android.view.GestureDetector;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewStub;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -39,6 +42,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.menu.ActionMenuItemView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -55,10 +59,12 @@ import com.google.android.material.datepicker.MaterialDatePicker;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.gson.Gson;
 import com.innovattic.rangeseekbar.RangeSeekBar;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
+import com.maxMustermannGeheim.linkcollection.Daten.CustomCode;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image;
@@ -87,6 +93,8 @@ import org.joda.time.LocalDate;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.liquidplayer.javascript.JSBaseArray;
+import org.liquidplayer.javascript.JSValue;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -126,6 +134,7 @@ public class VideoActivity extends AppCompatActivity {
     private static final String ADVANCED_SEARCH_CRITERIA_STUDIO = "s";
     private static final String ADVANCED_SEARCH_CRITERIA_GENRE = "g";
     private static final String ADVANCED_SEARCH_CRITERIA_COLLECTION = "c";
+    private static final String ADVANCED_SEARCH_CRITERIA_CUSTOM_CODE = "cc";
 
     enum SORT_TYPE {
         NAME, VIEWS, RATING, LATEST
@@ -443,7 +452,7 @@ public class VideoActivity extends AppCompatActivity {
     }
 
 
-    /**  ------------------------- AdvancedQuery ------------------------->  */
+    /** ------------------------- AdvancedQuery -------------------------> */
     public static Helpers.AdvancedQueryHelper<Video> getAdvancedQueryHelper(AppCompatActivity context, SearchView searchView, HashSet<FILTER_TYPE> filterTypeSet) {
         return new Helpers.AdvancedQueryHelper<Video>(context, searchView)
                 .setRestFilter((restQuery, videos) -> {
@@ -658,7 +667,8 @@ public class VideoActivity extends AppCompatActivity {
 
                             SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.ENGLISH);
                             int timezoneOffset = new Date().getTimezoneOffset() * 60 * 1000;
-                            final Runnable[] applyStrings = {() -> {}};
+                            final Runnable[] applyStrings = {() -> {
+                            }};
 
                             // ---------------
 
@@ -773,7 +783,64 @@ public class VideoActivity extends AppCompatActivity {
                 .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, String>(ADVANCED_SEARCH_CRITERIA_COLLECTION, "[^]]+?")
                         .setCategory(CategoriesActivity.CATEGORIES.COLLECTION)
                         .setParser(sub -> sub)
-                        .setBuildPredicate(sub -> video -> Utility.containedInCollection(sub, video.getUuid(), true)));
+                        .setBuildPredicate(sub -> video -> Utility.containedInCollection(sub, video.getUuid(), true)))
+                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<CustomCode.CustomCode_Video, String[]>>(ADVANCED_SEARCH_CRITERIA_CUSTOM_CODE, "\\w+(= *([^,]+)(, *[^,]+)*)?")
+                        .setParser(sub -> {
+                            String[] split = sub.split("=");
+                            String name = split[0];
+                            if (CustomUtility.stringExists(name)) {
+                                CustomCode.CustomCode_Video customCode = (CustomCode.CustomCode_Video) CustomCode.getCustomCodeByName(CategoriesActivity.CATEGORIES.CUSTOM_CODE_VIDEO, name);
+                                if (customCode == null)
+                                    return null;
+                                String[] params = split.length > 1 ? CustomCode.parseParams(split[1]) : new String[]{};
+                                return Pair.create(customCode, params);
+                            }
+                            return null;
+                        })
+                        .setBuildPredicate(pair -> {
+                            if (pair == null || pair.first == null)
+                                return null;
+//                            CustomUtility.logTiming("CustomCode", true);
+                            JSValue result = pair.first.executeCode(context, pair.second);
+//                            CustomUtility.logTiming("CustomCode", true);
+                            if (result.isArray()) {
+                                List<String> idList = result.toJSArray();
+                                return video -> idList.contains(video.getUuid());
+                            } else {
+                                if (result.isString())
+                                    Toast.makeText(context, result.toString(), Toast.LENGTH_SHORT).show();
+                                return null;
+                            }
+                        })
+                        .setApplyDialog((customDialog, pair, criteria) -> {
+                            Database database = Database.getInstance();
+                            CustomList<CustomCode.CustomCode_Video> customCodeList = database.customCodeVideoMap.values().stream().sorted(ParentClass::compareByName).collect(Collectors.toCollection(CustomList::new));
+
+                            TextInputLayout parameterEditLayout = customDialog.findViewById(R.id.dialog_advancedSearch_video_customCode_parameter_layout);
+                            Spinner selectCustomCode = customDialog.findViewById(R.id.dialog_advancedSearch_video_customCode_select);
+
+
+                            CustomList<String> selectionList = customCodeList.map(com.finn.androidUtilities.ParentClass::getName);
+                            selectionList.add(0, "- Keins -");
+                            ArrayAdapter<String> adapter = new ArrayAdapter<>(context, android.R.layout.simple_spinner_item, selectionList);
+                            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                            selectCustomCode.setAdapter(adapter);
+
+                            if (pair != null) {
+                                if (pair.second.length > 0) {
+                                    parameterEditLayout.getEditText().setText(String.join(", ", pair.second));
+                                }
+
+                                selectCustomCode.setSelection(selectionList.indexOf(pair.first.getName()));
+                            }
+
+                            return customDialog1 -> {
+                                if (selectCustomCode.getSelectedItemPosition() == 0)
+                                    return null;
+                                String parameter = parameterEditLayout.getEditText().getText().toString().trim();
+                                return String.format("%s:%s%s", ADVANCED_SEARCH_CRITERIA_CUSTOM_CODE, selectCustomCode.getSelectedItem().toString(), CustomUtility.stringExists(parameter) ? "=" + parameter : "");
+                            };
+                        }));
     }
 
     public static void applyDurationDialog(Helpers.AdvancedQueryHelper.SearchCriteria<?, Pair<Date, Date>> durationCriteria, String[] pivot, String[] duration, Runnable[] applyStrings, TextView dialog_advancedSearch_viewed_text, Runnable resetDateRange, TextInputEditText since_edit, Spinner since_unit, TextInputEditText duration_edit, Spinner duration_unit) {
@@ -968,7 +1035,8 @@ public class VideoActivity extends AppCompatActivity {
             return datePair;
         };
     }
-    /**  <------------------------- AdvancedQuery -------------------------  */
+
+    /** <------------------------- AdvancedQuery ------------------------- */
 
     private List<Video> filterList() {
         filteredVideoList = new com.finn.androidUtilities.CustomList<>(allVideoList);
@@ -981,12 +1049,53 @@ public class VideoActivity extends AppCompatActivity {
             filteredVideoList = allVideoList.stream().filter(Video::isUpcoming).collect(Collectors.toCollection(CustomList::new));
         }
         if (!searchQuery.trim().equals("")) {
+//            CustomUtility.logD(null, "filterList: ");
+//            CustomUtility.logTiming("CustomCode", null);
             advancedQueryHelper.filterFull(filteredVideoList);
-        }
+//            CustomUtility.logTiming("CustomCode", false);
+        } else
+            advancedQueryHelper.clean();
         return filteredVideoList;
     }
 
     private List<Video> sortList(List<Video> videoList) {
+        SORT_TYPE sort_type = this.sort_type;
+        Pair<CustomCode.CustomCode_Video, String[]> parse;
+        if (advancedQueryHelper != null && advancedQueryHelper.has(ADVANCED_SEARCH_CRITERIA_CUSTOM_CODE) && (parse = (Pair<CustomCode.CustomCode_Video, String[]>) advancedQueryHelper.parse(ADVANCED_SEARCH_CRITERIA_CUSTOM_CODE)) != null) {
+            ;
+            CustomCode.CustomCode_Video customCode = parse.first;
+            String sortType = customCode._getSortType();
+            if (sortType != null) {
+                if (sortType.equalsIgnoreCase("RESULT")) {
+                    String jsValue = customCode._getTempResult();
+                    List<String> array;
+                    if (jsValue.matches("\\[.*]") && (array = new Gson().fromJson(jsValue, List.class)) != null) {
+                        CustomList.replace(videoList, array.stream().map(id -> (Video) Utility.findObjectById(CategoriesActivity.CATEGORIES.VIDEO, id)).collect(Collectors.toList()));
+                        return videoList;
+                    }
+                } else {
+                    try {
+                        sort_type = SORT_TYPE.valueOf(sortType);
+                        // ToDo: vielleicht auch feldVariable ändern oder Menü deaktivieren
+                    } catch (Exception exception) {
+                        Toast.makeText(this, exception.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+
+                GestureDetector gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+                    @Override
+                    public boolean onSingleTapUp(MotionEvent e) {
+                        CustomUtility.showCenteredToast(VideoActivity.this, "Von CustomCode bestimmt\n" + sortType);
+                        return true;
+                    }
+                });
+                ((ActionMenuItemView) findViewById(R.id.taskBar_video_sort)).setOnTouchListener((v, event) -> gestureDetector.onTouchEvent(event));
+//                ((ActionMenuItemView) findViewById(R.id.taskBar_video_sort)).setEnabled(false);
+            } else
+                ((ActionMenuItemView) findViewById(R.id.taskBar_video_sort)).setOnTouchListener(null);
+        } else
+            ((ActionMenuItemView) findViewById(R.id.taskBar_video_sort)).setOnTouchListener(null);
+
         switch (sort_type) {
             case NAME:
                 videoList.sort((video1, video2) -> video1.getName().compareToIgnoreCase(video2.getName()));
@@ -1286,6 +1395,20 @@ public class VideoActivity extends AppCompatActivity {
         final int[] views = {video.getDateList().size()};
         CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle(video.getName())
+                .addOptionalModifications(customDialog -> {
+                    if (Utility.isUuid(searchQuery)) {
+                        final boolean[] openedByUuidState = {true};
+                        customDialog
+                                .enableTitleBackButton(customDialog1 -> {
+                                    customDialog1.dismiss();
+                                    openedByUuidState[0] = false;
+                                })
+                                .addOnDialogDismiss(customDialog1 -> {
+                                    if (openedByUuidState[0])
+                                        finish();
+                                });
+                    }
+                })
                 .setView(R.layout.dialog_detail_video)
                 .addOptionalModifications(customDialog -> {
                     if (Utility.boolOr(Integer.parseInt(Settings.getSingleSetting(this, Settings.SETTING_VIDEO_QUICK_SEARCH)), 0, 1))
@@ -1461,7 +1584,7 @@ public class VideoActivity extends AppCompatActivity {
 
                     Utility.applySelectionSearch(this, CategoriesActivity.CATEGORIES.VIDEO, customDialog.getTitleTextView());
                 })
-                .setOnDialogDismiss(customDialog -> {
+                .addOnDialogDismiss(customDialog -> {
                     detailDialog = null;
                     Utility.ifNotNull(customDialog.getPayload(), o -> ((CustomDialog) o).reloadView());
                 });
@@ -1901,7 +2024,7 @@ public class VideoActivity extends AppCompatActivity {
                             customRecycler.reload();
                         });
                         view.findViewById(R.id.dialog_intersections_regexSwap).setOnLongClickListener(v -> {
-                            ((TextInputLayout) view.findViewById(R.id.dialog_intersections_regex_layout)).getEditText().setText("(^|\\s)(is|a|the|are|and|\\d)($|\\s)");
+                            ((TextInputLayout) view.findViewById(R.id.dialog_intersections_regex_layout)).getEditText().setText("\\b(ist?|a|the|are|and|or|und|oder|\\d)\\b");
                             return true;
                         });
 
@@ -3250,34 +3373,34 @@ public class VideoActivity extends AppCompatActivity {
                 CustomDialog.Builder(this)
                         .setTitle(String.format(Locale.getDefault(), "Markierte %s (%d)", plural, markedVideos.size()))
                         .setView(new CustomRecycler<Video>(this, customDialog.findViewById(R.id.dialogDetail_collection_videos))
-                                .setItemLayout(R.layout.list_item_collection_video)
-                                .setGetActiveObjectList(customRecycler -> markedVideos)
-                                .setSetItemContent((customRecycler1, itemView, video, index) -> {
-                                    String imagePath = video.getImagePath();
-                                    ImageView thumbnail = itemView.findViewById(R.id.listItem_collectionVideo_thumbnail);
-                                    if (Utility.stringExists(imagePath)) {
-                                        imagePath = Utility.getTmdbImagePath_ifNecessary(imagePath, true);
-                                        Utility.loadUrlIntoImageView(this, thumbnail,
-                                                imagePath, imagePath, null, () -> Utility.roundImageView(thumbnail, 8));
-                                        thumbnail.setVisibility(View.VISIBLE);
+                                        .setItemLayout(R.layout.list_item_collection_video)
+                                        .setGetActiveObjectList(customRecycler -> markedVideos)
+                                        .setSetItemContent((customRecycler1, itemView, video, index) -> {
+                                            String imagePath = video.getImagePath();
+                                            ImageView thumbnail = itemView.findViewById(R.id.listItem_collectionVideo_thumbnail);
+                                            if (Utility.stringExists(imagePath)) {
+                                                imagePath = Utility.getTmdbImagePath_ifNecessary(imagePath, true);
+                                                Utility.loadUrlIntoImageView(this, thumbnail,
+                                                        imagePath, imagePath, null, () -> Utility.roundImageView(thumbnail, 8));
+                                                thumbnail.setVisibility(View.VISIBLE);
 
-                                        thumbnail.setOnLongClickListener(v -> {
-                                            showDetailDialog(video);
+                                                thumbnail.setOnLongClickListener(v -> {
+                                                    showDetailDialog(video);
 //                                            startActivityForResult(new Intent(this, VideoActivity.class)
 //                                                            .putExtra(CategoriesActivity.EXTRA_SEARCH, video.getUuid())
 //                                                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO),
 //                                                    CategoriesActivity.START_CATEGORY_SEARCH);
 
-                                            return true;
-                                        });
-                                    } else
-                                        thumbnail.setImageResource(R.drawable.ic_no_image);
+                                                    return true;
+                                                });
+                                            } else
+                                                thumbnail.setImageResource(R.drawable.ic_no_image);
 
 
-                                    ((TextView) itemView.findViewById(R.id.listItem_collectionVideo_text)).setText(video.getName());
-                                })
-                                .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
-                                .generateRecyclerView()
+                                            ((TextView) itemView.findViewById(R.id.listItem_collectionVideo_text)).setText(video.getName());
+                                        })
+                                        .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
+                                        .generateRecyclerView()
                         )
                         .enableTitleBackButton()
                         .enableTitleRightButton(R.drawable.ic_save, customDialog1 -> {

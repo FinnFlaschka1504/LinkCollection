@@ -90,6 +90,7 @@ public class CustomInternetHelper extends BroadcastReceiver {
         connected = null;
     }
 
+    @Override
     public void onReceive(Context context, Intent intent) {
         if(intent == null || intent.getExtras() == null)
             return;
@@ -101,7 +102,8 @@ public class CustomInternetHelper extends BroadcastReceiver {
             connected = true;
         } else if(intent.getBooleanExtra(ConnectivityManager.EXTRA_NO_CONNECTIVITY,Boolean.FALSE)) {
             connected = false;
-        }
+        } else
+            connected = false;
 
         notifyStateToAll();
     }

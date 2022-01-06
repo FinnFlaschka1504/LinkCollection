@@ -82,6 +82,7 @@ import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import me.zhanghai.android.materialratingbar.MaterialRatingBar;
 
@@ -1903,9 +1904,7 @@ public class Helpers {
         /**  ------------------------- Convenience ------------------------->  */
 
 
-        /**
-         * ------------------------- Function ------------------------->
-         */
+        /**  ------------------------- Function -------------------------> */
         public AdvancedQueryHelper<T> splitQuery() {
             fullQuery = getQuery();
             if (fullQuery.contains("{")) {
@@ -1930,14 +1929,26 @@ public class Helpers {
         public AdvancedQueryHelper<T> filterAdvanced(CustomList<T> list) {
             CustomList<SearchCriteria> filteredCriteriaList = criteriaList.filter(SearchCriteria::has, false);
             filteredCriteriaList.forEach(SearchCriteria::buildPredicate);
-            list.filter(t -> {
+            // ToDo: kann optimiert werden? immer wieder einen Stream filtern?
+//            CustomUtility.GenericInterface<Boolean> logTiming = CustomUtility.logTiming();
+            if (false) {
+                list.filter(t -> {
+                    for (SearchCriteria criteria : filteredCriteriaList) {
+                        boolean matchResult = criteria.matchObject(t) ^ criteria.isNegated();
+                        if (!matchResult)
+                            return false;
+                    }
+                    return true;
+                }, true);
+            } else {
+                Stream<T> stream = list.stream();
                 for (SearchCriteria criteria : filteredCriteriaList) {
-                    boolean matchResult = criteria.matchObject(t) ^ criteria.isNegated();
-                    if (!matchResult)
-                        return false;
+                    boolean negated = criteria.isNegated();
+                    stream = stream.filter(t -> criteria.matchObject(t) ^ negated);
                 }
-                return true;
-            }, true);
+                list.replaceWith(stream.collect(Collectors.toList()));
+            }
+//            logTiming.run(false);
             return this;
         }
 

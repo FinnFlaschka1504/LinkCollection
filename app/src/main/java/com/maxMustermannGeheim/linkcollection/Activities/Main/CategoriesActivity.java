@@ -139,6 +139,25 @@ public class CategoriesActivity extends AppCompatActivity {
         public boolean isTreeCategory() {
             return CustomUtility.boolOr(this, CATEGORIES.MEDIA_CATEGORY, MEDIA_EVENT);
         }
+
+        public static CATEGORIES getById(String id) {
+            switch (id.split("_")[0]) {
+                case "video":
+                    return VIDEO;
+                case "darsteller":
+                    return DARSTELLER;
+                case "studio":
+                    return STUDIOS;
+                case "genre":
+                    return GENRE;
+                case "collection":
+                    return COLLECTION;
+                case "watchList":
+                    return WATCH_LIST;
+            }
+            return null;
+            // ToDo: Vervollständigen
+        }
     }
 
 
@@ -1290,7 +1309,6 @@ public class CategoriesActivity extends AppCompatActivity {
         else
             return s;
     }
-
     /**
      * <------------------------- Convenience -------------------------
      */

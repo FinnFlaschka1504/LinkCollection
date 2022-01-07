@@ -302,7 +302,8 @@ public class VersionControl {
                 "Standardlängen zu Serien hinzugefügt");
         addChange("3.3", "WatchLists zu Videos hinzugefügt",
                 "Hintergrund zu PNGs hinzugefügt",
-                "App startet nicht ohne Internet gefixt");
+                "App startet nicht ohne Internet gefixt",
+                "CustomCode hinzugefügt");
     };
 
     private static void addChange(String version, String... changes) {

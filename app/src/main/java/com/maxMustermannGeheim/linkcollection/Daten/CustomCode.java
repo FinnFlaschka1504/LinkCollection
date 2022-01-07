@@ -2,13 +2,17 @@ package com.maxMustermannGeheim.linkcollection.Daten;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.TextPaint;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
+import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
+import android.text.style.TypefaceSpan;
+import android.text.style.UnderlineSpan;
 import android.util.Pair;
 import android.view.View;
 import android.widget.EditText;
@@ -17,6 +21,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomList;
@@ -27,6 +32,9 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -37,7 +45,6 @@ import org.liquidplayer.javascript.JSFunction;
 import org.liquidplayer.javascript.JSValue;
 
 import java.security.GeneralSecurityException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -54,6 +61,11 @@ public abstract class CustomCode extends ParentClass {
     protected String description;
     protected String defaultParams;
     protected String tempResult;
+
+    enum RETURN_TYPE {
+        LIST, TEXT, STATISTIC;
+        // ToDo: implementieren ^^
+    }
 
     public abstract ParentClass getObjectById(String id);
 
@@ -75,7 +87,6 @@ public abstract class CustomCode extends ParentClass {
     /** <------------------------- Implementations ------------------------- */
     public static class CustomCode_Video extends CustomCode {
         private transient String sortType;
-//        private final ObjectMapper objectMapper = new ObjectMapper();
 
         /**  ------------------------- Constructor ------------------------->  */
         public CustomCode_Video(String name) {
@@ -174,9 +185,11 @@ public abstract class CustomCode extends ParentClass {
                     "   return allList[Math.floor(Math.random()*allList.length)];\n" +
                     "}\n");
 
-            js.evaluateScript(" var format = (key, text) => {\n" +
-                    "   return `\\\\${key}{${text}}`\n" +
+            js.evaluateScript(" var format = (key, text, params = '') => {\n" +
+                    "   return `\\\\${key}${params == '' ? '' : ':' + params}{${text}}`\n" +
                     "}\n");
+
+            // ToDo: vieleicht anpassen, dass idM default und auch Objekt direkt mitgeben
 
             js.evaluateScript("var getAllDays = () => {\n" +
                     "    let allDays = {};\n" +
@@ -223,6 +236,7 @@ public abstract class CustomCode extends ParentClass {
             js.property("params", new CustomList<>(params));
             js.property("sortType", "undefined");
             js.property("hasFormatting", false);
+            js.property("hasHighlight", false);
             String json = new Gson().toJson(database.videoMap);
             js.property("fullMapJson", json);
 
@@ -261,67 +275,61 @@ public abstract class CustomCode extends ParentClass {
             List<CustomUtility.Triple<Integer, Integer, String>> idMatches = new ArrayList<>();
             List<CustomUtility.Triple<Integer, Integer, String>> idMapMatches = new ArrayList<>();
             List<CustomUtility.Triple<Integer, Integer, String>> dateMatches = new ArrayList<>();
-//            List<Pair<Integer, Integer>> boldMatches = new ArrayList<>();
+            List<CustomUtility.Triple<Integer, Integer, Object>> paramsList = new ArrayList<>();
 
-            Pattern pattern = Pattern.compile("\\\\(\\w+)\\{(.*?)\\}");
+            Pattern pattern = Pattern.compile("\\\\(\\w+)(?::(\\w+(?:\\|\\w+)*))*\\{(.*?)\\}");
             while (true) {
                 Matcher matcher = pattern.matcher(text);
                 if (matcher.find()) {
                     MatchResult matchResult = matcher.toMatchResult();
                     String type = matcher.group(1);
-                    String match = matcher.group(2);
+                    String params = matcher.group(2);
+                    final String[] match = {matcher.group(3)};
+                    int offset = type.length() + 3 + (params != null ? params.length() + 1 : 0);
                     switch (type) {
                         case "id":
-                            idMatches.add(CustomUtility.Triple.create(matchResult.start(), matchResult.end() - 5, match));
+                            addToList(idMatches, matchResult, match, offset, null, null, CustomUtility.Triple.create(context, params, paramsList));
                             break;
                         case "idM":
-                            ParentClass parentClass = Utility.findObjectById(CategoriesActivity.CATEGORIES.VIDEO, match);
+                            ParentClass parentClass = getObjectById(match[0]);
                             if (parentClass != null) {
                                 String name = parentClass.getName();
-                                idMapMatches.add(CustomUtility.Triple.create(matchResult.start(), matchResult.end() - (6 + match.length() - name.length()), match));
-                                match = name;
+                                String search = null;
+                                if (parentClass instanceof Darsteller)
+                                    search = String.format("{[a:%s]}", name);
+                                else if (parentClass instanceof Studio)
+                                    search = String.format("{[s:%s]}", name);
+                                else if (parentClass instanceof Genre)
+                                    search = String.format("{[g:%s]}", name);
+
+                                addToList(idMapMatches, matchResult, match, offset, name, search, CustomUtility.Triple.create(context, params, paramsList));
                             } else
-                                idMapMatches.add(CustomUtility.Triple.create(matchResult.start(), matchResult.end() - 6, match));
+                                addToList(idMapMatches, matchResult, match, offset, null, null, CustomUtility.Triple.create(context, params, paramsList));
                             break;
                         case "dt":
                             Date date = null;
-                            if (match.matches("\\d+"))
-                                date = new Date(Long.parseLong(match));
+                            if (match[0].matches("\\d+"))
+                                date = new Date(Long.parseLong(match[0]));
 
                             if (date != null) {
                                 String formatDate = Utility.formatDate(Utility.DateFormat.DATE_DOT, date);
-                                dateMatches.add(CustomUtility.Triple.create(matchResult.start(), matchResult.end() - (5 + match.length() - formatDate.length()), String.format("{[dt:%s]}", formatDate)));
-                                match = formatDate;
+                                addToList(dateMatches, matchResult, match, offset, formatDate, String.format("{[dt:%s]}", formatDate), CustomUtility.Triple.create(context, params, paramsList));
                             }
-//                            else
-//                                new SimpleDateFormat().parse()
                             break;
-//                        case "*":
-//                            boldMatches.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
-//                            break;
-//                        case "~":
-//                            strikeMatches.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
-//                            break;
-//                        case "/":
-//                            italicMatches.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
-//                            break;
-//                        case "_":
-//                            underlineMatches.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
-//                            break;
                     }
-                    text = matcher.replaceFirst(match);
+                    text = matcher.replaceFirst(match[0]);
                 } else
                     break;
             }
             SpannableString resultSpan = new SpannableString(text);
 
-            CustomUtility.GenericReturnInterface<String, ClickableSpan> getClickableSpan = uuid -> {
+            CustomUtility.GenericReturnInterface<String, ClickableSpan> getClickableSpan = query -> {
                 return new ClickableSpan() {
                     @Override
                     public void onClick(View textView) {
                         context.startActivity(new Intent(context, VideoActivity.class)
-                                .putExtra(CategoriesActivity.EXTRA_SEARCH, uuid)
-                                .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO));
+                                .putExtra(CategoriesActivity.EXTRA_SEARCH, query)
+                                .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, Utility.isUuid(query) ? CategoriesActivity.CATEGORIES.getById(query) : CategoriesActivity.CATEGORIES.VIDEO));
                     }
                     @Override
                     public void updateDrawState(TextPaint ds) {
@@ -334,8 +342,47 @@ public abstract class CustomCode extends ParentClass {
             idMatches.forEach(triple -> resultSpan.setSpan(getClickableSpan.run(triple.third), triple.first, triple.second, Spannable.SPAN_COMPOSING));
             idMapMatches.forEach(triple -> resultSpan.setSpan(getClickableSpan.run(triple.third), triple.first, triple.second, Spannable.SPAN_COMPOSING));
             dateMatches.forEach(triple -> resultSpan.setSpan(getClickableSpan.run(triple.third), triple.first, triple.second, Spannable.SPAN_COMPOSING));
+            paramsList.forEach(triple -> resultSpan.setSpan(triple.third, triple.first, triple.second, Spannable.SPAN_COMPOSING));
 
             return resultSpan;
+        }
+
+        private CustomUtility.Triple<Integer, Integer, String> addToList(List<CustomUtility.Triple<Integer, Integer, String>> list, MatchResult matchResult, String[] match, int offset, @Nullable String replacement, @Nullable String search, CustomUtility.Triple<AppCompatActivity, String, List<CustomUtility.Triple<Integer, Integer, Object>>> paramsTriple) {
+            CustomUtility.Triple<Integer, Integer, String> triple;
+            if (CustomUtility.stringExists(replacement)) {
+                triple = CustomUtility.Triple.create(matchResult.start(), matchResult.end() - (offset + match[0].length() - replacement.length()), search != null ? search : match[0]);
+                list.add(triple);
+                match[0] = replacement;
+            } else {
+                triple = CustomUtility.Triple.create(matchResult.start(), matchResult.end() - offset, search != null ? search : match[0]);
+                list.add(triple);
+            }
+            addToParamsList(triple, paramsTriple);
+            return triple;
+        }
+
+        private void addToParamsList(CustomUtility.Triple<Integer, Integer, String> triple, CustomUtility.Triple<AppCompatActivity, String, List<CustomUtility.Triple<Integer, Integer, Object>>> paramsTriple) {
+            if (!CustomUtility.stringExists(paramsTriple.second))
+                return;
+            for (String param : paramsTriple.second.split("\\|")) {
+                param = param.trim();
+                Object span;
+                if (param.equalsIgnoreCase("u"))
+                    span = new UnderlineSpan();
+                else if (param.equalsIgnoreCase("b"))
+                    span = new StyleSpan(Typeface.BOLD);
+                else if (param.equalsIgnoreCase("i"))
+                    span = new StyleSpan(Typeface.ITALIC);
+                else if (param.startsWith("0x"))
+                    span = new ForegroundColorSpan((Integer.parseUnsignedInt(param.substring(2), 16) + (param.length() == 8 ? 0xff000000 : 0)));
+                else if (param.equalsIgnoreCase("nh"))
+                    span = new ForegroundColorSpan(paramsTriple.first.getColor(R.color.colorText));
+                else if (param.equalsIgnoreCase("h"))
+                    span = new ForegroundColorSpan(paramsTriple.first.getColor(R.color.colorAccent));
+                else
+                    return;
+                paramsTriple.third.add(CustomUtility.Triple.create(triple.first, triple.second, span));
+            }
         }
         /**  <------------------------- Function -------------------------  */
 
@@ -396,13 +443,6 @@ public abstract class CustomCode extends ParentClass {
 
 
     /** ------------------------- Function -------------------------> */
-//    public String replaceLambdas(String originalCode) {
-//        originalCode = Pattern.compile("\\(\\) ?-> ?(.*?);").matcher(originalCode).replaceAll("new Runnable() {public void run() {$1;}};");
-//        originalCode = Pattern.compile("(?<=.filter\\()<(\\w+?)>\\s*(\\w+) ?-> ?(.*),( ?true|false)\\);").matcher(originalCode).replaceAll("new Predicate<$1>() {public boolean test($1 $2) {return $3;}}, $4);");
-//        originalCode = Pattern.compile("(?<=.filter\\()<(\\w+?)>\\s*(\\w+) ?-> ?\\{(.*)\\},( *true|false)\\);", Pattern.DOTALL).matcher(originalCode).replaceAll("new Predicate<$1>() {public boolean test($1 $2) {$3}}, $4);");
-//        return originalCode;
-//    }
-    
     public abstract void applyHelpers(JSContext js);
 
     public abstract JSValue executeCode(Context context, String... params);
@@ -495,7 +535,9 @@ public abstract class CustomCode extends ParentClass {
                     String text = jsValue != null ? (jsValue.isString() ? jsValue.toString() : jsValue.toJSON()) : null;
                     if (CustomUtility.stringExists(text)) {
                         CharSequence dialogText;
-                        if (jsValue.getContext().property("hasFormatting").toBoolean()) {
+                        Boolean hasFormatting = jsValue.getContext().property("hasFormatting").toBoolean();
+                        Boolean hasHighlight = jsValue.getContext().property("hasHighlight").toBoolean();
+                        if (hasFormatting) {
                             dialogText = newCustomCode.applyFormatting(context, text);
                         } else
                             dialogText = text;
@@ -505,7 +547,11 @@ public abstract class CustomCode extends ParentClass {
                                 .enableTitleBackButton()
                                 .setText(dialogText)
                                 .addOptionalModifications(customDialog1 -> {
-                                    customDialog1.getTextTextView().setMovementMethod(LinkMovementMethod.getInstance());
+                                    TextView textTextView = customDialog1.getTextTextView();
+                                    if (hasFormatting)
+                                        textTextView.setMovementMethod(LinkMovementMethod.getInstance());
+                                    if (!hasHighlight)
+                                        textTextView.setLinkTextColor(textTextView.getTextColors());
                                 })
                                 .show();
                     } else
@@ -537,6 +583,16 @@ public abstract class CustomCode extends ParentClass {
                 .disableLastAddedButton()
                 .enableDynamicWrapHeight(context)
                 .enableAutoUpdateDynamicWrapHeight()
+                .enableDoubleClickOutsideToDismiss(customDialog -> {
+                    String newName = ((EditText) customDialog.findViewById(R.id.dialog_edit_CustomCodeVideo_name)).getText().toString().trim();
+                    String newCode = ((EditText) customDialog.findViewById(R.id.dialog_edit_CustomCodeVideo_code)).getText().toString().trim();
+                    String newParams = ((EditText) customDialog.findViewById(R.id.dialog_edit_CustomCodeVideo_params)).getText().toString().trim();
+                    String newDescription = ((EditText) customDialog.findViewById(R.id.dialog_edit_CustomCodeVideo_description)).getText().toString().trim();
+                    if (isAdd)
+                        return CustomUtility.stringExists(newName) || CustomUtility.stringExists(newCode) || CustomUtility.stringExists(newParams) || CustomUtility.stringExists(newDescription);
+                    else
+                        return !newName.equals(oldCustomCode.getName()) || !newCode.equals(oldCustomCode.getCode()) || !newParams.equals(CustomUtility.stringExistsOrElse(oldCustomCode.getDefaultParams(), "")) || !newDescription.equals(CustomUtility.stringExistsOrElse(oldCustomCode.getDescription(), ""));
+                })
                 .show();
     }
     /**  <------------------------- Edit -------------------------  */

@@ -514,7 +514,8 @@
             <Spinner
                 android:id="@+id/dialog_advancedSearch_video_customCode_select"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:background="@null"
+                android:layout_height="wrap_content" />
         </LinearLayout>
 
     </LinearLayout>

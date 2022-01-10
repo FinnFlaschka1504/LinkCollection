@@ -500,6 +500,7 @@
                 android:id="@+id/dialog_advancedSearch_video_customCode_parameter_layout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:minWidth="175dp"
                 android:layout_weight="1">
 
                 <com.google.android.material.textfield.TextInputEditText

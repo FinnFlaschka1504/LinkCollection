@@ -2,7 +2,6 @@ package com.maxMustermannGeheim.linkcollection.Daten;
 
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -10,18 +9,21 @@ import android.text.TextPaint;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
+import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
-import android.text.style.TypefaceSpan;
 import android.text.style.UnderlineSpan;
-import android.util.Pair;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ScrollView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomList;
@@ -61,9 +63,10 @@ public abstract class CustomCode extends ParentClass {
     protected String description;
     protected String defaultParams;
     protected String tempResult;
+    protected RETURN_TYPE returnType = RETURN_TYPE.TEXT;
 
     enum RETURN_TYPE {
-        LIST, TEXT, STATISTIC;
+        TEXT, LIST, STATISTIC;
         // ToDo: implementieren ^^
     }
 
@@ -180,14 +183,19 @@ public abstract class CustomCode extends ParentClass {
                     "    return allList = Object.values(getAllObj());\n" +
                     "}\n");
 
-            js.evaluateScript(" var getRandomVideo = () => {\n" +
+            js.evaluateScript("var getRandomVideo = () => {\n" +
                     "   getAllList();\n" +
                     "   return allList[Math.floor(Math.random()*allList.length)];\n" +
                     "}\n");
 
-            js.evaluateScript(" var format = (key, text, params = '') => {\n" +
-                    "   return `\\\\${key}${params == '' ? '' : ':' + params}{${text}}`\n" +
-                    "}\n");
+            js.evaluateScript("var format = (key, text = '', params = '') => {\n" +
+                    "    if (key != undefined && typeof key == \"string\" && key.match(/\\w+_[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b/)) {\n" +
+                    "        return `\\\\idM${text == '' ? '' : ':' + text}{${key}}`\n" +
+                    "    } else if (typeof key == 'object' && 'uuid' in key) {\n" +
+                    "        return `\\\\idM${text == '' ? '' : ':' + text}{${key.uuid}}`\n" +
+                    "    }\n" +
+                    "    return `\\\\${key}${params == '' ? '' : ':' + params}{${text}}`\n" +
+                    "}");
 
             // ToDo: vieleicht anpassen, dass idM default und auch Objekt direkt mitgeben
 
@@ -277,7 +285,7 @@ public abstract class CustomCode extends ParentClass {
             List<CustomUtility.Triple<Integer, Integer, String>> dateMatches = new ArrayList<>();
             List<CustomUtility.Triple<Integer, Integer, Object>> paramsList = new ArrayList<>();
 
-            Pattern pattern = Pattern.compile("\\\\(\\w+)(?::(\\w+(?:\\|\\w+)*))*\\{(.*?)\\}");
+            Pattern pattern = Pattern.compile("\\\\(\\w*)(?::(\\w+(?:\\|\\w+)*))*\\{(.*?)\\}");
             while (true) {
                 Matcher matcher = pattern.matcher(text);
                 if (matcher.find()) {
@@ -315,6 +323,9 @@ public abstract class CustomCode extends ParentClass {
                                 String formatDate = Utility.formatDate(Utility.DateFormat.DATE_DOT, date);
                                 addToList(dateMatches, matchResult, match, offset, formatDate, String.format("{[dt:%s]}", formatDate), CustomUtility.Triple.create(context, params, paramsList));
                             }
+                            break;
+                        case "":
+                            addToParamsList(CustomUtility.Triple.create(matchResult.start(), matchResult.end() - offset, match[0]),  CustomUtility.Triple.create(context, params, paramsList));
                             break;
                     }
                     text = matcher.replaceFirst(match[0]);
@@ -373,6 +384,8 @@ public abstract class CustomCode extends ParentClass {
                     span = new StyleSpan(Typeface.BOLD);
                 else if (param.equalsIgnoreCase("i"))
                     span = new StyleSpan(Typeface.ITALIC);
+                else if (param.equalsIgnoreCase("s"))
+                    span = new StrikethroughSpan();
                 else if (param.startsWith("0x"))
                     span = new ForegroundColorSpan((Integer.parseUnsignedInt(param.substring(2), 16) + (param.length() == 8 ? 0xff000000 : 0)));
                 else if (param.equalsIgnoreCase("nh"))
@@ -439,6 +452,15 @@ public abstract class CustomCode extends ParentClass {
         this.tempResult = tempResult;
         return this;
     }
+
+    public RETURN_TYPE getReturnType() {
+        return returnType;
+    }
+
+    public CustomCode setReturnType(RETURN_TYPE returnType) {
+        this.returnType = returnType;
+        return this;
+    }
     /**  <------------------------- Getter & Setter -------------------------  */
 
 
@@ -452,7 +474,7 @@ public abstract class CustomCode extends ParentClass {
 
 
 
-    /** ------------------------- Edit -------------------------> */
+    /** ------------------------- Dialog -------------------------> */
     public static void showAllDialoge(AppCompatActivity context, String name, Map<String,  CustomCode> map, Utility.GenericReturnOnlyInterface<CustomCode> newProvider) {
         CustomDialog.Builder(context)
                 .setTitle("CustomCode - " + name)
@@ -486,20 +508,20 @@ public abstract class CustomCode extends ParentClass {
                             });
 
                         }))
-                        .setOnLongClickListener((customRecycler, view, expandable, index) -> showEditDialog(context, name, map, customDialog, expandable.getObject(), newProvider))
+                        .setOnLongClickListener((customRecycler, view, expandable, index) -> showEditDialog(context, map, customDialog, expandable.getObject(), newProvider))
                         .addOptionalModifications(customDialog::setPayload)
                         .generateRecyclerView())
                 .setDimensionsFullscreen()
                 .disableScroll()
                 .addButton(R.drawable.ic_add, customDialog -> {
-                    showEditDialog(context, name, map, customDialog, null, newProvider);
+                    showEditDialog(context, map, customDialog, null, newProvider);
                 }, false)
                 .alignPreviousButtonsLeft()
                 .addButton(CustomDialog.BUTTON_TYPE.BACK_BUTTON)
                 .show();
     }
 
-    private static void showEditDialog(AppCompatActivity context, String name, Map<String, CustomCode> map, CustomDialog paretDialog, @Nullable CustomCode oldCustomCode, Utility.GenericReturnOnlyInterface<CustomCode> newProvider) {
+    private static void showEditDialog(AppCompatActivity context, Map<String, CustomCode> map, @Nullable CustomDialog parentDialog, @Nullable CustomCode oldCustomCode, Utility.GenericReturnOnlyInterface<CustomCode> newProvider) {
         boolean isAdd = oldCustomCode == null;
         CustomCode newCustomCode = isAdd ? newProvider.run() : (CustomCode) oldCustomCode.clone();
         CustomDialog.Builder(context)
@@ -511,6 +533,7 @@ public abstract class CustomCode extends ParentClass {
                     TextInputLayout editLayoutCode = customDialog.findViewById(R.id.dialog_edit_CustomCodeVideo_code_layout);
                     TextInputLayout editLayoutDescription = customDialog.findViewById(R.id.dialog_edit_CustomCodeVideo_description_layout);
                     TextInputLayout editLayoutParams = customDialog.findViewById(R.id.dialog_edit_CustomCodeVideo_params_layout);
+                    Spinner editReturnType = customDialog.findViewById(R.id.dialog_edit_CustomCodeVideo_returnType);
 
                     Helpers.TextInputHelper helper = new Helpers.TextInputHelper(editLayoutName, editLayoutCode, editLayoutDescription, editLayoutParams);
                     helper.defaultDialogValidation(customDialog)
@@ -524,6 +547,7 @@ public abstract class CustomCode extends ParentClass {
                         editLayoutCode.getEditText().setText(newCustomCode.getCode());
                         editLayoutParams.getEditText().setText(newCustomCode.getDefaultParams());
                         editLayoutDescription.getEditText().setText(newCustomCode.getDescription());
+                        editReturnType.setSelection(Arrays.asList(RETURN_TYPE.values()).indexOf(newCustomCode.getReturnType()));
                     }
                 })
                 .addButton("Testen", customDialog -> {
@@ -564,10 +588,12 @@ public abstract class CustomCode extends ParentClass {
                     String newCode = ((EditText) customDialog.findViewById(R.id.dialog_edit_CustomCodeVideo_code)).getText().toString().trim();
                     String newParams = ((EditText) customDialog.findViewById(R.id.dialog_edit_CustomCodeVideo_params)).getText().toString().trim();
                     String newDescription = ((EditText) customDialog.findViewById(R.id.dialog_edit_CustomCodeVideo_description)).getText().toString().trim();
+                    int newReturnType = ((Spinner) customDialog.findViewById(R.id.dialog_edit_CustomCodeVideo_returnType)).getSelectedItemPosition();
 
                     newCustomCode
                             .setDescription(CustomUtility.stringExistsOrElse(newDescription, null))
                             .setCode(newCode)
+                            .setReturnType(RETURN_TYPE.values()[newReturnType])
                             .setDefaultParams(CustomUtility.stringExistsOrElse(newParams, null))
                             .setName(newName);
 
@@ -576,7 +602,8 @@ public abstract class CustomCode extends ParentClass {
                     else
                         oldCustomCode.getChangesFrom(newCustomCode);
 
-                    ((CustomRecycler) paretDialog.getPayload()).reload();
+                    if (parentDialog != null)
+                        ((CustomRecycler) parentDialog.getPayload()).reload();
                     Database.saveAll(context);
                     // ToDo: warum sagt auch gespeichert wenn nix verändert
                 })
@@ -595,7 +622,84 @@ public abstract class CustomCode extends ParentClass {
                 })
                 .show();
     }
-    /**  <------------------------- Edit -------------------------  */
+
+    // ---------------
+
+    public static void showDetailDialog(AppCompatActivity context, Map<String, CustomCode> map, @Nullable Utility.DoubleGenericReturnInterface<CustomCode, List<JSValue>, RecyclerView> recyclerProvider) {
+        CustomDialog.Builder(context)
+                .setTitle("CustomCode Details")
+                .setView(R.layout.dialog_detail_custom_code)
+                .setSetViewContent((customDialog, view, reload) -> {
+                    CustomList<CustomCode> customCodeList = map.values().stream().sorted(ParentClass::compareByName).collect(Collectors.toCollection(CustomList::new));
+
+                    TextInputLayout editParameters = view.findViewById(R.id.dialog_detail_customCode_parameter_layout);
+                    Spinner selectCustomCode = view.findViewById(R.id.dialog_detail_customCode_select);
+                    FrameLayout contentContainer = view.findViewById(R.id.dialog_detail_customCode_content);
+
+                    CustomList<String> selectionList = customCodeList.map(com.finn.androidUtilities.ParentClass::getName);
+                    selectionList.add(0, "- Keins -");
+                    ArrayAdapter<String> adapter = new ArrayAdapter<>(context, android.R.layout.simple_spinner_item, selectionList);
+                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    selectCustomCode.setAdapter(adapter);
+
+                    View executeButton = view.findViewById(R.id.dialog_detail_customCode_execute);
+                    executeButton.setOnClickListener(v -> {
+                        if (selectCustomCode.getSelectedItemPosition() == 0) {
+                            Toast.makeText(context, "Einen CustomCode auswählen", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        contentContainer.removeAllViews();
+                        CustomCode customCode = customCodeList.get(selectCustomCode.getSelectedItemPosition() - 1);
+                        String newParams = editParameters.getEditText().getText().toString().trim();
+                        JSValue jsValue = customCode.executeCode(context, parseParams(newParams));
+                        if (jsValue == null)
+                            return;
+                        if (recyclerProvider != null && jsValue.isArray() && customCode.getReturnType() == RETURN_TYPE.LIST) {
+
+                            RecyclerView recyclerView = recyclerProvider.run(customCode, jsValue.toJSArray());
+                            contentContainer.addView(recyclerView);
+                        } else {
+                            String text = jsValue != null ? (jsValue.isString() ? jsValue.toString() : jsValue.toJSON()) : null;
+                            if (CustomUtility.stringExists(text)) {
+                                CharSequence dialogText;
+                                Boolean hasFormatting = jsValue.getContext().property("hasFormatting").toBoolean();
+                                Boolean hasHighlight = jsValue.getContext().property("hasHighlight").toBoolean();
+                                if (hasFormatting) {
+                                    dialogText = customCode.applyFormatting(context, text);
+                                } else
+                                    dialogText = text;
+
+                                TextView textView = new TextView(context);
+                                ScrollView scrollView = new ScrollView(context);
+                                scrollView.addView(textView);
+                                textView.setText(dialogText);
+                                CustomUtility.setPadding(textView, 16);
+                                if (hasFormatting)
+                                    textView.setMovementMethod(LinkMovementMethod.getInstance());
+                                if (!hasHighlight)
+                                    textView.setLinkTextColor(textView.getTextColors());
+
+                                contentContainer.addView(scrollView);
+                            } else
+                                Toast.makeText(context, "Kein Ergebnis", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    executeButton.setOnLongClickListener(v -> {
+                        if (selectCustomCode.getSelectedItemPosition() == 0) {
+                            Toast.makeText(context, "Einen CustomCode auswählen", Toast.LENGTH_SHORT).show();
+                            return false;
+                        }
+                        CustomCode customCode = customCodeList.get(selectCustomCode.getSelectedItemPosition() - 1);
+                        showEditDialog(context, map, null, customCode, null);
+                        return true;
+                    });
+                })
+                .disableScroll()
+                .setDimensionsFullscreen()
+                .enableTitleBackButton()
+                .show();
+    }
+    /**  <------------------------- Dialog -------------------------  */
 
 
 
@@ -606,6 +710,10 @@ public abstract class CustomCode extends ParentClass {
 
     public static CustomCode getCustomCodeByName(CategoriesActivity.CATEGORIES category, String name) {
         return (CustomCode) Utility.findObjectByName(category, name);
+    }
+
+    public boolean returnsList() {
+        return returnType == RETURN_TYPE.LIST;
     }
     /**  <------------------------- Convenience -------------------------  */
 

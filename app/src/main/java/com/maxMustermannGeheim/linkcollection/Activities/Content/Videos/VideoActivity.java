@@ -814,7 +814,7 @@ public class VideoActivity extends AppCompatActivity {
                         })
                         .setApplyDialog((customDialog, pair, criteria) -> {
                             Database database = Database.getInstance();
-                            CustomList<CustomCode.CustomCode_Video> customCodeList = database.customCodeVideoMap.values().stream().sorted(ParentClass::compareByName).collect(Collectors.toCollection(CustomList::new));
+                            CustomList<CustomCode.CustomCode_Video> customCodeList = database.customCodeVideoMap.values().stream().filter(CustomCode::returnsList).sorted(ParentClass::compareByName).collect(Collectors.toCollection(CustomList::new));
 
                             TextInputLayout parameterEditLayout = customDialog.findViewById(R.id.dialog_advancedSearch_video_customCode_parameter_layout);
                             Spinner selectCustomCode = customDialog.findViewById(R.id.dialog_advancedSearch_video_customCode_select);
@@ -877,6 +877,7 @@ public class VideoActivity extends AppCompatActivity {
         };
         applyStrings[0].run();
 
+        int[] ignoreCount = {2};
         Runnable updateStrings = () -> {
             Set<String> since_keysByValue = Utility.getKeysByValue(modeMap, since_unit.getSelectedItemPosition());
             String since_mode = since_keysByValue.toArray(new String[0])[0];
@@ -913,8 +914,11 @@ public class VideoActivity extends AppCompatActivity {
                             parseResult.first.equals(today) ? "Heute" : Utility.formatDate(Utility.DateFormat.DATE_DOT, parseResult.first),
                             parseResult.second.equals(today) ? "Heute" : Utility.formatDate(Utility.DateFormat.DATE_DOT, parseResult.second)));
                 }
-            } else
-                dialog_advancedSearch_viewed_text.setText("Nicht ausgewählt");
+            } else {
+                if (ignoreCount[0] <= 0)
+                    dialog_advancedSearch_viewed_text.setText("Nicht ausgewählt");
+            }
+            ignoreCount[0]--;
         };
 
         since_edit.addTextChangedListener(new TextWatcher() {
@@ -1035,7 +1039,6 @@ public class VideoActivity extends AppCompatActivity {
             return datePair;
         };
     }
-
     /** <------------------------- AdvancedQuery ------------------------- */
 
     private List<Video> filterList() {
@@ -2466,6 +2469,7 @@ public class VideoActivity extends AppCompatActivity {
                         int visibility = Utility.isUpcoming(editVideo[0].getRelease())/* && (video == null || !video.getName().isEmpty())*/ ? View.GONE : View.VISIBLE;
                         view.findViewById(R.id.dialog_editOrAddVideo_rating_layout).setVisibility(visibility);
                         view.findViewById(R.id.dialog_editOrAddVideo_url_allLayout).setVisibility(visibility);
+                        editDialog.updateDynamicWrapHeight();
 
                         ratingHelper.setRating(editVideo[0].getRating());
 //                        ((RatingBar) view.findViewById(R.id.dialog_editOrAddVideo_rating)).setRating(editVideo.getRating());
@@ -2714,8 +2718,6 @@ public class VideoActivity extends AppCompatActivity {
 
                 if (Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_LOAD_CAST_AND_STUDIOS)) {
                     apiDetailRequest(video.getTmdbId(), customDialog, video);
-//                    apiCastRequest(video.getTmdbId(), customDialog, video);
-//                    apiStudioRequest(video.getTmdbId(), customDialog, video);
                 } else
                     customDialog.reloadView();
             } catch (JSONException | ParseException ignored) {
@@ -3322,6 +3324,39 @@ public class VideoActivity extends AppCompatActivity {
                 mode = MODE.UPCOMING;
                 item.setChecked(true);
                 commitSearch();
+                break;
+
+            case R.id.taskBar_video_customCode:
+                CustomCode.showDetailDialog(this, (Map) database.customCodeVideoMap, (customCode, idList) -> {
+                    CustomRecycler.SetItemContent<Video> setItemContent = customRecycler_VideoList.getSetItemContent();
+                    return new CustomRecycler<Video>(this)
+                            .setItemLayout(R.layout.list_item_video)
+                            .setGetActiveObjectList(customRecycler -> idList.stream().map(jsValue -> database.videoMap.get(jsValue.toString())).collect(Collectors.toList()))
+                            .setSetItemContent((customRecycler, itemView, video, index) -> {
+                                setItemContent.runSetCellContent(customRecycler, itemView, video, index);
+                                itemView.findViewById(R.id.listItem_video_Genre).setSelected(false);
+                                itemView.findViewById(R.id.listItem_video_Darsteller).setSelected(false);
+                                itemView.findViewById(R.id.listItem_video_Studio).setSelected(false);
+
+                            })
+                            .setOnClickListener((customRecycler, itemView, video, index) -> {
+                                int clickMode = Settings.getSingleSetting_int(this, Settings.SETTING_VIDEO_CLICK_MODE);
+                                if (clickMode == 0)
+                                    detailDialog = showDetailDialog(video);
+                                else if (clickMode == 1)
+                                    openUrl(video.getUrl(), false);
+                            })
+                            .addSubOnClickListener(R.id.listItem_video_internetOrDetails, (customRecycler, view, object, index) -> {
+                                int clickMode = Settings.getSingleSetting_int(this, Settings.SETTING_VIDEO_CLICK_MODE);
+                                if (clickMode == 0)
+                                    openUrl(object.getUrl(), false);
+                                else if (clickMode == 1)
+                                    detailDialog = showDetailDialog(object);
+                            })
+                            .enableFastScroll()
+                            .generateRecyclerView();
+                });
+
                 break;
 
             case android.R.id.home:

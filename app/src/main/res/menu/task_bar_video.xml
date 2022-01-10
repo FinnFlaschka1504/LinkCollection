@@ -91,6 +91,9 @@
         </menu>
     </item>
     <item
+        android:id="@+id/taskBar_video_customCode"
+        android:title="CustomCode" />
+    <item
         android:id="@+id/taskBar_video_scroll"
         android:checkable="true"
         android:checked="true"

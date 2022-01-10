@@ -86,4 +86,10 @@
         <item>Details</item>
         <item>Internet</item>
     </string-array>
+
+    <string-array name="customCodeReturnTypes">
+        <item>Text</item>
+        <item>List</item>
+        <item>Statistic</item>
+    </string-array>
 </resources>

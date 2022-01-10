@@ -76,6 +76,23 @@
             tools:text="das\nist\nein\ntest" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ReturnType:" />
+
+        <Spinner
+            android:id="@+id/dialog_edit_CustomCodeVideo_returnType"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:entries="@array/customCodeReturnTypes" />
+    </LinearLayout>
+
     <!--    <TextView-->
 <!--        android:id="@+id/dialog_edit_CustomCodeVideo_javaVariables"-->
 <!--        android:layout_width="match_parent"-->

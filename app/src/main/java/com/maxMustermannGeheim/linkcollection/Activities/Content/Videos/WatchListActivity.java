@@ -3,6 +3,7 @@ package com.maxMustermannGeheim.linkcollection.Activities.Content.Videos;
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -27,10 +28,15 @@ import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityOptionsCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.finn.androidUtilities.CustomDialog;
@@ -49,6 +55,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.WatchList;
 import com.maxMustermannGeheim.linkcollection.R;
+import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.ImageCropUtility;
@@ -60,6 +67,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class WatchListActivity extends AppCompatActivity {
@@ -83,6 +91,7 @@ public class WatchListActivity extends AppCompatActivity {
     private SearchView.OnQueryTextListener textListener;
     private Helpers.AdvancedQueryHelper<WatchList> advancedQueryHelper;
     private CustomRecycler<WatchList> recycler;
+    private Map<Integer, ActivityResult> resultCallbacks;
 
     private TextView elementCount;
     private SearchView searchView;
@@ -105,7 +114,6 @@ public class WatchListActivity extends AppCompatActivity {
         mySPR_data = getSharedPreferences(SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
         loadDatabase();
-
     }
 
     private void loadDatabase() {
@@ -349,10 +357,15 @@ public class WatchListActivity extends AppCompatActivity {
                             }
                         })
                         .setOnLongClickListener((customRecycler, view, video, index) -> {
-                            startActivityForResult(new Intent(this, VideoActivity.class)
-                                            .putExtra(CategoriesActivity.EXTRA_SEARCH, video.getUuid())
-                                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO),
-                                    CategoriesActivity.START_CATEGORY_SEARCH);
+                            ActivityResultHelper.addGenericRequest(this, appCompatActivity -> {
+                                appCompatActivity.startActivityForResult(new Intent(this, VideoActivity.class)
+                                                .putExtra(CategoriesActivity.EXTRA_SEARCH, video.getUuid())
+                                                .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO),
+                                        CategoriesActivity.START_CATEGORY_SEARCH);
+                            }, (requestCode, resultCode, data) -> {
+                                if (resultCode == Activity.RESULT_OK)
+                                    customRecycler.reload();
+                            });
                         })
                         .enableFastScroll(/*(parentClassCustomRecycler, parentClass, integer) -> parentClass.getName().substring(0, 1).toUpperCase()*/)
                         .generateRecyclerView())
@@ -498,10 +511,15 @@ public class WatchListActivity extends AppCompatActivity {
                         thumbnail.setVisibility(View.VISIBLE);
 
                         thumbnail.setOnLongClickListener(v -> {
-                            context.startActivityForResult(new Intent(context, VideoActivity.class)
-                                            .putExtra(CategoriesActivity.EXTRA_SEARCH, video.getUuid())
-                                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO),
-                                    CategoriesActivity.START_CATEGORY_SEARCH);
+                            ActivityResultHelper.addGenericRequest(context, appCompatActivity -> {
+                                appCompatActivity.startActivityForResult(new Intent(context, VideoActivity.class)
+                                                .putExtra(CategoriesActivity.EXTRA_SEARCH, video.getUuid())
+                                                .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO),
+                                        CategoriesActivity.START_CATEGORY_SEARCH);
+                            }, (requestCode, resultCode, data) -> {
+                                if (resultCode == Activity.RESULT_OK)
+                                    customRecycler.reload();
+                            });
 
                             return true;
                         });
@@ -642,5 +660,4 @@ public class WatchListActivity extends AppCompatActivity {
     /**
      * <------------------------- Toolbar -------------------------
      */
-
 }

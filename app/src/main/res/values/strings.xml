@@ -90,6 +90,7 @@
     <string-array name="customCodeReturnTypes">
         <item>Text</item>
         <item>List</item>
+        <item>Gruppierte Liste</item>
         <item>Statistic</item>
     </string-array>
 </resources>

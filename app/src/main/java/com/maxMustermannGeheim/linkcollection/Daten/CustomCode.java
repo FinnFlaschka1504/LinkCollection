@@ -12,12 +12,17 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
+import android.util.Pair;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,11 +37,15 @@ import com.finn.androidUtilities.CustomUtility;
 import com.finn.androidUtilities.Helpers;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Collection;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.WatchList;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -66,7 +75,7 @@ public abstract class CustomCode extends ParentClass {
     protected RETURN_TYPE returnType = RETURN_TYPE.TEXT;
 
     enum RETURN_TYPE {
-        TEXT, LIST, STATISTIC;
+        TEXT, LIST,GROUPED_LIST, STATISTIC;
         // ToDo: implementieren ^^
     }
 
@@ -135,8 +144,6 @@ public abstract class CustomCode extends ParentClass {
         /**  ------------------------- Function ------------------------->  */
         @Override
         public void applyHelpers(JSContext js) {
-//            Database database = Database.getInstance();
-
             JSFunction logTiming = new JSFunction(js,"logTiming") {
                 public void logTiming() {
                     CustomUtility.logD(null, "logTiming: vvv");
@@ -144,34 +151,6 @@ public abstract class CustomCode extends ParentClass {
                 }
             };
             js.property("logTiming", logTiming);
-
-/*
-            JSFunction getAll = new JSFunction(js,"getAll") {
-                public String[] getAll() {
-                    return database.videoMap.keySet().toArray(new String[]{});
-                }
-            };
-            js.property("getAll", getAll);
-
-            JSFunction getAllObj = new JSFunction(js,"getAllObj") {
-                public Map getAllObj() {
-                    return map(database.videoMap);
-                }
-            };
-            js.property("getAllObj", getAllObj);
-
-            JSFunction getAllList = new JSFunction(js,"getAllList") {
-                public List<Object> getAllList() {
-                    CustomUtility.logD(null, "getAllList: vvvvv");
-                    CustomUtility.logTiming("CustomCode", true);
-                    ArrayList arrayList = gson.fromJson(gson.toJson(new ArrayList<>(database.videoMap.values())), ArrayList.class);
-                    CustomUtility.logTiming("CustomCode", true);
-                    CustomUtility.logD(null, "getAllList: ^^^^^");
-                    return arrayList;
-                }
-            };
-            js.property("getAllList", getAllList);
-*/
 
             js.evaluateScript("var allObj = undefined;" +
                     "var getAllObj = () => {\n" +
@@ -185,7 +164,7 @@ public abstract class CustomCode extends ParentClass {
 
             js.evaluateScript("var getRandomVideo = () => {\n" +
                     "   getAllList();\n" +
-                    "   return allList[Math.floor(Math.random()*allList.length)];\n" +
+                    "   return allList[Math.floor(Math.random() * allList.length)];\n" +
                     "}\n");
 
             js.evaluateScript("var format = (key, text = '', params = '') => {\n" +
@@ -196,8 +175,6 @@ public abstract class CustomCode extends ParentClass {
                     "    }\n" +
                     "    return `\\\\${key}${params == '' ? '' : ':' + params}{${text}}`\n" +
                     "}");
-
-            // ToDo: vieleicht anpassen, dass idM default und auch Objekt direkt mitgeben
 
             js.evaluateScript("var getAllDays = () => {\n" +
                     "    let allDays = {};\n" +
@@ -228,6 +205,12 @@ public abstract class CustomCode extends ParentClass {
                 }
             };
             js.property("getByName", getByName);
+            js.evaluateScript("var VIDEO = 'VIDEO';\n" +
+                    "var DARSTELLER = 'DARSTELLER';\n" +
+                    "var STUDIOS = 'STUDIOS';\n" +
+                    "var GENRE = 'GENRE';\n" +
+                    "var COLLECTION = 'COLLECTION';\n" +
+                    "var WATCH_LIST = 'WATCH_LIST';");
 
 
 //            js.evaluateScript("var all = getAll()");
@@ -397,6 +380,107 @@ public abstract class CustomCode extends ParentClass {
                 paramsTriple.third.add(CustomUtility.Triple.create(triple.first, triple.second, span));
             }
         }
+
+        @Override
+        public void showHelpDialog(AppCompatActivity context) {
+            CustomDialog.Builder(context)
+                    .setTitle("Hilfe")
+                    .setView(R.layout.help_custom_code_video)
+                    .setSetViewContent((customDialog, view, reload) -> {
+                        CustomUtility.applyToAllViews((ViewGroup) view, TableLayout.class, tableLayout -> {
+                            for (int i = 0; i < tableLayout.getChildCount(); i++) {
+                                TableRow row = (TableRow) tableLayout.getChildAt(i);
+                                TextView child = (TextView) row.getChildAt(1);
+                                child.setText(KnowledgeActivity.applyFormatting_text(child.getText()));
+                            }
+                        });
+
+                        LinearLayout objectsContainer = view.findViewById(R.id.help_customCode_video_objectsContainer);
+
+                        String videoObject = "{\n" +
+                                "  \"name\": String,\n" +
+                                "  \"uuid\": String,\n" +
+                                "  \"translationList\": [String],\n" +
+                                "  \"darstellerList\": [uuid],\n" +
+                                "  \"studioList\": [uuid],\n" +
+                                "  \"genreList\": [uuid],\n" +
+                                "  \"dateList\": [Date],\n" +
+                                "  \"release\": Date,\n" +
+                                "  \"url\": String,\n" +
+                                "  \"ageRating\": int,\n" +
+                                "  \"rating\": double,\n" +
+                                "  \"imagePath\": String,\n" +
+                                "  \"imdbId\": String,\n" +
+                                "  \"tmdbId\": int,\n" +
+                                "  \"length\": int,\n" +
+                                "  \"watchLater\": boolean\n" +
+                                "}";
+
+                        String actorObject = "{\n" +
+                                "  \"name\": String,\n" +
+                                "  \"uuid\": String,\n" +
+                                "  \"tmdbId\": int,\n" +
+                                "  \"imagePath\": String\n" +
+                                "}";
+
+                        String studioObject = "{\n" +
+                                "  \"name\": String,\n" +
+                                "  \"uuid\": String,\n" +
+                                "  \"tmdbId\": int,\n" +
+                                "  \"imagePath\": String\n" +
+                                "}";
+
+                        String genreObject = "{\n" +
+                                "  \"name\": String,\n" +
+                                "  \"uuid\": String,\n" +
+                                "  \"tmdbGenreId\": int\n" +
+                                "}";
+
+                        String collectionObject = "{\n" +
+                                "  \"name\": String,\n" +
+                                "  \"uuid\": String,\n" +
+                                "  \"filmIdList\": [uuid],\n" +
+                                "  \"imagePath\": String,\n" +
+                                "  \"listId\": String\n" +
+                                "}";
+
+                        String watchListObject = "{\n" +
+                                "  \"name\": String,\n" +
+                                "  \"uuid\": String,\n" +
+                                "  \"videoIdList\": [uuid],\n" +
+                                "  \"watchedVideoIdList\": [uuid],\n" +
+                                "  \"lastModified\": Date\n" +
+                                "}";
+
+                        CustomList<Pair<String, String>> pairList = new CustomList<>();
+                        pairList.add(Pair.create("Video", videoObject), Pair.create("Darsteller", actorObject), Pair.create("Studio", studioObject), Pair.create("Genre", genreObject), Pair.create("Sammlung", collectionObject), Pair.create("WatchList", watchListObject));
+
+                        pairList.forEach(pair -> {
+                            TextView title = new TextView(context);
+                            title.setText(pair.first);
+                            title.setTypeface(Typeface.DEFAULT_BOLD);
+
+                            TextView content = new TextView(context);
+                            content.setText(pair.second);
+                            content.setTextSize(12);
+
+                            if (objectsContainer.getChildCount() > 0) {
+                                View divider = new View(context);
+                                divider.setBackgroundColor(context.getColor(R.color.colorDivider));
+                                ViewGroup.MarginLayoutParams layoutParams = new ViewGroup.MarginLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, CustomUtility.dpToPx(1));
+                                layoutParams.setMargins(0, CustomUtility.dpToPx(5), 0, CustomUtility.dpToPx(5));
+                                divider.setLayoutParams(layoutParams);
+                                objectsContainer.addView(divider);
+                            }
+                            objectsContainer.addView(title);
+                            objectsContainer.addView(content);
+                        });
+                    })
+                    .setDimensionsFullscreen()
+                    .removeMargin()
+                    .enableTitleBackButton()
+                    .show();
+        }
         /**  <------------------------- Function -------------------------  */
 
 
@@ -470,6 +554,8 @@ public abstract class CustomCode extends ParentClass {
     public abstract JSValue executeCode(Context context, String... params);
 
     public abstract CharSequence applyFormatting(AppCompatActivity context, CharSequence text);
+
+    public abstract void showHelpDialog(AppCompatActivity context);
     /**  <------------------------- Function -------------------------  */
 
 
@@ -526,8 +612,8 @@ public abstract class CustomCode extends ParentClass {
         CustomCode newCustomCode = isAdd ? newProvider.run() : (CustomCode) oldCustomCode.clone();
         CustomDialog.Builder(context)
                 .setTitle("CustomCode " + (isAdd ? "Hinzufügen" : "Bearbeiten"))
-                .setView(R.layout.dialog_edit_custom_code_video)
-                .enableTitleRightButton(R.drawable.ic_help, customDialog1 -> Toast.makeText(context, "ToDo", Toast.LENGTH_SHORT).show())
+                .setView(R.layout.dialog_edit_custom_code)
+                .enableTitleRightButton(R.drawable.ic_help, customDialog1 -> newCustomCode.showHelpDialog(context))
                 .setSetViewContent((customDialog, view, reload) -> {
                     TextInputLayout editLayoutName = customDialog.findViewById(R.id.dialog_edit_CustomCodeVideo_name_layout);
                     TextInputLayout editLayoutCode = customDialog.findViewById(R.id.dialog_edit_CustomCodeVideo_code_layout);
@@ -696,6 +782,7 @@ public abstract class CustomCode extends ParentClass {
                 })
                 .disableScroll()
                 .setDimensionsFullscreen()
+                .removeMargin()
                 .enableTitleBackButton()
                 .show();
     }

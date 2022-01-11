@@ -13,6 +13,7 @@ import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
+import android.text.style.TypefaceSpan;
 import android.text.style.UnderlineSpan;
 import android.util.Pair;
 import android.view.Menu;
@@ -950,16 +951,17 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .generate();
     }
 
-    private SpannableString applyFormatting_text(String s) {
-        // ^ Überschrift; * fett;  ~ durch;  / kursiv; _ unterstrichen
+    public static SpannableString applyFormatting_text(CharSequence s) {
+        // ^ Überschrift; * fett;  ~ durch;  / kursiv; _ unterstrichen; # monospace
         List<Pair<Integer, Integer>> captionMatches = new ArrayList<>();
         List<Pair<Integer, Integer>> boldMatches = new ArrayList<>();
         List<Pair<Integer, Integer>> strikeMatches = new ArrayList<>();
         List<Pair<Integer, Integer>> italicMatches = new ArrayList<>();
         List<Pair<Integer, Integer>> underlineMatches = new ArrayList<>();
+        List<Pair<Integer, Integer>> monospaceMatches = new ArrayList<>();
 
 //        Pattern pattern = Pattern.compile("((?<=[\\s]|)\\^([^\\s].*?[^\\s]|[^\\s])\\^(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\*([^\\s].*?[^\\s]|[^\\s])\\*(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\~([^\\s].*?[^\\s]|[^\\s])\\~(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\/([^\\s].*?[^\\s]|[^\\s])\\/(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\_([^\\s].*?[^\\s]|[^\\s])\\_(?![^\\s\\.!\\?,:;]))");
-        Pattern pattern = Pattern.compile("(?<![^\\W_])(\\*|\\/|\\_|\\^|\\~)([^\\s]|[^\\s].*?[^\\s])\\1(?![^\\W_])");
+        Pattern pattern = Pattern.compile("(?<![^\\W_])(\\*|\\/|\\_|\\^|\\~|#)([^\\s]|[^\\s].*?[^\\s])\\1(?![^\\W_])");
         while (true) {
             Matcher matcher = pattern.matcher(s);
             if (matcher.find()) {
@@ -980,6 +982,9 @@ public class KnowledgeActivity extends AppCompatActivity {
                         break;
                     case "_":
                         underlineMatches.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
+                        break;
+                    case "#":
+                        monospaceMatches.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
                         break;
                 }
                 s = matcher.replaceFirst(Utility.subString(match, 1, -1));
@@ -1006,6 +1011,8 @@ public class KnowledgeActivity extends AppCompatActivity {
         italicMatches.forEach(pair -> resultSpan.setSpan(new StyleSpan(Typeface.ITALIC), pair.first, pair.second, Spannable.SPAN_COMPOSING));
 
         underlineMatches.forEach(pair -> resultSpan.setSpan(new UnderlineSpan(), pair.first, pair.second, Spannable.SPAN_COMPOSING));
+
+        monospaceMatches.forEach(pair -> resultSpan.setSpan(new TypefaceSpan("monospace"), pair.first, pair.second, Spannable.SPAN_COMPOSING));
 
         return resultSpan;
     }

@@ -318,13 +318,9 @@ public class VideoActivity extends AppCompatActivity {
 
                 @Override
                 public boolean onQueryTextChange(String query) {
-//                    videos_search.setOnQueryTextListener(null);
-//                    videos_search.setQuery(new Helpers.SpannableStringHelper().appendColor(query, Color.RED).get(), true);
-//                    advancedQueryHelper.applyColoration();
-//                    videos_search.setOnQueryTextListener(this);
-
                     searchQuery = query;
                     reLoadVideoRecycler();
+                    // ToDo: Input Throtteln https://skilled.dev/course/throttle
                     return true;
                 }
             };
@@ -3333,6 +3329,8 @@ public class VideoActivity extends AppCompatActivity {
                             .setItemLayout(R.layout.list_item_video)
                             .setGetActiveObjectList(customRecycler -> idList.stream().map(jsValue -> database.videoMap.get(jsValue.toString())).collect(Collectors.toList()))
                             .setSetItemContent((customRecycler, itemView, video, index) -> {
+                                if (video == null)
+                                    video = new Video("<ERR>");
                                 setItemContent.runSetCellContent(customRecycler, itemView, video, index);
                                 itemView.findViewById(R.id.listItem_video_Genre).setSelected(false);
                                 itemView.findViewById(R.id.listItem_video_Darsteller).setSelected(false);

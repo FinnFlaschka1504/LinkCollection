@@ -295,18 +295,7 @@ public abstract class CustomCode extends ParentClass {
                     String params = matcher.group(2);
                     final String[] match = {matcher.group(3)};
 
-                    int ellipseOffset = 0;
-                    Matcher ellipseMatcher = Pattern.compile("\\be\\d+\\b").matcher(params != null ? params : "");
-                    if (ellipseMatcher.find()) {
-                        int max = Integer.parseInt(ellipseMatcher.group(0).substring(1));
-                        int prev = match[0].length();
-                        if (prev > max) {
-                            match[0] = match[0].substring(0, max - 1) + "…";
-                            ellipseOffset = prev - max;
-                        }
-                    }
-
-                    int offset = type.length() + 3 + (params != null ? params.length() + 1 : 0) + ellipseOffset;
+                    int offset = type.length() + 3 + (params != null ? params.length() + 1 : 0);
                     switch (type) {
                         case "id":
                             addToList(idMatches, matchResult, match, offset, null, null, CustomUtility.Triple.create(context, params, paramsList));
@@ -340,6 +329,9 @@ public abstract class CustomCode extends ParentClass {
                             }
                             break;
                         case "":
+                            Pair<String, Integer> pair = ellipseString(params, match[0]);
+                            offset += pair.second;
+                            match[0] = pair.first;
                             addToParamsList(CustomUtility.Triple.create(matchResult.start(), matchResult.end() - offset, match[0]), CustomUtility.Triple.create(context, params, paramsList));
                             break;
                     }
@@ -374,14 +366,37 @@ public abstract class CustomCode extends ParentClass {
             return resultSpan;
         }
 
+        private Pair<String, Integer> ellipseString(String params, String match) {
+            int ellipseOffset = 0;
+            Matcher ellipseMatcher = Pattern.compile("\\be\\d+\\b").matcher(params != null ? params : "");
+            if (ellipseMatcher.find()) {
+                int max = Integer.parseInt(ellipseMatcher.group(0).substring(1));
+                int prev = match.length();
+                if (prev > max) {
+                    String original;
+                    match = (original = match.substring(0, max - 1)).trim();
+                    ellipseOffset = prev - max + (original.length() - match.length());
+                    match += "…";
+                }
+            }
+            return Pair.create(match, ellipseOffset);
+        }
+
         private CustomUtility.Triple<Integer, Integer, String> addToList(List<CustomUtility.Triple<Integer, Integer, String>> list, MatchResult matchResult, String[] match, int offset, @Nullable String replacement, @Nullable String search, CustomUtility.Triple<AppCompatActivity, String, List<CustomUtility.Triple<Integer, Integer, Object>>> paramsTriple) {
             CustomUtility.Triple<Integer, Integer, String> triple;
             if (CustomUtility.stringExists(replacement)) {
+                Pair<String, Integer> pair = ellipseString(paramsTriple.second, replacement);
+                offset += pair.second;
                 triple = CustomUtility.Triple.create(matchResult.start(), matchResult.end() - (offset + match[0].length() - replacement.length()), search != null ? search : match[0]);
+                replacement = pair.first;
                 list.add(triple);
                 match[0] = replacement;
             } else {
-                triple = CustomUtility.Triple.create(matchResult.start(), matchResult.end() - offset, search != null ? search : match[0]);
+                Pair<String, Integer> pair = ellipseString(paramsTriple.second, match[0]);
+                offset += pair.second;
+                String original = match[0];
+                match[0] = pair.first;
+                triple = CustomUtility.Triple.create(matchResult.start(), matchResult.end() - offset, search != null ? search : original);
                 list.add(triple);
             }
             addToParamsList(triple, paramsTriple);
@@ -408,10 +423,8 @@ public abstract class CustomCode extends ParentClass {
                     span = new ForegroundColorSpan(paramsTriple.first.getColor(R.color.colorText));
                 else if (param.equalsIgnoreCase("h"))
                     span = new ForegroundColorSpan(paramsTriple.first.getColor(R.color.colorAccent));
-//                else if (param.startsWith("e"))
-//                    span = new ForegroundColorSpan(paramsTriple.first.getColor(R.color.colorAccent));
                 else
-                    return;
+                    continue;
                 paramsTriple.third.add(CustomUtility.Triple.create(triple.first, triple.second, span));
             }
         }
@@ -746,12 +759,14 @@ public abstract class CustomCode extends ParentClass {
     public static class RecyclerProviderReturn<T> {
         @LayoutRes
         int layoutId;
-        CustomUtility.GenericReturnInterface<List<JSValue>, List<T>> listMapper;
-//        CustomRecycler.GetActiveObjectList<T> getActiveObjectList;
-        CustomRecycler.SetItemContent<T> setItemContent;
+        CustomUtility.GenericReturnInterface<List<String>, CustomUtility.GenericReturnInterface<List<JSValue>, List<T>>> listMapper;
+        CustomUtility.GenericReturnInterface<List<String>, CustomRecycler.SetItemContent<T>> setItemContent;
+        CustomUtility.GenericReturnInterface<String, Object> test;
         CustomRecycler.CustomRecyclerInterface<T> recyclerInterface;
 
-        public RecyclerProviderReturn(@LayoutRes int layoutId, CustomUtility.GenericReturnInterface<List<JSValue>, List<T>> listMapper, CustomRecycler.SetItemContent<T> setItemContent, CustomRecycler.CustomRecyclerInterface<T> recyclerInterface) {
+        public RecyclerProviderReturn(int layoutId, CustomUtility.GenericReturnInterface<List<String>, CustomUtility.GenericReturnInterface<List<JSValue>,
+                List<T>>> listMapper, CustomUtility.GenericReturnInterface<List<String>, CustomRecycler.SetItemContent<T>> setItemContent,
+                                      CustomRecycler.CustomRecyclerInterface<T> recyclerInterface) {
             this.layoutId = layoutId;
             this.listMapper = listMapper;
             this.setItemContent = setItemContent;
@@ -797,12 +812,12 @@ public abstract class CustomCode extends ParentClass {
                             try {
                                 JSBaseArray jsArray = jsValue.toJSArray();
                                 RecyclerProviderReturn providerReturn = recyclerProvider.run(customCode, jsArray);
-
+                                List<String> extraStrings = new ArrayList<>();
                                 RecyclerView recyclerView =
                                         new CustomRecycler<>(context)
                                                 .setItemLayout(providerReturn.layoutId)
-                                                .setGetActiveObjectList(customRecycler -> (List) providerReturn.listMapper.run(jsArray))
-                                                .setSetItemContent(providerReturn.setItemContent)
+                                                .setGetActiveObjectList(customRecycler -> (List) ((CustomUtility.GenericReturnInterface) providerReturn.listMapper.run(extraStrings)).run(jsArray))
+                                                .setSetItemContent((CustomRecycler.SetItemContent) providerReturn.setItemContent.run(extraStrings))
                                                 .addOptionalModifications(customRecycler -> providerReturn.recyclerInterface.run(customRecycler))
                                                 .generateRecyclerView();
 
@@ -815,12 +830,13 @@ public abstract class CustomCode extends ParentClass {
                             try {
                                 RecyclerProviderReturn providerReturn = recyclerProvider.run(customCode, jsValue.toJSArray());
                                 JSBaseArray jsArray = jsValue.toJSArray();
+                                List<String> extraStrings = new ArrayList<>();
                                 RecyclerView recyclerView = new CustomRecycler<CustomRecycler.Expandable>(context)
                                         .setGetActiveObjectList(customRecycler -> {
                                             List list = new ArrayList();
                                             for (Object o : jsArray) {
                                                 JSBaseArray jsv = ((JSValue) o).toJSArray();
-                                                CustomRecycler.Expandable<Object> expandable = new CustomRecycler.Expandable<>(jsv.get(0).toString(), providerReturn.listMapper.run(((JSValue) jsv.get(1)).toJSArray()));
+                                                CustomRecycler.Expandable<Object> expandable = new CustomRecycler.Expandable<>(jsv.get(0).toString(), ((CustomUtility.GenericReturnInterface) providerReturn.listMapper.run(extraStrings)).run(((JSValue) jsv.get(1)).toJSArray()));
                                                 expandable.setExpended(true);
                                                 list.add(expandable);
                                             }
@@ -830,7 +846,7 @@ public abstract class CustomCode extends ParentClass {
                                                 .customizeRecycler(subRecycler -> {
                                                     subRecycler
                                                             .setItemLayout(providerReturn.layoutId)
-                                                            .setSetItemContent(providerReturn.setItemContent)
+                                                            .setSetItemContent((CustomRecycler.SetItemContent) providerReturn.setItemContent.run(extraStrings))
                                                             .addOptionalModifications(customRecycler1 -> {
                                                                 providerReturn.recyclerInterface.run(customRecycler1);
                                                                 customRecycler1.disableFastscroll();

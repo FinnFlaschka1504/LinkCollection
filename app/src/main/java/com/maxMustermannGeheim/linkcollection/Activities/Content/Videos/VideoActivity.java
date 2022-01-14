@@ -3325,10 +3325,17 @@ public class VideoActivity extends AppCompatActivity {
             case R.id.taskBar_video_customCode:
                 CustomCode.showDetailDialog(this, (Map) database.customCodeVideoMap, (customCode, idList0) -> {
                     CustomRecycler.SetItemContent<Video> setItemContent = customRecycler_VideoList.getSetItemContent();
-                    return new CustomCode.RecyclerProviderReturn<Video>(
+                    return new CustomCode.RecyclerProviderReturn<>(
                             R.layout.list_item_video,
-                            idList -> idList.stream().map(jsValue -> database.videoMap.get(jsValue.toString())).collect(Collectors.toList()),
-                            (customRecycler, itemView, video, index) -> {
+                            extraStrings -> idList -> idList.stream().map(jsValue -> {
+                                if (jsValue.isArray()) {
+                                    JSBaseArray jsArray = jsValue.toJSArray();
+                                    extraStrings.add(jsArray.get(1).toString());
+                                    return database.videoMap.get(jsArray.get(0).toString());
+                                }
+                                return database.videoMap.get(jsValue.toString());
+                            }).collect(Collectors.toList()),
+                            extraStrings -> (customRecycler, itemView, video, index) -> {
                                 if (video == null)
                                     video = new Video("<ERR>");
                                 setItemContent.runSetCellContent(customRecycler, itemView, video, index);
@@ -3336,6 +3343,11 @@ public class VideoActivity extends AppCompatActivity {
                                 itemView.findViewById(R.id.listItem_video_Darsteller).setSelected(false);
                                 itemView.findViewById(R.id.listItem_video_Studio).setSelected(false);
 
+                                if (!extraStrings.isEmpty()) {
+                                    TextView textView = itemView.findViewById(R.id.listItem_video_extraText);
+                                    textView.setVisibility(View.VISIBLE);
+                                    textView.setText(extraStrings.get(index));
+                                }
                             },
                             customRecycler -> {
                                 customRecycler

@@ -3323,12 +3323,12 @@ public class VideoActivity extends AppCompatActivity {
                 break;
 
             case R.id.taskBar_video_customCode:
-                CustomCode.showDetailDialog(this, (Map) database.customCodeVideoMap, (customCode, idList) -> {
+                CustomCode.showDetailDialog(this, (Map) database.customCodeVideoMap, (customCode, idList0) -> {
                     CustomRecycler.SetItemContent<Video> setItemContent = customRecycler_VideoList.getSetItemContent();
-                    return new CustomRecycler<Video>(this)
-                            .setItemLayout(R.layout.list_item_video)
-                            .setGetActiveObjectList(customRecycler -> idList.stream().map(jsValue -> database.videoMap.get(jsValue.toString())).collect(Collectors.toList()))
-                            .setSetItemContent((customRecycler, itemView, video, index) -> {
+                    return new CustomCode.RecyclerProviderReturn<Video>(
+                            R.layout.list_item_video,
+                            idList -> idList.stream().map(jsValue -> database.videoMap.get(jsValue.toString())).collect(Collectors.toList()),
+                            (customRecycler, itemView, video, index) -> {
                                 if (video == null)
                                     video = new Video("<ERR>");
                                 setItemContent.runSetCellContent(customRecycler, itemView, video, index);
@@ -3336,23 +3336,54 @@ public class VideoActivity extends AppCompatActivity {
                                 itemView.findViewById(R.id.listItem_video_Darsteller).setSelected(false);
                                 itemView.findViewById(R.id.listItem_video_Studio).setSelected(false);
 
-                            })
-                            .setOnClickListener((customRecycler, itemView, video, index) -> {
-                                int clickMode = Settings.getSingleSetting_int(this, Settings.SETTING_VIDEO_CLICK_MODE);
-                                if (clickMode == 0)
-                                    detailDialog = showDetailDialog(video);
-                                else if (clickMode == 1)
-                                    openUrl(video.getUrl(), false);
-                            })
-                            .addSubOnClickListener(R.id.listItem_video_internetOrDetails, (customRecycler, view, object, index) -> {
-                                int clickMode = Settings.getSingleSetting_int(this, Settings.SETTING_VIDEO_CLICK_MODE);
-                                if (clickMode == 0)
-                                    openUrl(object.getUrl(), false);
-                                else if (clickMode == 1)
-                                    detailDialog = showDetailDialog(object);
-                            })
-                            .enableFastScroll()
-                            .generateRecyclerView();
+                            },
+                            customRecycler -> {
+                                customRecycler
+                                        .setOnClickListener((customRecycler1, itemView, video, index) -> {
+                                            int clickMode = Settings.getSingleSetting_int(this, Settings.SETTING_VIDEO_CLICK_MODE);
+                                            if (clickMode == 0)
+                                                detailDialog = showDetailDialog(video);
+                                            else if (clickMode == 1)
+                                                openUrl(video.getUrl(), false);
+                                        })
+                                        .addSubOnClickListener(R.id.listItem_video_internetOrDetails, (customRecycler1, view, object, index) -> {
+                                            int clickMode = Settings.getSingleSetting_int(this, Settings.SETTING_VIDEO_CLICK_MODE);
+                                            if (clickMode == 0)
+                                                openUrl(object.getUrl(), false);
+                                            else if (clickMode == 1)
+                                                detailDialog = showDetailDialog(object);
+                                        })
+                                        .enableFastScroll();
+                            }
+
+                    );
+//                     new CustomRecycler<Video>(this)
+//                            .setItemLayout(R.layout.list_item_video)
+//                            .setGetActiveObjectList(customRecycler -> idList.stream().map(jsValue -> database.videoMap.get(jsValue.toString())).collect(Collectors.toList()))
+//                            .setSetItemContent((customRecycler, itemView, video, index) -> {
+//                                if (video == null)
+//                                    video = new Video("<ERR>");
+//                                setItemContent.runSetCellContent(customRecycler, itemView, video, index);
+//                                itemView.findViewById(R.id.listItem_video_Genre).setSelected(false);
+//                                itemView.findViewById(R.id.listItem_video_Darsteller).setSelected(false);
+//                                itemView.findViewById(R.id.listItem_video_Studio).setSelected(false);
+//
+//                            })
+//                            .setOnClickListener((customRecycler, itemView, video, index) -> {
+//                                int clickMode = Settings.getSingleSetting_int(this, Settings.SETTING_VIDEO_CLICK_MODE);
+//                                if (clickMode == 0)
+//                                    detailDialog = showDetailDialog(video);
+//                                else if (clickMode == 1)
+//                                    openUrl(video.getUrl(), false);
+//                            })
+//                            .addSubOnClickListener(R.id.listItem_video_internetOrDetails, (customRecycler, view, object, index) -> {
+//                                int clickMode = Settings.getSingleSetting_int(this, Settings.SETTING_VIDEO_CLICK_MODE);
+//                                if (clickMode == 0)
+//                                    openUrl(object.getUrl(), false);
+//                                else if (clickMode == 1)
+//                                    detailDialog = showDetailDialog(object);
+//                            })
+//                            .enableFastScroll();
                 });
 
                 break;

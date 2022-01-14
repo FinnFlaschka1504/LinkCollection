@@ -26,6 +26,7 @@ import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.LayoutRes;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
@@ -51,6 +52,8 @@ import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.scottyab.aescrypt.AESCrypt;
 
+import org.liquidplayer.javascript.JSArray;
+import org.liquidplayer.javascript.JSBaseArray;
 import org.liquidplayer.javascript.JSContext;
 import org.liquidplayer.javascript.JSFunction;
 import org.liquidplayer.javascript.JSValue;
@@ -66,6 +69,7 @@ import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class CustomCode extends ParentClass {
     protected String code;
@@ -75,7 +79,7 @@ public abstract class CustomCode extends ParentClass {
     protected RETURN_TYPE returnType = RETURN_TYPE.TEXT;
 
     enum RETURN_TYPE {
-        TEXT, LIST,GROUPED_LIST, STATISTIC;
+        TEXT, LIST, GROUPED_LIST, STATISTIC;
         // ToDo: implementieren ^^
     }
 
@@ -83,7 +87,7 @@ public abstract class CustomCode extends ParentClass {
 
     public abstract ParentClass getObjectByName(CategoriesActivity.CATEGORIES category, String name);
 
-    /**  ------------------------- Constructor ------------------------->  */
+    /** ------------------------- Constructor -------------------------> */
     public CustomCode(String name) {
         uuid = "<err.>";
         this.name = name;
@@ -94,13 +98,11 @@ public abstract class CustomCode extends ParentClass {
     /**  <------------------------- Constructor -------------------------  */
 
 
-
-
     /** <------------------------- Implementations ------------------------- */
     public static class CustomCode_Video extends CustomCode {
         private transient String sortType;
 
-        /**  ------------------------- Constructor ------------------------->  */
+        /** ------------------------- Constructor -------------------------> */
         public CustomCode_Video(String name) {
             uuid = "customCodeVideo_" + UUID.randomUUID().toString();
             this.name = name;
@@ -108,7 +110,8 @@ public abstract class CustomCode extends ParentClass {
 
         public CustomCode_Video() {
         }
-        /**  <------------------------- Constructor -------------------------  */
+
+        /** <------------------------- Constructor ------------------------- */
 
         private Map<String, Object> map(Object o) {
 //            return objectMapper.convertValue(o, Map.class);
@@ -141,10 +144,10 @@ public abstract class CustomCode extends ParentClass {
         }
 
 
-        /**  ------------------------- Function ------------------------->  */
+        /** ------------------------- Function -------------------------> */
         @Override
         public void applyHelpers(JSContext js) {
-            JSFunction logTiming = new JSFunction(js,"logTiming") {
+            JSFunction logTiming = new JSFunction(js, "logTiming") {
                 public void logTiming() {
                     CustomUtility.logD(null, "logTiming: vvv");
                     CustomUtility.logTiming("CustomCode", true);
@@ -161,6 +164,21 @@ public abstract class CustomCode extends ParentClass {
                     "var getAllList = () => {\n" +
                     "    return allList = Object.values(getAllObj());\n" +
                     "}\n");
+
+            Gson gson = new Gson();
+            JSFunction getAllCatJson = new JSFunction(js, "getAllCatJson") {
+                public String getAllCatJson(String cat) {
+                    CategoriesActivity.CATEGORIES category = CategoriesActivity.CATEGORIES.valueOf(cat);
+                    Map<String, ? extends ParentClass> map = Utility.getMapFromDatabase(category);
+                    return gson.toJson(map);
+                }
+            };
+            js.property("getAllCatJson", getAllCatJson);
+            js.evaluateScript("var getAllCat = (cat) => {\n" +
+                    "    let json = getAllCatJson(cat);\n" +
+                    "    return JSON.parse(json);\n" +
+                    "}");
+
 
             js.evaluateScript("var getRandomVideo = () => {\n" +
                     "   getAllList();\n" +
@@ -191,14 +209,14 @@ public abstract class CustomCode extends ParentClass {
                     "    return allDays;\n" +
                     "}\n");
 
-            JSFunction getById = new JSFunction(js,"getById") {
+            JSFunction getById = new JSFunction(js, "getById") {
                 public Map getById(String id) {
                     return map(getObjectById(id));
                 }
             };
             js.property("getById", getById);
 
-            JSFunction getByName = new JSFunction(js,"getByName") {
+            JSFunction getByName = new JSFunction(js, "getByName") {
                 public Map getByName(String category, String id) {
                     CategoriesActivity.CATEGORIES cat = CategoriesActivity.CATEGORIES.valueOf(category);
                     return map(getObjectByName(cat, id));
@@ -242,7 +260,7 @@ public abstract class CustomCode extends ParentClass {
 //            CustomUtility.logTiming("CustomCode", true);
             if (CustomUtility.stringExists(code)) {
                 String fullCode = "let code = () => {\n" +
-                        code +
+                        applyCodeShortcuts(code) +
                         "\n}\n" +
                         "code()";
                 try {
@@ -276,7 +294,19 @@ public abstract class CustomCode extends ParentClass {
                     String type = matcher.group(1);
                     String params = matcher.group(2);
                     final String[] match = {matcher.group(3)};
-                    int offset = type.length() + 3 + (params != null ? params.length() + 1 : 0);
+
+                    int ellipseOffset = 0;
+                    Matcher ellipseMatcher = Pattern.compile("\\be\\d+\\b").matcher(params != null ? params : "");
+                    if (ellipseMatcher.find()) {
+                        int max = Integer.parseInt(ellipseMatcher.group(0).substring(1));
+                        int prev = match[0].length();
+                        if (prev > max) {
+                            match[0] = match[0].substring(0, max - 1) + "…";
+                            ellipseOffset = prev - max;
+                        }
+                    }
+
+                    int offset = type.length() + 3 + (params != null ? params.length() + 1 : 0) + ellipseOffset;
                     switch (type) {
                         case "id":
                             addToList(idMatches, matchResult, match, offset, null, null, CustomUtility.Triple.create(context, params, paramsList));
@@ -292,6 +322,8 @@ public abstract class CustomCode extends ParentClass {
                                     search = String.format("{[s:%s]}", name);
                                 else if (parentClass instanceof Genre)
                                     search = String.format("{[g:%s]}", name);
+                                else if (parentClass instanceof Collection)
+                                    search = String.format("{[c:%s]}", name);
 
                                 addToList(idMapMatches, matchResult, match, offset, name, search, CustomUtility.Triple.create(context, params, paramsList));
                             } else
@@ -308,7 +340,7 @@ public abstract class CustomCode extends ParentClass {
                             }
                             break;
                         case "":
-                            addToParamsList(CustomUtility.Triple.create(matchResult.start(), matchResult.end() - offset, match[0]),  CustomUtility.Triple.create(context, params, paramsList));
+                            addToParamsList(CustomUtility.Triple.create(matchResult.start(), matchResult.end() - offset, match[0]), CustomUtility.Triple.create(context, params, paramsList));
                             break;
                     }
                     text = matcher.replaceFirst(match[0]);
@@ -325,6 +357,7 @@ public abstract class CustomCode extends ParentClass {
                                 .putExtra(CategoriesActivity.EXTRA_SEARCH, query)
                                 .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, Utility.isUuid(query) ? CategoriesActivity.CATEGORIES.getById(query) : CategoriesActivity.CATEGORIES.VIDEO));
                     }
+
                     @Override
                     public void updateDrawState(TextPaint ds) {
                         super.updateDrawState(ds);
@@ -375,6 +408,8 @@ public abstract class CustomCode extends ParentClass {
                     span = new ForegroundColorSpan(paramsTriple.first.getColor(R.color.colorText));
                 else if (param.equalsIgnoreCase("h"))
                     span = new ForegroundColorSpan(paramsTriple.first.getColor(R.color.colorAccent));
+//                else if (param.startsWith("e"))
+//                    span = new ForegroundColorSpan(paramsTriple.first.getColor(R.color.colorAccent));
                 else
                     return;
                 paramsTriple.third.add(CustomUtility.Triple.create(triple.first, triple.second, span));
@@ -484,8 +519,7 @@ public abstract class CustomCode extends ParentClass {
         /**  <------------------------- Function -------------------------  */
 
 
-
-        /**  ------------------------- Getter & Setter ------------------------->  */
+        /** ------------------------- Getter & Setter -------------------------> */
         public String _getSortType() {
             return sortType;
         }
@@ -499,8 +533,7 @@ public abstract class CustomCode extends ParentClass {
     /**  ------------------------- Implementations ------------------------->  */
 
 
-
-    /**  ------------------------- Getter & Setter ------------------------->  */
+    /** ------------------------- Getter & Setter -------------------------> */
     public String getCode() {
         return code;
     }
@@ -559,9 +592,8 @@ public abstract class CustomCode extends ParentClass {
     /**  <------------------------- Function -------------------------  */
 
 
-
     /** ------------------------- Dialog -------------------------> */
-    public static void showAllDialoge(AppCompatActivity context, String name, Map<String,  CustomCode> map, Utility.GenericReturnOnlyInterface<CustomCode> newProvider) {
+    public static void showAllDialoge(AppCompatActivity context, String name, Map<String, CustomCode> map, Utility.GenericReturnOnlyInterface<CustomCode> newProvider) {
         CustomDialog.Builder(context)
                 .setTitle("CustomCode - " + name)
                 .setView(customDialog -> new CustomRecycler<CustomRecycler.Expandable<CustomCode>>(context)
@@ -711,7 +743,28 @@ public abstract class CustomCode extends ParentClass {
 
     // ---------------
 
-    public static void showDetailDialog(AppCompatActivity context, Map<String, CustomCode> map, @Nullable Utility.DoubleGenericReturnInterface<CustomCode, List<JSValue>, RecyclerView> recyclerProvider) {
+    public static class RecyclerProviderReturn<T> {
+        @LayoutRes
+        int layoutId;
+        CustomUtility.GenericReturnInterface<List<JSValue>, List<T>> listMapper;
+//        CustomRecycler.GetActiveObjectList<T> getActiveObjectList;
+        CustomRecycler.SetItemContent<T> setItemContent;
+        CustomRecycler.CustomRecyclerInterface<T> recyclerInterface;
+
+        public RecyclerProviderReturn(@LayoutRes int layoutId, CustomUtility.GenericReturnInterface<List<JSValue>, List<T>> listMapper, CustomRecycler.SetItemContent<T> setItemContent, CustomRecycler.CustomRecyclerInterface<T> recyclerInterface) {
+            this.layoutId = layoutId;
+            this.listMapper = listMapper;
+            this.setItemContent = setItemContent;
+            this.recyclerInterface = recyclerInterface;
+        }
+    }
+
+    public interface RecyclerProvider {
+        RecyclerProviderReturn run(CustomCode customCode, List<JSValue> list);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static void showDetailDialog(AppCompatActivity context, Map<String, CustomCode> map, @Nullable RecyclerProvider recyclerProvider) {
         CustomDialog.Builder(context)
                 .setTitle("CustomCode Details")
                 .setView(R.layout.dialog_detail_custom_code)
@@ -741,11 +794,55 @@ public abstract class CustomCode extends ParentClass {
                         if (jsValue == null)
                             return;
                         if (recyclerProvider != null && jsValue.isArray() && customCode.getReturnType() == RETURN_TYPE.LIST) {
+                            try {
+                                JSBaseArray jsArray = jsValue.toJSArray();
+                                RecyclerProviderReturn providerReturn = recyclerProvider.run(customCode, jsArray);
 
-                            RecyclerView recyclerView = recyclerProvider.run(customCode, jsValue.toJSArray());
-                            contentContainer.addView(recyclerView);
+                                RecyclerView recyclerView =
+                                        new CustomRecycler<>(context)
+                                                .setItemLayout(providerReturn.layoutId)
+                                                .setGetActiveObjectList(customRecycler -> (List) providerReturn.listMapper.run(jsArray))
+                                                .setSetItemContent(providerReturn.setItemContent)
+                                                .addOptionalModifications(customRecycler -> providerReturn.recyclerInterface.run(customRecycler))
+                                                .generateRecyclerView();
+
+                                contentContainer.addView(recyclerView);
+                            } catch (Exception e) {
+                                Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
+                        } else if (recyclerProvider != null && jsValue.isArray() && customCode.getReturnType() == RETURN_TYPE.GROUPED_LIST) {
+
+                            try {
+                                RecyclerProviderReturn providerReturn = recyclerProvider.run(customCode, jsValue.toJSArray());
+                                JSBaseArray jsArray = jsValue.toJSArray();
+                                RecyclerView recyclerView = new CustomRecycler<CustomRecycler.Expandable>(context)
+                                        .setGetActiveObjectList(customRecycler -> {
+                                            List list = new ArrayList();
+                                            for (Object o : jsArray) {
+                                                JSBaseArray jsv = ((JSValue) o).toJSArray();
+                                                CustomRecycler.Expandable<Object> expandable = new CustomRecycler.Expandable<>(jsv.get(0).toString(), providerReturn.listMapper.run(((JSValue) jsv.get(1)).toJSArray()));
+                                                expandable.setExpended(true);
+                                                list.add(expandable);
+                                            }
+                                            return list;
+                                        })
+                                        .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper()
+                                                .customizeRecycler(subRecycler -> {
+                                                    subRecycler
+                                                            .setItemLayout(providerReturn.layoutId)
+                                                            .setSetItemContent(providerReturn.setItemContent)
+                                                            .addOptionalModifications(customRecycler1 -> {
+                                                                providerReturn.recyclerInterface.run(customRecycler1);
+                                                                customRecycler1.disableFastscroll();
+                                                            });
+                                                }))
+                                        .generateRecyclerView();
+                                contentContainer.addView(recyclerView);
+                            } catch (Exception e) {
+                                Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
+                            }
                         } else {
-                            String text = jsValue != null ? (jsValue.isString() ? jsValue.toString() : jsValue.toJSON()) : null;
+                            String text = jsValue.isString() ? jsValue.toString() : jsValue.toJSON();
                             if (CustomUtility.stringExists(text)) {
                                 CharSequence dialogText;
                                 Boolean hasFormatting = jsValue.getContext().property("hasFormatting").toBoolean();
@@ -789,8 +886,7 @@ public abstract class CustomCode extends ParentClass {
     /**  <------------------------- Dialog -------------------------  */
 
 
-
-    /**  ------------------------- Convenience ------------------------->  */
+    /** ------------------------- Convenience -------------------------> */
     public static String[] parseParams(String params) {
         return Arrays.stream(params.split(",")).map(String::trim).filter(CustomUtility::stringExists).toArray(String[]::new);
     }
@@ -802,8 +898,38 @@ public abstract class CustomCode extends ParentClass {
     public boolean returnsList() {
         return returnType == RETURN_TYPE.LIST;
     }
-    /**  <------------------------- Convenience -------------------------  */
 
+    public static String applyCodeShortcuts(String code) {
+        // ToDo: kann gefixt werden?
+        if (true)
+            return code;
+        // \jn \m() \f() \hf
+        Pattern pattern = Pattern.compile("(?<!\\\\)\\\\(\\w+)(?:\\(([^\\)]+)\\))?");
+        while (true) {
+            Matcher matcher = pattern.matcher(code);
+            if (matcher.find()) {
+                String full = matcher.group(0);
+                String type = matcher.group(1);
+                String content = matcher.group(2);
+                String replacement;
+                switch (type) {
+                    case "jn":
+                        replacement = "join(\"\\n\")";
+                        break;
+                    case "hf":
+                        replacement = "hasFormatting = true;";
+                        break;
+                    default:
+                        replacement = full;
+                        break;
+                }
+                code = matcher.replaceFirst(replacement);
+            } else
+                break;
+        }
+        return code;
+    }
+    /**  <------------------------- Convenience -------------------------  */
 
 
     /** ------------------------- Encryption -------------------------> */
@@ -812,7 +938,8 @@ public abstract class CustomCode extends ParentClass {
         try {
             if (Utility.stringExists(name)) name = AESCrypt.encrypt(key, name);
             if (Utility.stringExists(code)) code = AESCrypt.encrypt(key, code);
-            if (Utility.stringExists(defaultParams)) defaultParams = AESCrypt.encrypt(key, defaultParams);
+            if (Utility.stringExists(defaultParams))
+                defaultParams = AESCrypt.encrypt(key, defaultParams);
             if (Utility.stringExists(description)) description = AESCrypt.encrypt(key, description);
 //            if (Utility.stringExists(thumbnailCode))
 //                thumbnailCode = AESCrypt.encrypt(key, thumbnailCode);
@@ -827,7 +954,8 @@ public abstract class CustomCode extends ParentClass {
         try {
             if (Utility.stringExists(name)) name = AESCrypt.decrypt(key, name);
             if (Utility.stringExists(code)) code = AESCrypt.decrypt(key, code);
-            if (Utility.stringExists(defaultParams)) defaultParams = AESCrypt.decrypt(key, defaultParams);
+            if (Utility.stringExists(defaultParams))
+                defaultParams = AESCrypt.decrypt(key, defaultParams);
             if (Utility.stringExists(description)) description = AESCrypt.decrypt(key, description);
 //            if (Utility.stringExists(thumbnailCode))
 //                thumbnailCode = AESCrypt.decrypt(key, thumbnailCode);

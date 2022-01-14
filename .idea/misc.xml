@@ -4,6 +4,7 @@
     <option name="filePathToZoomLevelMap">
       <map>
         <entry key="..\:/Users/FLAS008/StudioProjects/AndroidUtilities/AndroidUtilities/src/main/res/drawable/ic_watch_list.xml" value="0.3546875" />
+        <entry key="..\:/Users/FLAS008/StudioProjects/AndroidUtilities/AndroidUtilities/src/main/res/layout/list_item_expandable.xml" value="0.67" />
         <entry key="..\:/Users/FLAS008/StudioProjects/LinkCollection/app/src/main/res/drawable/ic_play_arrow.xml" value="0.1859375" />
         <entry key="..\:/Users/FLAS008/StudioProjects/LinkCollection/app/src/main/res/drawable/ic_rename.xml" value="0.3546875" />
         <entry key="..\:/Users/FLAS008/StudioProjects/LinkCollection/app/src/main/res/layout/activity_media.xml" value="0.5" />
@@ -45,6 +46,10 @@
         <entry key="..\:/Users/FLAS008/StudioProjects/LinkCollection/app/src/main/res/menu/task_bar_watch_list.xml" value="0.30462962962962964" />
       </map>
     </option>
+  </component>
+  <component name="FrameworkDetectionExcludesConfiguration">
+    <file type="web" url="file://$PROJECT_DIR$/../AndroidUtilities/AndroidUtilities" />
+    <file type="web" url="file://$PROJECT_DIR$" />
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="11" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/build/classes" />

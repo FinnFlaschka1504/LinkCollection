@@ -1,29 +1,29 @@
 <resources>
-    <string name="app_name">SecondMind</string>
-    <string name="VideoActivity_label">Videos</string>
-    <string name="CollectionActivity_label">Sammlungen</string>
-    <string name="title_activity_delete">delete</string>
-    <string name="navigation_drawer_open">Open navigation drawer</string>
-    <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Android Studio</string>
-    <string name="nav_header_subtitle">android.studio@android.com</string>
-    <string name="nav_header_desc">Navigation header</string>
-    <string name="action_settings">Settings</string>
+    <string name="app_name" translatable="false">SecondMind</string>
+    <string name="VideoActivity_label" translatable="false">Videos</string>
+    <string name="CollectionActivity_label" translatable="false">Sammlungen</string>
+    <string name="title_activity_delete" translatable="false">delete</string>
+    <string name="navigation_drawer_open" translatable="false">Open navigation drawer</string>
+    <string name="navigation_drawer_close" translatable="false">Close navigation drawer</string>
+    <string name="nav_header_title" translatable="false">Android Studio</string>
+    <string name="nav_header_subtitle" translatable="false">android.studio@android.com</string>
+    <string name="nav_header_desc" translatable="false">Navigation header</string>
+    <string name="action_settings" translatable="false">Settings</string>
 
-    <string name="bottomMenu_video">Video</string>
-    <string name="bottomMenu_videos">Videos</string>
-    <string name="bottomMenu_knowledge">Wissen</string>
-    <string name="bottomMenu_owe">Schulden</string>
-    <string name="bottomMenu_joke">Witz</string>
-    <string name="bottomMenu_jokes">Witze</string>
-    <string name="bottomMenu_show">Serie</string>
-    <string name="bottomMenu_shows">Serien</string>
-    <string name="bottomMenu_mediaSing">Medium</string>
-    <string name="bottomMenu_media">Medien</string>
+    <string name="bottomMenu_video" translatable="false">Video</string>
+    <string name="bottomMenu_videos" translatable="false">Videos</string>
+    <string name="bottomMenu_knowledge" translatable="false">Wissen</string>
+    <string name="bottomMenu_owe" translatable="false">Schulden</string>
+    <string name="bottomMenu_joke" translatable="false">Witz</string>
+    <string name="bottomMenu_jokes" translatable="false">Witze</string>
+    <string name="bottomMenu_show" translatable="false">Serie</string>
+    <string name="bottomMenu_shows" translatable="false">Serien</string>
+    <string name="bottomMenu_mediaSing" translatable="false">Medium</string>
+    <string name="bottomMenu_media" translatable="false">Medien</string>
 
-    <string name="parserType_java">Java</string>
-    <string name="parserType_javaScript">JavaScript</string>
-    <string name="parserType_graph">Graph</string>
+    <string name="parserType_java" translatable="false">Java</string>
+    <string name="parserType_javaScript" translatable="false">JavaScript</string>
+    <string name="parserType_graph" translatable="false">Graph</string>
 
     <string-array name="ownOrOther">
         <item>Fremde</item>

@@ -3346,7 +3346,7 @@ public class VideoActivity extends AppCompatActivity {
                                 if (!extraStrings.isEmpty()) {
                                     TextView textView = itemView.findViewById(R.id.listItem_video_extraText);
                                     textView.setVisibility(View.VISIBLE);
-                                    textView.setText(extraStrings.get(index));
+                                    textView.setText(customCode.applyFormatting(this, extraStrings.get(index)));
                                 }
                             },
                             customRecycler -> {
@@ -3365,6 +3365,7 @@ public class VideoActivity extends AppCompatActivity {
                                             else if (clickMode == 1)
                                                 detailDialog = showDetailDialog(object);
                                         })
+                                        .setPadding(16)
                                         .enableFastScroll();
                             }
 

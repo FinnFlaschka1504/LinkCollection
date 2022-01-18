@@ -89,8 +89,9 @@
 
     <string-array name="customCodeReturnTypes">
         <item>Text</item>
-        <item>List</item>
+        <item>Liste</item>
         <item>Gruppierte Liste</item>
+        <item>Code</item>
         <item>Statistic</item>
     </string-array>
 </resources>

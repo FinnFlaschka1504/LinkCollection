@@ -18,6 +18,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
@@ -33,6 +34,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomList;
+import com.finn.androidUtilities.CustomMenu;
 import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
 import com.finn.androidUtilities.Helpers;
@@ -45,31 +47,30 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Collection;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
-import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
-import com.maxMustermannGeheim.linkcollection.Daten.Videos.WatchList;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.scottyab.aescrypt.AESCrypt;
 
-import org.liquidplayer.javascript.JSArray;
 import org.liquidplayer.javascript.JSBaseArray;
 import org.liquidplayer.javascript.JSContext;
 import org.liquidplayer.javascript.JSFunction;
 import org.liquidplayer.javascript.JSValue;
 
 import java.security.GeneralSecurityException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public abstract class CustomCode extends ParentClass {
     protected String code;
@@ -79,7 +80,7 @@ public abstract class CustomCode extends ParentClass {
     protected RETURN_TYPE returnType = RETURN_TYPE.TEXT;
 
     enum RETURN_TYPE {
-        TEXT, LIST, GROUPED_LIST, STATISTIC;
+        TEXT, LIST, GROUPED_LIST, CODE, STATISTIC;
         // ToDo: implementieren ^^
     }
 
@@ -146,7 +147,9 @@ public abstract class CustomCode extends ParentClass {
 
         /** ------------------------- Function -------------------------> */
         @Override
-        public void applyHelpers(JSContext js) {
+        public void applyHelpers(Context cont, JSContext js) {
+            js.evaluateScript("var isEmpty = obj => obj && Object.keys(obj).length === 0 && Object.getPrototypeOf(obj) === Object.prototype;");
+
             JSFunction logTiming = new JSFunction(js, "logTiming") {
                 public void logTiming() {
                     CustomUtility.logD(null, "logTiming: vvv");
@@ -155,13 +158,35 @@ public abstract class CustomCode extends ParentClass {
             };
             js.property("logTiming", logTiming);
 
+            JSFunction log = new JSFunction(js, "log") {
+                public void log(String msg) {
+                    CustomUtility.logD(null, "log: %s", msg);
+                }
+            };
+            js.property("log", log);
+
+            JSFunction include = new JSFunction(js, "include") {
+                public void include(String script) {
+                    Optional<CustomCode_Video> customCode = Database.getInstance().customCodeVideoMap.values().stream().filter(cc -> cc.returnType == RETURN_TYPE.CODE && cc.name.equals(script)).findFirst();
+                    if (customCode.isPresent())
+                        js.evaluateScript(customCode.get().code);
+                    else
+                        Toast.makeText(cont, "'" + script + "'Script nicht Vorhanden", Toast.LENGTH_SHORT).show();
+                }
+            };
+            js.property("include", include);
+
             js.evaluateScript("var allObj = undefined;" +
                     "var getAllObj = () => {\n" +
+                    "    if (allObj)" +
+                    "         return allObj;" +
                     "    return allObj = JSON.parse(fullMapJson);\n" +
                     "}\n");
 
             js.evaluateScript("var allList = undefined;" +
                     "var getAllList = () => {\n" +
+                    "    if (allList)" +
+                    "         return allList;" +
                     "    return allList = Object.values(getAllObj());\n" +
                     "}\n");
 
@@ -230,12 +255,105 @@ public abstract class CustomCode extends ParentClass {
                     "var COLLECTION = 'COLLECTION';\n" +
                     "var WATCH_LIST = 'WATCH_LIST';");
 
+            js.evaluateScript("var getAllViews = (sorted = undefined) => {\n" +
+                    "    let res = [];\n" +
+                    "    let all = getAllList();\n" +
+                    "    all.forEach(v => v.dateList.forEach(d => res.push([new Date(d).getTime(), v.uuid])))\n" +
+                    "    if (sorted == undefined)\n" +
+                    "        return res;\n" +
+                    "    else\n" +
+                    "        return res.sort((a1, a2) => (a2[0] - a1[0]) * (sorted ? 1 : -1))\n" +
+                    "}");
 
-//            js.evaluateScript("var all = getAll()");
-//            js.evaluateScript("var all = getAllList()\n" +
-//                    "all = all.filter(video => video.rating >= 4.75)");
-//            JSValue all = js.property("all");
-//            all.toJSArray();
+            js.evaluateScript("var toGroup = (list, getKey, keyMapper, valueMapper, expanded) => {\n" +
+                    "    let transformRes = o => {\n" +
+                    "        if (expanded === null)\n" +
+                    "            return Object.entries(o);\n" +
+                    "        else if (typeof expanded == \"boolean\")\n" +
+                    "            return Object.entries(o).map(a => [...a, expanded])\n" +
+                    "        else if (typeof expanded == \"function\")\n" +
+                    "            return Object.entries(o).map(a => [...a, expanded(a)])\n" +
+                    "        else\n" +
+                    "            return o;\n" +
+                    "    }\n" +
+                    "\n" +
+                    "    let res = {};\n" +
+                    "    \n" +
+                    "    if (typeof getKey == \"string\") {\n" +
+                    "        let prev = getKey;\n" +
+                    "        getKey = o => o[prev];\n" +
+                    "    }\n" +
+                    "\n" +
+                    "    if (typeof valueMapper == \"string\") {\n" +
+                    "        let prev = valueMapper;\n" +
+                    "        valueMapper = o => o[prev];\n" +
+                    "    }\n" +
+                    "        \n" +
+                    "    list.forEach(o => {\n" +
+                    "        let key = getKey(o);\n" +
+                    "        if (valueMapper != undefined)\n" +
+                    "            o = valueMapper(o);\n" +
+                    "        if (key in res)\n" +
+                    "            res[key].push(o);\n" +
+                    "        else\n" +
+                    "            res[key] = [o];\n" +
+                    "    })\n" +
+                    "    if (typeof keyMapper == \"function\") {\n" +
+                    "        let newRet = {}\n" +
+                    "        Object.entries(res).forEach(e => newRet[keyMapper(e[0], e[1])] = e[1])\n" +
+                    "        return transformRes(newRet);\n" +
+                    "    } else\n" +
+                    "        return transformRes(res);\n" +
+                    "}");
+
+            js.evaluateScript("var DF_DATE = \"dd.MM.yyyy\";\n" +
+                    "var DF_DATE_LONG = \"dd MMMM yyyy\";\n" +
+                    "var DF_DATE_TIME = \"dd.MM.yyyy HH:mm 'Uhr'\";\n" +
+                    "var DF_DATE_TIME_FULL = \"dd.MM.yyyy HH:mm:ss 'Uhr'\";\n" +
+                    "var DF_TIME = \"hh:mm 'Uhr'\";\n" +
+                    "var DF_TIME_FULL = \"hh:mm:ss 'Uhr'\";");
+            SimpleDateFormat parseDate = new SimpleDateFormat("MMM dd yyyy HH:mm:ss", Locale.ENGLISH);
+            JSFunction df = new JSFunction(js, "df") {
+                public Object df(JSValue value, String format) {
+                    try {
+                        if (value.isDate()) {
+                            if (format == null) {
+                                Toast.makeText(cont, "Kein Format mitgegeben", Toast.LENGTH_SHORT).show();
+                                return null;
+                            }
+                            return new SimpleDateFormat(format, Locale.getDefault()).format(parseDate.parse(value.toString().substring(4,24)));
+                        } else if (value.isNumber()) {
+                            if (format == null) {
+                                Toast.makeText(cont, "Kein Format mitgegeben", Toast.LENGTH_SHORT).show();
+                                return null;
+                            }
+                            new SimpleDateFormat(format, Locale.getDefault()).format(new Date(value.toNumber().longValue()));
+                        } else if (value.isString()) {
+                            String date = value.toString();
+                            if (date.matches("\\d{1,2}\\.\\d{1,2}\\.\\d{1,4}")) {
+                                return new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).parse(date);
+                            } else {
+                                if (format == null) {
+                                    Toast.makeText(cont, "Kein Format mitgegeben", Toast.LENGTH_SHORT).show();
+                                    return null;
+                                }
+                                return new SimpleDateFormat(format, Locale.getDefault()).parse(date);
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                    return null;
+                }
+            };
+            js.property("df", df);
+
+            JSFunction getConstants = new JSFunction(js, "getConstants") {
+                public String getConstants() {
+                    return Arrays.stream(js.propertyNames()).filter(s -> s.matches("[A-Z\\d_]+")).map(s -> s + ": " + js.property(s)).collect(Collectors.joining("\n"));
+                }
+            };
+            js.property("getConstants", getConstants);
+
+
         }
 
         @Override
@@ -244,14 +362,14 @@ public abstract class CustomCode extends ParentClass {
             JSContext js = new JSContext();
             js.property("params", new CustomList<>(params));
             js.property("sortType", "undefined");
-            js.property("hasFormatting", false);
+            js.property("hasFormatting", true);
             js.property("hasHighlight", false);
             String json = new Gson().toJson(database.videoMap);
             js.property("fullMapJson", json);
 
 //            CustomUtility.logTiming("CustomCode", true);
             try {
-                applyHelpers(js);
+                applyHelpers(context, js);
             } catch (Exception e) {
                 String message = e.getMessage();
                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
@@ -595,7 +713,7 @@ public abstract class CustomCode extends ParentClass {
 
 
     /** ------------------------- Function -------------------------> */
-    public abstract void applyHelpers(JSContext js);
+    public abstract void applyHelpers(Context context, JSContext js);
 
     public abstract JSValue executeCode(Context context, String... params);
 
@@ -655,6 +773,7 @@ public abstract class CustomCode extends ParentClass {
     private static void showEditDialog(AppCompatActivity context, Map<String, CustomCode> map, @Nullable CustomDialog parentDialog, @Nullable CustomCode oldCustomCode, Utility.GenericReturnOnlyInterface<CustomCode> newProvider) {
         boolean isAdd = oldCustomCode == null;
         CustomCode newCustomCode = isAdd ? newProvider.run() : (CustomCode) oldCustomCode.clone();
+        CustomUtility.KeyboardChangeListener keyboardChangeListener = CustomUtility.KeyboardChangeListener.bindNoAuto(context);
         CustomDialog.Builder(context)
                 .setTitle("CustomCode " + (isAdd ? "Hinzufügen" : "Bearbeiten"))
                 .setView(R.layout.dialog_edit_custom_code)
@@ -680,6 +799,47 @@ public abstract class CustomCode extends ParentClass {
                         editLayoutDescription.getEditText().setText(newCustomCode.getDescription());
                         editReturnType.setSelection(Arrays.asList(RETURN_TYPE.values()).indexOf(newCustomCode.getReturnType()));
                     }
+
+
+                    final boolean[] keyboardOpen = {false};
+                    keyboardChangeListener.setOnChange(open -> {
+                        keyboardOpen[0] = open;
+                        boolean vis = open && editLayoutCode.getEditText().isFocused();
+                        view.findViewById(R.id.dialog_edit_CustomCodeVideo_buttons_all_layout).setVisibility(vis ? View.VISIBLE : View.GONE);
+                    }).apply();
+                    editLayoutCode.getEditText().setOnFocusChangeListener((v, hasFocus) -> {
+                        boolean vis = keyboardOpen[0] && editLayoutCode.getEditText().isFocused();
+                        view.findViewById(R.id.dialog_edit_CustomCodeVideo_buttons_all_layout).setVisibility(vis ? View.VISIBLE : View.GONE);
+                    });
+
+                    LinearLayout buttonsNormalLayout = view.findViewById(R.id.dialog_edit_CustomCodeVideo_buttons_normal_layout);
+                    LinearLayout buttonsMoreLayout = view.findViewById(R.id.dialog_edit_CustomCodeVideo_buttons_more_layout);
+                    Runnable switchLayout = () -> {
+                        HorizontalScrollView scrollViewNormal = (HorizontalScrollView) buttonsNormalLayout.getParent();
+                        HorizontalScrollView scrollViewMore = (HorizontalScrollView) buttonsMoreLayout.getParent();
+                        boolean normalVisible = scrollViewNormal.getVisibility() == View.VISIBLE;
+                        scrollViewNormal.setVisibility(normalVisible ? View.GONE : View.VISIBLE);
+                        scrollViewMore.setVisibility(normalVisible ? View.VISIBLE : View.GONE);
+                    };
+                    CustomUtility.GenericInterface<View> applyListener = button -> {
+                        button.setOnClickListener(v -> {
+                            CharSequence text = ((TextView) v).getText();
+                            EditText editText = editLayoutCode.getEditText();
+                            if (editText.isFocused()) {
+                                editText.getText().insert(editText.getSelectionStart(), text);
+                            }
+                            if (((View) buttonsMoreLayout.getParent()).getVisibility() == View.VISIBLE)
+                                switchLayout.run();
+                        });
+                    };
+                    for (int i = 0; i < buttonsNormalLayout.getChildCount(); i++)
+                        applyListener.run(buttonsNormalLayout.getChildAt(i));
+                    for (int i = 0; i < buttonsMoreLayout.getChildCount(); i++)
+                        applyListener.run(buttonsMoreLayout.getChildAt(i));
+
+
+                    View moreButton = view.findViewById(R.id.dialog_edit_CustomCodeVideo_buttons_moreButton);
+                    moreButton.setOnClickListener(v -> switchLayout.run());
                 })
                 .addButton("Testen", customDialog -> {
                     String newCode = ((EditText) customDialog.findViewById(R.id.dialog_edit_CustomCodeVideo_code)).getText().toString().trim();
@@ -751,6 +911,8 @@ public abstract class CustomCode extends ParentClass {
                     else
                         return !newName.equals(oldCustomCode.getName()) || !newCode.equals(oldCustomCode.getCode()) || !newParams.equals(CustomUtility.stringExistsOrElse(oldCustomCode.getDefaultParams(), "")) || !newDescription.equals(CustomUtility.stringExistsOrElse(oldCustomCode.getDescription(), ""));
                 })
+                .disableScroll()
+                .addOnDialogDismiss(customDialog -> keyboardChangeListener.unregister())
                 .show();
     }
 
@@ -784,7 +946,7 @@ public abstract class CustomCode extends ParentClass {
                 .setTitle("CustomCode Details")
                 .setView(R.layout.dialog_detail_custom_code)
                 .setSetViewContent((customDialog, view, reload) -> {
-                    CustomList<CustomCode> customCodeList = map.values().stream().sorted(ParentClass::compareByName).collect(Collectors.toCollection(CustomList::new));
+                    CustomList<CustomCode> customCodeList = map.values().stream().filter(customCode -> customCode.returnType != RETURN_TYPE.CODE).sorted(ParentClass::compareByName).collect(Collectors.toCollection(CustomList::new));
 
                     TextInputLayout editParameters = view.findViewById(R.id.dialog_detail_customCode_parameter_layout);
                     Spinner selectCustomCode = view.findViewById(R.id.dialog_detail_customCode_select);
@@ -826,7 +988,6 @@ public abstract class CustomCode extends ParentClass {
                                 Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
                             }
                         } else if (recyclerProvider != null && jsValue.isArray() && customCode.getReturnType() == RETURN_TYPE.GROUPED_LIST) {
-
                             try {
                                 RecyclerProviderReturn providerReturn = recyclerProvider.run(customCode, jsValue.toJSArray());
                                 JSBaseArray jsArray = jsValue.toJSArray();
@@ -836,8 +997,9 @@ public abstract class CustomCode extends ParentClass {
                                             List list = new ArrayList();
                                             for (Object o : jsArray) {
                                                 JSBaseArray jsv = ((JSValue) o).toJSArray();
-                                                CustomRecycler.Expandable<Object> expandable = new CustomRecycler.Expandable<>(jsv.get(0).toString(), ((CustomUtility.GenericReturnInterface) providerReturn.listMapper.run(extraStrings)).run(((JSValue) jsv.get(1)).toJSArray()));
-                                                expandable.setExpended(true);
+                                                CustomRecycler.Expandable<Object> expandable = new CustomRecycler.Expandable<>(jsv.get(0).toString(),
+                                                        ((CustomUtility.GenericReturnInterface) providerReturn.listMapper.run(extraStrings)).run(((JSValue) jsv.get(1)).toJSArray()));
+                                                expandable.setExpended(jsv.size() <= 2 || Boolean.parseBoolean(jsv.get(2).toString()));
                                                 list.add(expandable);
                                             }
                                             return list;
@@ -849,9 +1011,11 @@ public abstract class CustomCode extends ParentClass {
                                                             .setSetItemContent((CustomRecycler.SetItemContent) providerReturn.setItemContent.run(extraStrings))
                                                             .addOptionalModifications(customRecycler1 -> {
                                                                 providerReturn.recyclerInterface.run(customRecycler1);
-                                                                customRecycler1.disableFastscroll();
+                                                                customRecycler1.disableFastscroll()
+                                                                        .setPadding(0);
                                                             });
                                                 }))
+                                        .setPadding(16)
                                         .generateRecyclerView();
                                 contentContainer.addView(recyclerView);
                             } catch (Exception e) {

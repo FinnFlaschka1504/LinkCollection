@@ -134,6 +134,7 @@ public class VideoActivity extends AppCompatActivity {
     private static final String ADVANCED_SEARCH_CRITERIA_STUDIO = "s";
     private static final String ADVANCED_SEARCH_CRITERIA_GENRE = "g";
     private static final String ADVANCED_SEARCH_CRITERIA_COLLECTION = "c";
+    private static final String ADVANCED_SEARCH_CRITERIA_WATCH_LIST = "w";
     private static final String ADVANCED_SEARCH_CRITERIA_CUSTOM_CODE = "cc";
 
     enum SORT_TYPE {
@@ -309,6 +310,12 @@ public class VideoActivity extends AppCompatActivity {
 
             loadVideoRecycler();
 
+            CustomUtility.EventThrottler<String> eventThrottler = CustomUtility.EventThrottler.Builder(String.class, (eventThrottler1, eventBuffer, event, time) -> {
+                searchQuery = event[0];
+                reLoadVideoRecycler();
+            }, 300)
+                    .enableExecuteFirstImmediately();
+//            final long[] last = {System.currentTimeMillis()};
             textListener = new SearchView.OnQueryTextListener() {
                 @Override
                 public boolean onQueryTextSubmit(String s) {
@@ -318,9 +325,13 @@ public class VideoActivity extends AppCompatActivity {
 
                 @Override
                 public boolean onQueryTextChange(String query) {
-                    searchQuery = query;
-                    reLoadVideoRecycler();
-                    // ToDo: Input Throtteln https://skilled.dev/course/throttle
+                    eventThrottler.call(query);
+//                    long current = System.currentTimeMillis();
+//                    CustomUtility.logD(null, "onQueryTextChange: %d", current - last[0]);
+//                    last[0] = current;
+//                    searchQuery = query;
+//                    reLoadVideoRecycler();
+//                    // ToDo: Input Throtteln https://skilled.dev/course/throttle
                     return true;
                 }
             };
@@ -451,6 +462,7 @@ public class VideoActivity extends AppCompatActivity {
     /** ------------------------- AdvancedQuery -------------------------> */
     public static Helpers.AdvancedQueryHelper<Video> getAdvancedQueryHelper(AppCompatActivity context, SearchView searchView, HashSet<FILTER_TYPE> filterTypeSet) {
         return new Helpers.AdvancedQueryHelper<Video>(context, searchView)
+//                .enableThrottle(3000)
                 .setRestFilter((restQuery, videos) -> {
                     if (restQuery.contains("|")) {
                         videos.filterOr(restQuery.split("\\|"), (video, s) -> Utility.containedInVideo(s.trim(), video, filterTypeSet), true);
@@ -780,6 +792,10 @@ public class VideoActivity extends AppCompatActivity {
                         .setCategory(CategoriesActivity.CATEGORIES.COLLECTION)
                         .setParser(sub -> sub)
                         .setBuildPredicate(sub -> video -> Utility.containedInCollection(sub, video.getUuid(), true)))
+                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, String>(ADVANCED_SEARCH_CRITERIA_WATCH_LIST, "[^]]+?")
+                        .setCategory(CategoriesActivity.CATEGORIES.WATCH_LIST)
+                        .setParser(sub -> sub)
+                        .setBuildPredicate(sub -> video -> Utility.containedInWatchList(sub, video.getUuid(), true)))
                 .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<CustomCode.CustomCode_Video, String[]>>(ADVANCED_SEARCH_CRITERIA_CUSTOM_CODE, "\\w+(= *([^,]+)(, *[^,]+)*)?")
                         .setParser(sub -> {
                             String[] split = sub.split("=");
@@ -1268,7 +1284,10 @@ public class VideoActivity extends AppCompatActivity {
                             boolean[] negated = {false};
                             datePair[0] = (Pair<Date, Date>) advancedQueryHelper.parse(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION);
                             negated[0] = advancedQueryHelper.isNegated(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION);
-                            ((TextView) itemView.findViewById(R.id.listItem_video_Views)).setText(String.valueOf(video.getDateList().stream().filter(date -> (!date.before(datePair[0].first) && !date.after(datePair[0].second)) ^ negated[0]).count()));
+                            ((TextView) itemView.findViewById(R.id.listItem_video_Views)).setText(String.valueOf(video.getDateList().stream().filter(date -> {
+                                long millis = Utility.removeTime(date).getTime();
+                                return (millis >= datePair[0].first.getTime() && millis <= datePair[0].second.getTime()) ^ negated[0];
+                            }).count()));
                         } else
                             ((TextView) itemView.findViewById(R.id.listItem_video_Views)).setText(String.valueOf(video.getDateList().size()));
                     } else
@@ -3442,7 +3461,7 @@ public class VideoActivity extends AppCompatActivity {
 
         CustomDialog.OnDialogCallback showMarkedFilms = customDialog -> {
             if (markedVideos.isEmpty()) {
-                if (doubleClickHelper.check()) {
+                if (doubleClickHelper.check() || randomList.isFirst(randomVideo)) {
                     customDialog.dismiss();
                 } else
                     Toast.makeText(this, "Doppelklick zum Schließen", Toast.LENGTH_SHORT).show();
@@ -3463,11 +3482,6 @@ public class VideoActivity extends AppCompatActivity {
 
                                                 thumbnail.setOnLongClickListener(v -> {
                                                     showDetailDialog(video);
-//                                            startActivityForResult(new Intent(this, VideoActivity.class)
-//                                                            .putExtra(CategoriesActivity.EXTRA_SEARCH, video.getUuid())
-//                                                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO),
-//                                                    CategoriesActivity.START_CATEGORY_SEARCH);
-
                                                     return true;
                                                 });
                                             } else

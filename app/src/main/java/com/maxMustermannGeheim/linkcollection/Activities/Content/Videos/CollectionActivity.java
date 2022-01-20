@@ -507,7 +507,7 @@ public class CollectionActivity extends AppCompatActivity {
                             .generate();
 
                     view.findViewById(R.id.dialogDetail_collection_editVideos).setOnClickListener(v -> {
-                        Utility.showEditItemDialog(this, collection.getFilmIdList(), CategoriesActivity.CATEGORIES.COLLECTION, (customDialog1, selectedIds) -> {
+                        Utility.showEditItemDialog(this, collection.getFilmIdList(), CategoriesActivity.CATEGORIES.VIDEO, (customDialog1, selectedIds) -> {
                             collection.setFilmIdList(selectedIds);
                             videoRecycler.reload();
                             Database.saveAll();
@@ -898,10 +898,10 @@ public class CollectionActivity extends AppCompatActivity {
 
                         ImageView editFilms = customDialog.findViewById(R.id.dialog_editOrAddCollection_editFilms);
                         editFilms.setOnClickListener(v -> {
-                            Utility.showEditItemDialog(this, editCollection.getFilmIdList(), CategoriesActivity.CATEGORIES.COLLECTION, (customDialog1, selectedIds) -> {
+                            Utility.showEditItemDialog(this, editCollection.getFilmIdList(), CategoriesActivity.CATEGORIES.VIDEO, (customDialog1, selectedIds) -> {
                                 editCollection.setFilmIdList(selectedIds);
                                 ((TextView) customDialog.findViewById(R.id.dialog_editOrAddCollection_films)).setText(
-                                        CategoriesActivity.joinCategoriesIds(selectedIds, CategoriesActivity.CATEGORIES.COLLECTION));
+                                        CategoriesActivity.joinCategoriesIds(selectedIds, CategoriesActivity.CATEGORIES.VIDEO));
                             });
                         });
 

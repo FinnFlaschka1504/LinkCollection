@@ -1601,6 +1601,7 @@ public class Helpers {
         private EditText editText;
         private TextWatcher colorationWatcher;
         private String historyKey;
+        private CustomUtility.EventThrottler<Pair<String, CustomList<T>>> requestThrottler;
 
         /** ------------------------- Constructor -------------------------> */
         public AdvancedQueryHelper(AppCompatActivity context, SearchView searchView) {
@@ -1746,6 +1747,19 @@ public class Helpers {
 
         public AdvancedQueryHelper<T> enableHistory(String historyKey) {
             this.historyKey = historyKey;
+            return this;
+        }
+
+        public AdvancedQueryHelper<T> enableThrottle(int minDelayMillis) {
+            requestThrottler = new CustomUtility.EventThrottler<Pair<String, CustomList<T>>>((eventThrottler, eventBuffer, event, time) -> {
+                clean().splitQuery(event[0].first).filter(event[0].second);
+            }, minDelayMillis)
+            .enableOnlyKeepLastEvent();
+            return this;
+        }
+
+        public AdvancedQueryHelper<T> disableThrottle(int minDelayMillis) {
+            requestThrottler = null;
             return this;
         }
         /**  <------------------------- Getter & Setter -------------------------  */
@@ -1906,7 +1920,11 @@ public class Helpers {
 
         /**  ------------------------- Function -------------------------> */
         public AdvancedQueryHelper<T> splitQuery() {
-            fullQuery = getQuery();
+            return splitQuery(null);
+        }
+
+        public AdvancedQueryHelper<T> splitQuery(String query) {
+            fullQuery = query == null ? getQuery() : query;
             if (fullQuery.contains("{")) {
                 Matcher advancedQueryMatcher = advancedQueryPattern.matcher(fullQuery);
 
@@ -1963,7 +1981,11 @@ public class Helpers {
         }
 
         public AdvancedQueryHelper<T> filterFull(CustomList<T> list) {
-            return clean().splitQuery().filter(list);
+            if (requestThrottler != null) {
+                requestThrottler.call(Pair.create(getQuery(), list));
+                return this;
+            } else
+                return clean().splitQuery().filter(list);
         }
         /**  <------------------------- Function -------------------------  */
 

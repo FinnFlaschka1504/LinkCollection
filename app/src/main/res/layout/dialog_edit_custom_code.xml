@@ -170,7 +170,8 @@
 
                 <HorizontalScrollView
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent">
+                    android:layout_height="match_parent"
+                    tools:visibility="gone">
 
                     <LinearLayout
                         android:id="@+id/dialog_edit_CustomCodeVideo_buttons_normal_layout"
@@ -275,6 +276,8 @@
                 <HorizontalScrollView
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:paddingStart="8dp"
                     android:visibility="gone"
                     tools:visibility="visible">
 
@@ -290,7 +293,9 @@
                             style="@style/ImageButtonStyle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="`${}`"
                             android:gravity="center"
+                            android:hint="Test"
                             android:minWidth="35dp"
                             android:padding="@null"
                             android:paddingHorizontal="10dp"
@@ -302,6 +307,7 @@
                             style="@style/ImageButtonStyle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription=".sort((o3, o4) => )"
                             android:gravity="center"
                             android:minWidth="35dp"
                             android:padding="@null"
@@ -314,6 +320,7 @@
                             style="@style/ImageButtonStyle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription=".filter(o2 => )"
                             android:gravity="center"
                             android:minWidth="35dp"
                             android:padding="@null"
@@ -326,6 +333,7 @@
                             style="@style/ImageButtonStyle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription=".map(o2 => )"
                             android:gravity="center"
                             android:minWidth="35dp"
                             android:padding="@null"
@@ -340,12 +348,13 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:contentDescription='.join("\\n\\n")'
                             android:gravity="center"
                             android:minWidth="35dp"
                             android:padding="@null"
                             android:paddingHorizontal="10dp"
                             android:paddingVertical="5dp"
-                            android:text=".join(\\n)"
+                            android:text='.join("\\n")'
                             android:textAlignment="center" />
 
 

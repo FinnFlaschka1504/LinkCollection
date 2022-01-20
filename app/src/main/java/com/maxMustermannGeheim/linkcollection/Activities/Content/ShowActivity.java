@@ -706,7 +706,7 @@ public class ShowActivity extends AppCompatActivity {
                                         customRecycler1
                                                 .new ExpandableHelper<Show.Episode>()
                                                 .enableExpandByDefault()
-                                                .customizeRecycler(subRecycler -> {
+                                                .customizeRecycler((subRecycler, expandable, index0) -> {
                                                     subRecycler
                                                             .setSetItemContent((customRecycler2, itemView, episode1, index) -> {
                                                                 Utility.setMargins(itemView, 8, 5, 8, 5);
@@ -867,7 +867,7 @@ public class ShowActivity extends AppCompatActivity {
                 })
                 .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper<Show.Episode>()
                         .setExpandMatching(expandable -> expandable.getList().stream().anyMatch(episode -> !episode.isWatched()))
-                        .customizeRecycler(subRecycler -> {
+                        .customizeRecycler((subRecycler, expandable, index0) -> {
                             subRecycler
                                     .setSetItemContent((customRecycler1, itemView, episode, index) -> {
                                         Utility.setMargins(itemView, 8, 5, 8, 5);

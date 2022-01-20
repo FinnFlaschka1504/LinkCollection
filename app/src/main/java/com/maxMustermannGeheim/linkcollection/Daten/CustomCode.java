@@ -34,7 +34,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomList;
-import com.finn.androidUtilities.CustomMenu;
 import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
 import com.finn.androidUtilities.Helpers;
@@ -47,6 +46,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Collection;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.WatchList;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -152,15 +152,15 @@ public abstract class CustomCode extends ParentClass {
 
             JSFunction logTiming = new JSFunction(js, "logTiming") {
                 public void logTiming() {
-                    CustomUtility.logD(null, "logTiming: vvv");
+//                    CustomUtility.logD(null, "logTiming: vvv");
                     CustomUtility.logTiming("CustomCode", true);
                 }
             };
             js.property("logTiming", logTiming);
 
             JSFunction log = new JSFunction(js, "log") {
-                public void log(String msg) {
-                    CustomUtility.logD(null, "log: %s", msg);
+                public void log(Object msg) {
+                    CustomUtility.logD(null, "log: %s", msg != null ? msg.toString() : "<NULL>");
                 }
             };
             js.property("log", log);
@@ -211,7 +211,7 @@ public abstract class CustomCode extends ParentClass {
                     "}\n");
 
             js.evaluateScript("var format = (key, text = '', params = '') => {\n" +
-                    "    if (key != undefined && typeof key == \"string\" && key.match(/\\w+_[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b/)) {\n" +
+                    "    if (key != undefined && typeof key == \"string\" && key.match(UUID_REGEX)) {\n" +
                     "        return `\\\\idM${text == '' ? '' : ':' + text}{${key}}`\n" +
                     "    } else if (typeof key == 'object' && 'uuid' in key) {\n" +
                     "        return `\\\\idM${text == '' ? '' : ':' + text}{${key.uuid}}`\n" +
@@ -219,20 +219,27 @@ public abstract class CustomCode extends ParentClass {
                     "    return `\\\\${key}${params == '' ? '' : ':' + params}{${text}}`\n" +
                     "}");
 
-            js.evaluateScript("var getAllDays = () => {\n" +
+            js.evaluateScript("var getAllDays = (sorted) => {\n" +
                     "    let allDays = {};\n" +
                     "    getAllList().forEach(video => {\n" +
                     "        video.dateList.forEach(date => {\n" +
                     "            let newDate = new Date(date).setHours(0, 0, 0, 0);\n" +
-                    "            if (newDate in allDays) {\n" +
-                    "                allDays[newDate].push(video.uuid);\n" +
-                    "            } else {\n" +
-                    "                allDays[newDate] = [video.uuid];\n" +
-                    "            }\n" +
+                    "            let newItem;\n" +
+                    "            if (sorted != undefined)\n" +
+                    "                newItem = [video.uuid, new Date(date).getTime()];\n" +
+                    "            else\n" +
+                    "                newItem = video.uuid;\n" +
+                    "\n" +
+                    "            if (newDate in allDays) \n" +
+                    "                allDays[newDate].push(newItem);\n" +
+                    "            else \n" +
+                    "                allDays[newDate] = [newItem];\n" +
                     "        });\n" +
                     "    });\n" +
+                    "    if (sorted != undefined && sorted != null)\n" +
+                    "        Object.values(allDays).forEach(a => a.sort((o1, o2) => (o1[1] - o2[1]) * (sorted ? -1 : 1)))\n" +
                     "    return allDays;\n" +
-                    "}\n");
+                    "}");
 
             JSFunction getById = new JSFunction(js, "getById") {
                 public Map getById(String id) {
@@ -241,10 +248,12 @@ public abstract class CustomCode extends ParentClass {
             };
             js.property("getById", getById);
 
+            js.evaluateScript("var UUID_REGEX = /\\w+_[0-9a-f]{8}\\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\\b[0-9a-f]{12}\\b/;");
+
             JSFunction getByName = new JSFunction(js, "getByName") {
-                public Map getByName(String category, String id) {
+                public Map getByName(String category, String name) {
                     CategoriesActivity.CATEGORIES cat = CategoriesActivity.CATEGORIES.valueOf(category);
-                    return map(getObjectByName(cat, id));
+                    return map(getObjectByName(cat, name));
                 }
             };
             js.property("getByName", getByName);
@@ -308,6 +317,7 @@ public abstract class CustomCode extends ParentClass {
 
             js.evaluateScript("var DF_DATE = \"dd.MM.yyyy\";\n" +
                     "var DF_DATE_LONG = \"dd MMMM yyyy\";\n" +
+                    "var DF_MONTH = \"MMMM yyyy\";\n" +
                     "var DF_DATE_TIME = \"dd.MM.yyyy HH:mm 'Uhr'\";\n" +
                     "var DF_DATE_TIME_FULL = \"dd.MM.yyyy HH:mm:ss 'Uhr'\";\n" +
                     "var DF_TIME = \"hh:mm 'Uhr'\";\n" +
@@ -353,6 +363,146 @@ public abstract class CustomCode extends ParentClass {
             };
             js.property("getConstants", getConstants);
 
+            js.evaluateScript("var getIntervall = (period, start, end, rolling = false) => {\n" +
+                    "    if (typeof start == \"number\")\n" +
+                    "        start = new Date(start);\n" +
+                    "    start = new Date(start.getFullYear(), start.getMonth(), start.getDate())\n" +
+                    "    \n" +
+                    "    let amount = false;\n" +
+                    "    if (typeof end == \"number\") {\n" +
+                    "        if (end >= 10000000000) \n" +
+                    "            end = new Date(end);\n" +
+                    "         else\n" +
+                    "            amount = true;\n" +
+                    "    }\n" +
+                    "        \n" +
+                    "    let current = start;\n" +
+                    "    let type = period.slice(-1);\n" +
+                    "    period = +period.slice(0, -1);\n" +
+                    "    if (!period || period == 0)\n" +
+                    "        return []\n" +
+                    "    let result = [];\n" +
+                    "    Loop:\n" +
+                    "    while ((amount && end > 0) || (!amount && (period > 0 ? end <= current : end >= current))) {\n" +
+                    "        let next;\n" +
+                    "        switch (type) {\n" +
+                    "            case \"d\":\n" +
+                    "                next = new Date(current.getFullYear(), current.getMonth(), current.getDate() - period);\n" +
+                    "                break;\n" +
+                    "            case \"w\":\n" +
+                    "                next = new Date(current.getFullYear(), current.getMonth(), current.getDate() - (period * 7));\n" +
+                    "                break;\n" +
+                    "            case \"m\":\n" +
+                    "                next = new Date(current.getFullYear(), current.getMonth() - period, current.getDate());\n" +
+                    "                break;\n" +
+                    "            case \"y\":\n" +
+                    "                next = new Date(current.getFullYear() - period, current.getMonth(), current.getDate());\n" +
+                    "                break;\n" +
+                    "            default:\n" +
+                    "                break Loop;\n" +
+                    "        }\n" +
+                    "        result.push([current.getTime(), next.getTime()]);\n" +
+                    "        current = next;\n" +
+                    "        if (amount)\n" +
+                    "            end--;\n" +
+                    "\n" +
+                    "        if(result.length > 100000)\n" +
+                    "            return result\n" +
+                    "    }\n" +
+                    "    return result;\n" +
+                    "}");
+
+            js.evaluateScript("var toIntervall = (list, period, start, end, filter = true) => {\n" +
+                    "    if (!start)\n" +
+                    "        start = new Date();\n" +
+                    "    let decr = +period.slice(0, -1) > 0\n" +
+                    "    if (!end && end != 0) {\n" +
+                    "        let arr= list.sort((a1, a2) => a2[0] - a1[0])\n" +
+                    "        end = arr[decr ? arr.length - 1 : 0][0]\n" +
+                    "    } else if (end == 0 || end == -1)\n" +
+                    "        end = list[end == -1 ? list.length - 1 : 0][0]\n" +
+                    "    let interList = getIntervall(period, start, end).map(a => [new Date(a[0]), new Date(a[1])]).map(a => [a, []]);\n" +
+                    "\n" +
+                    "    list.forEach(view => {\n" +
+                    "        interList.forEach(inter => {\n" +
+                    "            if((decr && (view[0] < inter[0][0] && view[0] >= inter[0][1])) || (!decr && (view[0] >= inter[0][0] && view[0] < inter[0][1])))\n" +
+                    "                inter[1].push(view);\n" +
+                    "        })\n" +
+                    "    })\n" +
+                    "    if (!filter)\n" +
+                    "        return interList\n" +
+                    "    else\n" +
+                    "        return interList.filter(a => a[1].length)\n" +
+                    "}");
+
+            js.evaluateScript("var removeTime = (d) => {\n" +
+                    "    let time;\n" +
+                    "    if (typeof d == \"object\")    \n" +
+                    "        return new Date(d.getFullYear(), d.getMonth(), d.getDate());\n" +
+                    "    else {\n" +
+                    "        return removeTime(new Date(d)).getTime()\n" +
+                    "    }\n" +
+                    "        \n" +
+                    "}");
+
+            js.evaluateScript("var getByCat = (category, single, mapper) => {\n" +
+                    "    let allVid = getAllList();\n" +
+                    "\n" +
+                    "    if(typeof mapper == \"string\") {\n" +
+                    "        let oldMapper = mapper\n" +
+                    "        mapper = v => v[oldMapper];\n" +
+                    "    }\n" +
+                    "\n" +
+                    "    if (single && !single.match(UUID_REGEX))\n" +
+                    "        single = getByName(category, single).uuid\n" +
+                    "\n" +
+                    "    let toList = (o) => {\n" +
+                    "        switch (category) {\n" +
+                    "            case DARSTELLER: \n" +
+                    "                return o[\"darstellerList\"];\n" +
+                    "            case STUDIOS: \n" +
+                    "                return o[\"studioList\"];\n" +
+                    "            case GENRE: \n" +
+                    "                return o[\"genreList\"];\n" +
+                    "            case WATCH_LIST: \n" +
+                    "                return o[\"videoIdList\"];\n" +
+                    "            case COLLECTION: \n" +
+                    "                return o[\"filmIdList\"];\n" +
+                    "        }\n" +
+                    "    }\n" +
+                    "\n" +
+                    "    if (category == WATCH_LIST || category == COLLECTION) {\n" +
+                    "        if (single) {\n" +
+                    "            let vids = toList(getById(single)).map(id => allObj[id])\n" +
+                    "            if (mapper)\n" +
+                    "                return vids.map(v => mapper(v));\n" +
+                    "            return vids;\n" +
+                    "        } else {\n" +
+                    "            let res = {};\n" +
+                    "            Object.values(getAllCat(category)).forEach(c => res [c.uuid] = toList(c).map(id => mapper ? mapper(allObj[id]) : allObj[id]));\n" +
+                    "            return res;\n" +
+                    "        }\n" +
+                    "    }\n" +
+                    "\n" +
+                    "    if (single) {\n" +
+                    "        let res = allVid.filter(v => toList(v).includes(single))\n" +
+                    "        if (mapper)\n" +
+                    "            return res.map(v => mapper(v));\n" +
+                    "        return res;\n" +
+                    "    } else {\n" +
+                    "        let res = {};\n" +
+                    "        allVid.forEach(vid => {\n" +
+                    "            let v = mapper ? mapper(vid) : vid;\n" +
+                    "            toList(vid).forEach(id => {\n" +
+                    "                if (id in res)\n" +
+                    "                    res[id].push(v);\n" +
+                    "                else\n" +
+                    "                    res[id] = [v];\n" +
+                    "            })\n" +
+                    "        })\n" +
+                    "        return res;\n" +
+                    "    }\n" +
+                    "}");
 
         }
 
@@ -431,6 +581,8 @@ public abstract class CustomCode extends ParentClass {
                                     search = String.format("{[g:%s]}", name);
                                 else if (parentClass instanceof Collection)
                                     search = String.format("{[c:%s]}", name);
+                                else if (parentClass instanceof WatchList)
+                                    search = String.format("{[w:%s]}", name);
 
                                 addToList(idMapMatches, matchResult, match, offset, name, search, CustomUtility.Triple.create(context, params, paramsList));
                             } else
@@ -825,11 +977,21 @@ public abstract class CustomCode extends ParentClass {
                         button.setOnClickListener(v -> {
                             CharSequence text = ((TextView) v).getText();
                             EditText editText = editLayoutCode.getEditText();
-                            if (editText.isFocused()) {
+                            if (editText.isFocused())
                                 editText.getText().insert(editText.getSelectionStart(), text);
-                            }
                             if (((View) buttonsMoreLayout.getParent()).getVisibility() == View.VISIBLE)
                                 switchLayout.run();
+                        });
+                        button.setOnLongClickListener(v -> {
+                            CharSequence text = v.getContentDescription();
+                            if (!CustomUtility.stringExists(text))
+                                return false;
+                            EditText editText = editLayoutCode.getEditText();
+                            if (editText.isFocused())
+                                editText.getText().insert(editText.getSelectionStart(), text);
+                            if (((View) buttonsMoreLayout.getParent()).getVisibility() == View.VISIBLE)
+                                switchLayout.run();
+                            return true;
                         });
                     };
                     for (int i = 0; i < buttonsNormalLayout.getChildCount(); i++)
@@ -991,24 +1153,25 @@ public abstract class CustomCode extends ParentClass {
                             try {
                                 RecyclerProviderReturn providerReturn = recyclerProvider.run(customCode, jsValue.toJSArray());
                                 JSBaseArray jsArray = jsValue.toJSArray();
-                                List<String> extraStrings = new ArrayList<>();
                                 RecyclerView recyclerView = new CustomRecycler<CustomRecycler.Expandable>(context)
                                         .setGetActiveObjectList(customRecycler -> {
                                             List list = new ArrayList();
                                             for (Object o : jsArray) {
+                                                List<String> extraStrings = new ArrayList<>();
                                                 JSBaseArray jsv = ((JSValue) o).toJSArray();
                                                 CustomRecycler.Expandable<Object> expandable = new CustomRecycler.Expandable<>(jsv.get(0).toString(),
                                                         ((CustomUtility.GenericReturnInterface) providerReturn.listMapper.run(extraStrings)).run(((JSValue) jsv.get(1)).toJSArray()));
                                                 expandable.setExpended(jsv.size() <= 2 || Boolean.parseBoolean(jsv.get(2).toString()));
+                                                expandable.setPayload(extraStrings);
                                                 list.add(expandable);
                                             }
                                             return list;
                                         })
                                         .setExpandableHelper(customRecycler -> customRecycler.new ExpandableHelper()
-                                                .customizeRecycler(subRecycler -> {
+                                                .customizeRecycler((subRecycler, expandable, index) -> {
                                                     subRecycler
                                                             .setItemLayout(providerReturn.layoutId)
-                                                            .setSetItemContent((CustomRecycler.SetItemContent) providerReturn.setItemContent.run(extraStrings))
+                                                            .setSetItemContent((CustomRecycler.SetItemContent) providerReturn.setItemContent.run(expandable.getPayload()))
                                                             .addOptionalModifications(customRecycler1 -> {
                                                                 providerReturn.recyclerInterface.run(customRecycler1);
                                                                 customRecycler1.disableFastscroll()

@@ -123,7 +123,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Die Kategorie, die zurückgegeben werden soll"
+                            android:text="#DARSTELLER#, #STUDIOS#, #GENRE#, #COLLECTION#, #WATCH_LIST#"
                             android:textSize="12sp" />
                     </TableRow>
                 </TableLayout>
@@ -500,6 +500,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_weight="1"
                             android:text="#undefined# (nicht sortiert), #true# (neu nach alt), #false# (alt nach neu)"
                             android:textSize="12sp" />
                     </TableRow>
@@ -522,7 +523,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="getAllDays()"
+                    android:text="getAllDays(sorted?)"
                     android:textStyle="bold" />
 
 
@@ -532,6 +533,31 @@
                     android:text="Returned ein Objekt, welches die jeweiligen UnixTime auf eine Liste an UUIDs mapt"
                     android:textSize="12sp"
                     android:typeface="serif" />
+
+                <TableLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TableRow
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="3dp"
+                            android:text="sorted:"
+                            android:textSize="12sp"
+                            android:textStyle="italic" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="#undefined# (nicht sortiert), #true# (neu nach alt), #false# (alt nach neu)"
+                            android:textSize="12sp" />
+                    </TableRow>
+                </TableLayout>
 
             </LinearLayout>
 
@@ -644,6 +670,7 @@
                             android:text="Mappt die Elemente auf neue Werte"
                             android:textSize="12sp" />
                     </TableRow>
+
                     <TableRow
                         android:layout_width="match_parent"
                         android:layout_height="match_parent">
@@ -666,6 +693,154 @@
                 </TableLayout>
 
             </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginVertical="5dp"
+                android:background="?android:attr/listDivider" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="removeTime(date)"
+                    android:textStyle="bold" />
+
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Entfernt die Zeitkomponente von Daten"
+                    android:textSize="12sp"
+                    android:typeface="serif" />
+
+                <TableLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TableRow
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="3dp"
+                            android:text="date:"
+                            android:textSize="12sp"
+                            android:textStyle="italic" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Ein Date-Objekt, oder UNIX-Timestamp"
+                            android:textSize="12sp" />
+                    </TableRow>
+                </TableLayout>
+
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginVertical="5dp"
+                android:background="?android:attr/listDivider" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="getByCat(category, single?, mapper?)"
+                    android:textStyle="bold" />
+
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Gibt ein Objekt mit Listen von Videos für die dazugehörigen Kategorien zurück"
+                    android:textSize="12sp"
+                    android:typeface="serif" />
+
+                <TableLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TableRow
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="3dp"
+                            android:text="category:"
+                            android:textSize="12sp"
+                            android:textStyle="italic" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="#DARSTELLER#, #STUDIOS#, #GENRE#, #COLLECTION#, #WATCH_LIST#"
+                            android:textSize="12sp" />
+                    </TableRow>
+
+                    <TableRow
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="3dp"
+                            android:text="single:"
+                            android:textSize="12sp"
+                            android:textStyle="italic" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="UUID, oder Name (gibt dann nur die Liste für diese Kategorie zurück)"
+                            android:textSize="12sp" />
+                    </TableRow>
+
+                    <TableRow
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="3dp"
+                            android:text="mapper:"
+                            android:textSize="12sp"
+                            android:textStyle="italic" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Mappt die Videos auf einen neuen Wert (Funktion, oder Attribut)"
+                            android:textSize="12sp" />
+                    </TableRow>
+
+                </TableLayout>
+
+            </LinearLayout>
+
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
@@ -896,7 +1071,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Das Skript returned eine List an UUIDs"
+                        android:text="Das Skript returned eine List an UUIDs und optional einem zusätzlichen Text [UUIDs] / [[UUID, Text]]"
                         android:textSize="12sp" />
                 </TableRow>
 
@@ -908,7 +1083,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="3dp"
-                        android:text="GruppierteListe:"
+                        android:text="Gruppierte\nListe:"
                         android:textSize="12sp"
                         android:textStyle="italic" />
 

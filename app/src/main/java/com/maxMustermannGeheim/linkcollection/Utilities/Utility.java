@@ -140,6 +140,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.WatchList;
 import com.maxMustermannGeheim.linkcollection.R;
 //import com.pixplicity.sharp.Sharp;
 
@@ -1467,6 +1468,20 @@ public class Utility {
             return true;
         return false;
     }
+
+    public static boolean containedInWatchList(String query, String uuid, boolean exact) {
+        Database database = Database.getInstance();
+        for (WatchList watchList : database.watchListMap.values()) {
+            if (exact) {
+                if (watchList.getName().equals(query) && watchList.getVideoIdList().contains(uuid))
+                    return true;
+            } else {
+                if (watchList.getName().toLowerCase().contains(query.toLowerCase()) && watchList.getVideoIdList().contains(uuid))
+                    return true;
+            }
+        }
+        return false;
+    }
     /**  <------------------------- ... in Videos -------------------------  */
 
     /**  ------------------------- ... in Knowledge ------------------------->  */
@@ -2267,7 +2282,7 @@ public class Utility {
                 .setDimensionsFullscreen()
                 .disableScroll()
                 .addOptionalModifications(customDialog0 -> {
-                    if (category.equals(CategoriesActivity.CATEGORIES.COLLECTION))
+                    if (category.equals(CategoriesActivity.CATEGORIES.VIDEO))
                         return;
                     customDialog0
                             .addButton(R.drawable.ic_add, customDialog -> {
@@ -2617,7 +2632,7 @@ public class Utility {
             case SHOW_GENRES:
                 return database.showGenreMap;
             case COLLECTION:
-                return database.videoMap;
+                return database.collectionMap; // von videoMap geändert
             case MEDIA:
                 return database.mediaMap;
             case MEDIA_PERSON:
@@ -3539,7 +3554,7 @@ public class Utility {
     }
 
     public enum DateFormat {
-        DATE_DASH("dd-MM-yyyy"), DATE_DOT("dd.MM.yyyy"), DATE_DASH_REVERSE("yyyy-MM-dd"), DATE_DOT_REVERSE("yyyy.MM.dd"), DATE_TIME_DASH("mm:hh 'Uhr' dd-MM-yyyy"), DATE_TIME_DOT("mm:hh 'Uhr' dd.MM.yyyy"), ;
+        DATE_DASH("dd-MM-yyyy"), DATE_DOT("dd.MM.yyyy"), DATE_DASH_REVERSE("yyyy-MM-dd"), DATE_DOT_REVERSE("yyyy.MM.dd"), DATE_TIME_DASH("hh:mm 'Uhr' dd-MM-yyyy"), DATE_TIME_DOT("hh:mm 'Uhr' dd.MM.yyyy"), ;
 
         public final String format;
 

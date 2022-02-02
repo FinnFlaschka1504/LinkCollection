@@ -42,11 +42,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
@@ -195,6 +197,7 @@ public class MediaActivity extends AppCompatActivity {
             loadDatabase();
     }
 
+    @SuppressLint("NewApi")
     private boolean hasStoragePermission() {
         return Environment.isExternalStorageManager();
     }
@@ -1341,10 +1344,11 @@ public class MediaActivity extends AppCompatActivity {
 
     }
 
+    @SuppressLint("NewApi")
     private void setDisplayProps() {
         boolean isPortrait = Utility.isPortrait(this);
         Point point = new Point();
-        Rect bounds = getWindowManager().getCurrentWindowMetrics().getBounds();
+         Rect bounds = getWindowManager().getCurrentWindowMetrics().getBounds();
         point.set(bounds.width() + (isPortrait ? 0 : 100), bounds.height());
         Utility.reflectionSet(scrollGalleryView, "displayProps", point);
     }
@@ -1535,8 +1539,31 @@ public class MediaActivity extends AppCompatActivity {
         scrollGalleryShown = false;
         scrollGalleryView.setVisibility(View.GONE);
         int currentItem = scrollGalleryView.getCurrentItem();
-        if (scrollGalleryView.getViewPager().getChildCount() > 1)
-            mediaRecycler.getRecycler().getLayoutManager().scrollToPosition(currentItem);
+        if (scrollGalleryView.getViewPager().getChildCount() > 1) {
+            LinearLayoutManager layoutManager = (LinearLayoutManager) mediaRecycler.getRecycler().getLayoutManager();
+            int first = layoutManager.findFirstVisibleItemPosition();
+            int last = layoutManager.findLastVisibleItemPosition();
+            if (!(currentItem >= first && currentItem <= last)) {
+                mediaRecycler.getRecycler().addOnScrollListener(new RecyclerView.OnScrollListener() {
+                    @Override
+                    public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                        super.onScrollStateChanged(recyclerView, newState);
+                    }
+
+                    @Override
+                    public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                        if (recyclerView.computeVerticalScrollOffset() == 0)
+                            CustomUtility.reflectionCall(mediaRecycler.getRecycler(), "dispatchOnScrollStateChanged", Pair.create(int.class, RecyclerView.SCROLL_STATE_IDLE));
+                        mediaRecycler.getRecycler().removeOnScrollListener(this);
+                        super.onScrolled(recyclerView, dx, dy);
+                    }
+                });
+                layoutManager.scrollToPosition(currentItem);
+                AppBarLayout appBarLayout = findViewById(R.id.appBarLayout);
+                appBarLayout.setExpanded(false, true);
+            }
+
+        }
 //        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 

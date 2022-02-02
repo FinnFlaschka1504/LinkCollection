@@ -79,7 +79,18 @@
                         android:queryBackground="@android:color/transparent"
                         android:queryHint="Filter eingeben ('&amp;' als 'und'; '|' als 'oder')"
                         android:theme="@style/AppTheme"
-                        app:layout_scrollFlags="scroll|enterAlways|snap" />
+                        app:layout_scrollFlags="scroll|enterAlways|snap" >
+
+                    </SearchView>
+
+                    <View
+                        android:id="@+id/dropdownAnchor"
+                        android:layout_width="150dp"
+                        android:layout_height="3dp"
+                        android:layout_gravity="end"
+                        android:background="?android:attr/listDivider"
+                        android:visibility="gone"
+                        app:layout_scrollFlags="scroll|enterAlways" />
 
                     <View
                         android:id="@+id/divider"
@@ -87,6 +98,7 @@
                         android:layout_height="1dp"
                         android:background="?android:attr/listDivider"
                         app:layout_scrollFlags="scroll|enterAlways" />
+
                 </LinearLayout>
             </com.google.android.material.appbar.CollapsingToolbarLayout>
 

@@ -1206,10 +1206,10 @@ public class Settings extends AppCompatActivity {
                                 );
                                 setResult(RESULT_OK);
                             })
-                            .enableDragAndDrop((customRecycler, objectList) -> {
+                            .enableDragAndDrop(R.id.list_spaceSetting_drag, (customRecycler, objectList) -> {
                                 spaceOrderChanged = true;
                                 setResult(RESULT_OK);
-                            })
+                            }, false)
                             .setDividerMargin_inDp(16)
                             .enableDivider()
                             .disableCustomRipple()
@@ -1230,6 +1230,7 @@ public class Settings extends AppCompatActivity {
                             .setItemLayout(R.layout.list_item_space_shown)
                             .setObjectList(allSpaces.stream().filter(Space::isShown).collect(Collectors.toList()))
                             .setSetItemContent((customRecycler, itemView, space, index) -> {
+                                itemView.findViewById(R.id.list_spaceSetting_drag).setVisibility(View.GONE);
                                 ((TextView) itemView.findViewById(R.id.list_spaceSetting_name)).setText(space.getPlural());
 
                                 ((CheckBox) itemView.findViewById(R.id.list_spaceSetting_shown)).setChecked(space.isEncrypted());

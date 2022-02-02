@@ -33,6 +33,8 @@ import android.view.inputmethod.EditorInfo;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -58,8 +60,13 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.finn.androidUtilities.CustomList;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAutoCompleteAdapter;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.ImageAdapterItem;
 
 import org.intellij.lang.annotations.Language;
 
@@ -1607,9 +1614,30 @@ public class Helpers {
         public AdvancedQueryHelper(AppCompatActivity context, SearchView searchView) {
             this.searchView = searchView;
             editText = searchView.findViewById(Resources.getSystem().getIdentifier("search_src_text", "id", "android"));
+            if (editText instanceof AutoCompleteTextView && false) {
+                AutoCompleteTextView autoComplete = (AutoCompleteTextView) editText;
+                CustomList<ImageAdapterItem> itemList = Database.getInstance().darstellerMap.values().stream().map(darsteller -> {
+                    ImageAdapterItem adapterItem = new ImageAdapterItem(darsteller.getName()).setPayload(darsteller);
+                    if (darsteller.getImagePath() != null) {
+                        adapterItem.setImagePath(darsteller.getImagePath());
+                    }
+                    return adapterItem;
+                }).collect(Collectors.toCollection(CustomList::new));
 
-
-            applySelectionHelper(context);
+                CustomAutoCompleteAdapter autoCompleteAdapter = new CustomAutoCompleteAdapter(context, itemList);
+                autoComplete.setOnItemClickListener((parent, view, position, id) -> {
+                    ParentClass_Tmdb payload = (ParentClass_Tmdb) autoCompleteAdapter.getItem(position).getPayload();
+                    Toast.makeText(context, payload.getName() + " erfolgreich importiert", Toast.LENGTH_SHORT).show();
+                });
+                autoComplete.setDropDownHeight(CustomUtility.dpToPx(2 * 75));
+//                autoComplete.setDropDownWidth(CustomUtility.dpToPx(75));
+                autoComplete.setAdapter(autoCompleteAdapter);
+                View viewById = context.findViewById(R.id.dropdownAnchor);
+                if (viewById != null)
+                    autoComplete.setDropDownAnchor(R.id.dropdownAnchor);
+            }
+            if (editText != null)
+                applySelectionHelper(context);
         }
         /**  <------------------------- Constructor -------------------------  */
 
@@ -1765,9 +1793,7 @@ public class Helpers {
         /**  <------------------------- Getter & Setter -------------------------  */
 
 
-        /**
-         * <------------------------- Convenience -------------------------
-         */
+        /** <------------------------- Convenience ------------------------- */
         public AdvancedQueryHelper<T> optionalModification(Utility.GenericInterface<AdvancedQueryHelper<T>> optional) {
             optional.run(this);
             return this;

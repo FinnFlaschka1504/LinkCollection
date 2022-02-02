@@ -592,7 +592,7 @@ public class ShowActivity extends AppCompatActivity {
                         itemView.findViewById(R.id.listItem_show_Views_layout).setVisibility(View.VISIBLE);
                         Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
                         helper.appendColor(show.getAllEpisodesCount() <= watchedEpisodes ? "✓  " : "", getColor(R.color.colorGreen));
-                        if (releasedEpisodes || show.getAllEpisodesCount() <= watchedEpisodes)
+                        if (releasedEpisodes || show._isBeforeNextEpisodeAir() || show.getAllEpisodesCount() <= watchedEpisodes)
                             helper.appendColor(String.valueOf(views), getColor(R.color.colorGreen));
                         else
                             helper.append(String.valueOf(views));
@@ -2186,7 +2186,7 @@ String BREAKPOINT = null;
 
                 CustomList uuidList = integerList.map((Function<Integer, Object>) idUuidMap::get).filter(Objects::nonNull, false);
                 show.setGenreIdList(uuidList);
-                apiDetailRequest(this, show.getTmdbId(), show, customDialog::reloadView, false, true);
+                apiDetailRequest(this, show.getTmdbId(), show, customDialog::reloadView, false, false);
                 Utility.getImdbIdFromTmdbId(this, show.getTmdbId(), "show", s -> {
                     if (Utility.stringExists(s))
                         show.setImdbId(s);
@@ -2271,15 +2271,19 @@ String BREAKPOINT = null;
                     show.setAllEpisodesCount(response.getInt("number_of_episodes"));
                 if (response.has("in_production"))
                     show.setInProduction(response.getBoolean("in_production"));
-                if (response.has("next_episode_to_air")) // ToDo: fixen
-                    show.setNextEpisodeAir(Utility.getDateFromJsonString("next_episode_to_air", response));
+                if (response.has("next_episode_to_air") && !response.isNull("next_episode_to_air"))
+                    show.setNextEpisodeAir(Utility.getDateFromJsonString("air_date", response.getJSONObject("next_episode_to_air")));
                 if (response.has("status"))
                     show.setStatus(response.getString("status"));
                 if (response.has("poster_path"))
                     show.setImagePath(response.getString("poster_path"));
                 JSONArray episode_run_time;
-                if (response.has("episode_run_time") && (episode_run_time = response.getJSONArray("episode_run_time")).length() > 0)
-                    show.setAverageRuntime(episode_run_time.getInt(0));
+                if (response.has("episode_run_time") && (episode_run_time = response.getJSONArray("episode_run_time")).length() > 0) {
+                    int sum = 0;
+                    for (int i = 0; i < episode_run_time.length(); i++)
+                        sum += episode_run_time.getInt(i);
+                    show.setAverageRuntime(sum / episode_run_time.length());
+                }
 
                 JSONArray seasonArray_json = response.getJSONArray("seasons");
                 List<Show.Season> seasonList = new ArrayList<>();
@@ -2308,7 +2312,7 @@ String BREAKPOINT = null;
 
                 show.setSeasonList(seasonList);
 
-                if (show.isNotifyNew()) {
+                if (show.isNotifyNew() && !response.isNull("last_episode_to_air")) {
                     Show.Episode latest = jsonToEpisode(show, null, response.getJSONObject("last_episode_to_air"));
                     if (show.getAlreadyAiredList().stream().noneMatch(episode -> episode.createRaw().equals(latest)) && !alreadySeen(show, latest)) {
                         show.getAlreadyAiredList().add(latest);
@@ -2436,22 +2440,26 @@ String BREAKPOINT = null;
         List<String> resultList = new ArrayList<>();
         Helpers.WebViewHelper helper = new Helpers.WebViewHelper(this, urls)
                 .addRequest("document.querySelector(\"[data-testid='hero-title-block__metadata']\").innerText", s -> {
+                    boolean found = false;
                     for (String sub : s.split("\\\\n")) {
                         if (sub.matches("^\\d{1,2}$|^TV-(Y|G|Y7|PG|14|MA)$")) {
                             episodeList.get(counter[0]).setAgeRating(sub);
-                        } else if (sub.matches("(\\d+h ?)?(\\d{1,2}m(in)?)?")) {
+                            found = true;
+                        } else if (sub.matches("(\\d+\\s?Std. ?)?(\\d{1,2}\\s?M(in.)?)?")) {
                             int length = 0;
-                            Matcher hourMatcher = Pattern.compile("\\d+(?=h( \\d{1,2}m(in)?)?)").matcher(sub);
+                            Matcher hourMatcher = Pattern.compile("\\d+(?=\\s?Std.( \\d{1,2}\\s?M(in.)?)?)").matcher(sub);
                             if (hourMatcher.find())
                                 length += Integer.parseInt(hourMatcher.group(0)) * 60;
-                            Matcher minuteMatcher = Pattern.compile("\\d{1,2}(?=m(in)?)").matcher(sub);
+                            Matcher minuteMatcher = Pattern.compile("\\d{1,2}(?=\\s?M(in.)?)").matcher(sub);
                             if (minuteMatcher.find())
                                 length += Integer.parseInt(minuteMatcher.group(0));
                             episodeList.get(counter[0]).setLength(length);
-                            resultList.add(s);
+                            found = true;
 //                            Toast.makeText(this, "--> Länge geladen <--", Toast.LENGTH_SHORT).show();
                         }
                     }
+                    if (found)
+                        resultList.add(s);
                     counter[0]++;
                 })
                 .setDebug(showDialog)
@@ -2460,7 +2468,7 @@ String BREAKPOINT = null;
                     if (showDialog)
                         CustomDialog.Builder(this)
                                 .setTitle("Alle Ergebnisse")
-                                .setText(resultList.stream().map(String::valueOf).collect(Collectors.joining("\n")))
+                                .setText(String.join("\n", resultList))
                                 .show();
                     Utility.runRunnable(onComplete);
                 })

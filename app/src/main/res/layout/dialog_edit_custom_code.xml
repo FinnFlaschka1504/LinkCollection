@@ -184,6 +184,7 @@
                             style="@style/ImageButtonStyle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="=>"
                             android:gravity="center"
                             android:minWidth="33dp"
                             android:text="="
@@ -193,15 +194,7 @@
                             style="@style/ImageButtonStyle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:minWidth="33dp"
-                            android:text="=>"
-                            android:textAlignment="center" />
-
-                        <TextView
-                            style="@style/ImageButtonStyle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:contentDescription="\\n"
                             android:gravity="center"
                             android:minWidth="33dp"
                             android:text="\\"
@@ -211,24 +204,7 @@
                             style="@style/ImageButtonStyle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:minWidth="33dp"
-                            android:text="("
-                            android:textAlignment="center" />
-
-                        <TextView
-                            style="@style/ImageButtonStyle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:minWidth="33dp"
-                            android:text=")"
-                            android:textAlignment="center" />
-
-                        <TextView
-                            style="@style/ImageButtonStyle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:contentDescription="[#]"
                             android:gravity="center"
                             android:minWidth="33dp"
                             android:text="["
@@ -247,6 +223,7 @@
                             style="@style/ImageButtonStyle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="{\n#\n}"
                             android:gravity="center"
                             android:minWidth="33dp"
                             android:text="{"
@@ -265,9 +242,38 @@
                             style="@style/ImageButtonStyle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="(#)"
+                            android:gravity="center"
+                            android:minWidth="33dp"
+                            android:text="("
+                            android:textAlignment="center" />
+
+                        <TextView
+                            style="@style/ImageButtonStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:minWidth="33dp"
+                            android:text=")"
+                            android:textAlignment="center" />
+
+                        <TextView
+                            style="@style/ImageButtonStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:contentDescription='"#"'
                             android:gravity="center"
                             android:minWidth="33dp"
                             android:text='"'
+                            android:textAlignment="center" />
+
+                        <TextView
+                            style="@style/ImageButtonStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:minWidth="33dp"
+                            android:text=";"
                             android:textAlignment="center" />
 
                     </LinearLayout>
@@ -293,9 +299,9 @@
                             style="@style/ImageButtonStyle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:contentDescription="`${}`"
+                            android:contentDescription="`${#}`"
                             android:gravity="center"
-                            android:hint="Test"
+                            android:hint="${#}"
                             android:minWidth="35dp"
                             android:padding="@null"
                             android:paddingHorizontal="10dp"
@@ -307,8 +313,9 @@
                             style="@style/ImageButtonStyle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:contentDescription=".sort((o3, o4) => )"
+                            android:contentDescription=".sort((o3, o4) => #)"
                             android:gravity="center"
+                            android:hint=".sort((o1, o2) => #)"
                             android:minWidth="35dp"
                             android:padding="@null"
                             android:paddingHorizontal="10dp"
@@ -320,8 +327,9 @@
                             style="@style/ImageButtonStyle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:contentDescription=".filter(o2 => )"
+                            android:contentDescription=".filter(o2 => #)"
                             android:gravity="center"
+                            android:hint=".filter(o => #)"
                             android:minWidth="35dp"
                             android:padding="@null"
                             android:paddingHorizontal="10dp"
@@ -333,13 +341,28 @@
                             style="@style/ImageButtonStyle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:contentDescription=".map(o2 => )"
+                            android:contentDescription=".map(o2 => #)"
                             android:gravity="center"
+                            android:hint=".map(o => #)"
                             android:minWidth="35dp"
                             android:padding="@null"
                             android:paddingHorizontal="10dp"
                             android:paddingVertical="5dp"
                             android:text=".map(o => )"
+                            android:textAlignment="center" />
+
+                        <TextView
+                            style="@style/ImageButtonStyle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:contentDescription=".foeEach(o2 => #)"
+                            android:gravity="center"
+                            android:hint=".forEach(o => #)"
+                            android:minWidth="35dp"
+                            android:padding="@null"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="5dp"
+                            android:text=".forEach(o => )"
                             android:textAlignment="center" />
 
                         <TextView

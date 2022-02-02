@@ -39,6 +39,7 @@ import com.finn.androidUtilities.CustomUtility;
 import com.finn.androidUtilities.Helpers;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
@@ -514,6 +515,7 @@ public abstract class CustomCode extends ParentClass {
             js.property("sortType", "undefined");
             js.property("hasFormatting", true);
             js.property("hasHighlight", false);
+            js.property("prettyPrint", true);
             String json = new Gson().toJson(database.videoMap);
             js.property("fullMapJson", json);
 
@@ -700,7 +702,7 @@ public abstract class CustomCode extends ParentClass {
         }
 
         @Override
-        public void showHelpDialog(AppCompatActivity context) {
+        public void showHelpDialog(AppCompatActivity context, @Nullable CustomDialog editDialog) {
             CustomDialog.Builder(context)
                     .setTitle("Hilfe")
                     .setView(R.layout.help_custom_code_video)
@@ -712,6 +714,24 @@ public abstract class CustomCode extends ParentClass {
                                 child.setText(KnowledgeActivity.applyFormatting_text(child.getText()));
                             }
                         });
+
+                        if (editDialog != null) {
+                            EditText editCode = editDialog.findViewById(R.id.dialog_edit_CustomCodeVideo_code);
+                            if (editCode.isFocused()) {
+                                CustomUtility.applyToAllViews(view.findViewById(R.id.help_customCode_video_functions_layout), LinearLayout.class, linearLayout -> {
+                                    if (!linearLayout.getClass().equals(LinearLayout.class))
+                                        return;
+                                    TextView methodNameTextView = (TextView) linearLayout.getChildAt(0);
+                                    methodNameTextView.setOnClickListener(v -> {
+                                        String text = ((TextView) v).getText().toString();
+                                        editCode.getText().insert(editCode.getSelectionStart(), text.replaceAll("(?<=\\()[^)]+(?=\\))", ""));
+                                        editCode.setSelection(editCode.getSelectionStart() - 1);
+                                        customDialog.dismiss();
+                                    });
+                                    methodNameTextView.setTextColor(context.getColorStateList(R.color.clickable_text_color_normal));
+                                });
+                            }
+                        }
 
                         LinearLayout objectsContainer = view.findViewById(R.id.help_customCode_video_objectsContainer);
 
@@ -871,7 +891,7 @@ public abstract class CustomCode extends ParentClass {
 
     public abstract CharSequence applyFormatting(AppCompatActivity context, CharSequence text);
 
-    public abstract void showHelpDialog(AppCompatActivity context);
+    public abstract void showHelpDialog(AppCompatActivity context, @Nullable CustomDialog editDialog);
     /**  <------------------------- Function -------------------------  */
 
 
@@ -929,7 +949,7 @@ public abstract class CustomCode extends ParentClass {
         CustomDialog.Builder(context)
                 .setTitle("CustomCode " + (isAdd ? "Hinzufügen" : "Bearbeiten"))
                 .setView(R.layout.dialog_edit_custom_code)
-                .enableTitleRightButton(R.drawable.ic_help, customDialog1 -> newCustomCode.showHelpDialog(context))
+                .enableTitleRightButton(R.drawable.ic_help, customDialog1 -> newCustomCode.showHelpDialog(context, customDialog1))
                 .setSetViewContent((customDialog, view, reload) -> {
                     TextInputLayout editLayoutName = customDialog.findViewById(R.id.dialog_edit_CustomCodeVideo_name_layout);
                     TextInputLayout editLayoutCode = customDialog.findViewById(R.id.dialog_edit_CustomCodeVideo_code_layout);
@@ -974,23 +994,30 @@ public abstract class CustomCode extends ParentClass {
                         scrollViewMore.setVisibility(normalVisible ? View.VISIBLE : View.GONE);
                     };
                     CustomUtility.GenericInterface<View> applyListener = button -> {
-                        button.setOnClickListener(v -> {
-                            CharSequence text = ((TextView) v).getText();
+                        Utility.DoubleGenericInterface<CharSequence, CharSequence> applyText = (text, cursorText) -> {
                             EditText editText = editLayoutCode.getEditText();
-                            if (editText.isFocused())
+                            if (editText.isFocused()) {
                                 editText.getText().insert(editText.getSelectionStart(), text);
+                                if (CustomUtility.stringExists(cursorText) && !text.equals(cursorText)) {
+                                    int index = cursorText.toString().indexOf("#");
+                                    editText.setSelection(editText.getSelectionStart() - (cursorText.toString().length() - index - 1));
+                                }
+                            }
                             if (((View) buttonsMoreLayout.getParent()).getVisibility() == View.VISIBLE)
                                 switchLayout.run();
+                        };
+
+
+                        button.setOnClickListener(v -> {
+                            CharSequence text = ((TextView) v).getText();
+                            CharSequence cursorText = ((TextView) v).getHint();
+                            applyText.run(text, cursorText);
                         });
                         button.setOnLongClickListener(v -> {
                             CharSequence text = v.getContentDescription();
                             if (!CustomUtility.stringExists(text))
                                 return false;
-                            EditText editText = editLayoutCode.getEditText();
-                            if (editText.isFocused())
-                                editText.getText().insert(editText.getSelectionStart(), text);
-                            if (((View) buttonsMoreLayout.getParent()).getVisibility() == View.VISIBLE)
-                                switchLayout.run();
+                            applyText.run(text.toString().replaceAll("#", ""), text);
                             return true;
                         });
                     };
@@ -1009,7 +1036,7 @@ public abstract class CustomCode extends ParentClass {
                     newCustomCode.setCode(newCode);
                     newCustomCode.setDefaultParams(newParams);
                     JSValue jsValue = newCustomCode.executeCode(context, parseParams(newParams));
-                    String text = jsValue != null ? (jsValue.isString() ? jsValue.toString() : jsValue.toJSON()) : null;
+                    String text = jsValue != null ? (jsValue.isString() ? jsValue.toString() : CustomCode.toJson(jsValue, jsValue.getContext().property("prettyPrint").toBoolean())) : null;
                     if (CustomUtility.stringExists(text)) {
                         CharSequence dialogText;
                         Boolean hasFormatting = jsValue.getContext().property("hasFormatting").toBoolean();
@@ -1029,6 +1056,7 @@ public abstract class CustomCode extends ParentClass {
                                         textTextView.setMovementMethod(LinkMovementMethod.getInstance());
                                     if (!hasHighlight)
                                         textTextView.setLinkTextColor(textTextView.getTextColors());
+                                    Utility.applySelectionSearch(context, CategoriesActivity.CATEGORIES.VIDEO, textTextView);
                                 })
                                 .show();
                     } else
@@ -1185,7 +1213,7 @@ public abstract class CustomCode extends ParentClass {
                                 Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
                             }
                         } else {
-                            String text = jsValue.isString() ? jsValue.toString() : jsValue.toJSON();
+                            String text = jsValue.isString() ? jsValue.toString() : CustomCode.toJson(jsValue, jsValue.getContext().property("prettyPrint").toBoolean());
                             if (CustomUtility.stringExists(text)) {
                                 CharSequence dialogText;
                                 Boolean hasFormatting = jsValue.getContext().property("hasFormatting").toBoolean();
@@ -1196,6 +1224,7 @@ public abstract class CustomCode extends ParentClass {
                                     dialogText = text;
 
                                 TextView textView = new TextView(context);
+                                Utility.applySelectionSearch(context, CategoriesActivity.CATEGORIES.VIDEO, textView);
                                 ScrollView scrollView = new ScrollView(context);
                                 scrollView.addView(textView);
                                 textView.setText(dialogText);
@@ -1271,6 +1300,15 @@ public abstract class CustomCode extends ParentClass {
                 break;
         }
         return code;
+    }
+
+    public static String toJson(JSValue jsValue, boolean pretty) {
+        String json = jsValue.toJSON();
+        if (!pretty)
+            return json;
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        Object o = gson.fromJson(json, Object.class);
+        return gson.toJson(o);
     }
     /**  <------------------------- Convenience -------------------------  */
 

@@ -11,6 +11,7 @@
         android:orientation="vertical">
 
         <LinearLayout
+            android:id="@+id/help_customCode_video_functions_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
@@ -856,6 +857,59 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:text="include(name)"
+                    android:textStyle="bold" />
+
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Importiert den Quellcode von anderen CustomCodes"
+                    android:textSize="12sp"
+                    android:typeface="serif" />
+
+                <TableLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TableRow
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="3dp"
+                            android:text="name:"
+                            android:textSize="12sp"
+                            android:textStyle="italic" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Der Name des CustomCode (muss 'Code' als ReturnType haben)"
+                            android:textSize="12sp" />
+                    </TableRow>
+                </TableLayout>
+
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginVertical="5dp"
+                android:background="?android:attr/listDivider" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:text="getConstants()"
                     android:textStyle="bold" />
 
@@ -933,7 +987,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="#RESULT#, #NAME#, #VIEWS#, #RATING#, #LATEST# (Als String)"
+                        android:text="#RESULT#, #NAME#, #VIEWS#, #RATING#, #LATEST# (Wonach sollen ListResults sortiert werden?) (Als String)"
                         android:textSize="12sp" />
                 </TableRow>
 
@@ -953,7 +1007,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="#true#, #flase# (Soll der Output formatiert werden)"
+                        android:text="#true#, #flase# (Soll der Output formatiert werden?)"
                         android:textSize="12sp" />
                 </TableRow>
 
@@ -974,6 +1028,26 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="#true#, #flase# (Sollen Links im Output gehighlightet werden)"
+                        android:textSize="12sp" />
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="3dp"
+                        android:text="prettyPrint:"
+                        android:textSize="12sp"
+                        android:textStyle="italic" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="#true#, #flase# (Soll JSON output geprettyPrintet werden?)"
                         android:textSize="12sp" />
                 </TableRow>
             </TableLayout>
@@ -1092,6 +1166,26 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Das Skript returned eine List gruppierte Liste: [[GruppenName, [UUIDs], aufgeklappt?]]"
+                        android:textSize="12sp" />
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="3dp"
+                        android:text="Code:"
+                        android:textSize="12sp"
+                        android:textStyle="italic" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Der Code des Skripts kann von anderen CustomCodes importiert werden"
                         android:textSize="12sp" />
                 </TableRow>
 

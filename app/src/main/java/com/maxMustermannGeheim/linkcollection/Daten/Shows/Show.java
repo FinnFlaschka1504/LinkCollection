@@ -158,6 +158,12 @@ public class Show extends ParentClass {
         return this;
     }
 
+    public boolean _isBeforeNextEpisodeAir() {
+        if (nextEpisodeAir == null)
+            return true;
+        return nextEpisodeAir.after(new Date());
+    }
+
     public String getStatus() {
         return status;
     }

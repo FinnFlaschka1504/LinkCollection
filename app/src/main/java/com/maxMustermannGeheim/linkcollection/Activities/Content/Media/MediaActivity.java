@@ -47,6 +47,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.FileProvider;
+import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -55,6 +56,7 @@ import androidx.viewpager.widget.ViewPager;
 import com.afollestad.dragselectrecyclerview.DragSelectReceiver;
 import com.afollestad.dragselectrecyclerview.DragSelectTouchListener;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomList;
@@ -504,7 +506,7 @@ public class MediaActivity extends AppCompatActivity {
             mediaSelectable.toggleSelection();
             if (!checkSelectionStatusAndUpdateToolbarTitle())
                 return this;
-            customRecycler.getAdapter().notifyItemChanged(index);
+            customRecycler.getAdapter().notifyItemChanged(index, "Hi");
             return this;
         }
 
@@ -512,7 +514,7 @@ public class MediaActivity extends AppCompatActivity {
             Selectable<T> selectable = customRecycler.getObjectList().get(index);
             if (selectable.selected != selected) {
                 selectable.selected = selected;
-                customRecycler.getAdapter().notifyItemChanged(index);
+                customRecycler.getAdapter().notifyItemChanged(index, "Hi2");
                 updateToolbarTitle();
             }
         }
@@ -653,6 +655,7 @@ public class MediaActivity extends AppCompatActivity {
 
         final int[] size = new int[1];
         mediaRecycler = new CustomRecycler<MultiSelectHelper.Selectable<Media>>(this, recyclerView)
+                .setMultiClickEnabled(true)
                 .addOptionalModifications(customRecycler -> selectHelper.customRecycler = customRecycler)
                 .setItemLayout(R.layout.list_item_image)
                 .setGetActiveObjectList(customRecycler -> {
@@ -713,6 +716,13 @@ public class MediaActivity extends AppCompatActivity {
             });
         }
 
+//        DefaultItemAnimator animator = new DefaultItemAnimator() {
+//            @Override
+//            public boolean canReuseUpdatedViewHolder(RecyclerView.ViewHolder viewHolder) {
+//                return true;
+//            }
+//        };
+//        recyclerView.setItemAnimator(animator);
         recyclerView.addOnItemTouchListener(dragSelectTouchListener);
     }
 
@@ -1075,7 +1085,6 @@ public class MediaActivity extends AppCompatActivity {
 //            new Handler(Looper.myLooper()).postDelayed(() -> {
 //
 //
-//                // ToDo: pro reingeladenen Foto wird nach oben gescrollt
 //
 //            }, 2000);
 

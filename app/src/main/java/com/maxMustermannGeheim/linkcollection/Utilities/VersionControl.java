@@ -303,7 +303,8 @@ public class VersionControl {
         addChange("3.3", "WatchLists zu Videos hinzugefügt",
                 "Hintergrund zu PNGs hinzugefügt",
                 "App startet nicht ohne Internet gefixt",
-                "CustomCode hinzugefügt");
+                "CustomCode hinzugefügt",
+                "Angesehen Markierungen in Serien überarbeitet");
     };
 
     private static void addChange(String version, String... changes) {

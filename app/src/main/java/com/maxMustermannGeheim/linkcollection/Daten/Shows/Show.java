@@ -59,6 +59,7 @@ public class Show extends ParentClass {
     private Date firstAirDate;
     private boolean inProduction;
     private Date nextEpisodeAir;
+    private String latestEpisode;
     private String status;
     private Date lastUpdated;
     private boolean notifyNew;
@@ -158,12 +159,6 @@ public class Show extends ParentClass {
         return this;
     }
 
-    public boolean _isBeforeNextEpisodeAir() {
-        if (nextEpisodeAir == null)
-            return true;
-        return nextEpisodeAir.after(new Date());
-    }
-
     public String getStatus() {
         return status;
     }
@@ -251,6 +246,40 @@ public class Show extends ParentClass {
     public void setAverageRuntime(int averageRuntime) {
         this.averageRuntime = averageRuntime;
     }
+
+    public String getLatestEpisode() {
+        return latestEpisode;
+    }
+
+    public Show setLatestEpisode(String latestEpisode) {
+        this.latestEpisode = latestEpisode;
+        return this;
+    }
+
+
+    /**  ------------------------- Convenience ------------------------->  */
+    public boolean _isBeforeNextEpisodeAir() {
+        if (nextEpisodeAir == null)
+            return true;
+        return nextEpisodeAir.after(new Date());
+    }
+
+    public boolean _isLatestEpisodeWatched() {
+        if (latestEpisode == null)
+            return false;
+        String[] split = latestEpisode.split("(?<!\\\\)\\|");
+        Episode episode = seasonList.get(Integer.parseInt(split[0])).episodeMap.get("E:" + split[1]);
+        return episode != null && episode.isWatched();
+    }
+
+    public boolean _isLatestSeasonCompleted() {
+        Season lastSeason = seasonList.stream().filter(season -> season.airDate != null && !Utility.isUpcoming(season.airDate)).reduce((first, second) -> second).orElse(null);
+        if (lastSeason == null)
+            return false;
+        Episode episode = lastSeason.episodeMap.get("E:" + lastSeason.episodesCount);
+        return episode != null && episode.isWatched();
+    }
+    /**  <------------------------- Convenience -------------------------  */
 
     @Override
     public Show clone() {

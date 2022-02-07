@@ -40,7 +40,9 @@ import org.json.JSONException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -64,6 +66,7 @@ public class VersionControl {
      * Speicherberechtigungen überprüfen & 'onRequestPermissionsResult' implementieren
      * Sicherstellen, dass die App Pakete installieren darf
      */
+    // ToDo: ABIs unterstüzen
 
     public static void checkForUpdate(Activity activity, boolean visible) {
         if (!Utility.isOnline(activity))
@@ -77,15 +80,27 @@ public class VersionControl {
             Settings.changeSetting(Settings.UPDATE_FILE_NAME, "");
         }
 
+        String snooze = Settings.getSingleSetting(activity, Settings.UPDATE_SNOOZE);
+
+        if (!visible && CustomUtility.stringExists(snooze) && snooze.startsWith("t")) {
+            if (new Date(Long.parseLong(snooze.substring(2))).after(new Date()))
+                return;
+        }
+
         requestQueue = Volley.newRequestQueue(activity);
 
         if (visible)
-            Toast.makeText(activity, "Einen Moment bitte..", Toast.LENGTH_SHORT).show();
+            Toast.makeText(activity, "Einen Moment bitte...", Toast.LENGTH_SHORT).show();
 
         JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, URL_JSON, null, response -> {
             try {
                 final String version = getVersion(activity);
                 final String newVersion = response.getJSONArray("elements").getJSONObject(0).getString("versionName");
+
+                if (!visible && CustomUtility.stringExists(snooze) && snooze.startsWith("v")) {
+                    if (newVersion.equals(snooze.substring(2)))
+                        return;
+                }
 
                 if (compareVersions(version, CustomUtility.isNotNullOrElse(newVersion, "0")) != -1) {
                     if (visible)
@@ -100,13 +115,51 @@ public class VersionControl {
                     CustomDialog.Builder(activity)
                             .setTitle("Update Verfügbar")
                             .setText("Die Version " + newVersion + " steht zum Download bereit. \n(Aktuelle Version: " + version + ")")
+                            .addButton(R.drawable.ic_time, customDialog -> {
+                                CustomDialog.Builder(activity)
+                                        .setTitle("Update Schlummern")
+                                        .addButton("Ein Tag", customDialog1 -> {
+                                            Calendar calendar = Calendar.getInstance();
+                                            calendar.add(Calendar.DAY_OF_MONTH, 1);
+                                            Settings.changeSetting(Settings.UPDATE_SNOOZE, "t:" + CustomUtility.removeTime(calendar.getTime()).getTime());
+                                            Toast.makeText(activity, "Schlummern für einen Tag", Toast.LENGTH_SHORT).show();
+                                            customDialog.dismiss();
+                                        })
+                                        .addButton("Eine Woche", customDialog1 -> {
+                                            Calendar calendar = Calendar.getInstance();
+                                            calendar.add(Calendar.WEEK_OF_YEAR, 1);
+                                            Settings.changeSetting(Settings.UPDATE_SNOOZE, "t:" + CustomUtility.removeTime(calendar.getTime()).getTime());
+                                            Toast.makeText(activity, "Schlummern für eine Woche", Toast.LENGTH_SHORT).show();
+                                            customDialog.dismiss();
+                                        })
+                                        .addButton("Nächstes Update", customDialog1 -> {
+                                            Settings.changeSetting(Settings.UPDATE_SNOOZE, "v:" + newVersion);
+                                            Toast.makeText(activity, "Schlummern für dieses Update", Toast.LENGTH_SHORT).show();
+                                            customDialog.dismiss();
+                                        })
+                                        .addOptionalModifications(customDialog1 -> {
+                                            if (CustomUtility.stringExists(snooze)) {
+                                                customDialog1
+                                                        .addButtonDivider(3)
+                                                        .addButton("Schlummern verwerfen", customDialog3 -> {
+                                                            Toast.makeText(activity, "Schlummern verworfen", Toast.LENGTH_SHORT).show();
+                                                            Settings.changeSetting(Settings.UPDATE_SNOOZE, null);
+                                                            customDialog.dismiss();
+                                                        });
+                                            }
+                                        })
+                                        .disableButtonAllCaps()
+                                        .enableStackButtons()
+                                        .show();
+                            }, false)
+                            .alignPreviousButtonsLeft()
                             .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
                             .addButton("Herunterladen", dialog -> {
                                 if (hasPermissions(activity, true)) {
                                     updateApp(activity, newVersion);
                                     dialog.dismiss();
                                 }
-                            },false)
+                            }, false)
                             .colorLastAddedButton()
                             .show();
 
@@ -304,7 +357,8 @@ public class VersionControl {
                 "Hintergrund zu PNGs hinzugefügt",
                 "App startet nicht ohne Internet gefixt",
                 "CustomCode hinzugefügt",
-                "Angesehen Markierungen in Serien überarbeitet");
+                "Angesehen-Markierungen in Serien überarbeitet",
+                "Updates können geschlummert werden");
     };
 
     private static void addChange(String version, String... changes) {

@@ -592,7 +592,7 @@ public class ShowActivity extends AppCompatActivity {
                         itemView.findViewById(R.id.listItem_show_Views_layout).setVisibility(View.VISIBLE);
                         Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
                         helper.appendColor(show.getAllEpisodesCount() <= watchedEpisodes ? "✓  " : "", getColor(R.color.colorGreen));
-                        if (releasedEpisodes || show.getAllEpisodesCount() <= watchedEpisodes || ((show._isLatestEpisodeWatched() || show._isLatestSeasonCompleted()) && show._isBeforeNextEpisodeAir()))
+                        if (releasedEpisodes || show.getAllEpisodesCount() <= watchedEpisodes || ((show._isLatestEpisodeWatched()/* || show._isLatestSeasonCompleted()*/) && show._isBeforeNextEpisodeAir()))
                             helper.appendColor(String.valueOf(views), getColor(R.color.colorGreen));
                         else
                             helper.append(String.valueOf(views));
@@ -2273,6 +2273,8 @@ String BREAKPOINT = null;
                     show.setInProduction(response.getBoolean("in_production"));
                 if (response.has("next_episode_to_air") && !response.isNull("next_episode_to_air"))
                     show.setNextEpisodeAir(Utility.getDateFromJsonString("air_date", response.getJSONObject("next_episode_to_air")));
+                else
+                    show.setNextEpisodeAir(null);
                 if (response.has("last_episode_to_air") && !response.isNull("last_episode_to_air")) {
                     JSONObject lastEpisode = response.getJSONObject("last_episode_to_air");
                     String lastEpisodeString = String.format(Locale.getDefault(), "%d|%d|%s|%s", lastEpisode.getInt("season_number"), lastEpisode.getInt("episode_number"), lastEpisode.getString("air_date"), lastEpisode.getString("name").replaceAll("\\|", "\\\\|"));

@@ -917,7 +917,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Gibt alle nutzbaren Konstanten aus"
+                    android:text="Gibt alle nutzbaren Konstanten zurück"
                     android:textSize="12sp"
                     android:typeface="serif" />
 

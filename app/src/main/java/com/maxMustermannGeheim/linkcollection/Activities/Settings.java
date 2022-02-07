@@ -144,6 +144,7 @@ public class Settings extends AppCompatActivity {
 
     public static final String LAST_VERSION = "LAST_VERSION";
     public static final String UPDATE_FILE_NAME = "UPDATE_FILE_NAME";
+    public static final String UPDATE_SNOOZE = "UPDATE_SNOOZE";
 
     public static Map<String, String> settingsMap = new HashMap<>();
 
@@ -193,6 +194,7 @@ public class Settings extends AppCompatActivity {
         settingsMap.put(SETTING_SPACE_ENCRYPTION_PASSWORD, SETTING_SPACE_ENCRYPTION_DEFAULT_PASSWORD);
         settingsMap.put(LAST_VERSION, "1.0");
         settingsMap.put(UPDATE_FILE_NAME, "");
+        settingsMap.put(UPDATE_SNOOZE, "");
         settingsMap.put(SETTING_VIDEO_ASK_FOR_GENRE_IMPORT, "true");
         settingsMap.put(SETTING_SHOW_ASK_FOR_GENRE_IMPORT, "true");
         settingsMap.put(SETTING_VIDEO_LOAD_CAST_AND_STUDIOS, "true");

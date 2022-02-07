@@ -10,13 +10,14 @@ android {
         applicationId "com.maxMustermannGeheim.linkcollection"
         minSdkVersion 27
         targetSdkVersion 30
-        versionCode 11
-        versionName "3.2.2"
+        versionCode 12
+        versionName "3.3"
         testInstrumentationRunner "androidx.dialog_poster.runner.AndroidJUnitRunner"
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -24,6 +25,15 @@ android {
         sourceCompatibility = '1.8'
         targetCompatibility = '1.8'
     }
+
+//    splits {
+//        abi {
+//            enable true
+//            reset()
+//            include "arm64-v8a", "x86", "x86_64"
+//            universalApk true
+//        }
+//    }
 }
 
 dependencies {
@@ -84,15 +94,10 @@ dependencies {
     implementation 'com.github.bmelnychuk:atv:1.2.9'
     implementation 'com.github.jakebonk:DraggableTreeView:1.0.1'
     implementation 'me.zhanghai.android.fastscroll:library:1.1.7'
-    implementation 'org.apache.commons:commons-lang3:3.12.0' // obsolet
 
     implementation 'com.github.pchmn:MaterialChipsInput:1.0.8'
     api 'com.theartofdev.edmodo:android-image-cropper:2.8.0'
     implementation 'com.github.LiquidPlayer:LiquidCore:0.6.2'
-
-    compile 'com.fasterxml.jackson.core:jackson-databind:2.8.5'
-    compile 'com.fasterxml.jackson.core:jackson-core:2.8.5'
-    compile 'com.fasterxml.jackson.core:jackson-annotations:2.8.5'
 
     implementation group: 'org.apache-extras.beanshell', name: 'bsh', version: '2.0b6'
     implementation group: 'com.google.guava', name: 'guava', version: '28.2-android'

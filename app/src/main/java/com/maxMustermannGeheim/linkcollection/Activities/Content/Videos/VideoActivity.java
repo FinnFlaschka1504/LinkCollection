@@ -83,6 +83,7 @@ import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.MinDimensionLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -206,6 +207,7 @@ public class VideoActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         Settings.startSettings_ifNeeded(this);
+        ExternalCode.initialize_ifNecessary(this);
         String stringExtra = Settings.getSingleSetting(this, Settings.SETTING_SPACE_NAMES_ + Settings.Space.SPACE_VIDEO);
         if (stringExtra != null) {
             String[] singPlur = stringExtra.split("\\|");

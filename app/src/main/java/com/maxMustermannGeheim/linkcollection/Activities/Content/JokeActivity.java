@@ -32,6 +32,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.finn.androidUtilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
@@ -106,6 +107,7 @@ public class JokeActivity extends AppCompatActivity {
             setContentView(R.layout.activity_joke);
 
         Settings.startSettings_ifNeeded(this);
+        ExternalCode.initialize_ifNecessary(this);
         mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
         loadDatabase();

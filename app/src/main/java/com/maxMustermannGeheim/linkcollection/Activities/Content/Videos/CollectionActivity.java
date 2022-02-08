@@ -46,6 +46,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
 import org.jetbrains.annotations.NotNull;
@@ -119,6 +120,7 @@ public class CollectionActivity extends AppCompatActivity {
             setContentView(R.layout.activity_collection);
 
         Settings.startSettings_ifNeeded(this);
+        ExternalCode.initialize_ifNecessary(this);
         mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
         loadDatabase();

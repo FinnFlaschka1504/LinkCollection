@@ -50,6 +50,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tree;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.finn.androidUtilities.FastScrollRecyclerViewHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -127,6 +128,7 @@ public class MediaEventActivity extends AppCompatActivity {
 
 
         Settings.startSettings_ifNeeded(this);
+        ExternalCode.initialize_ifNecessary(this);
         singular = "Event";
         plural = "Events";
 

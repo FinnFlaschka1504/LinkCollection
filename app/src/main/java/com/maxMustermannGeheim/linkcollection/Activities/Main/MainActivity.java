@@ -55,6 +55,7 @@ import com.maxMustermannGeheim.linkcollection.Utilities.CustomInternetHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomPopupWindow;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.maxMustermannGeheim.linkcollection.Utilities.VersionControl;
@@ -143,6 +144,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         mySPR_settings = getSharedPreferences(SHARED_PREFERENCES_SETTINGS, MODE_PRIVATE);
 
         Settings.startSettings_ifNeeded(this);
+        ExternalCode.initialize_ifNecessary(this);
 
         if (Database.exists())
             Database.removeDatabaseReloadListener(null);

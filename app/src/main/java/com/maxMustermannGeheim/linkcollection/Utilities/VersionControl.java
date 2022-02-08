@@ -369,6 +369,7 @@ public class VersionControl {
 
     public static void showChangeLog(AppCompatActivity activity, boolean force) {
         Settings.startSettings_ifNeeded(activity);
+        ExternalCode.initialize_ifNecessary(activity);
 
         String lastVersion = Settings.settingsMap.get(Settings.LAST_VERSION);
         String version = getVersion(activity);

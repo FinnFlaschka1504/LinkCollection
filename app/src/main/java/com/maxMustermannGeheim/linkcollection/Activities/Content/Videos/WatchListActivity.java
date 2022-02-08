@@ -57,6 +57,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.WatchList;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.ImageCropUtility;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -103,6 +104,7 @@ public class WatchListActivity extends AppCompatActivity {
         setContentView(R.layout.activity_watch_list);
 
         Settings.startSettings_ifNeeded(this);
+        ExternalCode.initialize_ifNecessary(this);
         singular = CategoriesActivity.CATEGORIES.WATCH_LIST.getSingular();
         plural = CategoriesActivity.CATEGORIES.WATCH_LIST.getPlural();
 

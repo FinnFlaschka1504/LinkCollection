@@ -51,6 +51,7 @@ import com.maxMustermannGeheim.linkcollection.R;
 import com.finn.androidUtilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
@@ -126,6 +127,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
             setContentView(R.layout.activity_owe);
 
         Settings.startSettings_ifNeeded(this);
+        ExternalCode.initialize_ifNecessary(this);
         mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
 

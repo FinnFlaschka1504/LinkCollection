@@ -79,6 +79,7 @@ import com.maxMustermannGeheim.linkcollection.Utilities.CustomScrollGallary.Cust
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomScrollGallary.CustomVideoLoader;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.finn.androidUtilities.FastScrollRecyclerViewHelper;
+import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.veinhorn.scrollgalleryview.HackyViewPager;
@@ -179,6 +180,7 @@ public class MediaActivity extends AppCompatActivity {
         }
 
         Settings.startSettings_ifNeeded(this);
+        ExternalCode.initialize_ifNecessary(this);
         String stringExtra = Settings.getSingleSetting(this, Settings.SETTING_SPACE_NAMES_ + Settings.Space.SPACE_MEDIA);
         if (stringExtra != null) {
             String[] singPlur = stringExtra.split("\\|");

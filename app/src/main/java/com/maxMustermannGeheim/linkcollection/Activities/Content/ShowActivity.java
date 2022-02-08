@@ -64,6 +64,7 @@ import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.ImageAdapt
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.MinDimensionLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -74,6 +75,8 @@ import org.joda.time.LocalDate;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.liquidplayer.javascript.JSContext;
+import org.liquidplayer.javascript.JSValue;
 
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
@@ -160,6 +163,7 @@ public class ShowActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         Settings.startSettings_ifNeeded(this);
+        ExternalCode.initialize_ifNecessary(this);
         String stringExtra = Settings.getSingleSetting(this, Settings.SETTING_SPACE_NAMES_ + Settings.Space.SPACE_SHOW);
         if (stringExtra != null) {
             String[] singPlur = stringExtra.split("\\|");
@@ -2447,8 +2451,13 @@ String BREAKPOINT = null;
         final int[] counter = {0};
         List<String> resultList = new ArrayList<>();
         Helpers.WebViewHelper helper = new Helpers.WebViewHelper(this, urls)
+                .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.87 Safari/537.36")
                 .addRequest("document.querySelector(\"[data-testid='hero-title-block__metadata']\").innerText", s -> {
+                    JSContext jsContext = new JSContext();
+                    jsContext.property("text", s);
+//                    JSValue result = jsContext.evaluateScript();
                     boolean found = false;
+
                     for (String sub : s.split("\\\\n")) {
                         if (sub.matches("^\\d{1,2}$|^TV-(Y|G|Y7|PG|14|MA)$")) {
                             episodeList.get(counter[0]).setAgeRating(sub);

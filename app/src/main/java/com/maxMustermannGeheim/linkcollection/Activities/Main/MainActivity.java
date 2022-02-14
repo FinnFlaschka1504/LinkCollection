@@ -47,7 +47,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.Collecti
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.WatchListActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
-import com.maxMustermannGeheim.linkcollection.Daten.CustomCode;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomCode;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
@@ -162,7 +162,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
 
 //        List<String> imageUrlsFromHtml = Utility.getImageUrlsFromText(WebisteHtml.websiteHtml);
         String BREAKPOINT = null;
-
+        
 //        ImageView imageView = new ImageView(this);
 //        CustomDialog.Builder(this)
 //                .setTitle("Local Image Test")
@@ -617,7 +617,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                         .dismissOnClick();
 
                 customMenu.setPopupWindow(CustomPopupWindow.Builder(findViewById(R.id.main_bottom_navigation), customMenu.buildRecyclerView().generateRecyclerView())
-                        .setPositionRelativeToAnchor(CustomPopupWindow.POSITION_RELATIVE_TO_ANCHOR.TOP_RIGHT)
+                        .setPositionRelativeToAnchor(CustomPopupWindow.POSITION_RELATIVE_TO_ANCHOR.ON_TOP_RIGHT)
                         .show_popupWindow());
 
                 return false;

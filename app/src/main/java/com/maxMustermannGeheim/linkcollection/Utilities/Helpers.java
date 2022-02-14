@@ -1274,30 +1274,26 @@ public class Helpers {
             Utility.runGenericInterface(setSettings, settings);
 
             webView.setWebViewClient(new WebViewClient() {
-//                @Override
-//                public void onPageStarted(WebView view, String url, Bitmap favicon) {
-//                    isRedirekted = false;
-////                    super.onPageStarted(view, url, favicon);
-//                }
-//
-//                @Override
-//                public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-//                    isRedirekted = true;
-//                    view.loadUrl(request.getUrl().toString());
-//                    return true;
-////                    return super.shouldOverrideUrlLoading(view, request);
-//                }
-
                 @Override
                 public void onPageFinished(WebView view, String url) { // ToDo: https://stackoverflow.com/questions/18282892/android-webview-onpagefinished-called-twice
-                    if (!dialogCanceled /*&& !isRedirekted && !alreadyLoaded*/ && view.getProgress() == 100) { // && openJs != 0 && ) {
-//                        alreadyLoaded = true;
-                        if (executeBeforeJavaScript == null)
-                            onPageLoaded();
-                        else
-                            executeBeforeJavaScript();
+//                    boolean earlyExecution = false;
+//                    CustomUtility.logD(null, "onPageFinished: %d", view.getProgress());
+                    if (!dialogCanceled && !alreadyLoaded) {
+                        if (view.getProgress() == 100) {
+//                            CustomUtility.logTiming("WEB", false);
+                            alreadyLoaded = true;
+                            if (executeBeforeJavaScript == null)
+                                onPageLoaded();
+                            else
+                                executeBeforeJavaScript();
+                        } /*else {
+                            CustomUtility.logTiming("WEB", true);
+                            view.evaluateJavascript("document.querySelector(\"[data-testid='hero-title-block__metadata']\").innerText;", value -> {
+                                CustomUtility.logTiming("WEB", true);
+                                CustomUtility.logD(null, "onPageFinished: %s", value);
+                            });
+                        }*/
                     }
-//                    super.onPageFinished(view, url);
                 }
             });
 
@@ -1311,6 +1307,7 @@ public class Helpers {
             if (destroyed) return;
             openJs = requestList.size();
             alreadyLoaded = false;
+//            CustomUtility.logTiming("WEB", null);
             webView.loadUrl(urls[urlsIndex]);
             urlsIndex++;
         }
@@ -1344,14 +1341,6 @@ public class Helpers {
 
         private void evaluateJavaScript(String rawScript, Utility.GenericInterface<String> onParseResult, Runnable onComplete, int tryCount) {
             if (destroyed) return;
-            String script = rawScript; // ToDo: scriptTag
-            if (script.startsWith("{") && script.endsWith("}")) {
-                script = "(function() " + script + ")();";
-
-            } else {
-                if (!script.endsWith(";"))
-                    script += ";";
-            }
 
             Runnable onSuccess = () -> {
                 if (openJs <= 1) {
@@ -1375,17 +1364,17 @@ public class Helpers {
                 }
             };
 
-
-            webView.evaluateJavascript(script, t -> {
+            webView.evaluateJavascript(WebViewHelper.wrapScript(rawScript), result -> {
                 if (destroyed) return;
                 if (onParseResult != null) {
-                    if (t.startsWith("\"") && t.endsWith("\""))
-                        t = Utility.subString(t, 1, -1);
 
-                    if (t.matches("null") && tryCount < 50) {
+                    boolean isNull = result.matches("null");
+                    if (isNull && tryCount < 10) {
                         new Handler().postDelayed(() -> evaluateJavaScript(rawScript, onParseResult, onComplete, tryCount + 1), 100);
                     } else {
-                        onParseResult.run(t + (tryCount < 50 ? "" : " (" + tryCount + ")"));
+                        if (result.startsWith("\"") && result.endsWith("\""))
+                            result = new Gson().fromJson(result, Object.class).toString();
+                        onParseResult.run(isNull ? "<!NO_RESULT!>" : result);
                         onSuccess.run();
                     }
                 } else
@@ -1582,6 +1571,16 @@ public class Helpers {
 
 
         //  ------------------------- Convenience ------------------------->
+        public static String wrapScript(String script) {
+            if (script.startsWith("{") && script.endsWith("}")) {
+                script = "(function() " + script + ")();";
+            } else {
+                if (!script.endsWith(";"))
+                    script += ";";
+            }
+            return script;
+        }
+
         public WebViewHelper addOptional(Utility.GenericInterface<WebViewHelper> addOptional) {
             addOptional.run(this);
             return this;

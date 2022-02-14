@@ -22,10 +22,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ExternalCode {
     public enum ENTRY {
-        GET_IMDB_EPISODE_DETAILS("getImdbEpisodeDetails");
+        GET_IMDB_EPISODE_DETAILS("getImdbEpisodeDetails"),
+        GET_NEXT_EPISODE_IMDB_ID("getNextEpisodeImdbId"),
+        GET_SEASON_IMDB_IDS("getSeasonImdbIds"),
+        GET_WER_STREAMT_ES("getWerStreamtEs"),
+        ;
 
         String name;
 
@@ -45,16 +50,19 @@ public class ExternalCode {
     private static SharedPreferences sharedPreferences;
     public static final String EXTERNAL_CODE = "EXTERNAL_CODE";
 
-    public static void applyEntries() {
-        Arrays.stream(ENTRY.values()).forEach(entry -> codeEntryMap.put(entry, new CodeEntry(entry)));
+    /**  ------------------------- Initialization ------------------------->  */
+    private static void applyEntries() {
+        Arrays.stream(ENTRY.values()).forEach(entry -> codeEntryMap.putIfAbsent(entry, new CodeEntry(entry)));
     }
 
     public static boolean initialize_ifNecessary(AppCompatActivity context) {
-        if (initialized && CustomUtility.isOnline())
+        if (initialized || !CustomUtility.isOnline())
             return false;
 
         sharedPreferences = context.getSharedPreferences(EXTERNAL_CODE, Context.MODE_PRIVATE);
-        applyEntries(); // ToDo: aus Shared Preferences laden und dann mit defaults mergen
+        loadEntries(context);
+        applyEntries();
+        saveEntries(context);
 
         getJsonObject(context, URL_VERSIONS, jsonObject -> {
             initialized = true;
@@ -66,41 +74,45 @@ public class ExternalCode {
                         CustomUtility.logD(null, "initialize_ifNecessary: %s needs Update", codeEntry.entry.name);
                     }
                 } catch (JSONException e) {
-                    CustomUtility.logD(null, "initialize_ifNecessary e1: %s", e.getMessage());
+                    CustomUtility.logD(null, "initialize_ifNecessary <json err.>: %s", e.getMessage());
                     Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             }
             if (!updateList.isEmpty())
                 fetchUpdates(context, updateList);
         }, volleyError -> {
-            CustomUtility.logD(null, "initialize_ifNecessary e2: %s", volleyError.getMessage());
+            CustomUtility.logD(null, "initialize_ifNecessary <volley err.>: %s", volleyError.getMessage());
             Toast.makeText(context, volleyError.getMessage(), Toast.LENGTH_SHORT).show();
         });
         return true;
     }
 
-    public static void fetchUpdates(AppCompatActivity context, List<CodeEntry> updateList) {
+    private static void fetchUpdates(AppCompatActivity context, List<CodeEntry> updateList) {
         getJsonObject(context, URL_SNIPPETS, resultObject -> {
-            try {
-                for (CodeEntry codeEntry : updateList) {
+            for (CodeEntry codeEntry : updateList) {
+                try {
                     JSONObject jsonObject = resultObject.getJSONObject(codeEntry.entry.name);
                     codeEntry.version = jsonObject.getInt("version");
                     codeEntry.code = jsonObject.getJSONObject("code");
-                    Gson gson = new Gson();
-                    String json = gson.toJson(codeEntry);
-                    CustomUtility.logD(null, "fetchUpdates: %s", json);
-                    CustomUtility.logD(null, "fetchUpdates: %s", gson.fromJson(json, CodeEntry.class).code);
+                    CustomUtility.logD(null, "fetchUpdates: %s", codeEntry.entry.name);
+                } catch (JSONException e) {
+                    CustomUtility.logD(null, "fetchUpdates: <err.> %s: %s", codeEntry.entry.name, e.getMessage());
                 }
-            } catch (JSONException e) {
-                e.printStackTrace();
             }
+            saveEntries(context);
         }, volleyError -> {
             CustomUtility.logD(null, "fetchUpdates e2: %s", volleyError.getMessage());
             Toast.makeText(context, volleyError.getMessage(), Toast.LENGTH_SHORT).show();
         });
     }
+    /**  <------------------------- Initialization -------------------------  */
+
 
     /** ------------------------- Convenience -------------------------> */
+    public static CodeEntry getEntry(ENTRY entry) {
+        return codeEntryMap.get(entry);
+    }
+
     public static void getJsonObject(AppCompatActivity context, String url, CustomUtility.GenericInterface<JSONObject> onResult, @Nullable CustomUtility.GenericInterface<VolleyError> onError) {
         RequestQueue requestQueue = Volley.newRequestQueue(context);
 
@@ -110,8 +122,39 @@ public class ExternalCode {
 
         requestQueue.add(jsonArrayRequest);
     }
-
     /** <------------------------- Convenience ------------------------- */
+
+
+
+    /** ------------------------- Save and Load -------------------------> */
+    private static void saveEntries(AppCompatActivity context) {
+        if (sharedPreferences == null)
+            sharedPreferences = context.getSharedPreferences(EXTERNAL_CODE, Context.MODE_PRIVATE);
+
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        Gson gson = new Gson();
+        for (CodeEntry entry : codeEntryMap.values()) {
+            String json = gson.toJson(entry);
+            editor.putString(entry.entry.name, json);
+        }
+        editor.apply();
+    }
+
+    private static void loadEntries(AppCompatActivity context) {
+        if (sharedPreferences == null)
+            sharedPreferences = context.getSharedPreferences(EXTERNAL_CODE, Context.MODE_PRIVATE);
+
+        Gson gson = new Gson();
+        for (Map.Entry<String, ?> sprEntry : sharedPreferences.getAll().entrySet()) {
+            Object value = sprEntry.getValue();
+            if (value instanceof String) {
+                String json = (String) value;
+                CodeEntry codeEntry = gson.fromJson(json, CodeEntry.class);
+                codeEntryMap.put(codeEntry.entry, codeEntry);
+            }
+        }
+    }
+    /** <------------------------- Save and Load ------------------------- */
 
     public static class CodeEntry {
         public ENTRY entry;
@@ -121,15 +164,20 @@ public class ExternalCode {
         public CodeEntry(ENTRY entry) {
             this.entry = entry;
         }
+
+        /** ------------------------- Convenience -------------------------> */
+        public String getString(String key) {
+            return getString(key, "{}");
+        }
+
+        /** ------------------------- Convenience -------------------------> */
+        public String getString(String key, String defaultValue) {
+            try {
+                return code.getString(key);
+            } catch (JSONException e) {
+                return defaultValue;
+            }
+        }
+        /**  <------------------------- Convenience -------------------------  */
     }
 }
-
-
-/**
- * 2 Datein:
- * 1. Datei über Versionen
- * 2. Datei mit Code
- * <p>
- * Versionen:
- * Objekt mit Namen und deren Version
- */

@@ -57,7 +57,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity
 import com.maxMustermannGeheim.linkcollection.Activities.Main.DialogActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.BuildConfig;
-import com.maxMustermannGeheim.linkcollection.Daten.CustomCode;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomCode;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
@@ -1164,6 +1164,7 @@ public class Settings extends AppCompatActivity {
 
                         Utility.restartApp(this);
                     }, false)
+                    .markLastAddedButtonAsActionButton()
                     .show();
         };
 
@@ -1178,7 +1179,6 @@ public class Settings extends AppCompatActivity {
                     .enableTitleBackButton()
                     .disableButtonAllCaps()
                     .enableStackButtons()
-                    .enableButtonDividerAll()
                     .show();
         });
 
@@ -1655,87 +1655,87 @@ public class Settings extends AppCompatActivity {
     //  <------------------------- language -------------------------
 
 
-    //  ------------------------- Export and Import Settings ------------------------->
-    private String saveSharedPreferences(SharedPreferences sharedPreferences) {
-        File myPath = new File(Environment.getExternalStorageDirectory().toString());
-        File myFile = new File(myPath, String.format("SecondMind Settings Export %s.txt", Utility.formatDate("yyyy-MM-dd-HH-mm-ss", new Date())));
-
-        try
-        {
-            FileWriter fw = new FileWriter(myFile);
-            PrintWriter pw = new PrintWriter(fw);
-
-            pw.println(new GsonBuilder().setPrettyPrinting().create().toJson(settingsMap));
-
-            pw.close();
-            fw.close();
-            
-            return myFile.getAbsolutePath();
-        }
-        catch (Exception e)
-        {
-            Log.wtf(getClass().getName(), e.toString());
-            return null;
-        }
+    //  ------------------------- Export and Import ------------------------->
+    private void showExportImportDialog() {
+        CustomDialog.Builder(this)
+                .setTitle("Exportieren/ Importieren")
+                .setText("Möchtest du die Einstellungen/ Datenbank Exportieren, oder Importieren?")
+                .addButton("Einstellungen Exportieren", customDialog -> exportSettings())
+                .addButton("Einstellungen Importieren", customDialog -> importSettings(null))
+                .addButtonDivider(5)
+                .addButton("Datenbank Exportieren", customDialog -> exportDatabase())
+                .addButton("Datenbank Importieren", customDialog -> importDatabase(null))
+                .enableStackButtons()
+                .show();
     }
+
+    @SafeVarargs
+    public final void writeToFile(String fileName, String content, CustomUtility.GenericInterface<String>... onWritten_onError) {
+        Thread thread = new Thread(() -> {
+            File myPath = new File(Environment.getExternalStorageDirectory().toString());
+            File myFile = new File(myPath, fileName);
+
+            try {
+                FileWriter fw = new FileWriter(myFile);
+                PrintWriter pw = new PrintWriter(fw);
+
+                pw.print(content);
+
+                pw.close();
+                fw.close();
+
+                runOnUiThread(() -> CustomUtility.runVarArgGenericInterface(0, myFile.getAbsolutePath(), onWritten_onError));
+            } catch (Exception e) {
+                Log.e(getClass().getName(), e.toString());
+            }
+        });
+        thread.setPriority(Thread.MIN_PRIORITY);
+        thread.start();
+    }
+
+    private void showOpenResultDialog(String exportPath) {
+        CustomDialog.Builder(this)
+                .setTitle("Export Erfolgreich")
+                .setText("Die Date wurde in: '" + exportPath + "' gespeichert")
+                .addButton("OK")
+                .addButton("Öffnen", customDialog1 -> {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW);
+                        Uri uri = FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID + ".provider", new File(exportPath));
+                        intent.setDataAndType(uri, "text/plain");
+                        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        startActivity(intent);
+                    } catch (ActivityNotFoundException e) {
+                        Toast.makeText(this, "Datei konnte nicht geöffnet werden", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .markLastAddedButtonAsActionButton()
+                .show();
+    }
+
+    // ---------------
+
+    private void exportDatabase() {
+        // ToDo: Exportierte Daten auch verschlüsseln?
+        Map<String, Object> map = database.getSimpleContentMap(true, true);
+        String json = new GsonBuilder().setPrettyPrinting().create().toJson(map);
+        writeToFile(String.format("SecondMind Database Export %s.txt", Utility.formatDate("yyyy-MM-dd-HH-mm-ss", new Date())),
+                json, this::showOpenResultDialog, s -> Toast.makeText(this, s, Toast.LENGTH_SHORT).show());
+    }
+
+    private void importDatabase(@Nullable Uri uri) {
+        Toast.makeText(this, "ToDo", Toast.LENGTH_SHORT).show();
+    }
+
+    // ---------------
 
     private void exportSettings() {
-        String exportPath = saveSharedPreferences(mySPR_settings);
-        if (CustomUtility.stringExists(exportPath))
-            CustomDialog.Builder(this)
-                    .setTitle("Export Erfolgreich")
-                    .setText("Die Date wurde in: '" + exportPath + "' gespeichert")
-                    .addButton("OK")
-                    .addButton("Öffnen", customDialog1 -> {
-                        try {
-                            Intent intent = new Intent(Intent.ACTION_VIEW);
-                            Uri uri = FileProvider.getUriForFile(this, BuildConfig.APPLICATION_ID + ".provider", new File(exportPath));
-                            intent.setDataAndType(uri, "text/plain");
-                            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                            startActivity(intent);
-                        } catch (ActivityNotFoundException e) {
-                            Toast.makeText(this, "Datei konnte nicht geöffnet werden", Toast.LENGTH_SHORT).show();
-                        }
-                    })
-                    .markLastAddedButtonAsActionButton()
-                    .show();
-        else
-            Toast.makeText(this, "Fehler beim Exportieren", Toast.LENGTH_SHORT).show();
+        writeToFile(String.format("SecondMind Settings Export %s.txt", Utility.formatDate("yyyy-MM-dd-HH-mm-ss", new Date())),
+                new GsonBuilder().setPrettyPrinting().create().toJson(settingsMap),
+                this::showOpenResultDialog, s -> Toast.makeText(this, s, Toast.LENGTH_SHORT).show());
     }
 
-
-//    private void importSettings() {
-////        CustomDialog.Builder(this)
-////                .setTitle("Einstellungen Als Text Einfügen")
-////                .setEdit(new CustomDialog.EditBuilder().setHint("Einstellungs-Text einfügen")) //.setInputType(Helpers.TextInputHelper.INPUT_TYPE.MULTI_LINE))
-//////                .setSetViewContent((customDialog, view, reload) -> {
-//////                    ((EditText) customDialog.findViewById(R.id.dialog_custom_edit)).setMaxLines(15);
-//////                })
-////                .addButton("OK")
-////                .addButton("Importieren", customDialog -> {
-////                    String text = customDialog.getEditText();
-//////                    for (String line : text.split("\n")) {
-//////                        String[] split = line.split(":", 2);
-//////                        if (settingsMap.containsKey(split[0]))
-//////                            settingsMap.put(split[0], split[1]);
-//////                    }
-////                    settingsMap = new Gson().fromJson(text, TypeToken.getParameterized(HashMap.class, String.class, String.class).getType());
-////                    saveSettings();
-////
-////                    Toast.makeText(this, "Einstellungen erfolgreich importiert", Toast.LENGTH_SHORT).show();
-////
-////                    Utility.restartApp(this);
-////                })
-////                .colorLastAddedButton()
-////                .show();
-////
-////        if (true)
-////            return;
-//        ActivityResultHelper.addFileChooserRequest(this, "text/plain", o -> importSettings(((Intent) o).getData()), o -> Toast.makeText(this, "Abgebrochen", Toast.LENGTH_SHORT).show());
-//    }
-
-
-    private void importSettings(Uri uri) {
+    private void importSettings(@Nullable Uri uri) {
         if (uri == null) {
             ActivityResultHelper.addFileChooserRequest(this, "text/plain", o -> importSettings(((Intent) o).getData()), o -> Toast.makeText(this, "Abgebrochen", Toast.LENGTH_SHORT).show());
             return;
@@ -1782,7 +1782,7 @@ public class Settings extends AppCompatActivity {
 //            Toast.makeText(this, "Fehler", Toast.LENGTH_SHORT).show();
 //        }
     }
-    //  <------------------------- Export and Import Settings -------------------------
+    //  <------------------------- Export and Import -------------------------
 
 
     //  ------------------------- Encryption ------------------------->
@@ -1832,18 +1832,7 @@ public class Settings extends AppCompatActivity {
         int id = item.getItemId();
         switch (id) {
             case R.id.taskBar_settings_exportImport:
-                CustomDialog.Builder(this)
-                        .setTitle("Einstellungen Exportieren/ Importieren")
-                        .setText("Möchtest du die Einstellungen Exportieren, oder Importieren?")
-                        .addButton("Exportieren", customDialog -> {
-                            exportSettings();
-                        })
-                        .addButton("Importieren", customDialog -> {
-                            importSettings(null);
-                        })
-                        .enableExpandButtons()
-                        .show();
-
+                showExportImportDialog();
                 break;
 
             case android.R.id.home:

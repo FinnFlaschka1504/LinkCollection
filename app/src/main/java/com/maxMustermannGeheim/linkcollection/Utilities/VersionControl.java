@@ -359,6 +359,7 @@ public class VersionControl {
                 "CustomCode hinzugefügt",
                 "Angesehen-Markierungen in Serien überarbeitet",
                 "Updates können geschlummert werden");
+        addChange("3.4", "ExternalCode hinzugefügt");
     };
 
     private static void addChange(String version, String... changes) {

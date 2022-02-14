@@ -15,10 +15,12 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
+import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.scottyab.aescrypt.AESCrypt;
 
+import org.jetbrains.annotations.Nullable;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -617,15 +619,9 @@ public class Show extends ParentClass {
                     Toast.makeText(context, "Work in Progress", Toast.LENGTH_SHORT).show();
                     break;
                 case SEASON:
+                    ExternalCode.CodeEntry codeEntrySeason = ExternalCode.getEntry(ExternalCode.ENTRY.GET_SEASON_IMDB_IDS);
                     new Helpers.WebViewHelper(context, "https://www.imdb.com/title/" + show.getImdbId() + "/episodes?season=" + seasonNumber)
-                            .addRequest(
-                                    "{\n" +
-                                            "    var episodeIdList = new Array();\n" +
-                                            "    document.getElementsByClassName(\"list detail eplist\")[0].children.forEach(function test(value) {\n" +
-                                            "        episodeIdList.push(value.getElementsByClassName(\"image\")[0].children[0].getAttribute(\"href\").split(\"/\")[2]);\n" +
-                                            "    });\n" +
-                                            "    return episodeIdList;\n" +
-                                            "}", s -> {
+                            .addRequest(codeEntrySeason.getString("getIdsApp"), s -> {
                                         com.finn.androidUtilities.CustomList<String> imdbIdList = Season._getImdbIdBuffer_List(s);
                                         season.setImdbIdBuffer(s);
                                         Map<String, Episode> episodeMap;
@@ -658,8 +654,9 @@ public class Show extends ParentClass {
                         previousEpisode = previousSeason.getEpisodeMap().get("E:" + previousSeason.episodesCount);
                     }
                     if (previousEpisode != null && Utility.isImdbId(previousEpisode.getImdbId())) {
-                        new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper(context, "https://www.imdb.com/title/" + previousEpisode.getImdbId())
-                                .addRequest("document.querySelector(\"[title='Next episode'\").getAttribute(\"href\")", s -> {
+                        ExternalCode.CodeEntry codeEntryPrevious = ExternalCode.getEntry(ExternalCode.ENTRY.GET_NEXT_EPISODE_IMDB_ID);
+                        new Helpers.WebViewHelper(context, "https://www.imdb.com/title/" + previousEpisode.getImdbId())
+                                .addRequest(codeEntryPrevious.getString("getIdApp"), s -> {
                                     Matcher matcher = Pattern.compile(Utility.imdbPattern).matcher(s);
                                     if (matcher.find()) {
                                         imdbId = matcher.group(0);
@@ -718,11 +715,32 @@ public class Show extends ParentClass {
         }
 
 
+        /** ------------------------- Convenience -------------------------> */
+        @Nullable
+        public Episode _getPrevious_ifLoaded() {
+            // ToDo: wenn nicht gefunden vielleicht auch in tempMap nachgucken
+            //  & nextEpisode
+            Database database = Database.getInstance();
+            Show show = database.showMap.get(showId);
+            Season season;
+            if (episodeNumber == 1) {
+                if (seasonNumber == 1)
+                    return null;
+                season = show.getSeasonList().get(seasonNumber - 1);
+                return season.episodeMap.get("E:" + season.episodesCount);
+            } else {
+                season = show.getSeasonList().get(seasonNumber);
+                return season.episodeMap.get("E:" + (episodeNumber - 1));
+            }
+        }
+        /**  <------------------------- Convenience -------------------------  */
+
         //  ------------------------- Encryption ------------------------->
         @Override
         public boolean encrypt(String key) {
             try {
                 if (Utility.stringExists(stillPath)) stillPath = AESCrypt.encrypt(key, stillPath);
+                if (Utility.stringExists(imdbId)) imdbId = AESCrypt.encrypt(key, imdbId);
             } catch (GeneralSecurityException e) {
                 return false;
             }
@@ -733,6 +751,7 @@ public class Show extends ParentClass {
         public boolean decrypt(String key) {
             try {
                 if (Utility.stringExists(stillPath)) stillPath = AESCrypt.decrypt(key, stillPath);
+                if (Utility.stringExists(imdbId)) imdbId = AESCrypt.decrypt(key, imdbId);
             } catch (GeneralSecurityException e) {
                 return false;
             }

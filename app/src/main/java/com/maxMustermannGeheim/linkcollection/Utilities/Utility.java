@@ -1141,22 +1141,10 @@ public class Utility {
     // --------------- WerStreamtEs
 
     public static void doWerStreamtEsRequest(AppCompatActivity context, String query){
+        ExternalCode.CodeEntry codeEntry = ExternalCode.getEntry(ExternalCode.ENTRY.GET_WER_STREAMT_ES);
         new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper(context, "https://www.werstreamt.es/filme-serien/?q=" + query.replaceAll(" ", "+"))
                 .enableLoadImages()
-                .addRequest("{\n" +
-                        "    let results = [...document.querySelectorAll(\".content li:not(.ueJf)\")];\n" +
-                        "    resObjList = [];\n" +
-                        "    for (result of results) {\n" +
-                        "        resObj = {};\n" +
-                        "        resObj[\"id\"] = result.getAttribute(\"data-contentid\");\n" +
-                        "        resObj[\"href\"] = result.querySelector(\"a\").href;\n" +
-                        "        resObj[\"img\"] = result.querySelector(\"img\").src;\n" +
-                        "        resObj[\"name\"] = result.querySelector(\"strong\").innerText;\n" +
-                        "        resObj[\"provider\"] = JSON.parse(result.dataset.avastatus);\n" +
-                        "        resObjList.push(resObj);\n" +
-                        "    };\n" +
-                        "    return resObjList\n" +
-                        "}", s -> {
+                .addRequest(codeEntry.getString("getProviderApp"), s -> {
                     try {
                         JSONArray resArr = new JSONArray(s);
                         List<JSONObject> resList = new ArrayList<>();
@@ -1799,7 +1787,7 @@ public class Utility {
             }
         }
 
-        final Date[] selectedDate = {removeTime(new Date())};
+//        final Date[] selectedDate = {removeTime(new Date())};
         calendarView.setListener(new CompactCalendarView.CompactCalendarViewListener() {
             @Override
             public void onDayClick(Date dateClicked) {
@@ -1827,8 +1815,22 @@ public class Utility {
         layout.findViewById(R.id.dialog_editViews_add).setOnClickListener(view -> {
             if (currentDate.equals(Utility.removeTime(new Date())))
                 episode.addDate(new Date(), true);
-            else
-                episode.addDate(currentDate, false);
+            else {
+                Show.Episode previousEpisode = episode._getPrevious_ifLoaded();
+                if (previousEpisode != null) {
+                    Optional<Date> previousDate = previousEpisode.getDateList().stream().filter(date -> Utility.removeTime(date).equals(currentDate)).findFirst();
+                    if (previousDate.isPresent()) {
+                        CustomDialog.Builder(context)
+                                .setTitle("Zeitlich Einordnen?")
+                                .setText(String.format(Locale.getDefault(), "Die Vorherige Episode (S:%d/E:%d) hat bereits eine Ansicht an diesem Tag.\nSoll die neue dahinter eingeordnet werden? ", episode.getSeasonNumber(), episode.getEpisodeNumber()))
+                                .addButton(CustomDialog.BUTTON_TYPE.NO_BUTTON, customDialog -> episode.addDate(currentDate, false))
+                                .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog -> episode.addDate(new Date(previousDate.get().getTime() + 1000), false))
+                                .show();
+                    } else
+                        episode.addDate(currentDate, false);
+                } else
+                    episode.addDate(currentDate, false);
+            }
             calendarView.addEvent(new Event(context.getColor(R.color.colorDayNightContent)
                     , currentDate.getTime(), episode));
             loadVideoList(calendarView.getEvents(currentDate), layout, customRecycler);
@@ -2183,13 +2185,14 @@ public class Utility {
 
     /**  ------------------------- Time ------------------------->  */
     public static Date removeTime(Date date) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(date);
-        cal.set(Calendar.HOUR_OF_DAY, 0);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        return cal.getTime();
+        return new Date(date.getYear(), date.getMonth(), date.getDate());
+//        Calendar cal = Calendar.getInstance();
+//        cal.setTime(date);
+//        cal.set(Calendar.HOUR_OF_DAY, 0);
+//        cal.set(Calendar.MINUTE, 0);
+//        cal.set(Calendar.SECOND, 0);
+//        cal.set(Calendar.MILLISECOND, 0);
+//        return cal.getTime();
     }
 
     public static Date removeMilliseconds(Date date) {

@@ -64,7 +64,7 @@ import com.innovattic.rangeseekbar.RangeSeekBar;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
-import com.maxMustermannGeheim.linkcollection.Daten.CustomCode;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomCode;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image;
@@ -354,7 +354,7 @@ public class VideoActivity extends AppCompatActivity {
                             setResult(RESULT_OK);
                         })
                         .show();
-                return;
+//                return;
             }
 
 
@@ -2328,7 +2328,7 @@ public class VideoActivity extends AppCompatActivity {
                     TextView dialog_editOrAddVideo_title_label = editDialog.findViewById(R.id.dialog_editOrAddVideo_title_label);
                     View.OnClickListener switchToSimilarVideo = v -> {
                         String text = dialog_editOrAddVideo_Title_layout.getEditText().getText().toString();
-                        database.videoMap.values().stream().filter(video1 -> video1.getName().toLowerCase().equals(text.toLowerCase()) || (editVideo[0].getTmdbId() != 0 && editVideo[0].getTmdbId() == video1.getTmdbId())).findAny().ifPresent(oldVideo -> {
+                        database.videoMap.values().stream().filter(video1 -> video1.getName().equalsIgnoreCase(text) || (editVideo[0].getTmdbId() != 0 && editVideo[0].getTmdbId() == video1.getTmdbId())).findAny().ifPresent(oldVideo -> {
                             Runnable openEdit = () -> {
                                 editDialog.dismiss();
                                 isShared = false;
@@ -2839,6 +2839,7 @@ public class VideoActivity extends AppCompatActivity {
             }
 
             try {
+                video.getStudioList().clear();
                 results = response.getJSONArray("production_companies");
 
                 if (results.length() != 0) {
@@ -2866,6 +2867,7 @@ public class VideoActivity extends AppCompatActivity {
             }
 
             try {
+                video.getDarstellerList().clear();
                 results = response.getJSONObject("credits").getJSONArray("cast");
 
                 if (results.length() != 0) {

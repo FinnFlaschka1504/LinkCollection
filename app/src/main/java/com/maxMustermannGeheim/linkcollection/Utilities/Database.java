@@ -19,7 +19,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
-import com.maxMustermannGeheim.linkcollection.Daten.CustomCode;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
@@ -74,7 +73,7 @@ public class Database {
     private static boolean reload = false;
     private static List<DatabaseReloadListener> reloadListenerList = new ArrayList<>();
     private static boolean syncDatabaseToContentMap = true;
-    private static Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
+    public static Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
 
 
     //  ----- Content deklaration ----->
@@ -451,7 +450,6 @@ public class Database {
         }
         return simpleContentMap;
     }
-
 
     public Map<String, Content> deepCopyContentMap(boolean includeOnline, boolean includeOffline) {
         Map<String, Content> deepCopy = new HashMap<>();

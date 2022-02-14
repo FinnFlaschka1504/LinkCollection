@@ -111,7 +111,17 @@
                 android:layout_weight="1"
                 android:textColor="@color/colorPrimaryDark"
                 android:textStyle="bold"
+                tools:singleLine="true"
                 tools:text="Name sdasdasdasdasd asd asd asd sdsdds" />
+
+            <ImageView
+                android:id="@+id/listItem_episode_ratingTendency"
+                android:layout_width="17dp"
+                android:layout_height="17dp"
+                android:src="@drawable/ic_arrow_up"
+                android:visibility="gone"
+                app:tint="@color/colorGreen"
+                tools:visibility="visible" />
 
             <TextView
                 android:id="@+id/listItem_episode_rating"

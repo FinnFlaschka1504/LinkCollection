@@ -1,4 +1,4 @@
-package com.maxMustermannGeheim.linkcollection.Daten;
+package com.maxMustermannGeheim.linkcollection.Utilities;
 
 import android.content.Context;
 import android.content.Intent;
@@ -43,18 +43,18 @@ import com.google.gson.GsonBuilder;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Collection;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.WatchList;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.maxMustermannGeheim.linkcollection.Utilities.Database;
-import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.scottyab.aescrypt.AESCrypt;
 
 import org.liquidplayer.javascript.JSBaseArray;
 import org.liquidplayer.javascript.JSContext;
+import org.liquidplayer.javascript.JSException;
 import org.liquidplayer.javascript.JSFunction;
 import org.liquidplayer.javascript.JSValue;
 
@@ -79,6 +79,7 @@ public abstract class CustomCode extends ParentClass {
     protected String defaultParams;
     protected String tempResult;
     protected RETURN_TYPE returnType = RETURN_TYPE.TEXT;
+    protected transient CustomList<String> logList = new CustomList<>();
 
     enum RETURN_TYPE {
         TEXT, LIST, GROUPED_LIST, CODE, STATISTIC;
@@ -161,7 +162,9 @@ public abstract class CustomCode extends ParentClass {
 
             JSFunction log = new JSFunction(js, "log") {
                 public void log(Object msg) {
-                    CustomUtility.logD(null, "log: %s", msg != null ? msg.toString() : "<NULL>");
+                    String msgSting = msg != null ? ((JSValue) msg).toJSON() : "<NoParameter>";
+                    logList.add(msgSting);
+                    CustomUtility.logD(null, "log: %s", msgSting);
                 }
             };
             js.property("log", log);
@@ -516,6 +519,7 @@ public abstract class CustomCode extends ParentClass {
             js.property("hasFormatting", true);
             js.property("hasHighlight", false);
             js.property("prettyPrint", true);
+            js.property("showLog", true);
             String json = new Gson().toJson(database.videoMap);
             js.property("fullMapJson", json);
 
@@ -529,13 +533,14 @@ public abstract class CustomCode extends ParentClass {
             }
 //            CustomUtility.logTiming("CustomCode", true);
             if (CustomUtility.stringExists(code)) {
-                String fullCode = "let code = () => {\n" +
+                String fullCode = "let code = () => {" +
                         applyCodeShortcuts(code) +
                         "\n}\n" +
                         "code()";
                 try {
                     JSValue result;
                     tempResult = (result = js.evaluateScript(fullCode)).toJSON();
+                    checkLogList(context, js);
                     JSValue sortType = js.property("sortType");
                     if (!sortType.equals("undefined"))
                         _setSortType(sortType.toString());
@@ -543,7 +548,12 @@ public abstract class CustomCode extends ParentClass {
                         _setSortType(null);
                     return result;
                 } catch (Exception e) {
-                    return new JSValue(js, "Err.: " + e.getMessage());
+                    String stackTrace = ((JSException) e).getError().stack();
+                    String log = "";
+                    if (!logList.isEmpty() && js.hasProperty("showLog") && js.property("showLog").toBoolean())
+                        log = logList.join("\n\n") + "\n\n";
+                    logList.clear();
+                    return new JSValue(js, log + stackTrace);
                 }
             }
             return null;
@@ -892,6 +902,17 @@ public abstract class CustomCode extends ParentClass {
     public abstract CharSequence applyFormatting(AppCompatActivity context, CharSequence text);
 
     public abstract void showHelpDialog(AppCompatActivity context, @Nullable CustomDialog editDialog);
+
+    protected void checkLogList(Context context, JSContext jsContext) {
+        if (!logList.isEmpty() && jsContext.hasProperty("showLog") && jsContext.property("showLog").toBoolean()) {
+            CustomDialog.Builder(context)
+                    .enableTitleBackButton()
+                    .setTitle("Log")
+                    .setText(logList.join("\n\n"))
+                    .show();
+        }
+        logList.clear();
+    }
     /**  <------------------------- Function -------------------------  */
 
 
@@ -1036,7 +1057,7 @@ public abstract class CustomCode extends ParentClass {
                     newCustomCode.setCode(newCode);
                     newCustomCode.setDefaultParams(newParams);
                     JSValue jsValue = newCustomCode.executeCode(context, parseParams(newParams));
-                    String text = jsValue != null ? (jsValue.isString() ? jsValue.toString() : CustomCode.toJson(jsValue, jsValue.getContext().property("prettyPrint").toBoolean())) : null;
+                    String text = jsValue == null || jsValue.isUndefined() ? null : (jsValue.isString() ? jsValue.toString() : CustomCode.toJson(jsValue, jsValue.getContext().property("prettyPrint").toBoolean()));
                     if (CustomUtility.stringExists(text)) {
                         CharSequence dialogText;
                         Boolean hasFormatting = jsValue.getContext().property("hasFormatting").toBoolean();
@@ -1160,7 +1181,9 @@ public abstract class CustomCode extends ParentClass {
                         JSValue jsValue = customCode.executeCode(context, parseParams(newParams));
                         if (jsValue == null)
                             return;
-                        if (recyclerProvider != null && jsValue.isArray() && customCode.getReturnType() == RETURN_TYPE.LIST) {
+                        if (jsValue.isUndefined()) {
+                            Toast.makeText(context, "Kein Ergebnis", Toast.LENGTH_SHORT).show();
+                        } else if (recyclerProvider != null && jsValue.isArray() && customCode.getReturnType() == RETURN_TYPE.LIST) {
                             try {
                                 JSBaseArray jsArray = jsValue.toJSArray();
                                 RecyclerProviderReturn providerReturn = recyclerProvider.run(customCode, jsArray);
@@ -1235,8 +1258,8 @@ public abstract class CustomCode extends ParentClass {
                                     textView.setLinkTextColor(textView.getTextColors());
 
                                 contentContainer.addView(scrollView);
-                            } else
-                                Toast.makeText(context, "Kein Ergebnis", Toast.LENGTH_SHORT).show();
+                            }
+
                         }
                     });
                     executeButton.setOnLongClickListener(v -> {

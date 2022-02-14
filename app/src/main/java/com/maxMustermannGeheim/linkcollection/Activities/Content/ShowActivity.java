@@ -76,6 +76,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.liquidplayer.javascript.JSContext;
+import org.liquidplayer.javascript.JSObject;
 import org.liquidplayer.javascript.JSValue;
 
 import java.math.RoundingMode;
@@ -292,7 +293,7 @@ public class ShowActivity extends AppCompatActivity {
                             setResult(RESULT_OK);
                         })
                         .show();
-                return;
+//                return;
             }
 
             if (Objects.equals(getIntent().getAction(), MainActivity.ACTION_SHORTCUT))
@@ -712,24 +713,34 @@ public class ShowActivity extends AppCompatActivity {
                                                 .enableExpandByDefault()
                                                 .customizeRecycler((subRecycler, expandable, index0) -> {
                                                     subRecycler
-                                                            .setSetItemContent((customRecycler2, itemView, episode1, index) -> {
+                                                            .setSetItemContent((customRecycler2, itemView, episode, index) -> {
                                                                 Utility.setMargins(itemView, 8, 5, 8, 5);
                                                                 itemView.findViewById(R.id.listItem_episode_seen).setVisibility(View.GONE);
 
+                                                                ImageView listItem_episode_image = itemView.findViewById(R.id.listItem_episode_image);
+//                                                                int showPreviewSetting = Integer.parseInt(Settings.getSingleSetting(this, Settings.SETTING_SHOW_EPISODE_PREVIEW));
+                                                                if (Utility.stringExists(episode.getStillPath()) /*&& (showPreviewSetting == 0 || showPreviewSetting == 1 && episode.isWatched())*/) {
+                                                                    listItem_episode_image.setVisibility(View.VISIBLE);
+                                                                    Utility.simpleLoadUrlIntoImageView(this, listItem_episode_image, episode.getStillPath(), episode.getStillPath(), 2);
+                                                                } else
+                                                                    listItem_episode_image.setVisibility(View.GONE);
+
+
                                                                 itemView.findViewById(R.id.listItem_episode_extraInfo).setVisibility(View.VISIBLE);
                                                                 itemView.findViewById(R.id.listItem_episode_showName_layout).setVisibility(View.GONE);
-                                                                ((TextView) itemView.findViewById(R.id.listItem_episode_seasonNumber)).setText(String.valueOf(episode1.getSeasonNumber()));
+                                                                ((TextView) itemView.findViewById(R.id.listItem_episode_seasonNumber)).setText(String.valueOf(episode.getSeasonNumber()));
 
-                                                                ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(episode1.getEpisodeNumber()));
-                                                                ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode1.getName());
-                                                                if (episode1.getAirDate() != null)
-                                                                    ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode1.getAirDate()));
-                                                                ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode1.getRating() != -1 ? episode1.getRating() + " ☆" : "");
+                                                                ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(episode.getEpisodeNumber()));
+                                                                ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode.getName());
+                                                                if (episode.getAirDate() != null)
+                                                                    ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode.getAirDate()));
+                                                                ParentClass_Ratable.applyRatingTendencyIndicator(itemView.findViewById(R.id.listItem_episode_ratingTendency), episode);
+                                                                ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode.getRating() != -1 ? episode.getRating() + " ☆" : "");
 
 //                                                        ImageView listItem_episode_image = itemView.findViewById(R.id.listItem_episode_image);
-//                                                        if (Utility.stringExists(episode1._getStillPath())) {
+//                                                        if (Utility.stringExists(episode._getStillPath())) {
 //                                                            listItem_episode_image.setVisibility(View.VISIBLE);
-//                                                            Utility.loadUrlIntoImageView(this, listItem_episode_image, Utility.getTmdbImagePath_ifNecessary(episode1._getStillPath(), false ), Utility.getTmdbImagePath_ifNecessary(episode1._getStillPath(), true ));
+//                                                            Utility.loadUrlIntoImageView(this, listItem_episode_image, Utility.getTmdbImagePath_ifNecessary(episode._getStillPath(), false ), Utility.getTmdbImagePath_ifNecessary(episode._getStillPath(), true ));
 //                                                        } else
 //                                                            listItem_episode_image.setVisibility(View.GONE);
 
@@ -795,6 +806,7 @@ public class ShowActivity extends AppCompatActivity {
                             ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode.getName());
                             if (episode.getAirDate() != null)
                                 ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode.getAirDate()));
+                            ParentClass_Ratable.applyRatingTendencyIndicator(itemView.findViewById(R.id.listItem_episode_ratingTendency), episode);
                             ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode.getRating() != -1 ? episode.getRating() + " ☆" : "");
 
                         })
@@ -1556,6 +1568,7 @@ public class ShowActivity extends AppCompatActivity {
                         itemView.findViewById(R.id.listItem_episode_extraInformation_layout).setVisibility(View.GONE);
 
                     ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(Utility.isNullReturnOrElse(episode.getAirDate(), "", date -> new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(date)));
+                    ParentClass_Ratable.applyRatingTendencyIndicator(itemView.findViewById(R.id.listItem_episode_ratingTendency), episode);
                     ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(!CustomUtility.boolOr(episode.getRating(), -1f, 0f) && episode.isWatched() ? episode.getRating() + " ☆" : "");
                     ((TextView) itemView.findViewById(R.id.listItem_episode_viewCount)).setText(
                             episode.getDateList().size() >= 2 || (!episode.getDateList().isEmpty() && !episode.isWatched()) ? "| " + episode.getDateList().size() : "");
@@ -1667,7 +1680,7 @@ public class ShowActivity extends AppCompatActivity {
         }
 //        setResult(RESULT_OK); // vielleich wichtig?
         final Runnable[] destroyGetImdbIdAndDetails = {null};
-        final float[] currentRating = {-1};
+        final float[] currentRating = {episode.getRating()};
 
         int index = customRecycler != null ? customRecycler.getObjectList().indexOf(episode) : -1;
         Show.Episode cloneEpisode = episode.clone();
@@ -1679,6 +1692,8 @@ public class ShowActivity extends AppCompatActivity {
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     episode.setRating(((RatingBar) customDialog.findViewById(R.id.customRating_ratingBar)).getRating());
+                    if (episode.hasRating())
+                        episode.setRatingTendency(cloneEpisode.getRatingTendency());
 
                     if (!episode.isWatched() && episode.getDateList().isEmpty()) {
                         Show show = database.showMap.get(episode.getShowId());
@@ -1691,7 +1706,7 @@ public class ShowActivity extends AppCompatActivity {
 
                     }
                     if (Database.saveAll_simple()) {
-                        customRecycler.reload();
+                        customRecycler.update(index);
                         setResult(RESULT_OK);
                     }
                 })
@@ -1877,28 +1892,23 @@ public class ShowActivity extends AppCompatActivity {
                         viewsTextView.setClickable(true);
                     } else
                         viewsTextView.setClickable(false);
-String BREAKPOINT = null;
-//                    Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
-//                    SpannableStringBuilder viewsText = helper.quickItalic("Keine Ansichten");
-//                    if (episode.getDateList().size() > 0) {
-//                        Date lastWatched = new CustomList<>(episode.getDateList()).getBiggest();
-//                        viewsText = helper.append(String.valueOf(episode.getDateList().size())).append(
-//                                String.format(Locale.getDefault(), "   (%s – %dd)",
-//                                        new SimpleDateFormat("dd.MM.yyyy", Locale.GERMANY).format(lastWatched),
-//                                        Days.daysBetween(new LocalDate(lastWatched), new LocalDate(new Date())).getDays())
-//                                , Helpers.SpannableStringHelper.SPAN_TYPE.ITALIC).get();
-//                    }
-//                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_views)).setText(viewsText);
 
                     ((TextView) view.findViewById(R.id.dialog_detailEpisode_release)).setText(Utility.isNullReturnOrElse(episode.getAirDate(), "", date -> new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(date)));
 
+                    View ratingTendencyButton = view.findViewById(R.id.dialog_detailEpisode_ratingTendency);
+                    ratingTendencyButton.setOnClickListener(v -> {
+                        ParentClass_Ratable.showRatingTendencyDialog(this, cloneEpisode, ratingTendencyButton, parentClass_ratable -> {
+                            CustomDialog.ButtonHelper actionButton = customDialog.getActionButton();
+                            actionButton.setEnabled(currentRating[0] != episode.getRating() || !Objects.equals(episode.getRatingTendency(), cloneEpisode.getRatingTendency()));
+                        });
+                    });
 
                     RatingBar dialog_detailEpisode_rating = new Helpers.RatingHelper(view.findViewById(R.id.customRating_layout)).setRating(CustomUtility.isNotValueOrElse(currentRating[0], episode.getRating(), -1f)).getRatingBar();
 //                    dialog_detailEpisode_rating.setRating(episode.getRating());
                     CustomDialog.ButtonHelper actionButton = customDialog.getActionButton();
                     dialog_detailEpisode_rating.setOnRatingBarChangeListener((ratingBar, rating, fromUser) -> {
-                        actionButton.setEnabled(rating != episode.getRating());
                         currentRating[0] = rating;
+                        actionButton.setEnabled(rating != episode.getRating() || !Objects.equals(episode.getRatingTendency(), cloneEpisode.getRatingTendency()));
                     });
                     view.findViewById(R.id.dialog_detailEpisode_editViews).setOnClickListener(v -> showEpisodeCalenderDialog(episode, customDialog));
                     view.findViewById(R.id.dialog_detailEpisode_editViews).setOnLongClickListener(v -> {
@@ -1922,87 +1932,6 @@ String BREAKPOINT = null;
 //        Utility.traktApiRequest(this, String.format(Locale.getDefault(), "https://api.trakt.tv/search/tmdb/%d?type=episode", episode.getTmdbId()), JSONArray.class, jsonArray -> {
 //            String BREAKPOINT = null;
 //        });
-    }
-
-    private Runnable getImdbIdAndDetails(List<Show.Episode> episodeList, boolean showMessages, Runnable onComplete) {
-        final Runnable[] destroyGetDetailsFromImdb = {null};
-        final Runnable[] destroyRequestImdbId = {null};
-        Show.Episode[] currentEpisode = {null};
-
-        Runnable destroy = () -> {
-            Utility.runRunnable(destroyGetDetailsFromImdb[0]);
-            Utility.runRunnable(destroyRequestImdbId[0]);
-        };
-
-        episodeList.sort((e1, e2) -> {
-            int compare;
-            if ((compare = Integer.compare(e1.getSeasonNumber(), e2.getSeasonNumber())) != 0)
-                return compare;
-            if ((compare = Integer.compare(e1.getEpisodeNumber(), e2.getEpisodeNumber())) != 0)
-                return compare;
-            return 0;
-        });
-        Iterator<Show.Episode> iterator = episodeList.iterator();
-
-        Runnable step = new Runnable() {
-            @Override
-            public void run() {
-
-                Runnable next = () -> {
-                    if (iterator.hasNext()) {
-                        currentEpisode[0] = iterator.next();
-                        this.run();
-                    } else {
-                        destroyGetDetailsFromImdb[0] = ShowActivity.this.getDetailsFromImdb(new com.finn.androidUtilities.CustomList<>(episodeList), showMessages, () -> {
-                            Utility.runRunnable(onComplete);
-                            Database.saveAll();
-                        });
-                    }
-                };
-
-                if (Utility.isImdbId(currentEpisode[0].getImdbId()))
-                    next.run();
-                else
-                    destroyRequestImdbId[0] = currentEpisode[0].requestImdbId(ShowActivity.this, new Runnable() {
-                        @Override
-                        public void run() {
-                            if (Utility.isImdbId(currentEpisode[0].getImdbId())) {
-                                next.run();
-                            } else {
-                                Runnable showOptionsDialog = () -> {
-                                    CustomDialog.Builder(ShowActivity.this)
-                                            .setTitle("Die IMDb-ID konnte nicht ermittelt werden")
-                                            .setText(currentEpisode[0].getName())
-                                            .addButton("TMDB", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.TMDB))
-                                            .addButton("TRAKT", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.TRAKT))
-                                            .addButton("TVDB", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.TVDB))
-                                            .addButton("Staffel", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.SEASON))
-                                            .addButton("Vorheriger", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.PREVIOUS))
-                                            .addOptionalModifications(customDialog -> {
-                                                if (episodeList.size() > 1)
-                                                    customDialog.addButton("Überspringen", customDialog1 -> next.run());
-                                            })
-                                            .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
-                                            .enableStackButtons()
-                                            .show();
-                                };
-                                if (showMessages)
-                                    showOptionsDialog.run();
-                                else
-                                    Utility.showOnClickToast(ShowActivity.this, "Fehler beim Laden der IMDb-ID", v -> showOptionsDialog.run());
-                            }
-                        }
-                    }, null);
-            }
-        };
-
-        if (iterator.hasNext()) {
-            currentEpisode[0] = iterator.next();
-            step.run();
-        }
-
-
-        return destroy;
     }
 
     private CustomDialog showResetDialog(List<Show.Episode> episodeList_all, Show show, Show.Season season, CustomDialog customDialog, CustomRecycler customRecycler, int type) {
@@ -2434,11 +2363,16 @@ String BREAKPOINT = null;
 
     // --------------- imdb
 
-    private Runnable getDetailsFromImdb(com.finn.androidUtilities.CustomList<Show.Episode> episodeList, boolean showDialog, Runnable onComplete) {
-        episodeList.filter(episode -> Utility.stringExists(episode.getImdbId()), true);
-        if (episodeList.isEmpty())
-            return () -> {
-            };
+    private Runnable getImdbIdAndDetails(List<Show.Episode> episodeList, boolean showMessages, Runnable onComplete) {
+        final Runnable[] destroyGetDetailsFromImdb = {null};
+        final Runnable[] destroyRequestImdbId = {null};
+        Show.Episode[] currentEpisode = {null};
+
+        Runnable destroy = () -> {
+            Utility.runRunnable(destroyGetDetailsFromImdb[0]);
+            Utility.runRunnable(destroyRequestImdbId[0]);
+        };
+
         episodeList.sort((e1, e2) -> {
             int compare;
             if ((compare = Integer.compare(e1.getSeasonNumber(), e2.getSeasonNumber())) != 0)
@@ -2447,36 +2381,109 @@ String BREAKPOINT = null;
                 return compare;
             return 0;
         });
+        Iterator<Show.Episode> iterator = episodeList.iterator();
+
+        Runnable step = new Runnable() {
+            @Override
+            public void run() {
+
+                Runnable next = () -> {
+                    if (iterator.hasNext()) {
+                        currentEpisode[0] = iterator.next();
+                        this.run();
+                    } else {
+                        destroyGetDetailsFromImdb[0] = ShowActivity.this.getDetailsFromImdb(new com.finn.androidUtilities.CustomList<>(episodeList), showMessages, () -> {
+                            Utility.runRunnable(onComplete);
+                            Database.saveAll();
+                        });
+                    }
+                };
+
+                if (Utility.isImdbId(currentEpisode[0].getImdbId()))
+                    next.run();
+                else
+                    destroyRequestImdbId[0] = currentEpisode[0].requestImdbId(ShowActivity.this, new Runnable() {
+                        @Override
+                        public void run() {
+                            if (Utility.isImdbId(currentEpisode[0].getImdbId())) {
+                                next.run();
+                            } else {
+                                Runnable showOptionsDialog = () -> {
+                                    CustomDialog.Builder(ShowActivity.this)
+                                            .setTitle("Die IMDb-ID konnte nicht ermittelt werden")
+                                            .setText(currentEpisode[0].getName())
+                                            .addButton("TMDB", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.TMDB))
+                                            .addButton("TRAKT", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.TRAKT))
+                                            .addButton("TVDB", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.TVDB))
+                                            .addButton("Staffel", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.SEASON))
+                                            .addButton("Vorheriger", customDialog -> currentEpisode[0].requestImdbId(ShowActivity.this, this, Show.REQUEST_IMDB_ID_TYPE.PREVIOUS))
+                                            .addOptionalModifications(customDialog -> {
+                                                if (episodeList.size() > 1)
+                                                    customDialog.addButton("Überspringen", customDialog1 -> next.run());
+                                            })
+                                            .addButtonDivider(5)
+                                            .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
+                                            .enableStackButtons()
+                                            .show();
+                                };
+                                if (showMessages)
+                                    showOptionsDialog.run();
+                                else
+                                    Utility.showOnClickToast(ShowActivity.this, "Fehler beim Laden der IMDb-ID", v -> showOptionsDialog.run());
+                            }
+                        }
+                    }, null);
+            }
+        };
+
+        if (iterator.hasNext()) {
+            currentEpisode[0] = iterator.next();
+            step.run();
+        }
+
+
+        return destroy;
+    }
+
+    private Runnable getDetailsFromImdb(com.finn.androidUtilities.CustomList<Show.Episode> episodeList, boolean showDialog, Runnable onComplete) {
+        episodeList.filter(episode -> Utility.stringExists(episode.getImdbId()), true);
+        if (episodeList.isEmpty())
+            return () -> {};
+        episodeList.sort((e1, e2) -> {
+            int compare;
+            if ((compare = Integer.compare(e1.getSeasonNumber(), e2.getSeasonNumber())) != 0)
+                return compare;
+            if ((compare = Integer.compare(e1.getEpisodeNumber(), e2.getEpisodeNumber())) != 0)
+                return compare;
+            return 0;
+        });
+
+        ExternalCode.CodeEntry codeEntry = ExternalCode.getEntry(ExternalCode.ENTRY.GET_IMDB_EPISODE_DETAILS);
         String[] urls = episodeList.map(episode -> "https://www.imdb.com/title/" + episode.getImdbId()).toArray(new String[0]);
         final int[] counter = {0};
         List<String> resultList = new ArrayList<>();
         Helpers.WebViewHelper helper = new Helpers.WebViewHelper(this, urls)
-                .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.87 Safari/537.36")
-                .addRequest("document.querySelector(\"[data-testid='hero-title-block__metadata']\").innerText", s -> {
+                .setUserAgent(codeEntry.getString("userAgent"))
+                .addRequest(codeEntry.getString("getTextApp"), s -> {
                     JSContext jsContext = new JSContext();
                     jsContext.property("text", s);
-//                    JSValue result = jsContext.evaluateScript();
-                    boolean found = false;
+                    String found = null;
 
-                    for (String sub : s.split("\\\\n")) {
-                        if (sub.matches("^\\d{1,2}$|^TV-(Y|G|Y7|PG|14|MA)$")) {
-                            episodeList.get(counter[0]).setAgeRating(sub);
-                            found = true;
-                        } else if (sub.matches("(\\d+\\s?Std. ?)?(\\d{1,2}\\s?M(in.)?)?")) {
-                            int length = 0;
-                            Matcher hourMatcher = Pattern.compile("\\d+(?=\\s?Std.( \\d{1,2}\\s?M(in.)?)?)").matcher(sub);
-                            if (hourMatcher.find())
-                                length += Integer.parseInt(hourMatcher.group(0)) * 60;
-                            Matcher minuteMatcher = Pattern.compile("\\d{1,2}(?=\\s?M(in.)?)").matcher(sub);
-                            if (minuteMatcher.find())
-                                length += Integer.parseInt(minuteMatcher.group(0));
-                            episodeList.get(counter[0]).setLength(length);
-                            found = true;
-//                            Toast.makeText(this, "--> Länge geladen <--", Toast.LENGTH_SHORT).show();
+                    try {
+                        JSValue result = jsContext.evaluateScript(Helpers.WebViewHelper.wrapScript(codeEntry.getString("parseText")));
+                        if (result.isObject()) {
+                            JSObject jsObject = result.toObject();
+                            found = jsObject.toJSON();
+                            if (jsObject.hasProperty("ageRating"))
+                                episodeList.get(counter[0]).setAgeRating(jsObject.property("ageRating").toString());
+                            if (jsObject.hasProperty("length"))
+                                episodeList.get(counter[0]).setLength(jsObject.property("length").toNumber().intValue());
                         }
+                    } catch (Exception e) {
+                        CustomUtility.logD(null, "getDetailsFromImdb: <js err.> %s", e.getMessage());
                     }
-                    if (found)
-                        resultList.add(s);
+                    if (found != null)
+                        resultList.add((episodeList.size() > 1 ? (counter[0] + 1) + ": " : "") + found);
                     counter[0]++;
                 })
                 .setDebug(showDialog)
@@ -2490,10 +2497,6 @@ String BREAKPOINT = null;
                     Utility.runRunnable(onComplete);
                 })
                 .go();
-//        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-//        new Handler().postDelayed(() -> {
-//            helper.getWebView().getProgress();
-//        }, 5000);
         return helper::destroy;
     }
     //  <--------------- Api ---------------

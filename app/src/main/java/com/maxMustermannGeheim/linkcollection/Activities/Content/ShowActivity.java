@@ -50,6 +50,9 @@ import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
+import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
@@ -79,10 +82,12 @@ import org.liquidplayer.javascript.JSContext;
 import org.liquidplayer.javascript.JSObject;
 import org.liquidplayer.javascript.JSValue;
 
+import java.lang.reflect.Type;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -91,6 +96,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -99,6 +105,8 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
@@ -618,9 +626,7 @@ public class ShowActivity extends AppCompatActivity {
                             show.getGenreIdList().stream().map(uuid -> database.showGenreMap.get(uuid).getName()).collect(Collectors.joining(", ")));
                     itemView.findViewById(R.id.listItem_show_Genre).setSelected(scrolling);
                 })
-                .setOnClickListener((customRecycler, view, show, index) -> {
-                    showDetailDialog(show);
-                })
+                .setOnClickListener((customRecycler, view, show, index) -> showDetailDialog(show))
                 .addSubOnClickListener(R.id.listItem_show_list, (customRecycler, view, show, index) -> showSeasonDialog(show))
                 .addSubOnLongClickListener(R.id.listItem_show_list, (customRecycler, view, show, index) -> {
                     List<Pair<Date, Show.Episode>> list = new ArrayList<>();
@@ -848,27 +854,7 @@ public class ShowActivity extends AppCompatActivity {
     //  <------------------------- ShowInfo -------------------------
 
 
-    //  --------------- Static from Main --------------->
-//    public static void showLaterMenu(AppCompatActivity activity, View view) {
-//        if (!Database.isReady())
-//            return;
-//        CustomMenu.Builder(activity, view.findViewById(R.id.main_shows_watchLater_label))
-//                .setMenus((customMenu, items) -> {
-//                    items.add(new CustomMenu.MenuItem("Später ansehen", new Pair<>(new Intent(activity, ShowActivity.class)
-//                            .putExtra(CategoriesActivity.EXTRA_SEARCH, WATCH_LATER_SEARCH)
-//                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.SHOW), MainActivity.START_WATCH_LATER)));
-//                    items.add(new CustomMenu.MenuItem("Bevorstehende", new Pair<>(new Intent(activity, ShowActivity.class)
-//                            .putExtra(CategoriesActivity.EXTRA_SEARCH, UPCOMING_SEARCH)
-//                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.SHOW), MainActivity.START_UPCOMING)));
-//                })
-//                .setOnClickListener((customRecycler, itemView, item, index) -> {
-//                    Pair<Intent, Integer> pair = (Pair<Intent, Integer>) item.getContent();
-//                    activity.startActivityForResult(pair.first, pair.second);
-//                })
-//                .dismissOnClick()
-//                .show();
-//    }
-
+    //  --------------- Static --------------->
     public static void showNewEpisodesDialog(AppCompatActivity activity) {
         Database database = Database.getInstance();
         CustomDialog customDialog = CustomDialog.Builder(activity);
@@ -980,7 +966,60 @@ public class ShowActivity extends AppCompatActivity {
     public static void showNextEpisode(AppCompatActivity activity, View view, boolean longClick) {
         activity.startActivityForResult(new Intent(activity, ShowActivity.class).setAction(ACTION_NEXT_EPISODE).putExtra(EXTRA_NEXT_EPISODE_SELECT, longClick), MainActivity.START_SHOW_NEXT_EPISODE);
     }
-    //  <--------------- Static from Main ---------------
+
+    public static Database.ChangeHandler<Map, Show> getShowChangeHandler() {
+        return (newShow, content) -> {
+            Database database = Database.getInstance();
+            Show oldShow = database.showMap.get(newShow.getUuid());
+
+            Type type = new TypeToken<Map<String, Object>>(){}.getType();
+            Gson gson = new Gson();
+            Map<String, Object> oldMap = FlatMapUtil.flatten((Map<String, Object>) gson.fromJson(gson.toJson(oldShow), type));
+            Map<String, Object> newMap = FlatMapUtil.flatten((Map<String, Object>) gson.fromJson(gson.toJson(newShow), type));
+
+            MapDifference difference = Maps.difference(oldMap, newMap);
+//            oldShow.getChangesFrom(newShow);
+            String BREAKPOINT = null;
+            return true;
+        };
+    } // DetailsUpdate, ratingChange, viewAdded (neu / weitere), EpisodeDetailsAdded
+    // unterteilen in änderungen, neuerungen und löschungen
+    // unterteilen in ShowChanges, SeasonChanges, EpisodeChanges
+
+    public static final class FlatMapUtil {
+
+        private FlatMapUtil() {
+            throw new AssertionError("No instances for you!");
+        }
+
+        public static Map<String, Object> flatten(Map<String, Object> map) {
+            return map.entrySet().stream()
+                    .flatMap(FlatMapUtil::flatten)
+                    .collect(LinkedHashMap::new, (m, e) -> m.put("/" + e.getKey(), e.getValue()), LinkedHashMap::putAll);
+        }
+
+        private static Stream<Map.Entry<String, Object>> flatten(Map.Entry<String, Object> entry) {
+
+            if (entry == null) {
+                return Stream.empty();
+            }
+
+            if (entry.getValue() instanceof Map<?, ?>) {
+                return ((Map<?, ?>) entry.getValue()).entrySet().stream()
+                        .flatMap(e -> flatten(new AbstractMap.SimpleEntry<>(entry.getKey() + "/" + e.getKey(), e.getValue())));
+            }
+
+            if (entry.getValue() instanceof List<?>) {
+                List<?> list = (List<?>) entry.getValue();
+                return IntStream.range(0, list.size())
+                        .mapToObj(i -> new AbstractMap.SimpleEntry<String, Object>(entry.getKey() + "/" + i, list.get(i)))
+                        .flatMap(FlatMapUtil::flatten);
+            }
+
+            return Stream.of(entry);
+        }
+    }
+    //  <--------------- Static ---------------
 
 
     //  --------------- NextEpisode --------------->

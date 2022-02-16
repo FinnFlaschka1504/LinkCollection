@@ -94,11 +94,12 @@ dependencies {
     implementation 'com.github.bmelnychuk:atv:1.2.9'
     implementation 'com.github.jakebonk:DraggableTreeView:1.0.1'
     implementation 'me.zhanghai.android.fastscroll:library:1.1.7'
+    implementation("com.google.guava:guava:31.0.1-android")
 
     implementation 'com.github.pchmn:MaterialChipsInput:1.0.8'
     api 'com.theartofdev.edmodo:android-image-cropper:2.8.0'
     implementation 'com.github.LiquidPlayer:LiquidCore:0.6.2'
 
     implementation group: 'org.apache-extras.beanshell', name: 'bsh', version: '2.0b6'
-    implementation group: 'com.google.guava', name: 'guava', version: '28.2-android'
+//    implementation group: 'com.google.guava', name: 'guava', version: '31.0.1-android'
 }

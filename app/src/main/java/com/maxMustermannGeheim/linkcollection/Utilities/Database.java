@@ -1,5 +1,6 @@
 package com.maxMustermannGeheim.linkcollection.Utilities;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
@@ -9,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.finn.androidUtilities.CustomUtility;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -18,6 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
@@ -63,7 +66,7 @@ public class Database {
     private static Database database;
     private static Map<String, Object> lastUploaded_contentMap;
     //    public static Set<Pair<Boolean,Object>> changePairSet = new HashSet<>();
-    public static List<Utility.Triple<Boolean, String[], Object>> updateList = new ArrayList<>();
+    public static List<Utility.Quadruple<Boolean, String[], Object, Content>> updateList = new ArrayList<>();
     public static DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference();
     private static List<OnInstanceFinishedLoading> onInstanceFinishedLoadingList = new ArrayList<>();
     private static SharedPreferences mySPR_daten;
@@ -74,6 +77,7 @@ public class Database {
     private static List<DatabaseReloadListener> reloadListenerList = new ArrayList<>();
     private static boolean syncDatabaseToContentMap = true;
     public static Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
+    private Set<String> ignoreUpdateSet = new HashSet<>();
 
 
     //  ----- Content deklaration ----->
@@ -145,11 +149,10 @@ public class Database {
     public Map<String, MediaEvent> mediaEventMap = new HashMap<>();
 
     private List<Content> contentList;
-
     {
-        Content databaseCode_content = new Content<String, String>(String.class, "databaseCode", DATABASE_CODE).setSaveOnline(false);
+        Content databaseCode_content;
         contentList = Arrays.asList(
-                databaseCode_content,
+                databaseCode_content = new Content<String, String>(String.class, "databaseCode", DATABASE_CODE).setSaveOnline(false),
                 new Content<Map, Video>(Video.class, videoMap, databaseCode_content, VIDEOS, VIDEO_MAP),
                 new Content<Map, Studio>(Studio.class, studioMap, databaseCode_content, VIDEOS, STUDIO_MAP),
                 new Content<Map, Darsteller>(Darsteller.class, darstellerMap, databaseCode_content, VIDEOS, DARSTELLER_MAP),
@@ -168,7 +171,7 @@ public class Database {
                 new Content<Map, Joke>(Joke.class, jokeMap, databaseCode_content, JOKE, JOKE_MAP),
                 new Content<Map, JokeCategory>(JokeCategory.class, jokeCategoryMap, databaseCode_content, JOKE, JOKE_CATEGORY_MAP),
 
-                new Content<Map, Show>(Show.class, showMap, databaseCode_content, SHOWS, SHOW_MAP),
+                new Content<Map, Show>(Show.class, showMap, databaseCode_content, SHOWS, SHOW_MAP).addChangeListener(ShowActivity.getShowChangeHandler()),
                 new Content<Map, ShowGenre>(ShowGenre.class, showGenreMap, databaseCode_content, SHOWS, SHOW_GENRE_MAP),
                 new Content<List, String>(String.class, showWatchLaterList, databaseCode_content, SHOWS, SHOW_WATCH_LATER_LIST),
 
@@ -177,12 +180,14 @@ public class Database {
                 new Content<Map, MediaCategory>(MediaCategory.class, mediaCategoryMap, databaseCode_content, MEDIA, MEDIA_CATEGORY_MAP),
                 new Content<Map, MediaTag>(MediaTag.class, mediaTagMap, databaseCode_content, MEDIA, MEDIA_TAG_MAP),
                 new Content<Map, MediaEvent>(MediaEvent.class, mediaEventMap, databaseCode_content, MEDIA, MEDIA_EVENT_MAP)
+
+//                new Content<Map, MediaEvent>(MediaEvent.class, testMap, databaseCode_content, "TEST_MAP")
         );
     }
     //  <----- Content deklaration -----
 
-    private static Map<String, Content> contentMap = new HashMap<>();
 
+    private static Map<String, Content> contentMap = new HashMap<>();
     {
         for (Content content : contentList) contentMap.put(content.key, content);
     }
@@ -271,30 +276,31 @@ public class Database {
 
 
     }
-//  <----- getInstances -----
+    //  <----- getInstances -----
 
 
     //  ----- Content management ----->
-    public class Content<T, V> implements Cloneable {
+    public class Content<C, T> implements Cloneable {
         public String fieldName;
         public String key;
-        public Object content;
+        public C content;
         public Boolean saveOffline = true;
         public Boolean saveOnline = true;
-        public Class<V> tClass;
+        public Class<T> tClass;
         private boolean reassign;
-        public ChangeListener changeListener;
+        public ChangeListener<T> changeListener;
         public List<Object> path;
+        private ChangeHandler<C, T> changeHandler;
 
-        private Content(Class<V> tClass, Object content, @NonNull Object... path) {
+        private Content(Class<T> tClass, Object content, @NonNull Object... path) {
             reassign = false;
-            this.content = content;
+            this.content = (C) content;
             this.tClass = tClass;
             this.path = Arrays.asList(path);
             this.key = (String) this.path.get(this.path.size() - 1);
         }
 
-        private Content(Class<V> tClass, String fieldName, @NonNull Object... path) {
+        private Content(Class<T> tClass, String fieldName, @NonNull Object... path) {
             reassign = true;
             this.fieldName = fieldName;
             this.tClass = tClass;
@@ -303,10 +309,10 @@ public class Database {
         }
 
         //  ----- Get Map From ... ----->
-        public HashMap<String, V> getMapFromDataSnapshot(DataSnapshot dataSnapshot) {
-            if (dataSnapshot.getValue() != null) {
+        public HashMap<String, T> getMapFromDataSnapshot(DataSnapshot dataSnapshot) {
+            if (dataSnapshot.exists()) {
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    V value = snapshot.getValue(tClass);
+                    T value = snapshot.getValue(tClass);
                     ((Map) content).put(((ParentClass) value).getUuid(), value);
                 }
                 return ((HashMap) content);
@@ -314,15 +320,24 @@ public class Database {
             return null;
         }
 
-        public Map<String, V> getMapFromString(String mapString) {
+        public T getChildFromDataSnapshot(DataSnapshot dataSnapshot) {
+            if (dataSnapshot.exists()) {
+                T value = dataSnapshot.getValue(tClass);
+                if (changeHandler == null || !changeHandler.run(value, this))
+                    ((Map) content).put(((ParentClass) value).getUuid(), value);
+                return value;
+            }
+            return null;
+        }
+
+        public Map<String, T> getMapFromString(String mapString) {
             return gson.fromJson(mapString, TypeToken.getParameterized(HashMap.class, String.class, tClass).getType());
         }
 
-        //  <----- Get Map From ... -----
-        public List<V> getListFromDataSnapshot(DataSnapshot dataSnapshot) {
+        public List<T> getListFromDataSnapshot(DataSnapshot dataSnapshot) {
             if (dataSnapshot.getValue() != null) {
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    V value = snapshot.getValue(tClass);
+                    T value = snapshot.getValue(tClass);
                     ((List) content).add(value);
                 }
                 return ((List) content);
@@ -330,17 +345,23 @@ public class Database {
             return null;
         }
 
-        public List<V> getListFromString(String mapString) {
+        public List<T> getListFromString(String mapString) {
             return gson.fromJson(mapString, TypeToken.getParameterized(List.class, tClass).getType());
         }
-
         //  <----- Get List From ... -----
 
+
         //  ----- ChangeListener ----->
-        public Content addChangeListener() {
-            changeListener = new ChangeListener<>(tClass, (dataSnapshot, database1, changeListener1) -> {
-                getMapFromDataSnapshot(dataSnapshot);
-            }, key);
+        public Content<C, T> addChangeListener() {
+            return addChangeListener(null);
+        }
+
+        //  ----- ChangeListener ----->
+        public Content<C, T> addChangeListener(ChangeHandler<C, T> changeHandler) {
+            this.changeHandler = changeHandler;
+            changeListener = new ChangeListener<>(tClass,
+                    (dataSnapshot, database, changeListener) -> getChildFromDataSnapshot(dataSnapshot),
+                    getPathArray());
             return this;
         }
 
@@ -350,20 +371,20 @@ public class Database {
         //  <----- ChangeListener -----
 
 
-        public Map<String, V> updateMap(HashMap<String, V> contentMap) {
+        public Map<String, T> updateMap(HashMap<String, T> contentMap) {
             ((HashMap) content).clear();
             ((HashMap) content).putAll(contentMap);
-            return (HashMap<String, V>) content;
+            return (HashMap<String, T>) content;
         }
 
-        public List<V> updateList(List<V> contentMap) {
+        public List<T> updateList(List<T> contentMap) {
             ((List) content).clear();
             ((List) content).addAll(contentMap);
-            return (List<V>) content;
+            return (List<T>) content;
         }
 
-        public T getContent() {
-            return (T) content;
+        public C getContent() {
+            return content;
         }
 
         private Object getCorrespondingValue() {
@@ -371,7 +392,7 @@ public class Database {
             try {
                 Field field = aClass.getDeclaredField(fieldName);
                 field.setAccessible(true);
-                content = field.get(this);
+                content = (C) field.get(this);
             } catch (NoSuchFieldException e) {
                 return null;
             } catch (IllegalAccessException ignored) {
@@ -379,7 +400,7 @@ public class Database {
             return content;
         }
 
-        public ChangeListener getChangeListener() {
+        public ChangeListener<T> getChangeListener() {
             return changeListener;
         }
 
@@ -394,19 +415,19 @@ public class Database {
             }).toArray(String[]::new);
         }
 
-        public Content setSaveOffline(Boolean saveOffline) {
+        public Content<C, T> setSaveOffline(Boolean saveOffline) {
             this.saveOffline = saveOffline;
             return this;
         }
 
-        public Content setSaveOnline(Boolean saveOnline) {
+        public Content<C, T> setSaveOnline(Boolean saveOnline) {
             this.saveOnline = saveOnline;
             return this;
         }
 
         @NonNull
         @Override
-        protected Content clone() {
+        protected Content<C, T> clone() {
             try {
                 return (Content) super.clone();
             } catch (CloneNotSupportedException e) {
@@ -485,6 +506,7 @@ public class Database {
         return deepCopy;
     }
 
+    // ---------------
 
     public static Boolean saveAll_simple() { // ToDo: alle if abfragen für null rückgabe verbessern
         Boolean aBoolean = saveAll(false);
@@ -506,64 +528,17 @@ public class Database {
 
     @CheckForNull public static Boolean saveAll(boolean forceAll) {
         Log.d(TAG, "saveAll: ");
-//        CustomUtility.GenericInterface<Boolean> logTiming = CustomUtility.logTiming();
-
-//        Thread th = new Thread(() -> {
-//            if (!Database.isReady() || !database.isOnline())
-//            return;
-//        else if (!forceAll && !Database.hasChanges())
-//            return;
-//
-////        logTiming.run(true);
-//
-//        // ToDo: speicherung darf bereits vorhandene Objekte nicht verändern
-//
-////        Thread th1 = new Thread(() -> {
-//            database.saveDatabase_offline(mySPR_daten);
-////        });
-////        th1.setPriority(Thread.MIN_PRIORITY);
-////        th1.start();
-//
-////        logTiming.run(true);
-//        if (Utility.isOnline()) {
-//            if (updateList.isEmpty() || forceAll)
-//                database.writeAllToFirebase(forceAll);
-//            else
-//                database.writeAllToFirebase(updateList);
-//        } else {
-//            updateList.clear();
-//            return ;
-//        }
-////        logTiming.run(true);
-//
-//        updateList.clear();
-//
-////        Thread th = new Thread(() -> {
-//            lastUploaded_contentMap = database.deepCopySimpleContentMap(true, true);
-////        });
-////        th.setPriority(Thread.MIN_PRIORITY);
-////        th.start();
-//
-//        });
-//        th.setPriority(Thread.MIN_PRIORITY);
-//        th.start();
 
         if (!Database.isReady() || !database.isOnline())
             return null;
         else if (!forceAll && !Database.hasChanges())
             return false;
 
-//        logTiming.run(true);
 
-        // ToDo: speicherung darf bereits vorhandene Objekte nicht verändern
-
-        Thread th1 = new Thread(() -> {
-            database.saveDatabase_offline(mySPR_daten);
-        });
+        Thread th1 = new Thread(() -> database.saveDatabase_offline(mySPR_daten));
         th1.setPriority(Thread.MIN_PRIORITY);
         th1.start();
 
-//        logTiming.run(true);
         if (Utility.isOnline()) {
             if (updateList.isEmpty() || forceAll)
                 database.writeAllToFirebase(forceAll);
@@ -573,7 +548,6 @@ public class Database {
             updateList.clear();
             return null;
         }
-//        logTiming.run(true);
 
         updateList.clear();
 
@@ -617,10 +591,6 @@ public class Database {
         return result;
     }
 
-//    public static Boolean saveAll(Context context, @Nullable String... textSavedNothingFailed){
-//        return saveAllTextOnly(context, saveAll(), textSavedNothingFailed);
-//    }
-
     @CheckForNull private static Boolean saveAllTextOnly(Context context, Boolean result, @Nullable String... textSavedNothingFailed){
         String text = "Err.";
 
@@ -639,6 +609,8 @@ public class Database {
             Toast.makeText(context, text, Toast.LENGTH_SHORT).show();
         return result;
     }
+
+    // ---------------
 
     private static boolean hasChanges() {
 //        if (true)
@@ -730,7 +702,7 @@ public class Database {
             }
         }
 
-        updateList.add(new Utility.Triple<>(type, path.toArray(new String[0]), o));
+        updateList.add(new Utility.Quadruple<>(type, path.toArray(new String[0]), o, content));
     }
 
     private void saveDatabase_offline(SharedPreferences mySPR_daten) {
@@ -748,15 +720,16 @@ public class Database {
         editor.apply();
     }
 
-    private void writeAllToFirebase(List<Utility.Triple<Boolean, String[], Object>> updateList) {
-        for (Utility.Triple<Boolean, String[], Object> triple : updateList) {
-            if (triple.first == null || triple.first) {
-                databaseCall_write(triple.third, triple.second);
+    private void writeAllToFirebase(List<Utility.Quadruple<Boolean, String[], Object, Content>> updateList) {
+        for (Utility.Quadruple<Boolean, String[], Object, Content> quadruple : updateList) {
+            if (quadruple.first == null || quadruple.first) {
+                if (quadruple.fourth.changeListener != null)
+                    ignoreUpdateSet.add("/" + String.join("/", quadruple.second));
+                databaseCall_write(quadruple.third, quadruple.second);
             } else {
-                databaseCall_delete(triple.second);
+                databaseCall_delete(quadruple.second);
             }
         }
-
     }
 
     private void writeAllToFirebase(boolean copy) {
@@ -786,7 +759,7 @@ public class Database {
             }
         }
     }
-//  <----- Content management -----
+    //  <----- Content management -----
 
 
     //  ----- checks ----->
@@ -809,7 +782,7 @@ public class Database {
     public static void destroy() {
         database = null;
     }
-//  <----- checks -----
+    //  <----- checks -----
 
 
     //  ----- Get data from Firebase ----->
@@ -832,9 +805,9 @@ public class Database {
                 loadingCount++;
                 Database.databaseCall_read(dataSnapshot -> {
                     loadingCount--;
-                    if (dataSnapshot.getValue() != null) {
-                        content.getMapFromDataSnapshot(dataSnapshot);
-                    }
+
+                    content.getMapFromDataSnapshot(dataSnapshot);
+
                     if (loadingCount == 0) {
                         online = true;
                         finishedLoading();
@@ -893,7 +866,7 @@ public class Database {
         });
 
     }
-//  <----- Get data from Firebase -----
+    //  <----- Get data from Firebase -----
 
 
     //  ----- Firebase Call ----->
@@ -953,16 +926,25 @@ public class Database {
     public static Database.OnDatabaseCallFailed getStandardFail(Context context) {
         return databaseError -> Toast.makeText(context, "Datenbankabfrage gescheitert", Toast.LENGTH_SHORT).show();
     }
-//  <----- Firebase Call -----
+    //  <----- Firebase Call -----
 
 
     //  ----- Change Listener ----->
+    public interface ChangeHandler<C, T> {
+        /**
+         * @param newValue The new Object fom Firebase
+         * @param content The contentWrapper
+         * @return {@code true} if the update was handled, {@code false} otherwise
+         */
+        boolean run(T newValue, Content<C, T> content);
+    }
+
     public interface OnChangeListener {
         void runOnChangeListener();
     }
 
-    public interface OnChangeListener_updateData {
-        void runOnChangeListener_updateData(DataSnapshot dataSnapshot, Database database, ChangeListener<ParentClass> changeListener);
+    public interface OnChangeListener_updateData<T> {
+        T run(DataSnapshot dataSnapshot, Database database, ChangeListener<T> changeListener);
     }
 
     public class ChangeListener<T> {
@@ -970,8 +952,7 @@ public class Database {
         private List<OnChangeListener> onChangeListenerList = new ArrayList<>();
         private boolean listenerApplied;
         private List<String> listenerPath;
-        private OnChangeListener_updateData onChangeListener_updateData;
-        private ChangeListener that = this;
+        private OnChangeListener_updateData<T> onChangeListener_updateData;
         private ValueEventListener onChangeListener = new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -981,7 +962,7 @@ public class Database {
                         return;
                 }
 
-                onChangeListener_updateData.runOnChangeListener_updateData(dataSnapshot, database, that);
+                onChangeListener_updateData.run(dataSnapshot, database, ChangeListener.this);
 
                 fireOnChangeListeners();
             }
@@ -990,9 +971,40 @@ public class Database {
             public void onCancelled(@NonNull DatabaseError databaseError) {
             }
         };
+        private ChildEventListener childEventListener = new ChildEventListener() {
+
+            // ToDo: Alle Listener (Add, Remove) Vervollständigen
+
+            @Override
+            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                String BREAKPOINT = null;
+            }
+
+            @Override
+            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                if (checkIgnoreUpdate(snapshot)) return;
+                T result = onChangeListener_updateData.run(snapshot, database, ChangeListener.this);
+                fireOnChangeListeners();
+            }
+
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+                String BREAKPOINT = null;
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                String BREAKPOINT = null;
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                String BREAKPOINT = null;
+            }
+        };
 
 
-        public ChangeListener(Class<T> tClass, OnChangeListener_updateData onChangeListener_updateData, String... listenerPath) {
+        public ChangeListener(Class<T> tClass, OnChangeListener_updateData<T> onChangeListener_updateData, String... listenerPath) {
             this.tClass = tClass;
             this.listenerPath = Arrays.asList(listenerPath);
             this.onChangeListener_updateData = onChangeListener_updateData;
@@ -1000,11 +1012,13 @@ public class Database {
         }
 
         private void addOnChangeListener_firebase() {
-            accessChildren(databaseReference, (String[]) this.listenerPath.toArray()).addValueEventListener(onChangeListener);
+//            accessChildren(databaseReference, (String[]) this.listenerPath.toArray()).addValueEventListener(onChangeListener);
+            accessChildren(databaseReference, (String[]) this.listenerPath.toArray()).addChildEventListener(childEventListener);
         }
 
         private void removeOnChangeListener_firebase() {
-            accessChildren(databaseReference, (String[]) this.listenerPath.toArray()).removeEventListener(onChangeListener);
+//            accessChildren(databaseReference, (String[]) this.listenerPath.toArray()).removeEventListener(onChangeListener);
+            accessChildren(databaseReference, (String[]) this.listenerPath.toArray()).removeEventListener(childEventListener);
         }
 
         public OnChangeListener addOnChangeListener(OnChangeListener onChangeListener) {
@@ -1033,8 +1047,13 @@ public class Database {
             }
             return newMap;
         }
+
+        private boolean checkIgnoreUpdate(DataSnapshot dataSnapshot) {
+            @SuppressLint("RestrictedApi") String path = dataSnapshot.getRef().getPath().toString();
+            return ignoreUpdateSet.remove(path);
+        }
     }
-//  <----- Change Listener -----
+    //  <----- Change Listener -----
 
 
     //  ----- Database-Reload-Listener ----->
@@ -1057,12 +1076,5 @@ public class Database {
         else
             reloadListenerList.remove(databaseReloadListener);
     }
-//  <----- Database-Reload-Listener -----
-
-
-    //  ----- Sonstige ----->
-    public void generateData() {
-    }
-//  <----- Sonstige -----
-
+    //  <----- Database-Reload-Listener -----
 }

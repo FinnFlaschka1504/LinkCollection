@@ -8,7 +8,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -101,9 +100,9 @@ public class ParentClass_Ratable extends ParentClass {
         });
     }
 
-    public static void applyRatingTendencyIndicator(ImageView imageView, ParentClass_Ratable ratable) {
+    public static void applyRatingTendencyIndicator(ImageView imageView, ParentClass_Ratable ratable, boolean show) {
         Context context = imageView.getContext();
-        if (ratable.hasRatingTendency()) {
+        if (ratable.hasRatingTendency() && show) {
             imageView.setVisibility(View.VISIBLE);
             if (ratable.getRatingTendency() > 0) {
                 imageView.setImageResource(R.drawable.ic_arrow_up);

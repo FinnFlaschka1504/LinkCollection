@@ -16,6 +16,7 @@ import android.text.TextWatcher;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
+import android.util.Log;
 import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -85,6 +86,7 @@ import org.liquidplayer.javascript.JSValue;
 import java.lang.reflect.Type;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.AbstractMap;
@@ -740,7 +742,7 @@ public class ShowActivity extends AppCompatActivity {
                                                                 ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode.getName());
                                                                 if (episode.getAirDate() != null)
                                                                     ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode.getAirDate()));
-                                                                ParentClass_Ratable.applyRatingTendencyIndicator(itemView.findViewById(R.id.listItem_episode_ratingTendency), episode);
+                                                                ParentClass_Ratable.applyRatingTendencyIndicator(itemView.findViewById(R.id.listItem_episode_ratingTendency), episode, episode.isWatched());
                                                                 ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode.getRating() != -1 ? episode.getRating() + " ☆" : "");
 
 //                                                        ImageView listItem_episode_image = itemView.findViewById(R.id.listItem_episode_image);
@@ -812,7 +814,7 @@ public class ShowActivity extends AppCompatActivity {
                             ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode.getName());
                             if (episode.getAirDate() != null)
                                 ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode.getAirDate()));
-                            ParentClass_Ratable.applyRatingTendencyIndicator(itemView.findViewById(R.id.listItem_episode_ratingTendency), episode);
+                            ParentClass_Ratable.applyRatingTendencyIndicator(itemView.findViewById(R.id.listItem_episode_ratingTendency), episode, episode.isWatched());
                             ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode.getRating() != -1 ? episode.getRating() + " ☆" : "");
 
                         })
@@ -968,23 +970,123 @@ public class ShowActivity extends AppCompatActivity {
     }
 
     public static Database.ChangeHandler<Map, Show> getShowChangeHandler() {
-        return (newShow, content) -> {
+        return (newShow, content) -> { // ToDo:
             Database database = Database.getInstance();
             Show oldShow = database.showMap.get(newShow.getUuid());
 
-            Type type = new TypeToken<Map<String, Object>>(){}.getType();
+            // Unterschiede Finden
+            @SuppressWarnings("UnstableApiUsage") Type mapType = new TypeToken<Map<String, Object>>(){}.getType();
             Gson gson = new Gson();
-            Map<String, Object> oldMap = FlatMapUtil.flatten((Map<String, Object>) gson.fromJson(gson.toJson(oldShow), type));
-            Map<String, Object> newMap = FlatMapUtil.flatten((Map<String, Object>) gson.fromJson(gson.toJson(newShow), type));
+            Map<String, Object> oldMap = FlatMapUtil.flatten((Map<String, Object>) gson.fromJson(gson.toJson(oldShow), mapType));
+            Map<String, Object> newMap = FlatMapUtil.flatten((Map<String, Object>) gson.fromJson(gson.toJson(newShow), mapType));
+            MapDifference<String, Object> difference = Maps.difference(oldMap, newMap);
 
-            MapDifference difference = Maps.difference(oldMap, newMap);
-//            oldShow.getChangesFrom(newShow);
-            String BREAKPOINT = null;
+            // Änderungen Übernehmen
+            for (Map.Entry<String, MapDifference.ValueDifference<Object>> entry : difference.entriesDiffering().entrySet()) {
+                CustomList<String> allSteps = new CustomList<>(entry.getKey().substring(1).split("/"));
+                Object object = traverseObjectByPath(oldShow, allSteps.subList(0, -1));
+                String lastStep = allSteps.getLast();
+                Object replacement = entry.getValue().rightValue();
+                Class<?> fieldType = CustomUtility.getField(object, lastStep).getType();
+                if (Date.class.isAssignableFrom(fieldType)) {
+                    try {
+                        replacement = new SimpleDateFormat("MMM dd, yyyy HH:mm:ss", Locale.getDefault()).parse((String) replacement);
+                    } catch (ParseException e) {
+                        Log.e("GenericTag", "getShowChangeHandler: ", e);
+                    }
+                } else if (fieldType.isEnum())
+                    //noinspection unchecked
+                    replacement = Enum.valueOf((Class<Enum>) CustomUtility.getField(object, lastStep).getType(), (String) replacement);
+                CustomUtility.reflectionSet(object, lastStep, replacement);
+            }
+
+            // Neuerungen Übernehmen
+            Map<String, Object> mapRight = difference.entriesOnlyOnRight();
+            if (!mapRight.isEmpty()) {
+                CustomList<String> parentClassPaths = mapRight.keySet().stream().filter(s -> s.endsWith("/uuid")).map(s -> s.substring(0, s.length() - 5)).collect(Collectors.toCollection(CustomList::new));
+                CustomList<String> restPaths = mapRight.keySet().stream().filter(path -> parentClassPaths.stream().noneMatch(path::startsWith)).collect(Collectors.toCollection(CustomList::new));
+                CustomList<String> allPaths = parentClassPaths.addAllDistinct(restPaths);
+                for (String path : allPaths) {
+                    CustomList<String> stepList = new CustomList<>(path.substring(1).split("/"));
+                    Object newObject = traverseObjectByPath(newShow, stepList);
+                    Object addHere = traverseObjectByPath(oldShow, stepList.subList(0, -1));
+                    String key = stepList.getLast();
+                    if (addHere instanceof Map)
+                        ((Map<String, Object>) addHere).put(key, newObject);
+                    else if (addHere instanceof List && key.matches("\\d+")) {
+                        int index = Integer.parseInt(key);
+                        if (((List<Object>) addHere).size() <= index)
+                            ((List<Object>) addHere).add(index, newObject);
+                    } else
+                        CustomUtility.reflectionSet(addHere, key, newObject);
+                }
+            }
+
+            // Löschungen Übernehmen
+            Map<String, Object> mapLeft = difference.entriesOnlyOnLeft();
+            if (!mapLeft.isEmpty()) {
+                CustomList<String> parentClassPaths = mapLeft.keySet().stream().filter(s -> s.endsWith("/uuid")).map(s -> s.substring(0, s.length() - 5)).collect(Collectors.toCollection(CustomList::new));
+                CustomList<String> restPaths = mapLeft.keySet().stream().filter(path -> parentClassPaths.stream().noneMatch(path::startsWith)).collect(Collectors.toCollection(CustomList::new));
+                CustomList<String> allPaths = parentClassPaths.addAllDistinct(restPaths);
+                for (String path : allPaths) {
+                    CustomList<String> stepList = new CustomList<>(path.substring(1).split("/"));
+                    Object deleteHere = traverseObjectByPath(oldShow, stepList.subList(0, -1));
+                    String key = stepList.getLast();
+                    if (deleteHere instanceof Map)
+                        ((Map<String, Object>) deleteHere).remove(key);
+                    else if (deleteHere instanceof List && key.matches("\\d+")) {
+                        int index = Integer.parseInt(key);
+                        if (((List<Object>) deleteHere).size() <= index)
+                            ((List<Object>) deleteHere).remove(index);
+                    } else
+                        CustomUtility.reflectionSet(deleteHere, key, null);
+                }
+            }
+
             return true;
         };
-    } // DetailsUpdate, ratingChange, viewAdded (neu / weitere), EpisodeDetailsAdded
+    }
     // unterteilen in änderungen, neuerungen und löschungen
     // unterteilen in ShowChanges, SeasonChanges, EpisodeChanges
+
+    /**
+     * DetailsUpdate: ✅
+     * DetailsUpdate SeasonAdded:
+     * viewAdded neu: ✅
+     * viewAdded weitere: ✅
+     * ratingChange: ✅
+     * EpisodeDetailsAdded: ✅
+     */
+
+    private static Object traverseObjectStep(String step, Object o) {
+        if (step.matches("\\d+") && List.class.isAssignableFrom(o.getClass()))
+            return ((List) o).get(Integer.parseInt(step));
+        else if (Map.class.isAssignableFrom(o.getClass()))
+            return ((Map) o).get(step);
+        else
+            return CustomUtility.reflectionGet(o, step);
+    }
+
+    private static Object traverseObjectByPath(Object o, CustomList<String> path) {
+        Object currentObject = o;
+        for (String step : path) {
+            currentObject = traverseObjectStep(step, currentObject);
+        }
+        return currentObject;
+    }
+
+
+    private static CustomList<String> getNeuParentClassPaths(Map<String, Object> map) {
+        return map.keySet().stream().filter(s -> s.endsWith("/uuid")).map(s -> s.substring(0, s.length() - 5)).collect(Collectors.toCollection(CustomList::new));
+    }
+
+    private static ParentClass parseParentClassFromPath(Class baseClass, String path, Map<String, Object> map) {
+        Map<String, Object> tempMap = new HashMap<>();
+        map.entrySet().stream().filter(entry -> entry.getKey().startsWith(path)).forEach(entry -> {
+            tempMap.put(entry.getKey().substring(path.length() + 1), entry.getValue());
+        });
+        return null;
+    }
 
     public static final class FlatMapUtil {
 
@@ -1607,7 +1709,7 @@ public class ShowActivity extends AppCompatActivity {
                         itemView.findViewById(R.id.listItem_episode_extraInformation_layout).setVisibility(View.GONE);
 
                     ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(Utility.isNullReturnOrElse(episode.getAirDate(), "", date -> new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(date)));
-                    ParentClass_Ratable.applyRatingTendencyIndicator(itemView.findViewById(R.id.listItem_episode_ratingTendency), episode);
+                    ParentClass_Ratable.applyRatingTendencyIndicator(itemView.findViewById(R.id.listItem_episode_ratingTendency), episode, episode.isWatched());
                     ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(!CustomUtility.boolOr(episode.getRating(), -1f, 0f) && episode.isWatched() ? episode.getRating() + " ☆" : "");
                     ((TextView) itemView.findViewById(R.id.listItem_episode_viewCount)).setText(
                             episode.getDateList().size() >= 2 || (!episode.getDateList().isEmpty() && !episode.isWatched()) ? "| " + episode.getDateList().size() : "");
@@ -1725,6 +1827,15 @@ public class ShowActivity extends AppCompatActivity {
         Show.Episode cloneEpisode = episode.clone();
         cloneEpisode.setDateList(new ArrayList<>(episode.getDateList()));
 
+        CustomDialog[] dialog = {null};
+        Database.OnChangeListener<Object> listener = Database.addOnChangeListener(Database.SHOW_MAP, change -> {
+            if (change instanceof Show && ((Show) change).getUuid().equals(episode.getShowId()) && dialog[0] != null) {
+                currentRating[0] = episode.getRating();
+                ((TextView) dialog[0].findViewById(R.id.dialog_detailEpisode_views)).setText(""); // ToDo: vieleicht hier so machen dass nicht tauscht
+                dialog[0].reloadView();
+            }
+        }); // ToDo: durch lifeCycleCallback ersetzen
+
         CustomDialog.Builder(this)
                 .setTitle(episode.getName())
                 .setView(R.layout.dialog_detail_episode)
@@ -1755,8 +1866,7 @@ public class ShowActivity extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.dialog_detailEpisode_number)).setText(String.valueOf(episode.getEpisodeNumber()));
 
                     ImageView listItem_episode_image = view.findViewById(R.id.dialog_detailEpisode_preview);
-                    int showPreviewSetting = Integer.parseInt(Settings.getSingleSetting(this, Settings.SETTING_SHOW_EPISODE_PREVIEW));
-                    if (Utility.stringExists(episode.getStillPath())) { // && (showPreviewSetting == 0 || showPreviewSetting == 1 && episode.isWatched())) {
+                    if (Utility.stringExists(episode.getStillPath())) {
                         listItem_episode_image.setVisibility(View.VISIBLE);
                         Utility.loadUrlIntoImageView(this, listItem_episode_image, Utility.getTmdbImagePath_ifNecessary(episode.getStillPath(), false), Utility.getTmdbImagePath_ifNecessary(episode.getStillPath(), true), null, () -> Utility.roundImageView(listItem_episode_image, 3));
                     } else
@@ -1935,10 +2045,13 @@ public class ShowActivity extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.dialog_detailEpisode_release)).setText(Utility.isNullReturnOrElse(episode.getAirDate(), "", date -> new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(date)));
 
                     View ratingTendencyButton = view.findViewById(R.id.dialog_detailEpisode_ratingTendency);
+                    Runnable setRatingTendencyIcon = () -> ParentClass_Ratable.applyRatingTendencyIndicator(view.findViewById(R.id.dialog_detailEpisode_ratingTendency_icon), cloneEpisode, true);
+                    setRatingTendencyIcon.run();
                     ratingTendencyButton.setOnClickListener(v -> {
                         ParentClass_Ratable.showRatingTendencyDialog(this, cloneEpisode, ratingTendencyButton, parentClass_ratable -> {
                             CustomDialog.ButtonHelper actionButton = customDialog.getActionButton();
                             actionButton.setEnabled(currentRating[0] != episode.getRating() || !Objects.equals(episode.getRatingTendency(), cloneEpisode.getRatingTendency()));
+                            setRatingTendencyIcon.run();
                         });
                     });
 
@@ -1960,13 +2073,15 @@ public class ShowActivity extends AppCompatActivity {
                         destroyGetImdbIdAndDetails[0] = getImdbIdAndDetails(new CustomList<>(episode), false, customDialog::reloadView);
                     }
                 })
-                .setOnDialogDismiss(customDialog -> {
+                .addOnDialogDismiss(customDialog -> {
                     Utility.runRunnable(destroyGetImdbIdAndDetails[0]);
                     if (customRecycler != null && !cloneEpisode.equals(episode))
                         customRecycler.update(index);
                     if (startedDirectly)
                         Database.saveAll();
                 })
+                .addOnDialogShown(customDialog -> dialog[0] = customDialog)
+                .addOnDialogDismiss(customDialog -> Database.removeOnChangeListener(Database.SHOW_MAP, listener))
                 .show();
 //        Utility.traktApiRequest(this, String.format(Locale.getDefault(), "https://api.trakt.tv/search/tmdb/%d?type=episode", episode.getTmdbId()), JSONArray.class, jsonArray -> {
 //            String BREAKPOINT = null;

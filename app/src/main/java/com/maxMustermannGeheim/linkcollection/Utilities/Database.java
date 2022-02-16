@@ -171,7 +171,7 @@ public class Database {
                 new Content<Map, Joke>(Joke.class, jokeMap, databaseCode_content, JOKE, JOKE_MAP),
                 new Content<Map, JokeCategory>(JokeCategory.class, jokeCategoryMap, databaseCode_content, JOKE, JOKE_CATEGORY_MAP),
 
-                new Content<Map, Show>(Show.class, showMap, databaseCode_content, SHOWS, SHOW_MAP).addChangeListener(ShowActivity.getShowChangeHandler()),
+                new Content<Map, Show>(Show.class, showMap, databaseCode_content, SHOWS, SHOW_MAP).enableChangeListener(ShowActivity.getShowChangeHandler()),
                 new Content<Map, ShowGenre>(ShowGenre.class, showGenreMap, databaseCode_content, SHOWS, SHOW_GENRE_MAP),
                 new Content<List, String>(String.class, showWatchLaterList, databaseCode_content, SHOWS, SHOW_WATCH_LATER_LIST),
 
@@ -352,15 +352,19 @@ public class Database {
 
 
         //  ----- ChangeListener ----->
-        public Content<C, T> addChangeListener() {
-            return addChangeListener(null);
+        public Content<C, T> enableChangeListener() {
+            return enableChangeListener(null);
         }
 
-        //  ----- ChangeListener ----->
-        public Content<C, T> addChangeListener(ChangeHandler<C, T> changeHandler) {
+        public Content<C, T> enableChangeListener(ChangeHandler<C, T> changeHandler) {
             this.changeHandler = changeHandler;
             changeListener = new ChangeListener<>(tClass,
-                    (dataSnapshot, database, changeListener) -> getChildFromDataSnapshot(dataSnapshot),
+                    (dataSnapshot, database, changeListener) -> {
+                        T change = getChildFromDataSnapshot(dataSnapshot);
+                        if (content instanceof Map && change instanceof ParentClass)
+                            change = (T) ((Map<?, ?>) content).get(((ParentClass) change).getUuid());
+                        return change;
+                    },
                     getPathArray());
             return this;
         }
@@ -939,8 +943,8 @@ public class Database {
         boolean run(T newValue, Content<C, T> content);
     }
 
-    public interface OnChangeListener {
-        void runOnChangeListener();
+    public interface OnChangeListener<T> {
+        void run(T change);
     }
 
     public interface OnChangeListener_updateData<T> {
@@ -949,7 +953,7 @@ public class Database {
 
     public class ChangeListener<T> {
         private final Class<T> tClass;
-        private List<OnChangeListener> onChangeListenerList = new ArrayList<>();
+        private List<OnChangeListener<T>> onChangeListenerList = new ArrayList<>();
         private boolean listenerApplied;
         private List<String> listenerPath;
         private OnChangeListener_updateData<T> onChangeListener_updateData;
@@ -962,9 +966,9 @@ public class Database {
                         return;
                 }
 
-                onChangeListener_updateData.run(dataSnapshot, database, ChangeListener.this);
+                T change = onChangeListener_updateData.run(dataSnapshot, database, ChangeListener.this);
 
-                fireOnChangeListeners();
+                fireOnChangeListeners(change);
             }
 
             @Override
@@ -978,13 +982,14 @@ public class Database {
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                 String BREAKPOINT = null;
+                // ToDo: vielleicht hiermit die Map initialisieren
             }
 
             @Override
             public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                if (checkIgnoreUpdate(snapshot)) return;
+                if (checkIgnoreUpdate(snapshot)/* && false*/) return;
                 T result = onChangeListener_updateData.run(snapshot, database, ChangeListener.this);
-                fireOnChangeListeners();
+                fireOnChangeListeners(result);
             }
 
             @Override
@@ -1021,18 +1026,20 @@ public class Database {
             accessChildren(databaseReference, (String[]) this.listenerPath.toArray()).removeEventListener(childEventListener);
         }
 
-        public OnChangeListener addOnChangeListener(OnChangeListener onChangeListener) {
+        public ChangeListener<T> addOnChangeListener(OnChangeListener<T> onChangeListener) {
             onChangeListenerList.add(onChangeListener);
-            return onChangeListener;
+            return this;
         }
 
-        public boolean removeOnChangeListener(OnChangeListener onChangeListener) {
+        public boolean removeOnChangeListener(OnChangeListener<T> onChangeListener) {
             return onChangeListenerList.remove(onChangeListener);
         }
 
-        private void fireOnChangeListeners() {
-            saveDatabase_offline(mySPR_daten);
-            onChangeListenerList.forEach(OnChangeListener::runOnChangeListener);
+        private void fireOnChangeListeners(T change) {
+            Thread th1 = new Thread(() -> database.saveDatabase_offline(mySPR_daten));
+            th1.setPriority(Thread.MIN_PRIORITY);
+            th1.start();
+            onChangeListenerList.forEach(listener -> listener.run(change));
         }
 
         private Map<String, T> updateMap(DataSnapshot dataSnapshot) {
@@ -1052,6 +1059,20 @@ public class Database {
             @SuppressLint("RestrictedApi") String path = dataSnapshot.getRef().getPath().toString();
             return ignoreUpdateSet.remove(path);
         }
+    }
+
+    public static <T> OnChangeListener<T> addOnChangeListener(String contentKey, OnChangeListener<T> onChangeListener) {
+        ChangeListener<T> changeListener = contentMap.get(contentKey).changeListener;
+        if (changeListener != null)
+            changeListener.addOnChangeListener(onChangeListener);
+        return onChangeListener;
+    }
+
+    public static <T> OnChangeListener<T> removeOnChangeListener(String contentKey, OnChangeListener<T> onChangeListener) {
+        ChangeListener<T> changeListener = contentMap.get(contentKey).changeListener;
+        if (changeListener != null)
+            changeListener.removeOnChangeListener(onChangeListener);
+        return onChangeListener;
     }
     //  <----- Change Listener -----
 

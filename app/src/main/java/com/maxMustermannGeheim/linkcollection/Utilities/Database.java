@@ -133,7 +133,7 @@ public class Database {
     public static final String SHOW_WATCH_LATER_LIST = "SHOW_WATCH_LATER_LIST";
     public Map<String, Show> showMap = new HashMap<>();
     public Map<String, ShowGenre> showGenreMap = new HashMap<>();
-    public Map<Show, Map<Integer, Map<String, Show.Episode>>> tempShowSeasonEpisodeMap = new HashMap<>();
+    public Map<String, Map<Integer, Map<String, Show.Episode>>> tempShowSeasonEpisodeMap = new HashMap<>();
     public List<String> showWatchLaterList = new ArrayList<>();
 
     public static final String MEDIA = "MEDIA";
@@ -538,10 +538,7 @@ public class Database {
         else if (!forceAll && !Database.hasChanges())
             return false;
 
-
-        Thread th1 = new Thread(() -> database.saveDatabase_offline(mySPR_daten));
-        th1.setPriority(Thread.MIN_PRIORITY);
-        th1.start();
+        CustomUtility.runMinPriorityThread(() -> database.saveDatabase_offline(mySPR_daten));
 
         if (Utility.isOnline()) {
             if (updateList.isEmpty() || forceAll)
@@ -555,12 +552,7 @@ public class Database {
 
         updateList.clear();
 
-        Thread th = new Thread(() -> {
-            lastUploaded_contentMap = database.deepCopySimpleContentMap(true, true);
-        });
-        th.setPriority(Thread.MIN_PRIORITY);
-        th.start();
-
+        CustomUtility.runMinPriorityThread(() -> lastUploaded_contentMap = database.deepCopySimpleContentMap(true, true));
 //        logTiming.run(false);
         return true;
     }
@@ -957,24 +949,6 @@ public class Database {
         private boolean listenerApplied;
         private List<String> listenerPath;
         private OnChangeListener_updateData<T> onChangeListener_updateData;
-        private ValueEventListener onChangeListener = new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                if (!listenerApplied) {
-                    listenerApplied = true;
-                    if (!reload)
-                        return;
-                }
-
-                T change = onChangeListener_updateData.run(dataSnapshot, database, ChangeListener.this);
-
-                fireOnChangeListeners(change);
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-            }
-        };
         private ChildEventListener childEventListener = new ChildEventListener() {
 
             // ToDo: Alle Listener (Add, Remove) Vervollständigen
@@ -988,8 +962,8 @@ public class Database {
             @Override
             public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                 if (checkIgnoreUpdate(snapshot)/* && false*/) return;
-                T result = onChangeListener_updateData.run(snapshot, database, ChangeListener.this);
-                fireOnChangeListeners(result);
+                T change = onChangeListener_updateData.run(snapshot, database, ChangeListener.this);
+                fireOnChangeListeners(change);
             }
 
             @Override
@@ -1036,9 +1010,7 @@ public class Database {
         }
 
         private void fireOnChangeListeners(T change) {
-            Thread th1 = new Thread(() -> database.saveDatabase_offline(mySPR_daten));
-            th1.setPriority(Thread.MIN_PRIORITY);
-            th1.start();
+            CustomUtility.runMinPriorityThread(() -> database.saveDatabase_offline(mySPR_daten));
             onChangeListenerList.forEach(listener -> listener.run(change));
         }
 

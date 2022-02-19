@@ -1770,7 +1770,7 @@ public class Utility {
             {
                 Show.Episode episode = (Show.Episode) event.getData();
                 if (context instanceof ShowActivity) {
-                    ((ShowActivity) context).showEpisodeDetailDialog(null, episode, true);
+                    ((ShowActivity) context).showEpisodeDetailDialog(null, episode, true, null);
                 } else {
                     ((AppCompatActivity) context).startActivityForResult(new Intent(context, ShowActivity.class)
                             .putExtra(CategoriesActivity.EXTRA_SEARCH, episode.getShowId())
@@ -1837,10 +1837,14 @@ public class Utility {
             setButtons(layout, 1, calendarView, episodeList, customRecycler);
         });
         layout.findViewById(R.id.dialog_editViews_remove).setOnClickListener(view -> {
-            episode.removeDate(currentDate);
-            calendarView.removeEvents(currentDate);
-            loadVideoList(calendarView.getEvents(currentDate), layout, customRecycler);
-            setButtons(layout, 0, calendarView, episodeList, customRecycler);
+            List<Event> events = calendarView.getEvents(currentDate);
+            events.stream().max(Comparator.comparingLong(Event::getTimeInMillis)).ifPresent(event -> {
+                episode.removeDate(new Date(event.getTimeInMillis()));
+                calendarView.removeEvent(event);
+                List<Event> eventList = calendarView.getEvents(currentDate);
+                loadVideoList(eventList, layout, customRecycler);
+                setButtons(layout, eventList.size(), calendarView, episodeList, customRecycler);
+            });
         });
     }
     /**  <------------------------- EpisodeCalender -------------------------  */
@@ -1849,7 +1853,7 @@ public class Utility {
 
     private static void loadVideoList(List<Event> eventList, FrameLayout layout, CustomRecycler<Event> customRecycler) {
         eventList = new ArrayList<>(eventList);
-        eventList.sort((o1, o2) -> Long.compare(o1.getTimeInMillis(), o2.getTimeInMillis()));
+        eventList.sort(Comparator.comparingLong(Event::getTimeInMillis));
         TextView calender_noTrips = layout.findViewById(R.id.fragmentCalender_noViews);
 
         if (eventList.isEmpty()) {
@@ -4250,6 +4254,14 @@ public class Utility {
         drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
         drawable.draw(canvas);
         return bitmap;
+    }
+
+    public static void simpleLoadUrlIntoImageView(Context context, ImageView imageView, @Nullable Boolean show, String imagePath, @Nullable String fullScreenPath, int roundedRadiusDp, Runnable... onFail_onSuccess_onFullscreen) {
+        if ((show == null && stringExists(imagePath) || (show != null && show))) {
+            imageView.setVisibility(View.VISIBLE);
+            Utility.simpleLoadUrlIntoImageView(context, imageView, imagePath, fullScreenPath, roundedRadiusDp, onFail_onSuccess_onFullscreen);
+        } else
+            imageView.setVisibility(View.GONE);
     }
 
     public static void simpleLoadUrlIntoImageView(Context context, ImageView imageView, String imagePath, @Nullable String fullScreenPath, int roundedRadiusDp, Runnable... onFail_onSuccess_onFullscreen) {

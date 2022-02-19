@@ -94,6 +94,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -120,6 +121,8 @@ public class ShowActivity extends AppCompatActivity {
     public static final String EXTRA_NEXT_EPISODE_SELECT = "EXTRA_NEXT_EPISODE_SELECT";
     private final String ADVANCED_SEARCH_CRITERIA_GENRE = "g";
     private final DecimalFormat decimalFormat = new DecimalFormat("#.##");
+    private Database.OnChangeListener<Object> onChangeListener;
+
     {
         decimalFormat.setRoundingMode(RoundingMode.HALF_UP);
     }
@@ -150,7 +153,7 @@ public class ShowActivity extends AppCompatActivity {
     }
 
     private Database database;
-    private SharedPreferences mySPR_daten;
+    private SharedPreferences mySPR_data;
     private boolean scrolling = true;
     private SORT_TYPE sort_type = SORT_TYPE.LATEST;
     private HashSet<FILTER_TYPE> filterTypeSet = new HashSet<>(Arrays.asList(FILTER_TYPE.NAME, FILTER_TYPE.GENRE));
@@ -189,7 +192,7 @@ public class ShowActivity extends AppCompatActivity {
             setContentView(R.layout.loading_screen);
         else
             setContentView(R.layout.activity_show);
-        mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_DATA, MODE_PRIVATE);
+        mySPR_data = getSharedPreferences(SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
         loadDatabase();
     }
@@ -326,7 +329,7 @@ public class ShowActivity extends AppCompatActivity {
                         Show.Season season = show[0].getSeasonList().get(1);
                         apiSeasonRequest(show[0], 1, () -> {
                             CustomRecycler<Show.Season> seasonRecycler = showSeasonDialog(show[0]);
-                            Map<String, Show.Episode> episodeMap = database.tempShowSeasonEpisodeMap.get(show[0]).get(1);
+                            Map<String, Show.Episode> episodeMap = database.tempShowSeasonEpisodeMap.get(show[0].getUuid()).get(1);
                             showEpisodeDialog(season, episodeMap, seasonRecycler).goTo((search, episode2) -> episode2.getUuid().equals(episodeMap.get("E:1").getUuid()), "");
                             Toast.makeText(this, "Noch keine Ansichten für diese Serie", Toast.LENGTH_SHORT).show();
                         });
@@ -344,7 +347,7 @@ public class ShowActivity extends AppCompatActivity {
 
                         CustomRecycler<Show.Season> seasonRecycler = showSeasonDialog(show[0]);
                         int seasonNumber = nextEpisode.getSeasonNumber();
-                        showEpisodeDialog(show[0].getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show[0]).get(seasonNumber), seasonRecycler).goTo((search, episode2) -> episode2.getUuid().equals(nextEpisode.getUuid()), "");
+                        showEpisodeDialog(show[0].getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show[0].getUuid()).get(seasonNumber), seasonRecycler).goTo((search, episode2) -> episode2.getUuid().equals(nextEpisode.getUuid()), "");
                     });
                 };
 
@@ -403,11 +406,11 @@ public class ShowActivity extends AppCompatActivity {
                                     .getEpisodeMap().get(episode.getUuid());
 
                             if (oldEpisode != null)
-                                showEpisodeDetailDialog(null, oldEpisode, true);
+                                showEpisodeDetailDialog(null, oldEpisode, true, null);
                             else
                                 apiSeasonRequest(database.showMap.get(episode.getShowId()), episode.getSeasonNumber(), () ->
-                                        showEpisodeDetailDialog(null, database.tempShowSeasonEpisodeMap.get(database.showMap.get(episode.getShowId())).get(episode.getSeasonNumber())
-                                                .get(episode.getUuid()), true));
+                                        showEpisodeDetailDialog(null, database.tempShowSeasonEpisodeMap.get(episode.getShowId()).get(episode.getSeasonNumber())
+                                                .get(episode.getUuid()), true, null));
                         });
                     }
                 }
@@ -421,10 +424,12 @@ public class ShowActivity extends AppCompatActivity {
                 }
             }
             setSearchHint();
+
+            onChangeListener = Database.addOnChangeListener(Database.SHOW_MAP, change -> reLoadRecycler());
         };
 
         if (database == null || !Database.isReady()) {
-            Database.getInstance(mySPR_daten, newDatabase -> {
+            Database.getInstance(mySPR_data, newDatabase -> {
                 database = newDatabase;
                 whenLoaded.run();
             }, false);
@@ -647,10 +652,10 @@ public class ShowActivity extends AppCompatActivity {
                         int seasonNumber = episode[0].getSeasonNumber();
                         if (episode[0].equals(list.get(0).second)) {
                             apiSeasonRequest(show, seasonNumber, () -> {
-                                showEpisodeDialog(show.getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show).get(seasonNumber), seasonRecycler).goTo(episode[0]);
+                                showEpisodeDialog(show.getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show.getUuid()).get(seasonNumber), seasonRecycler).goTo(episode[0]);
                             });
                         } else
-                            showEpisodeDialog(show.getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show).get(seasonNumber), seasonRecycler).goTo((search, episode1) -> episode1.getUuid().equals(episode[0].getUuid()), "");
+                            showEpisodeDialog(show.getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show.getUuid()).get(seasonNumber), seasonRecycler).goTo((search, episode1) -> episode1.getUuid().equals(episode[0].getUuid()), "");
                     };
 
                     CustomDialog.Builder(this)
@@ -818,13 +823,13 @@ public class ShowActivity extends AppCompatActivity {
                             ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode.getRating() != -1 ? episode.getRating() + " ☆" : "");
 
                         })
-                        .setOnClickListener((customRecycler, itemView, episode, index) -> showEpisodeDetailDialog(null, episode, true))
+                        .setOnClickListener((customRecycler, itemView, episode, index) -> showEpisodeDetailDialog(null, episode, true, null))
                         .setOnLongClickListener((customRecycler, itemView, episode, index) -> {
                             int seasonNumber = episode.getSeasonNumber();
                             getTempSeason(show, seasonNumber, stringEpisodeMap -> {
                                 CustomRecycler<Show.Season> seasonRecycler = showSeasonDialog(show);
                                 CustomRecycler<Show.Episode> episodeRecycler = showEpisodeDialog(show.getSeasonList().get(seasonNumber), stringEpisodeMap, seasonRecycler).goTo(episode);
-                                showEpisodeDetailDialog(episodeRecycler, episode, false);
+                                showEpisodeDetailDialog(episodeRecycler, episode, false, null);
                             });
                         })
                         .generateRecyclerView())
@@ -968,159 +973,6 @@ public class ShowActivity extends AppCompatActivity {
     public static void showNextEpisode(AppCompatActivity activity, View view, boolean longClick) {
         activity.startActivityForResult(new Intent(activity, ShowActivity.class).setAction(ACTION_NEXT_EPISODE).putExtra(EXTRA_NEXT_EPISODE_SELECT, longClick), MainActivity.START_SHOW_NEXT_EPISODE);
     }
-
-    public static Database.ChangeHandler<Map, Show> getShowChangeHandler() {
-        return (newShow, content) -> { // ToDo:
-            Database database = Database.getInstance();
-            Show oldShow = database.showMap.get(newShow.getUuid());
-
-            // Unterschiede Finden
-            @SuppressWarnings("UnstableApiUsage") Type mapType = new TypeToken<Map<String, Object>>(){}.getType();
-            Gson gson = new Gson();
-            Map<String, Object> oldMap = FlatMapUtil.flatten((Map<String, Object>) gson.fromJson(gson.toJson(oldShow), mapType));
-            Map<String, Object> newMap = FlatMapUtil.flatten((Map<String, Object>) gson.fromJson(gson.toJson(newShow), mapType));
-            MapDifference<String, Object> difference = Maps.difference(oldMap, newMap);
-
-            // Änderungen Übernehmen
-            for (Map.Entry<String, MapDifference.ValueDifference<Object>> entry : difference.entriesDiffering().entrySet()) {
-                CustomList<String> allSteps = new CustomList<>(entry.getKey().substring(1).split("/"));
-                Object object = traverseObjectByPath(oldShow, allSteps.subList(0, -1));
-                String lastStep = allSteps.getLast();
-                Object replacement = entry.getValue().rightValue();
-                Class<?> fieldType = CustomUtility.getField(object, lastStep).getType();
-                if (Date.class.isAssignableFrom(fieldType)) {
-                    try {
-                        replacement = new SimpleDateFormat("MMM dd, yyyy HH:mm:ss", Locale.getDefault()).parse((String) replacement);
-                    } catch (ParseException e) {
-                        Log.e("GenericTag", "getShowChangeHandler: ", e);
-                    }
-                } else if (fieldType.isEnum())
-                    //noinspection unchecked
-                    replacement = Enum.valueOf((Class<Enum>) CustomUtility.getField(object, lastStep).getType(), (String) replacement);
-                CustomUtility.reflectionSet(object, lastStep, replacement);
-            }
-
-            // Neuerungen Übernehmen
-            Map<String, Object> mapRight = difference.entriesOnlyOnRight();
-            if (!mapRight.isEmpty()) {
-                CustomList<String> parentClassPaths = mapRight.keySet().stream().filter(s -> s.endsWith("/uuid")).map(s -> s.substring(0, s.length() - 5)).collect(Collectors.toCollection(CustomList::new));
-                CustomList<String> restPaths = mapRight.keySet().stream().filter(path -> parentClassPaths.stream().noneMatch(path::startsWith)).collect(Collectors.toCollection(CustomList::new));
-                CustomList<String> allPaths = parentClassPaths.addAllDistinct(restPaths);
-                for (String path : allPaths) {
-                    CustomList<String> stepList = new CustomList<>(path.substring(1).split("/"));
-                    Object newObject = traverseObjectByPath(newShow, stepList);
-                    Object addHere = traverseObjectByPath(oldShow, stepList.subList(0, -1));
-                    String key = stepList.getLast();
-                    if (addHere instanceof Map)
-                        ((Map<String, Object>) addHere).put(key, newObject);
-                    else if (addHere instanceof List && key.matches("\\d+")) {
-                        int index = Integer.parseInt(key);
-                        if (((List<Object>) addHere).size() <= index)
-                            ((List<Object>) addHere).add(index, newObject);
-                    } else
-                        CustomUtility.reflectionSet(addHere, key, newObject);
-                }
-            }
-
-            // Löschungen Übernehmen
-            Map<String, Object> mapLeft = difference.entriesOnlyOnLeft();
-            if (!mapLeft.isEmpty()) {
-                CustomList<String> parentClassPaths = mapLeft.keySet().stream().filter(s -> s.endsWith("/uuid")).map(s -> s.substring(0, s.length() - 5)).collect(Collectors.toCollection(CustomList::new));
-                CustomList<String> restPaths = mapLeft.keySet().stream().filter(path -> parentClassPaths.stream().noneMatch(path::startsWith)).collect(Collectors.toCollection(CustomList::new));
-                CustomList<String> allPaths = parentClassPaths.addAllDistinct(restPaths);
-                for (String path : allPaths) {
-                    CustomList<String> stepList = new CustomList<>(path.substring(1).split("/"));
-                    Object deleteHere = traverseObjectByPath(oldShow, stepList.subList(0, -1));
-                    String key = stepList.getLast();
-                    if (deleteHere instanceof Map)
-                        ((Map<String, Object>) deleteHere).remove(key);
-                    else if (deleteHere instanceof List && key.matches("\\d+")) {
-                        int index = Integer.parseInt(key);
-                        if (((List<Object>) deleteHere).size() <= index)
-                            ((List<Object>) deleteHere).remove(index);
-                    } else
-                        CustomUtility.reflectionSet(deleteHere, key, null);
-                }
-            }
-
-            return true;
-        };
-    }
-    // unterteilen in änderungen, neuerungen und löschungen
-    // unterteilen in ShowChanges, SeasonChanges, EpisodeChanges
-
-    /**
-     * DetailsUpdate: ✅
-     * DetailsUpdate SeasonAdded:
-     * viewAdded neu: ✅
-     * viewAdded weitere: ✅
-     * ratingChange: ✅
-     * EpisodeDetailsAdded: ✅
-     */
-
-    private static Object traverseObjectStep(String step, Object o) {
-        if (step.matches("\\d+") && List.class.isAssignableFrom(o.getClass()))
-            return ((List) o).get(Integer.parseInt(step));
-        else if (Map.class.isAssignableFrom(o.getClass()))
-            return ((Map) o).get(step);
-        else
-            return CustomUtility.reflectionGet(o, step);
-    }
-
-    private static Object traverseObjectByPath(Object o, CustomList<String> path) {
-        Object currentObject = o;
-        for (String step : path) {
-            currentObject = traverseObjectStep(step, currentObject);
-        }
-        return currentObject;
-    }
-
-
-    private static CustomList<String> getNeuParentClassPaths(Map<String, Object> map) {
-        return map.keySet().stream().filter(s -> s.endsWith("/uuid")).map(s -> s.substring(0, s.length() - 5)).collect(Collectors.toCollection(CustomList::new));
-    }
-
-    private static ParentClass parseParentClassFromPath(Class baseClass, String path, Map<String, Object> map) {
-        Map<String, Object> tempMap = new HashMap<>();
-        map.entrySet().stream().filter(entry -> entry.getKey().startsWith(path)).forEach(entry -> {
-            tempMap.put(entry.getKey().substring(path.length() + 1), entry.getValue());
-        });
-        return null;
-    }
-
-    public static final class FlatMapUtil {
-
-        private FlatMapUtil() {
-            throw new AssertionError("No instances for you!");
-        }
-
-        public static Map<String, Object> flatten(Map<String, Object> map) {
-            return map.entrySet().stream()
-                    .flatMap(FlatMapUtil::flatten)
-                    .collect(LinkedHashMap::new, (m, e) -> m.put("/" + e.getKey(), e.getValue()), LinkedHashMap::putAll);
-        }
-
-        private static Stream<Map.Entry<String, Object>> flatten(Map.Entry<String, Object> entry) {
-
-            if (entry == null) {
-                return Stream.empty();
-            }
-
-            if (entry.getValue() instanceof Map<?, ?>) {
-                return ((Map<?, ?>) entry.getValue()).entrySet().stream()
-                        .flatMap(e -> flatten(new AbstractMap.SimpleEntry<>(entry.getKey() + "/" + e.getKey(), e.getValue())));
-            }
-
-            if (entry.getValue() instanceof List<?>) {
-                List<?> list = (List<?>) entry.getValue();
-                return IntStream.range(0, list.size())
-                        .mapToObj(i -> new AbstractMap.SimpleEntry<String, Object>(entry.getKey() + "/" + i, list.get(i)))
-                        .flatMap(FlatMapUtil::flatten);
-            }
-
-            return Stream.of(entry);
-        }
-    }
     //  <--------------- Static ---------------
 
 
@@ -1133,18 +985,18 @@ public class ShowActivity extends AppCompatActivity {
 
         season = seasonList.get(previousEpisode.getSeasonNumber());
 
-//        Map<Integer, Map<String, Show.Episode>> tempShowSeasonMap = database.tempShowSeasonEpisodeMap.get(show);
+//        Map<Integer, Map<String, Show.Episode>> tempShowSeasonMap = database.tempShowSeasonEpisodeMap.get(show.getUuid());
 
         Runnable requestNextSeason = () -> {
             apiSeasonRequest(show, season.getSeasonNumber() + 1, () -> {
-                onNextEpisode.runOnNextEpisode(database.tempShowSeasonEpisodeMap.get(show).get(season.getSeasonNumber() + 1).values()
+                onNextEpisode.runOnNextEpisode(database.tempShowSeasonEpisodeMap.get(show.getUuid()).get(season.getSeasonNumber() + 1).values()
                         .stream().min((o1, o2) -> Integer.compare(o1.getEpisodeNumber(), o2.getEpisodeNumber())).orElse(null));
             });
         };
 
         if (season.getEpisodesCount() > previousEpisode.getEpisodeNumber() || season.getEpisodesCount() > (new CustomList<>(season.getEpisodeMap().values()).sorted((o1, o2) -> Integer.compare(o1.getEpisodeNumber(), o2.getEpisodeNumber())).indexOf(previousEpisode) + 1)) {
             apiSeasonRequest(show, season.getSeasonNumber(), () -> {
-                Show.Episode episode = database.tempShowSeasonEpisodeMap.get(show).get(season.getSeasonNumber()).get("E:" + (previousEpisode.getEpisodeNumber() + 1));
+                Show.Episode episode = database.tempShowSeasonEpisodeMap.get(show.getUuid()).get(season.getSeasonNumber()).get("E:" + (previousEpisode.getEpisodeNumber() + 1));
                 if (episode == null && show.getSeasonsCount() > season.getSeasonNumber())
                     requestNextSeason.run();
                 else
@@ -1328,6 +1180,7 @@ public class ShowActivity extends AppCompatActivity {
                     if (show.getLastUpdated() == null || System.currentTimeMillis() - show.getLastUpdated().getTime() > 86400000)
                         apiDetailRequest(this, show.getTmdbId(), show, customDialog::reloadView, true, true);
                 })
+                .addLifeCycleCallback(getLifeCycleCallback(show::getUuid))
                 .show();
     }
 
@@ -1525,7 +1378,7 @@ public class ShowActivity extends AppCompatActivity {
 
     //  --------------- Season & Episode --------------->
     private CustomRecycler<Show.Season> showSeasonDialog(Show show) {
-        CustomDialog customDialog = CustomDialog.Builder(this);
+        CustomDialog seasonDialog = CustomDialog.Builder(this);
         removeFocusFromSearch();
 
         CustomRecycler<Show.Season> seasonRecycler = new CustomRecycler<Show.Season>(this)
@@ -1564,20 +1417,19 @@ public class ShowActivity extends AppCompatActivity {
 
                     double averageRating = season.getEpisodeMap().values().stream().filter(ParentClass_Ratable::hasRating).mapToDouble(ParentClass_Ratable::getRating).average().orElse(-1);
                     ((TextView) itemView.findViewById(R.id.listItem_season_rating)).setText(averageRating != -1 ? decimalFormat.format(averageRating) + " ☆" : "");
-                    // ToDo: runden hinzufügen und jeden aufruf ins Builder Format
                 })
                 .setOnClickListener((customRecycler, itemView, season, index) -> {
                     Map<String, Show.Episode> episodeMap;
                     Map<Integer, Map<String, Show.Episode>> seasonEpisodeMap;
 
-                    if ((seasonEpisodeMap = database.tempShowSeasonEpisodeMap.get(show)) != null && (episodeMap = seasonEpisodeMap.get(season.getSeasonNumber())) != null)
+                    if ((seasonEpisodeMap = database.tempShowSeasonEpisodeMap.get(show.getUuid())) != null && (episodeMap = seasonEpisodeMap.get(season.getSeasonNumber())) != null)
                         showEpisodeDialog(season, episodeMap, customRecycler);
                     else
                         apiSeasonRequest(show, season.getSeasonNumber(), () -> {
-                            showEpisodeDialog(season, database.tempShowSeasonEpisodeMap.get(show).get(season.getSeasonNumber()), customRecycler);
+                            showEpisodeDialog(season, database.tempShowSeasonEpisodeMap.get(show.getUuid()).get(season.getSeasonNumber()), customRecycler);
                         });
                 })
-                .setOnLongClickListener((CustomRecycler.OnLongClickListener<Show.Season>) (customRecycler, view, season, index) -> {
+                .setOnLongClickListener((customRecycler, view, season, index) -> {
                     String BREAKPOINT = null;
                     showResetDialog(new CustomList<>(((Show.Season) season).getEpisodeMap().values()), null, season, null, customRecycler, 2).setOnDialogDismiss(customDialog1 -> {
                         Database.saveAll();
@@ -1586,7 +1438,7 @@ public class ShowActivity extends AppCompatActivity {
                 })
                 .generate();
 
-        customDialog
+        seasonDialog
                 .setTitle("Staffeln")
                 .addButton("Historie", customDialog1 -> {
                     CustomDialog.Builder(this)
@@ -1616,12 +1468,13 @@ public class ShowActivity extends AppCompatActivity {
                 .alignPreviousButtonsLeft()
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
                 .setPayload(seasonRecycler)
-                .setView(seasonRecycler.getRecycler())
+                .setView(customDialog1 -> seasonRecycler, false)
                 .disableScroll()
+                .addLifeCycleCallback(getLifeCycleCallback(show::getUuid))
                 .show();
 
         if (show.getLastUpdated() == null || System.currentTimeMillis() - show.getLastUpdated().getTime() > 86400000)
-            apiDetailRequest(this, show.getTmdbId(), show, customDialog::reloadView, true, true);
+            apiDetailRequest(this, show.getTmdbId(), show, seasonDialog::reloadView, true, true);
 
         return seasonRecycler;
     }
@@ -1656,10 +1509,8 @@ public class ShowActivity extends AppCompatActivity {
             }
         }
                 .setGetActiveObjectList(customRecycler -> {
-//                    episodeMap.putAll(season.getEpisodeMap());
-//                    applyEpisodeMap(season.getEpisodeMap(), episodeMap);
                     ArrayList<Show.Episode> episodeList = new ArrayList<>(episodeMap.values());
-                    episodeList.sort((o1, o2) -> Integer.compare(o1.getEpisodeNumber(), o2.getEpisodeNumber()));
+                    episodeList.sort(Comparator.comparingInt(Show.Episode::getEpisodeNumber));
                     return episodeList;
                 })
                 .setItemLayout(R.layout.list_item_episode)
@@ -1771,7 +1622,7 @@ public class ShowActivity extends AppCompatActivity {
 
                 })
                 .setOnClickListener((customRecycler, itemView, episode, index) -> {
-                    showEpisodeDetailDialog(customRecycler, episode, false);
+                    showEpisodeDetailDialog(customRecycler, episode, false, null);
                 })
                 .setOnLongClickListener((customRecycler, view, episode, index) -> showResetDialog(Arrays.asList(episode), null, null, null, customRecycler, 3));
 
@@ -1783,10 +1634,9 @@ public class ShowActivity extends AppCompatActivity {
                     }
                     return episode.getName().toLowerCase().contains(search.toLowerCase());
                 }, episodeRecycler)
-//                .addButton(R.drawable.ic_sync, customDialog -> episodeRecycler.reload(), false)
                 .alignPreviousButtonsLeft()
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK)
-                .setView(episodeRecycler.generateRecyclerView())
+                .setView(customDialog -> episodeRecycler, true)
                 .disableScroll()
                 .setOnDialogDismiss(customDialog -> {
                     if (Database.saveAll_simple())
@@ -1796,6 +1646,7 @@ public class ShowActivity extends AppCompatActivity {
                         seasonCustomRecycler.reload();
 
                 })
+                .addLifeCycleCallback(getLifeCycleCallback(season::getShowId))
                 .show();
         return episodeRecycler;
     }
@@ -1814,46 +1665,41 @@ public class ShowActivity extends AppCompatActivity {
         newMap.putAll(oldMap);
     }
 
-    public void showEpisodeDetailDialog(@Nullable CustomRecycler customRecycler , Show.Episode episode, boolean startedDirectly) {
+    public void showEpisodeDetailDialog(@Nullable CustomRecycler customRecycler, Show.Episode episode, boolean startedDirectly, @Nullable CustomDialog oldDialog) {
         if (episode == null) {
             Toast.makeText(this, "Es ist ein Fehler aufgetreten", Toast.LENGTH_SHORT).show();
             return;
         }
 //        setResult(RESULT_OK); // vielleich wichtig?
         final Runnable[] destroyGetImdbIdAndDetails = {null};
-        final float[] currentRating = {episode.getRating()};
 
         int index = customRecycler != null ? customRecycler.getObjectList().indexOf(episode) : -1;
-        Show.Episode cloneEpisode = episode.clone();
-        cloneEpisode.setDateList(new ArrayList<>(episode.getDateList()));
+        Show.Episode editEpisode = episode.clone();
+        editEpisode.setDateList(new ArrayList<>(episode.getDateList()));
 
-        CustomDialog[] dialog = {null};
-        Database.OnChangeListener<Object> listener = Database.addOnChangeListener(Database.SHOW_MAP, change -> {
-            if (change instanceof Show && ((Show) change).getUuid().equals(episode.getShowId()) && dialog[0] != null) {
-                currentRating[0] = episode.getRating();
-                ((TextView) dialog[0].findViewById(R.id.dialog_detailEpisode_views)).setText(""); // ToDo: vieleicht hier so machen dass nicht tauscht
-                dialog[0].reloadView();
-            }
-        }); // ToDo: durch lifeCycleCallback ersetzen
+        Utility.GenericReturnOnlyInterface<Boolean> hasChanges = () -> !episode.equals(editEpisode);
 
         CustomDialog.Builder(this)
-                .setTitle(episode.getName())
+                .setTitle(editEpisode.getName())
                 .setView(R.layout.dialog_detail_episode)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
-                    episode.setRating(((RatingBar) customDialog.findViewById(R.id.customRating_ratingBar)).getRating());
+                    episode.setRating(editEpisode.getRating());
                     if (episode.hasRating())
-                        episode.setRatingTendency(cloneEpisode.getRatingTendency());
+                        episode.setRatingTendency(editEpisode.getRatingTendency());
+                    episode.setDateList(editEpisode.getDateList());
+                    episode.setLength(editEpisode.getLength());
+                    episode.setAgeRating(editEpisode.getAgeRating());
+                    episode.setImdbId(editEpisode.getImdbId());
 
                     if (!episode.isWatched() && episode.getDateList().isEmpty()) {
-                        Show show = database.showMap.get(episode.getShowId());
-                        Show.Season season = show.getSeasonList().get(episode.getSeasonNumber());
+                        Show show = database.showMap.get(editEpisode.getShowId());
+                        Show.Season season = show.getSeasonList().get(editEpisode.getSeasonNumber());
                         episode.setWatched(true);
                         season.getEpisodeMap().put("E:" + episode.getEpisodeNumber(), episode);
                         boolean before = episode.addDate(new Date(), true);
                         Utility.showCenteredToast(this, "Ansicht hinzugefügt" + (before ? "\nAutomatisch für gestern hinzugefügt" : ""));
-                        show.setAlreadyAiredList(show.getAlreadyAiredList().stream().filter(episode1 -> episode.getTmdbId() != episode1.getTmdbId()).collect(Collectors.toList()));
-
+                        show.getAlreadyAiredList().removeIf(episode1 -> episode.getTmdbId() != episode1.getTmdbId());
                     }
                     if (Database.saveAll_simple()) {
                         customRecycler.update(index);
@@ -1862,34 +1708,29 @@ public class ShowActivity extends AppCompatActivity {
                 })
                 .disableLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {
-                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_title)).setText(episode.getName());
-                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_number)).setText(String.valueOf(episode.getEpisodeNumber()));
+                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_title)).setText(editEpisode.getName());
+                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_number)).setText(String.valueOf(editEpisode.getEpisodeNumber()));
 
                     ImageView listItem_episode_image = view.findViewById(R.id.dialog_detailEpisode_preview);
-                    if (Utility.stringExists(episode.getStillPath())) {
-                        listItem_episode_image.setVisibility(View.VISIBLE);
-                        Utility.loadUrlIntoImageView(this, listItem_episode_image, Utility.getTmdbImagePath_ifNecessary(episode.getStillPath(), false), Utility.getTmdbImagePath_ifNecessary(episode.getStillPath(), true), null, () -> Utility.roundImageView(listItem_episode_image, 3));
-                    } else
-                        listItem_episode_image.setVisibility(View.GONE);
+                    Utility.simpleLoadUrlIntoImageView(this, listItem_episode_image, null, editEpisode.getStillPath(), editEpisode.getStillPath(), 3);
 
-                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_ageRating)).setText(episode.getAgeRating());
+                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_ageRating)).setText(editEpisode.getAgeRating());
                     TextView dialog_detailEpisode_ageRating_label = view.findViewById(R.id.dialog_detailEpisode_ageRating_label);
-                    dialog_detailEpisode_ageRating_label.setTextColor(Utility.stringExists(episode.getAgeRating()) ? getColorStateList(R.color.clickable_text_color_normal) : getColorStateList(R.color.clickable_text_color));
+                    dialog_detailEpisode_ageRating_label.setTextColor(Utility.stringExists(editEpisode.getAgeRating()) ? getColorStateList(R.color.clickable_text_color_normal) : getColorStateList(R.color.clickable_text_color));
                     dialog_detailEpisode_ageRating_label.setOnClickListener(v -> {
                         CustomDialog.Builder(this)
-                                .setTitle("Altersfreigabe " + (Utility.stringExists(episode.getAgeRating()) ? "Ändern" : "Hinzufügen"))
+                                .setTitle("Altersfreigabe " + (Utility.stringExists(editEpisode.getAgeRating()) ? "Ändern" : "Hinzufügen"))
                                 .setEdit(new CustomDialog.EditBuilder()
                                         .setInputType(com.finn.androidUtilities.Helpers.TextInputHelper.INPUT_TYPE.CAPS_LOCK)
                                         .setHint("Altersfreigabe")
-                                        .setText(Utility.stringExistsOrElse(episode.getAgeRating(), ""))
-                                        .setRegEx("^\\d{1,2}$|^TV-(Y|G|Y7|PG|14|MA)$"))
+                                        .setText(Utility.stringExistsOrElse(editEpisode.getAgeRating(), ""))
+                                        .setRegEx("^0|6|12|16|18$|^TV-(Y|G|Y7|PG|14|MA)$"))
                                 .addOptionalModifications(customDialog1 -> {
-                                    if (Utility.stringExists(episode.getAgeRating()))
+                                    if (Utility.stringExists(editEpisode.getAgeRating()))
                                         customDialog1
                                                 .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog2 -> {
-                                                    episode.setAgeRating(null);
+                                                    editEpisode.setAgeRating(null);
                                                     Toast.makeText(this, "Altersfreigabe gelöscht", Toast.LENGTH_SHORT).show();
-                                                    Database.saveAll();
                                                     customDialog.reloadView();
                                                 })
                                                 .transformLastAddedButtonToImageButton()
@@ -1897,19 +1738,18 @@ public class ShowActivity extends AppCompatActivity {
                                 })
                                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog1 -> {
-                                    episode.setAgeRating(customDialog1.getEditText());
-                                    Toast.makeText(this, "Altersfreigabe gespeichert", Toast.LENGTH_SHORT).show();
-                                    Database.saveAll();
+                                    editEpisode.setAgeRating(customDialog1.getEditText());
                                     customDialog.reloadView();
                                 })
                                 .disableLastAddedButton()
                                 .show();
                     });
+
                     CharSequence episodeLength;
                     Show show;
-                    if (episode.hasLength())
-                        episodeLength = Utility.formatDuration(Duration.ofMinutes(episode.getLength()), "'%h% h~ ~''%m% min~ ~'");
-                    else if ((show = database.showMap.get(episode.getShowId())) != null && show.hasAverageRuntime())
+                    if (editEpisode.hasLength())
+                        episodeLength = Utility.formatDuration(Duration.ofMinutes(editEpisode.getLength()), "'%h% h~ ~''%m% min~ ~'");
+                    else if ((show = database.showMap.get(editEpisode.getShowId())) != null && show.hasAverageRuntime())
                         episodeLength = com.finn.androidUtilities.Helpers.SpannableStringHelper.quickColor(
                                 Helpers.DurationFormatter.formatDefault(Duration.ofMinutes(show.getAverageRuntime()), "'%h% h~ ~''%m% min~ ~'"),
                                 CustomUtility.setAlphaOfColor(getColor(R.color.colorText), 100));
@@ -1917,22 +1757,21 @@ public class ShowActivity extends AppCompatActivity {
                         episodeLength = "";
                     ((TextView) view.findViewById(R.id.dialog_detailEpisode_length)).setText(episodeLength);
                     TextView dialog_detailEpisode_length_label = view.findViewById(R.id.dialog_detailEpisode_length_label);
-                    dialog_detailEpisode_length_label.setTextColor(episode.getLength() != -1 ? getColorStateList(R.color.clickable_text_color_normal) : getColorStateList(R.color.clickable_text_color));
+                    dialog_detailEpisode_length_label.setTextColor(editEpisode.getLength() != -1 ? getColorStateList(R.color.clickable_text_color_normal) : getColorStateList(R.color.clickable_text_color));
                     dialog_detailEpisode_length_label.setOnClickListener(v -> {
                         CustomDialog.Builder(this)
-                                .setTitle("Länge " + (episode.getLength() != -1 ? "Ändern" : "Hinzufügen"))
+                                .setTitle("Länge " + (editEpisode.getLength() != -1 ? "Ändern" : "Hinzufügen"))
                                 .setEdit(new CustomDialog.EditBuilder()
                                         .setInputType(com.finn.androidUtilities.Helpers.TextInputHelper.INPUT_TYPE.NUMBER)
                                         .setHint("Länge")
-                                        .setText(episode.getLength() == -1 ? "" : String.valueOf(episode.getLength()))
+                                        .setText(editEpisode.getLength() == -1 ? "" : String.valueOf(editEpisode.getLength()))
                                         .setRegEx("\\d+"))
                                 .addOptionalModifications(customDialog1 -> {
-                                    if (episode.getLength() != -1)
+                                    if (editEpisode.getLength() != -1)
                                         customDialog1
                                                 .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog2 -> {
-                                                    episode.setLength(-1);
+                                                    editEpisode.setLength(-1);
                                                     Toast.makeText(this, "Länge gelöscht", Toast.LENGTH_SHORT).show();
-                                                    Database.saveAll();
                                                     customDialog.reloadView();
                                                 })
                                                 .transformLastAddedButtonToImageButton()
@@ -1940,28 +1779,25 @@ public class ShowActivity extends AppCompatActivity {
                                 })
                                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog1 -> {
-                                    episode.setLength(Integer.parseInt(customDialog1.getEditText()));
-                                    Toast.makeText(this, "Länge gespeichert", Toast.LENGTH_SHORT).show();
-                                    Database.saveAll();
+                                    editEpisode.setLength(Integer.parseInt(customDialog1.getEditText()));
                                     customDialog.reloadView();
                                 })
                                 .disableLastAddedButton()
                                 .show();
                     });
-                    view.findViewById(R.id.dialog_detailEpisode_sync).setOnClickListener(v -> {
-                        Runnable onComplete = customDialog::reloadView;
 
-                        getImdbIdAndDetails(new CustomList<>(episode), true, onComplete);
+                    view.findViewById(R.id.dialog_detailEpisode_sync).setOnClickListener(v -> {
+                        getImdbIdAndDetails(new CustomList<>(editEpisode), true, customDialog::reloadView);
                     });
                     view.findViewById(R.id.dialog_detailEpisode_internet).setOnClickListener(v -> {
-                        String tmdbUrl = String.format(Locale.getDefault(), "https://www.themoviedb.org/tv/%d/season/%d/episode/%d", database.showMap.get(episode.getShowId()).getTmdbId(), episode.getSeasonNumber(), episode.getEpisodeNumber());
-                        if (!Utility.stringExists(episode.getImdbId()))
+                        String tmdbUrl = String.format(Locale.getDefault(), "https://www.themoviedb.org/tv/%d/season/%d/editEpisode/%d", database.showMap.get(editEpisode.getShowId()).getTmdbId(), editEpisode.getSeasonNumber(), editEpisode.getEpisodeNumber());
+                        if (!Utility.stringExists(editEpisode.getImdbId()))
                             Utility.openUrl(this, tmdbUrl, true);
                         else
                             CustomDialog.Builder(this)
                                     .setTitle("Öffnen mit...")
                                     .addButton("TMDb", customDialog1 -> Utility.openUrl(this, tmdbUrl, true))
-                                    .addButton("IMDB", customDialog1 -> Utility.openUrl(this, "https://www.imdb.com/title/" + episode.getImdbId(), true))
+                                    .addButton("IMDB", customDialog1 -> Utility.openUrl(this, "https://www.imdb.com/title/" + editEpisode.getImdbId(), true))
                                     .enableExpandButtons()
                                     .enableButtonDividerAll()
                                     .show();
@@ -1969,19 +1805,18 @@ public class ShowActivity extends AppCompatActivity {
                     });
                     view.findViewById(R.id.dialog_detailEpisode_internet).setOnLongClickListener(v -> {
                         CustomDialog.Builder(this)
-                                .setTitle("IMDB-ID " + (Utility.stringExists(episode.getImdbId()) ? "Ändern" : "Hinzufügen"))
+                                .setTitle("IMDB-ID " + (Utility.stringExists(editEpisode.getImdbId()) ? "Ändern" : "Hinzufügen"))
                                 .setEdit(new CustomDialog.EditBuilder()
                                         .setInputType(com.finn.androidUtilities.Helpers.TextInputHelper.INPUT_TYPE.TEXT)
                                         .setHint("IMDB-ID")
-                                        .setText(Utility.stringExistsOrElse(episode.getImdbId(), ""))
+                                        .setText(Utility.stringExistsOrElse(editEpisode.getImdbId(), ""))
                                         .setRegEx(Utility.imdbPattern_full))
                                 .addOptionalModifications(customDialog1 -> {
-                                    if (Utility.stringExists(episode.getImdbId()))
+                                    if (Utility.stringExists(editEpisode.getImdbId()))
                                         customDialog1
                                                 .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog2 -> {
-                                                    episode.setImdbId(null);
+                                                    editEpisode.setImdbId(null);
                                                     Toast.makeText(this, "IMDB-ID gelöscht", Toast.LENGTH_SHORT).show();
-                                                    Database.saveAll();
                                                 })
                                                 .transformLastAddedButtonToImageButton()
                                                 .alignPreviousButtonsLeft();
@@ -1989,7 +1824,7 @@ public class ShowActivity extends AppCompatActivity {
                                 })
                                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog1 -> {
-                                    episode.setImdbId(customDialog1.getEditText());
+                                    editEpisode.setImdbId(customDialog1.getEditText());
                                     Toast.makeText(this, "IMDB-ID gespeichert", Toast.LENGTH_SHORT).show();
                                     Database.saveAll();
                                 })
@@ -2023,69 +1858,78 @@ public class ShowActivity extends AppCompatActivity {
                     Utility.GenericInterface<Boolean> setViewsText = flip -> {
                         Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
                         SpannableStringBuilder viewsText = helper.quickItalic("Keine Ansichten");
-                        if (episode.getDateList().size() > 0) {
-                            Date lastWatched = new CustomList<>(episode.getDateList()).getBiggest();
-                            helper.append(String.valueOf(episode.getDateList().size()));
+                        if (editEpisode.getDateList().size() > 0) {
+                            Date lastWatched = new CustomList<>(editEpisode.getDateList()).getBiggest();
+                            helper.append(String.valueOf(editEpisode.getDateList().size()));
                             long days = Days.daysBetween(new LocalDate(lastWatched), new LocalDate(new Date())).getDays();
-                            if (viewsTextView.getText().toString().contains("–") == flip) {
+                            if (viewsTextView.getText().toString().contains("–") == flip)
                                 viewsText = helper.appendItalic(String.format(Locale.getDefault(), "   (%s)", Helpers.DurationFormatter.formatDefault(Duration.ofDays(days), "'%y% Jahr§e§~, ~''%w% Woche§n§~, ~''%d% Tag§e§~, ~'"))).get();
-                            } else {
+                            else
                                 viewsText = helper.appendItalic(String.format(Locale.getDefault(), "   (%s – %dd)", new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(lastWatched), days)).get();
-                            }
                         }
                         viewsTextView.setText(viewsText);
                     };
                     setViewsText.run(!reload);
-                    if (episode.getDateList().size() > 0) {
+                    if (editEpisode.getDateList().size() > 0) {
                         viewsTextView.setOnClickListener(v -> setViewsText.run(true));
                         viewsTextView.setClickable(true);
                     } else
                         viewsTextView.setClickable(false);
 
-                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_release)).setText(Utility.isNullReturnOrElse(episode.getAirDate(), "", date -> new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(date)));
+                    ((TextView) view.findViewById(R.id.dialog_detailEpisode_release)).setText(Utility.isNullReturnOrElse(editEpisode.getAirDate(), "", date -> new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(date)));
 
                     View ratingTendencyButton = view.findViewById(R.id.dialog_detailEpisode_ratingTendency);
-                    Runnable setRatingTendencyIcon = () -> ParentClass_Ratable.applyRatingTendencyIndicator(view.findViewById(R.id.dialog_detailEpisode_ratingTendency_icon), cloneEpisode, true);
+                    Runnable setRatingTendencyIcon = () -> ParentClass_Ratable.applyRatingTendencyIndicator(view.findViewById(R.id.dialog_detailEpisode_ratingTendency_icon), editEpisode, true);
                     setRatingTendencyIcon.run();
                     ratingTendencyButton.setOnClickListener(v -> {
-                        ParentClass_Ratable.showRatingTendencyDialog(this, cloneEpisode, ratingTendencyButton, parentClass_ratable -> {
-                            CustomDialog.ButtonHelper actionButton = customDialog.getActionButton();
-                            actionButton.setEnabled(currentRating[0] != episode.getRating() || !Objects.equals(episode.getRatingTendency(), cloneEpisode.getRatingTendency()));
+                        ParentClass_Ratable.showRatingTendencyDialog(this, editEpisode, ratingTendencyButton, parentClass_ratable -> {
+                            customDialog.getActionButton().setEnabled(hasChanges.run());
                             setRatingTendencyIcon.run();
                         });
                     });
 
-                    RatingBar dialog_detailEpisode_rating = new Helpers.RatingHelper(view.findViewById(R.id.customRating_layout)).setRating(CustomUtility.isNotValueOrElse(currentRating[0], episode.getRating(), -1f)).getRatingBar();
-//                    dialog_detailEpisode_rating.setRating(episode.getRating());
-                    CustomDialog.ButtonHelper actionButton = customDialog.getActionButton();
+                    RatingBar dialog_detailEpisode_rating = new Helpers.RatingHelper(view.findViewById(R.id.customRating_layout)).setRating(editEpisode.getRating()).getRatingBar();
                     dialog_detailEpisode_rating.setOnRatingBarChangeListener((ratingBar, rating, fromUser) -> {
-                        currentRating[0] = rating;
-                        actionButton.setEnabled(rating != episode.getRating() || !Objects.equals(episode.getRatingTendency(), cloneEpisode.getRatingTendency()));
+                        editEpisode.setRating(rating);
+                        customDialog.getActionButton().setEnabled(hasChanges.run());
                     });
-                    view.findViewById(R.id.dialog_detailEpisode_editViews).setOnClickListener(v -> showEpisodeCalenderDialog(episode, customDialog));
+
+                    view.findViewById(R.id.dialog_detailEpisode_editViews).setOnClickListener(v -> showEpisodeCalenderDialog(editEpisode, customDialog));
                     view.findViewById(R.id.dialog_detailEpisode_editViews).setOnLongClickListener(v -> {
-                        showResetDialog(Arrays.asList(episode), null, null, customDialog, null, 3);
+                        showResetDialog(Arrays.asList(editEpisode), null, null, customDialog, null, 3);
                         return true;
                     });
+
+                    customDialog.getActionButton().setEnabled(hasChanges.run());
                 })
+                .enableDoubleClickOutsideToDismiss(customDialog -> hasChanges.run())
                 .addOnDialogShown(customDialog -> {
-                    if (!episode.hasAnyExtraDetails()) {
-                        destroyGetImdbIdAndDetails[0] = getImdbIdAndDetails(new CustomList<>(episode), false, customDialog::reloadView);
+                    if (!editEpisode.hasAnyExtraDetails()) {
+                        destroyGetImdbIdAndDetails[0] = getImdbIdAndDetails(new CustomList<>(editEpisode), false, customDialog::reloadView);
                     }
                 })
                 .addOnDialogDismiss(customDialog -> {
                     Utility.runRunnable(destroyGetImdbIdAndDetails[0]);
-                    if (customRecycler != null && !cloneEpisode.equals(episode))
+                    if (customRecycler != null && hasChanges.run())
                         customRecycler.update(index);
-                    if (startedDirectly)
-                        Database.saveAll();
+//                    if (startedDirectly)
+//                        Database.saveAll();
                 })
-                .addOnDialogShown(customDialog -> dialog[0] = customDialog)
-                .addOnDialogDismiss(customDialog -> Database.removeOnChangeListener(Database.SHOW_MAP, listener))
+                .addLifeCycleCallback(getLifeCycleCallback((customDialog, change) -> {
+                    if (change instanceof Show && ((Show) change).getUuid().equals(editEpisode.getShowId())) {
+                        Show.Episode savedEpisode = database.showMap.get(editEpisode.getShowId()).getSeasonList().get(editEpisode.getSeasonNumber()).getEpisodeMap().get("E:" + editEpisode.getEpisodeNumber());
+//                        if (savedEpisode == null || savedEpisode != episode) {
+                            showEpisodeDetailDialog(customRecycler, savedEpisode, startedDirectly, customDialog);
+                            new Handler().postDelayed(customDialog::dismiss, 1000);
+//                        } else
+//                            customDialog.reloadView(false);
+                    }
+                }/*, customDialog -> {
+                    currentRating[0] = editEpisode.getRating();
+                    TextView textView = customDialog.findViewById(R.id.dialog_detailEpisode_views);
+                    textView.setText(textView.getText().toString().contains("–") ? "" : "–");
+                }*/, null))
                 .show();
-//        Utility.traktApiRequest(this, String.format(Locale.getDefault(), "https://api.trakt.tv/search/tmdb/%d?type=episode", episode.getTmdbId()), JSONArray.class, jsonArray -> {
-//            String BREAKPOINT = null;
-//        });
     }
 
     private CustomDialog showResetDialog(List<Show.Episode> episodeList_all, Show show, Show.Season season, CustomDialog customDialog, CustomRecycler customRecycler, int type) {
@@ -2108,10 +1952,11 @@ public class ShowActivity extends AppCompatActivity {
                     CustomDialog.Builder(this)
                             .setTitle("Status Zurücksetzen")
                             .setText(Utility.SwitchExpression.setInput(type)
-                                    .addCase(1, integer -> "Die Status der kompletten Serie '" + show.getName() + "' werden")
-                                    .addCase(2, integer -> "Die Status der kompletten Staffel '" + season.getName() + "' werden")
-                                    .addCase(3, integer -> "Der Status der Episode '" + episodeList.get(0).getName() + "' wird")
-                                    .evaluate() + " auf 'ungesehen' gesetzt")
+                                    .addCase(1, integer -> "Die Status der kompletten Serie *'" + show.getName() + "'* werden")
+                                    .addCase(2, integer -> "Die Status der kompletten Staffel *'" + season.getName() + "'* werden")
+                                    .addCase(3, integer -> "Der Status der Episode *'" + episodeList.get(0).getName() + "'* wird")
+                                    .evaluate() + " auf *'ungesehen'* gesetzt")
+                            .enableTextFormatting()
                             .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                             .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog2 -> {
                                 for (Show.Episode episode : episodeList) {
@@ -2133,10 +1978,11 @@ public class ShowActivity extends AppCompatActivity {
                             .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
                             .setText("Bist du sicher, dass du die " +
                                     Utility.SwitchExpression.setInput(type)
-                                            .addCase(1, integer -> "Serie '" + show.getName())
-                                            .addCase(2, integer -> "Staffel '" + season.getName())
-                                            .addCase(3, integer -> "Episode '" + episodeList.get(0).getName())
-                                            .evaluate() + "' komplett zurücksetzen willst?")
+                                            .addCase(1, integer -> "Serie *'" + show.getName())
+                                            .addCase(2, integer -> "Staffel *'" + season.getName())
+                                            .addCase(3, integer -> "Episode *'" + episodeList.get(0).getName())
+                                            .evaluate() + "'* _komplett zurücksetzen_ willst?")
+                            .enableTextFormatting()
                             .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog2 -> {
                                 for (Show.Episode episode : episodeList) {
                                     episode.getDateList().clear();
@@ -2219,22 +2065,22 @@ public class ShowActivity extends AppCompatActivity {
         Show show = database.showMap.get(episode.getShowId());
         CustomRecycler<Show.Season> seasonRecycler = showSeasonDialog(show);
         int seasonNumber = episode.getSeasonNumber();
-        if (database.tempShowSeasonEpisodeMap.get(show) == null) {
+        if (database.tempShowSeasonEpisodeMap.get(show.getUuid()) == null) {
             apiSeasonRequest(show, seasonNumber, () -> {
-                showEpisodeDialog(show.getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show).get(seasonNumber), seasonRecycler).goTo((search, episode1) -> episode1.getUuid().equals(episode.getUuid()), "");
+                showEpisodeDialog(show.getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show.getUuid()).get(seasonNumber), seasonRecycler).goTo((search, episode1) -> episode1.getUuid().equals(episode.getUuid()), "");
                 onFinished.run();
             });
         } else {
-            showEpisodeDialog(show.getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show).get(seasonNumber), seasonRecycler).goTo((search, episode1) -> episode1.getUuid().equals(episode.getUuid()), "");
+            showEpisodeDialog(show.getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show.getUuid()).get(seasonNumber), seasonRecycler).goTo((search, episode1) -> episode1.getUuid().equals(episode.getUuid()), "");
             onFinished.run();
         }
 
 //        if (episode.equals(list.get(0).second)) {
 //            apiSeasonRequest(show, seasonNumber, () -> {
-//                showEpisodeDialog(show.getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show).get(seasonNumber), seasonRecycler).goTo(episode);
+//                showEpisodeDialog(show.getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show.getUuid()).get(seasonNumber), seasonRecycler).goTo(episode);
 //            });
 //        } else
-//            showEpisodeDialog(show.getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show).get(seasonNumber), seasonRecycler).goTo((search, episode1) -> episode1.getUuid().equals(episode.getUuid()), "");
+//            showEpisodeDialog(show.getSeasonList().get(seasonNumber), database.tempShowSeasonEpisodeMap.get(show.getUuid()).get(seasonNumber), seasonRecycler).goTo((search, episode1) -> episode1.getUuid().equals(episode.getUuid()), "");
 
     }
     //  <--------------- Season & Episode ---------------
@@ -2466,11 +2312,11 @@ public class ShowActivity extends AppCompatActivity {
 
                 Map<Integer, Map<String, Show.Episode>> map;
                 if (database.tempShowSeasonEpisodeMap.containsKey(show))
-                    map = database.tempShowSeasonEpisodeMap.get(show);
+                    map = database.tempShowSeasonEpisodeMap.get(show.getUuid());
                 else
                     map = new HashMap<>();
                 map.put(seasonNumber, episodeMap);
-                database.tempShowSeasonEpisodeMap.put(show, map);
+                database.tempShowSeasonEpisodeMap.put(show.getUuid(), map);
                 onLoaded.run();
             } catch (JSONException e) {
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -2488,11 +2334,11 @@ public class ShowActivity extends AppCompatActivity {
     private void getTempSeason(Show show, int seasonNumber, Utility.GenericInterface<Map<String, Show.Episode>> onTempSeason) {
         Map<String, Show.Episode> episodeMap;
         Map<Integer, Map<String, Show.Episode>> seasonEpisodeMap;
-        if ((seasonEpisodeMap = database.tempShowSeasonEpisodeMap.get(show)) != null && (episodeMap = seasonEpisodeMap.get(seasonNumber)) != null)
+        if ((seasonEpisodeMap = database.tempShowSeasonEpisodeMap.get(show.getUuid())) != null && (episodeMap = seasonEpisodeMap.get(seasonNumber)) != null)
             onTempSeason.run(episodeMap);
         else
             apiSeasonRequest(show, seasonNumber, () -> {
-                onTempSeason.run(database.tempShowSeasonEpisodeMap.get(show).get(seasonNumber));
+                onTempSeason.run(database.tempShowSeasonEpisodeMap.get(show.getUuid()).get(seasonNumber));
             });
     }
 
@@ -2656,6 +2502,75 @@ public class ShowActivity extends AppCompatActivity {
     //  <--------------- Api ---------------
 
 
+    /**  ------------------------- ChangeManagement ------------------------->  */
+    public static Database.ChangeHandler<Map, Show> getShowChangeHandler() {
+        return (newShow, content) -> {
+            Database database = Database.getInstance();
+            Show oldShow = database.showMap.get(newShow.getUuid());
+
+            com.finn.androidUtilities.Helpers.ApplyChangesHelper.Builder(oldShow, newShow)
+                    .setAddApplyHandler((applyTo, where, newObject) -> {
+                        if (newObject instanceof Show.Episode) {
+                            Show.Episode episode = (Show.Episode) newObject;
+                            Map<Integer, Map<String, Show.Episode>> seasonMap = database.tempShowSeasonEpisodeMap.get(episode.getShowId());
+                            Map<String, Show.Episode> episodeMap;
+                            if (seasonMap != null && (episodeMap = seasonMap.get(episode.getSeasonNumber())) != null) {
+                                episodeMap.put("E:" + episode.getEpisodeNumber(), episode);
+                            }
+                        }
+                        return false;
+                    })
+                    .apply();
+
+            return true;
+        };
+    }
+
+    /**
+     * DetailsUpdate: ✅
+     * DetailsUpdate SeasonAdded: ✅
+     * viewAdded neu: ✅
+     * viewAdded weitere: ✅
+     * ratingChange: ✅
+     * EpisodeDetailsAdded: ✅
+     */
+
+    // ---------------
+
+    private CustomDialog.LifeCycleCallback getLifeCycleCallback(Utility.GenericReturnOnlyInterface<String> getUuid) {
+        return getLifeCycleCallback((customDialog, change) -> {
+            if (change instanceof Show && ((Show) change).getUuid().equals(getUuid.run()))
+                customDialog.reloadView(false);
+        }, null);
+    }
+
+    private CustomDialog.LifeCycleCallback getLifeCycleCallback(Utility.DoubleGenericInterface<CustomDialog, Object> onChangeListener, @Nullable CustomDialog.DialogCallback dialogCallback) {
+        return new CustomDialog.LifeCycleCallback() {
+            Database.OnChangeListener<Object> listener;
+
+            @Override
+            public void onDialogShown(CustomDialog customDialog) {
+                listener = Database.addOnChangeListener(Database.SHOW_MAP, change -> onChangeListener.run(customDialog, change));
+            }
+
+            @Override
+            public void onDialogReloadBefore(CustomDialog customDialog) {
+                if (dialogCallback != null)
+                    dialogCallback.run(customDialog);
+            }
+
+            @Override
+            public void onDialogReloadAfter(CustomDialog customDialog) {
+            }
+
+            @Override
+            public void onDialogDismiss(CustomDialog customDialog) {
+                Database.removeOnChangeListener(Database.SHOW_MAP, listener);
+            }
+        };
+    }
+    /**  <------------------------- ChangeManagement -------------------------  */
+
     private void removeFocusFromSearch() {
         shows_search.clearFocus();
     }
@@ -2761,17 +2676,10 @@ public class ShowActivity extends AppCompatActivity {
         Utility.applyToAllViews(shows_search, View.class, view -> view.setEnabled(!join.isEmpty()));
     }
 
-    private void openUrl(String url, boolean select) {
-        if (url == null || url.equals("")) {
-            Toast.makeText(this, "Keine URL hinterlegt", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        Utility.openUrl(this, url, select);
-    }
-
     @Override
     protected void onDestroy() {
         Database.saveAll();
+        Database.removeOnChangeListener(Database.SHOW_MAP, onChangeListener);
         super.onDestroy();
     }
 

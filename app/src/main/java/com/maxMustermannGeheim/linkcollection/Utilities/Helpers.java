@@ -33,7 +33,6 @@ import android.view.inputmethod.EditorInfo;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
@@ -61,8 +60,6 @@ import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
-import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
-import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.finn.androidUtilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAutoCompleteAdapter;
@@ -1602,7 +1599,7 @@ public class Helpers {
         private CustomList<SearchCriteria> criteriaList = new CustomList<>();
         private Utility.DoubleGenericInterface<String, CustomList<T>> restFilter;
         private int dialogLayoutId;
-        private com.finn.androidUtilities.CustomDialog.OnDialogCallback optionalModifications;
+        private com.finn.androidUtilities.CustomDialog.DialogCallback optionalModifications;
         private AppCompatActivity context;
         private EditText editText;
         private TextWatcher colorationWatcher;
@@ -1757,7 +1754,7 @@ public class Helpers {
             return this;
         }
 
-        public AdvancedQueryHelper<T> setDialogOptions(@LayoutRes int dialogLayoutId, @Nullable com.finn.androidUtilities.CustomDialog.OnDialogCallback optionalModifications) {
+        public AdvancedQueryHelper<T> setDialogOptions(@LayoutRes int dialogLayoutId, @Nullable com.finn.androidUtilities.CustomDialog.DialogCallback optionalModifications) {
             this.dialogLayoutId = dialogLayoutId;
             this.optionalModifications = optionalModifications;
             return this;
@@ -2082,7 +2079,7 @@ public class Helpers {
                     })
                     .addOptionalModifications(customDialog -> {
                         if (optionalModifications != null)
-                            optionalModifications.runOnDialogCallback(customDialog);
+                            optionalModifications.run(customDialog);
                     })
                     .enableDynamicWrapHeight(context)
                     .show();

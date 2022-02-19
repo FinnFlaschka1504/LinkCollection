@@ -8,7 +8,6 @@ import android.graphics.Typeface;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.Spannable;
-import android.text.SpannableString;
 import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StrikethroughSpan;
@@ -36,6 +35,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomRecycler;
+import com.finn.androidUtilities.CustomUtility;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.textfield.TextInputLayout;
@@ -297,7 +297,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     if (knowledge.hasContent()) {
                         listItem_knowledge_content.setVisibility(View.VISIBLE);
                         listItem_knowledge_list.setVisibility(View.GONE);
-                        listItem_knowledge_content.setText(applyFormatting_text(knowledge.getContent()));
+                        listItem_knowledge_content.setText(CustomUtility.applyFormattingToText(knowledge.getContent()));
                     } else if (knowledge.hasItems()) {
                         if (expanded) {
                             listItem_knowledge_list.setVisibility(View.VISIBLE);
@@ -311,7 +311,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                         } else {
                             listItem_knowledge_content.setVisibility(View.VISIBLE);
                             listItem_knowledge_list.setVisibility(View.GONE);
-                            listItem_knowledge_content.setText(applyFormatting_text(knowledge.itemListToString()));
+                            listItem_knowledge_content.setText(CustomUtility.applyFormattingToText(knowledge.itemListToString()));
                         }
                     } else {
                         listItem_knowledge_content.setVisibility(View.VISIBLE);
@@ -391,6 +391,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         customRecycler_List.reload();
     }
 
+    /** ------------------------- Edit -------------------------> */
     private Pair<CustomDialog, Knowledge> showEditOrNewDialog(Knowledge knowledge) {
         if (!Utility.isOnline(this))
             return null;
@@ -515,6 +516,9 @@ public class KnowledgeActivity extends AppCompatActivity {
                             applyFormatting_edit(s);
                         }
                     });
+
+                    applySelectionFormatting(dialog_editOrAddKnowledge_content);
+
                     if (editKnowledge[0] != null) {
                         ((EditText) view.findViewById(R.id.dialog_editOrAddKnowledge_Titel)).setText(editKnowledge[0].getName());
                         if (Utility.stringExists(editKnowledge[0].getContent())) {
@@ -645,6 +649,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 //                    ((TextView) itemView.findViewById(R.id.listItem_knowledgeList_marker)).setText(thisPosList.stream().map(String::valueOf).collect(Collectors.joining("-")));
 
                     EditText listItem_knowledgeList_text = itemView.findViewById(R.id.listItem_knowledgeList_text);
+                    applySelectionFormatting(listItem_knowledgeList_text);
                     Utility.removeTextListeners(listItem_knowledgeList_text);
                     listItem_knowledgeList_text.setText(item.getName());
                     applyFormatting_edit(listItem_knowledgeList_text.getText());
@@ -685,15 +690,16 @@ public class KnowledgeActivity extends AppCompatActivity {
                             focusIndex[0] = null;
                         }
                     }
-                    final boolean[] add = {false};
                     listItem_knowledgeList_text.addTextChangedListener(new TextWatcher() {
+                        boolean add = false;
+
                         @Override
                         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
                         }
 
                         @Override
                         public void onTextChanged(CharSequence s, int start, int before, int count) {
-                            add[0] = before == 0;
+                            add = before == 0;
                         }
 
                         @Override
@@ -719,7 +725,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                             }
 
 
-                            if (add[0] && s.toString().startsWith("   ") && !s.toString().endsWith("\n\n")) {
+                            if (add && s.toString().startsWith("   ") && !s.toString().endsWith("\n\n")) {
                                 Knowledge.Item previousItem = Knowledge.previousItem(itemList, item);
 
                                 if (previousItem == null)
@@ -734,7 +740,7 @@ public class KnowledgeActivity extends AppCompatActivity {
 
                                 return;
                             }
-                            if (add[0] && s.toString().endsWith("\n\n")) {
+                            if (add && s.toString().endsWith("\n\n")) {
                                 focusIndex[0] = thisPosList.add(new Integer[]{thisPosList.removeLast() + 1});
 
                                 Knowledge.newItem(itemList, item);
@@ -763,15 +769,44 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .generate();
     }
 
+    private void applySelectionFormatting (EditText editText) {
+        CustomUtility.addSelectionMenuItem(editText, "Formatieren", charSequence -> {
+            int start = editText.getSelectionStart();
+            int end = editText.getSelectionEnd();
+            String selection = editText.getText().toString().substring(start, end);
+            Utility.GenericInterface<CustomDialog.ButtonHelper> addFormatting = buttonHelper -> {
+                if (buttonHelper == null)
+                    return;
+                String label = buttonHelper.getLabel();
+                String type = CustomUtility.subString(label, -2, -1);
+                editText.getText().replace(start, end, type + selection + type);
+            };
+            CustomDialog.Builder(this)
+                    .setTitle("Formatierung")
+                    .enableTitleBackButton()
+                    .setText("Wie soll *'" + selection + "'* formatiert werden?")
+                    .enableTextFormatting()
+                    .addButton("Überschrift (^)", customDialog1 -> addFormatting.run(customDialog1.getClickedButton()))
+                    .addButton("Fett (*)", customDialog1 -> addFormatting.run(customDialog1.getClickedButton()))
+                    .addButton("Durchgestrichen (~)", customDialog1 -> addFormatting.run(customDialog1.getClickedButton()))
+                    .addButton("Kursiv (/)", customDialog1 -> addFormatting.run(customDialog1.getClickedButton()))
+                    .addButton("Unterstrichen (_)", customDialog1 -> addFormatting.run(customDialog1.getClickedButton()))
+                    .addButton("Monospace (#)", customDialog1 -> addFormatting.run(customDialog1.getClickedButton()))
+                    .enableStackButtons()
+                    .disableButtonAllCaps()
+                    .show();
+        });
+    };
+    /** <------------------------- Edit ------------------------- */
+
     private CustomDialog showDetailDialog(Knowledge knowledge) {
         setResult(RESULT_OK);
         removeFocusFromSearch();
 //        List<String> categoriesNames = new ArrayList<>();
 //        knowledge.getCategoryIdList().forEach(uuid -> categoriesNames.add(database.knowledgeCategoryMap.get(uuid).getName()));
-        CustomDialog returnDialog = CustomDialog.Builder(this)
+        return CustomDialog.Builder(this)
                 .setTitle(knowledge.getName())
                 .setView(R.layout.dialog_detail_knowledge)
-                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.CUSTOM)
                 .addButton("Teilen", customDialog -> {
                     CustomDialog.Builder(this)
                             .setTitle("Teilen")
@@ -889,7 +924,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                             })
                             .show();
                 }, false)
-                .addButton("Bearbeiten", customDialog ->
+                .addButton(CustomDialog.BUTTON_TYPE.EDIT_BUTTON, customDialog ->
                         showEditOrNewDialog(knowledge), false)
                 .setSetViewContent((customDialog, view, reload) -> {
                     if (reload) customDialog.setTitle(knowledge.getName());
@@ -899,7 +934,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     if (knowledge.hasContent()) {
                         dialog_detailKnowledge_content.setVisibility(View.VISIBLE);
                         dialog_detailKnowledge_list.setVisibility(View.GONE);
-                        dialog_detailKnowledge_content.setText(applyFormatting_text(knowledge.getContent()));
+                        dialog_detailKnowledge_content.setText(CustomUtility.applyFormattingToText(knowledge.getContent()));
                     } else if (knowledge.hasItems()) {
                         dialog_detailKnowledge_list.setVisibility(View.VISIBLE);
                         dialog_detailKnowledge_content.setVisibility(View.GONE);
@@ -925,9 +960,8 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .setOnDialogDismiss(customDialog -> {
                     detailDialog = null;
                     Utility.ifNotNull(customDialog.getPayload(), o -> ((com.finn.androidUtilities.CustomDialog) o).reloadView());
-                });
-        returnDialog.show();
-        return returnDialog;
+                })
+                .show();
     }
 
     private CustomRecycler<Knowledge.Item> generateItemTextRecycler(RecyclerView recycler, List<Knowledge.Item> itemList, View targetView) {
@@ -937,7 +971,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .setItemLayout(R.layout.list_item_knowledge_list_text)
                 .setSetItemContent((customRecycler2, itemView1, item, index) -> {
 
-                    ((TextView) itemView1.findViewById(R.id.listItem_knowledgeList_text)).setText(applyFormatting_text(item.getName()));
+                    ((TextView) itemView1.findViewById(R.id.listItem_knowledgeList_text)).setText(CustomUtility.applyFormattingToText(item.getName()));
 
                     RecyclerView childRecycler = itemView1.findViewById(R.id.listItem_knowledgeList_list);
                     TableRow listItem_knowledgeList_listRow = itemView1.findViewById(R.id.listItem_knowledgeList_listRow);
@@ -953,8 +987,14 @@ public class KnowledgeActivity extends AppCompatActivity {
                 .generate();
     }
 
-    public static SpannableString applyFormatting_text(CharSequence s) {
-        // ^ Überschrift; * fett;  ~ durch;  / kursiv; _ unterstrichen; # monospace
+    private void applyFormatting_edit(Editable s) {
+        // ^ Überschrift; * fett;  ~ durch;  / kursiv; _ unterstrichen
+        new CustomList<>(s.getSpans(0, s.length(), StyleSpan.class)).forEach(s::removeSpan);
+        new CustomList<>(s.getSpans(0, s.length(), UnderlineSpan.class)).forEach(s::removeSpan);
+        new CustomList<>(s.getSpans(0, s.length(), StrikethroughSpan.class)).forEach(s::removeSpan);
+        new CustomList<>(s.getSpans(0, s.length(), ForegroundColorSpan.class)).forEach(s::removeSpan);
+        new CustomList<>(s.getSpans(0, s.length(), TypefaceSpan.class)).forEach(s::removeSpan);
+
         List<Pair<Integer, Integer>> captionMatches = new ArrayList<>();
         List<Pair<Integer, Integer>> boldMatches = new ArrayList<>();
         List<Pair<Integer, Integer>> strikeMatches = new ArrayList<>();
@@ -962,77 +1002,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         List<Pair<Integer, Integer>> underlineMatches = new ArrayList<>();
         List<Pair<Integer, Integer>> monospaceMatches = new ArrayList<>();
 
-//        Pattern pattern = Pattern.compile("((?<=[\\s]|)\\^([^\\s].*?[^\\s]|[^\\s])\\^(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\*([^\\s].*?[^\\s]|[^\\s])\\*(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\~([^\\s].*?[^\\s]|[^\\s])\\~(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\/([^\\s].*?[^\\s]|[^\\s])\\/(?![^\\s\\.!\\?,:;]))|((?<=[\\s]|)\\_([^\\s].*?[^\\s]|[^\\s])\\_(?![^\\s\\.!\\?,:;]))");
-        Pattern pattern = Pattern.compile("(?<![^\\W_])(\\*|\\/|\\_|\\^|\\~|#)([^\\s]|[^\\s].*?[^\\s])\\1(?![^\\W_])");
-        while (true) {
-            Matcher matcher = pattern.matcher(s);
-            if (matcher.find()) {
-                MatchResult matchResult = matcher.toMatchResult();
-                String match = matcher.group(0);
-                switch (match.substring(0, 1)) {
-                    case "^":
-                        captionMatches.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
-                        break;
-                    case "*":
-                        boldMatches.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
-                        break;
-                    case "~":
-                        strikeMatches.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
-                        break;
-                    case "/":
-                        italicMatches.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
-                        break;
-                    case "_":
-                        underlineMatches.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
-                        break;
-                    case "#":
-                        monospaceMatches.add(new Pair<>(matchResult.start(), matchResult.end() - 2));
-                        break;
-                }
-                s = matcher.replaceFirst(Utility.subString(match, 1, -1));
-            } else
-                break;
-        }
-
-
-//        s = findAndReplace("^", s, captionMatches);
-//        s = findAndReplace("*", s, boldMatches);
-//        s = findAndReplace("~", s, strikeMatches);
-//        s = findAndReplace("/", s, italicMatches);
-//        s = findAndReplace("_", s, underlineMatches);
-
-        SpannableString resultSpan = new SpannableString(s);
-
-        captionMatches.forEach(pair -> resultSpan.setSpan(new StyleSpan(Typeface.BOLD), pair.first, pair.second, Spannable.SPAN_COMPOSING));
-        captionMatches.forEach(pair -> resultSpan.setSpan(new UnderlineSpan(), pair.first, pair.second, Spannable.SPAN_COMPOSING));
-
-        boldMatches.forEach(pair -> resultSpan.setSpan(new StyleSpan(Typeface.BOLD), pair.first, pair.second, Spannable.SPAN_COMPOSING));
-
-        strikeMatches.forEach(pair -> resultSpan.setSpan(new StrikethroughSpan(), pair.first, pair.second, Spannable.SPAN_COMPOSING));
-
-        italicMatches.forEach(pair -> resultSpan.setSpan(new StyleSpan(Typeface.ITALIC), pair.first, pair.second, Spannable.SPAN_COMPOSING));
-
-        underlineMatches.forEach(pair -> resultSpan.setSpan(new UnderlineSpan(), pair.first, pair.second, Spannable.SPAN_COMPOSING));
-
-        monospaceMatches.forEach(pair -> resultSpan.setSpan(new TypefaceSpan("monospace"), pair.first, pair.second, Spannable.SPAN_COMPOSING));
-
-        return resultSpan;
-    }
-
-    private void applyFormatting_edit(Editable s) {
-        // ^ Überschrift; * fett;  ~ durch;  / kursiv; _ unterstrichen
-        new CustomList<>(s.getSpans(0, s.length(), StyleSpan.class)).forEach(s::removeSpan);
-        new CustomList<>(s.getSpans(0, s.length(), UnderlineSpan.class)).forEach(s::removeSpan);
-        new CustomList<>(s.getSpans(0, s.length(), StrikethroughSpan.class)).forEach(s::removeSpan);
-        new CustomList<>(s.getSpans(0, s.length(), ForegroundColorSpan.class)).forEach(s::removeSpan);
-
-        List<Pair<Integer, Integer>> captionMatches = new ArrayList<>();
-        List<Pair<Integer, Integer>> boldMatches = new ArrayList<>();
-        List<Pair<Integer, Integer>> strikeMatches = new ArrayList<>();
-        List<Pair<Integer, Integer>> italicMatches = new ArrayList<>();
-        List<Pair<Integer, Integer>> underlineMatches = new ArrayList<>();
-
-        Pattern pattern = Pattern.compile("(?<![^\\W_])(\\*|\\/|\\_|\\^|\\~)([^\\s]|[^\\s].*?[^\\s])\\1(?![^\\W_])");
+        Pattern pattern = Pattern.compile("(?<![^\\W_])([*/_^~#])([^\\s]|[^\\s].*?[^\\s])\\1(?![^\\W_])");
         Matcher matcher = pattern.matcher(s);
         while (true) {
             if (matcher.find()) {
@@ -1054,6 +1024,9 @@ public class KnowledgeActivity extends AppCompatActivity {
                     case "_":
                         underlineMatches.add(new Pair<>(matchResult.start() + 1, matchResult.end() - 1));
                         break;
+                    case "#":
+                        monospaceMatches.add(new Pair<>(matchResult.start() + 1, matchResult.end() - 1));
+                        break;
                 }
             } else
                 break;
@@ -1071,8 +1044,10 @@ public class KnowledgeActivity extends AppCompatActivity {
 
         underlineMatches.forEach(pair -> s.setSpan(new UnderlineSpan(), pair.first, pair.second, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE));
 
+        monospaceMatches.forEach(pair -> s.setSpan(new TypefaceSpan("monospace"), pair.first, pair.second, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE));
+
         int color = Utility.setAlphaOfColor(getColor(R.color.colorText), 0x80);
-        Utility.concatenateCollections(captionMatches, boldMatches, strikeMatches, italicMatches, underlineMatches).forEach(pair -> {
+        Utility.concatenateCollections(captionMatches, boldMatches, strikeMatches, italicMatches, underlineMatches, monospaceMatches).forEach(pair -> {
             s.setSpan(new ForegroundColorSpan(color), pair.first - 1, pair.first, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             s.setSpan(new ForegroundColorSpan(color), pair.second, pair.second + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         });
@@ -1164,7 +1139,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     if (randomKnowledge[0].hasContent()) {
                         listItem_knowledge_content.setVisibility(View.VISIBLE);
                         listItem_knowledge_list.setVisibility(View.GONE);
-                        listItem_knowledge_content.setText(applyFormatting_text(randomKnowledge[0].getContent()));
+                        listItem_knowledge_content.setText(CustomUtility.applyFormattingToText(randomKnowledge[0].getContent()));
                     } else if (randomKnowledge[0].hasItems()) {
                         listItem_knowledge_list.setVisibility(View.VISIBLE);
                         listItem_knowledge_content.setVisibility(View.GONE);

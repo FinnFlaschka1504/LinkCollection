@@ -8,6 +8,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.finn.androidUtilities.CustomDialog;
+import com.finn.androidUtilities.CustomUtility;
 import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
@@ -270,7 +271,10 @@ public class Show extends ParentClass {
         if (latestEpisode == null)
             return false;
         String[] split = latestEpisode.split("(?<!\\\\)\\|");
-        Episode episode = seasonList.get(Integer.parseInt(split[0])).episodeMap.get("E:" + split[1]);
+        int seasonNumber = Integer.parseInt(split[0]); // 6
+        if (seasonList.size() <= seasonNumber) // [0,1,2,3,4,5] 6
+            return false;
+        Episode episode = seasonList.get(seasonNumber).episodeMap.get("E:" + split[1]);
         return episode != null && episode.isWatched();
     }
 
@@ -559,16 +563,10 @@ public class Show extends ParentClass {
             return isBefore;
         }
 
-        public void removeDate(Date removeDate_withTime) {
-            Date removeDate = Utility.removeTime(removeDate_withTime);
-
-            CustomList<Date> dateListCopy = new CustomList<>(dateList);
-            dateListCopy.forEachCount((date, count) -> {
-                if (!Utility.removeTime(date).equals(removeDate))
-                    return false;
-                dateList.remove(count);
-                return true;
-            });
+        public void removeDate(Date removeDate) {
+            boolean hasRemoved = dateList.removeIf(date -> date.equals(removeDate));
+            if (!hasRemoved)
+                dateList.removeIf(date -> CustomUtility.removeTime(date).equals(CustomUtility.removeTime(removeDate)));
         }
 
         public String getImdbId() {
@@ -626,8 +624,8 @@ public class Show extends ParentClass {
                                         season.setImdbIdBuffer(s);
                                         Map<String, Episode> episodeMap;
                                         Map<Integer, Map<String, Episode>> map = null;
-                                        for (Map.Entry<Show, Map<Integer, Map<String, Episode>>> entry : database.tempShowSeasonEpisodeMap.entrySet()) {
-                                            if (entry.getKey().equals(show))
+                                        for (Map.Entry<String, Map<Integer, Map<String, Episode>>> entry : database.tempShowSeasonEpisodeMap.entrySet()) {
+                                            if (entry.getKey().equals(show.getUuid()))
                                                 map = entry.getValue();
                                         }
                                         if (map == null || (episodeMap = map.get(seasonNumber)) == null) {

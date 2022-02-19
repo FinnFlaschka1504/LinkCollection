@@ -168,10 +168,11 @@
 
         <TextView
             android:id="@+id/dialog_detailMedia_path"
+            style="@style/TextButtonStyle.Normal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:clickable="true"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+            android:clickable="true" />
     </LinearLayout>
 
 </LinearLayout>

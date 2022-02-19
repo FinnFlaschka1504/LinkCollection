@@ -1,6 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Content.Media;
 
 import android.annotation.SuppressLint;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
@@ -1244,7 +1245,27 @@ public class MediaActivity extends AppCompatActivity {
                         Utility.applyCategoriesLink(this, CategoriesActivity.CATEGORIES.MEDIA_EVENT, view.findViewById(R.id.dialog_detailMedia_event), mediaEventIdList);
                     }
                     ((TextView) view.findViewById(R.id.dialog_detailMedia_date)).setText(Utility.formatDate("dd.MM.yyyy   HH:mm:ss 'Uhr'", new Date(new File(media.getImagePath()).lastModified())));
-                    ((TextView) view.findViewById(R.id.dialog_detailMedia_path)).setText(media.getImagePath());
+                    TextView pathTextView = view.findViewById(R.id.dialog_detailMedia_path);
+                    pathTextView.setText(media.getImagePath());
+                    pathTextView.setOnClickListener(v -> {
+                        File file = new File(media.getImagePath());
+                        Uri uri = FileProvider.getUriForFile(this, getApplicationContext().getPackageName() + ".provider", file);
+                        Intent intent = new Intent(Intent.ACTION_VIEW);
+                        if (file.getPath().endsWith(".mp4"))
+                            intent.setDataAndType(uri, "video/*");
+                        else
+                            intent.setDataAndType(uri, "image/*");
+                        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                        Intent chooser = Intent.createChooser(intent, "Öffnen mit...");
+//                        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+//                        intent.setDataAndType(path, "image/*");
+                        try {
+                            startActivity(chooser);
+                        }
+                        catch (ActivityNotFoundException e) {
+                            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 })
                 .show();
     }

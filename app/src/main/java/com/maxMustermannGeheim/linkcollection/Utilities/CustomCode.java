@@ -40,7 +40,6 @@ import com.finn.androidUtilities.Helpers;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
@@ -721,7 +720,7 @@ public abstract class CustomCode extends ParentClass {
                             for (int i = 0; i < tableLayout.getChildCount(); i++) {
                                 TableRow row = (TableRow) tableLayout.getChildAt(i);
                                 TextView child = (TextView) row.getChildAt(1);
-                                child.setText(KnowledgeActivity.applyFormatting_text(child.getText()));
+                                child.setText(CustomUtility.applyFormattingToText(child.getText()));
                             }
                         });
 

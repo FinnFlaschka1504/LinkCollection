@@ -1437,7 +1437,6 @@ public class VideoActivity extends AppCompatActivity {
                                 .alignPreviousButtonsLeft();
                 })
                 .addButton(CustomDialog.BUTTON_TYPE.EDIT_BUTTON, customDialog -> addOrEditDialog = showEditOrNewDialog(video).first, false)
-                .markLastAddedButtonAsActionButton()
                 .setSetViewContent((customDialog, view, reload) -> {
                     if (reload && views[0] != video.getDateList().size()) {
                         if (views[0] < video.getDateList().size() && Utility.getWatchLaterList().contains(video)) {
@@ -3463,7 +3462,7 @@ public class VideoActivity extends AppCompatActivity {
 
         com.finn.androidUtilities.Helpers.DoubleClickHelper doubleClickHelper = com.finn.androidUtilities.Helpers.DoubleClickHelper.create();
 
-        CustomDialog.OnDialogCallback showMarkedFilms = customDialog -> {
+        CustomDialog.DialogCallback showMarkedFilms = customDialog -> {
             if (markedVideos.isEmpty()) {
                 if (doubleClickHelper.check() || randomList.isFirst(randomVideo)) {
                     customDialog.dismiss();
@@ -3594,7 +3593,7 @@ public class VideoActivity extends AppCompatActivity {
                 .setDismissWhenClickedOutside(false)
                 .enableTitleBackButton()
                 .setOnBackPressedListener(customDialog -> {
-                    showMarkedFilms.runOnDialogCallback(customDialog);
+                    showMarkedFilms.run(customDialog);
                     return true;
                 })
                 .setOnTouchOutside(showMarkedFilms)

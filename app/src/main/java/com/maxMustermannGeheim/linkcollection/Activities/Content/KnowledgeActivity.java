@@ -566,10 +566,61 @@ public class KnowledgeActivity extends AppCompatActivity {
                                         editKnowledge[0].setContent(null);
                                         List<Knowledge.Item> itemList = editKnowledge[0].getItemList();
                                         itemList.clear();
-                                        if (content[0].startsWith("• "))
-                                            content[0] = content[0].substring(2);
-                                        for (String s : content[0].split("• "))
-                                            itemList.add(new Knowledge.Item(s.trim()));
+
+                                        Matcher matcher = Pattern.compile("(?ims)^[\\wöäüß](?:.(?!^\\s*([^\\wöäüß])(?!.*\\S\\1)))*").matcher(content[0]);
+                                        if (matcher.find())
+                                            itemList.add(new Knowledge.Item(matcher.group(0)));
+
+                                        matcher = Pattern.compile("(?ims)^\\s*([^\\wöäüß])(?!.*\\S\\1)((?:.(?!^\\s*([^\\wöäüß])(?!.*\\S\\3)))*)").matcher(content[0]);
+                                        CustomList<Pair<String,String>> entryList = new CustomList<>();
+                                        while (matcher.find()) {
+//                                            String match = matcher.group(0);
+                                            String symbol = matcher.group(1);
+                                            String entry = matcher.group(2);
+                                            entryList.add(Pair.create(symbol, entry.trim()));
+                                        }
+                                        CustomList<String> symbolList = new CustomList<>();
+                                        CustomList<Knowledge.Item> editItemList = new CustomList<>();
+
+                                        entryList.forEach(entry -> {
+                                            if (symbolList.isEmpty()) {
+                                                symbolList.add(entry.first);
+                                                Knowledge.Item item = new Knowledge.Item(entry.second);
+                                                editItemList.add(item);
+                                                itemList.add(item);
+                                            } else {
+                                                int index = symbolList.indexOf(entry.first);
+                                                if (index != -1) {
+                                                    if (index == 0) {
+                                                        Knowledge.Item item = new Knowledge.Item(entry.second);
+                                                        itemList.add(item);
+//                                                        symbolList.clear();
+                                                        editItemList.clear();
+                                                        editItemList.add(item);
+                                                    } else {
+                                                        symbolList.replaceWith(symbolList.subList(0, index + 1));
+                                                        editItemList.replaceWith(editItemList.subList(0, index));
+                                                        Knowledge.Item item = new Knowledge.Item(entry.second);
+                                                        editItemList.getLast().addChild(item);
+//                                                        symbolList.add(entry.first);
+                                                        editItemList.add(item);
+                                                    }
+                                                } else {
+                                                    symbolList.add(entry.first);
+                                                    Knowledge.Item item = new Knowledge.Item(entry.second);
+                                                    editItemList.getLast().addChild(item);
+                                                    editItemList.add(item);
+                                                }
+                                            }
+                                        });
+//                                        CustomUtility.logD(null, "showEditOrNewDialog: %s", content[0]);
+
+//                                        if (content[0].startsWith("• "))
+//                                            content[0] = content[0].substring(2);
+//                                        for (String s : content[0].split("• "))
+//                                            itemList.add(new Knowledge.Item(s.trim()));
+
+
                                         contentRecycler.reload();
                                         change.run();
 
@@ -598,7 +649,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                                         change.run();
                                     })
                                     .addButton("Übernehmen", customDialog1 -> {
-                                        String content = editKnowledge[0].itemListToString();
+                                        String content = editKnowledge[0].itemListToString_complete(false);
                                         dialog_editOrAddKnowledge_content.setText(content);
                                         editKnowledge[0].setContent(content);
                                         editKnowledge[0].clearItemList();
@@ -807,7 +858,7 @@ public class KnowledgeActivity extends AppCompatActivity {
         return CustomDialog.Builder(this)
                 .setTitle(knowledge.getName())
                 .setView(R.layout.dialog_detail_knowledge)
-                .addButton("Teilen", customDialog -> {
+                .addButton(R.drawable.ic_share, customDialog -> {
                     CustomDialog.Builder(this)
                             .setTitle("Teilen")
                             .setView(R.layout.dialog_share_knowledge)
@@ -924,6 +975,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                             })
                             .show();
                 }, false)
+                .alignPreviousButtonsLeft()
                 .addButton(CustomDialog.BUTTON_TYPE.EDIT_BUTTON, customDialog ->
                         showEditOrNewDialog(knowledge), false)
                 .setSetViewContent((customDialog, view, reload) -> {

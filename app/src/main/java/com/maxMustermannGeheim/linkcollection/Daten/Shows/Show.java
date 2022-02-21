@@ -1,6 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Shows;
 
 import android.content.Context;
+import android.util.Pair;
 import android.widget.Toast;
 
 import com.android.volley.Request;
@@ -285,6 +286,25 @@ public class Show extends ParentClass {
 //        Episode episode = lastSeason.episodeMap.get("E:" + lastSeason.episodesCount);
 //        return episode != null && episode.isWatched();
 //    }
+
+    public Pair<Episode, Boolean> _getEpisode(int seasonNumber, int episodeNumber, boolean includeTemp) {
+        Episode episode = null;
+        if (seasonNumber < seasonList.size()) {
+            Season season = seasonList.get(seasonNumber);
+            episode = season.getEpisodeMap().get("E:" + episodeNumber);
+        }
+        if (episode != null || !includeTemp)
+            return Pair.create(episode, true);
+        Database database = Database.getInstance();
+        Map<Integer, Map<String, Episode>> map = database.tempShowSeasonEpisodeMap.get(uuid);
+        if (map != null) {
+            Map<String, Episode> episodeMap = map.get(seasonNumber);
+            if (episodeMap != null) {
+                return Pair.create(episodeMap.get("E:" + episodeNumber), false);
+            }
+        }
+        return Pair.create(null, false);
+    }
     /**  <------------------------- Convenience -------------------------  */
 
     @Override

@@ -136,10 +136,12 @@ public class Knowledge extends ParentClass_Ratable {
         String result = "";
 
         result += Utility.SwitchExpression.setInput(depth % 4)
-                .addCase(0, integer -> "► ")
-                .addCase(1, integer -> "» ")
-                .addCase(2, integer -> "• ")
-                .addCase(3, integer -> "◦ ")
+                .addCase(0, integer -> "• ")
+                .addCase(1, integer -> " → ")
+                .addCase(2, integer -> "  ► ")
+                .addCase(3, integer -> "   ➤ ")
+                .addCase(4, integer -> "    » ")
+                .addCase(5, integer -> "     > ")
                 .evaluate() +
                 item.getName();
 

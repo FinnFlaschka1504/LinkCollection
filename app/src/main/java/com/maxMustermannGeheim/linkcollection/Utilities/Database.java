@@ -512,7 +512,7 @@ public class Database {
 
     // ---------------
 
-    public static Boolean saveAll_simple() { // ToDo: alle if abfragen für null rückgabe verbessern
+    public static Boolean saveAll_simple() {
         Boolean aBoolean = saveAll(false);
         if (aBoolean == null)
             return false;
@@ -526,8 +526,20 @@ public class Database {
         return aBoolean;
     }
 
-    @CheckForNull public static Boolean saveAll() { // ToDo: alle if abfragen für null rückgabe verbessern
-        return saveAll(false);
+    @SafeVarargs
+    public static void saveAll_err(@Nullable Context context, Utility.GenericInterface<Boolean>... onNoErr_onErr) {
+        Runnable[] onSavedNothingFailed = {};
+        if (onNoErr_onErr != null && onNoErr_onErr.length > 0) {
+            if (onNoErr_onErr.length > 2)
+                onSavedNothingFailed = new Runnable[]{() -> onNoErr_onErr[0].run(true), () -> onNoErr_onErr[0].run(false), () -> onNoErr_onErr[1].run(null)};
+            else
+                onSavedNothingFailed = new Runnable[]{() -> onNoErr_onErr[0].run(true), () -> onNoErr_onErr[0].run(false)};
+        }
+        saveAllTextOnly(context, saveAll(onSavedNothingFailed));
+    }
+
+    public static void saveAll() {
+        saveAll(false);
     }
 
     @CheckForNull public static Boolean saveAll(boolean forceAll) {
@@ -558,7 +570,7 @@ public class Database {
     }
 
     @CheckForNull public static Boolean saveAll(@Nullable Runnable... onSavedNothingFailed) {
-        Boolean result = saveAll();
+        Boolean result = saveAll(false);
         if (onSavedNothingFailed != null && onSavedNothingFailed.length > 0) {
             if (result != null && result)
                 Utility.runVarArgRunnable(0, onSavedNothingFailed);
@@ -588,6 +600,8 @@ public class Database {
     }
 
     @CheckForNull private static Boolean saveAllTextOnly(Context context, Boolean result, @Nullable String... textSavedNothingFailed){
+        if (context == null)
+            return result;
         String text = "Err.";
 
         if (result != null && result) {

@@ -574,7 +574,6 @@ public class KnowledgeActivity extends AppCompatActivity {
                                         matcher = Pattern.compile("(?ims)^\\s*([^\\wöäüß])(?!.*\\S\\1)((?:.(?!^\\s*([^\\wöäüß])(?!.*\\S\\3)))*)").matcher(content[0]);
                                         CustomList<Pair<String,String>> entryList = new CustomList<>();
                                         while (matcher.find()) {
-//                                            String match = matcher.group(0);
                                             String symbol = matcher.group(1);
                                             String entry = matcher.group(2);
                                             entryList.add(Pair.create(symbol, entry.trim()));
@@ -594,7 +593,6 @@ public class KnowledgeActivity extends AppCompatActivity {
                                                     if (index == 0) {
                                                         Knowledge.Item item = new Knowledge.Item(entry.second);
                                                         itemList.add(item);
-//                                                        symbolList.clear();
                                                         editItemList.clear();
                                                         editItemList.add(item);
                                                     } else {
@@ -602,7 +600,6 @@ public class KnowledgeActivity extends AppCompatActivity {
                                                         editItemList.replaceWith(editItemList.subList(0, index));
                                                         Knowledge.Item item = new Knowledge.Item(entry.second);
                                                         editItemList.getLast().addChild(item);
-//                                                        symbolList.add(entry.first);
                                                         editItemList.add(item);
                                                     }
                                                 } else {
@@ -613,13 +610,6 @@ public class KnowledgeActivity extends AppCompatActivity {
                                                 }
                                             }
                                         });
-//                                        CustomUtility.logD(null, "showEditOrNewDialog: %s", content[0]);
-
-//                                        if (content[0].startsWith("• "))
-//                                            content[0] = content[0].substring(2);
-//                                        for (String s : content[0].split("• "))
-//                                            itemList.add(new Knowledge.Item(s.trim()));
-
 
                                         contentRecycler.reload();
                                         change.run();

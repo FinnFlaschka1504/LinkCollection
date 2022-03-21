@@ -215,7 +215,7 @@ public interface ParentClass_Tree {
                     } else {
                         ((Map<String, ParentClass>) Utility.getMapFromDatabase(category)).put(((ParentClass) newObject).getUuid(), (ParentClass) newObject);
                     }
-                    Toast.makeText(context, (Database.saveAll_simple() ? "" : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
+                    Database.saveAll(context);
                     onAdded.run(newObject);
                 })
                 .disableLastAddedButton()

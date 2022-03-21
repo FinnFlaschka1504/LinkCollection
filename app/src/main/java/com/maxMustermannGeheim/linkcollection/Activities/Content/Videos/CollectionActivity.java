@@ -985,7 +985,7 @@ public class CollectionActivity extends AppCompatActivity {
         database.collectionMap.put(oldCollection.getUuid(), oldCollection);
 
         reLoadRecycler();
-        Toast.makeText(this, (Database.saveAll() ? "Sammlung" : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
+        Database.saveAll(this, "Sammlung gespeichert", null, null);
         editDialog.dismiss();
 
         if (editDialog.getPayload() != null)

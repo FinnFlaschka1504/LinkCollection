@@ -4,12 +4,12 @@ apply plugin: 'com.google.gms.google-services'
 //apply plugin: 'com.google.firebase.crashlytics'
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 31
     buildToolsVersion "30.0.2"
     defaultConfig {
         applicationId "com.maxMustermannGeheim.linkcollection"
         minSdkVersion 27
-        targetSdkVersion 30
+        targetSdkVersion 31
         versionCode 12
         versionName "3.3"
         testInstrumentationRunner "androidx.dialog_poster.runner.AndroidJUnitRunner"
@@ -38,21 +38,21 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.2'
+    implementation 'androidx.appcompat:appcompat:1.4.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.3'
     implementation 'com.google.firebase:firebase-database:20.0.3'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    implementation 'androidx.navigation:navigation-fragment:2.3.5'
-    implementation 'androidx.navigation:navigation-ui:2.3.5'
+    implementation 'androidx.navigation:navigation-fragment:2.4.1'
+    implementation 'androidx.navigation:navigation-ui:2.4.1'
     implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
-    testImplementation 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.13.1'
     implementation 'androidx.recyclerview:recyclerview:1.2.1'
     implementation 'com.google.code.gson:gson:2.8.6'
     // FlowLayout
     implementation 'org.apmem.tools:layouts:1.10@aar'
     implementation 'com.github.sundeepk:compact-calendar-view:3.0.0'
     implementation 'com.akexorcist:RoundCornerProgressBar:2.0.3'
-    implementation 'com.google.android.material:material:1.4.0'
+    implementation 'com.google.android.material:material:1.5.0'
     implementation 'com.github.psinetron:slycalendarview:0.0.9'
     implementation 'com.mikhaellopez:lazydatepicker:1.0.5'
     implementation 'com.android.volley:volley:1.2.1'
@@ -76,7 +76,7 @@ dependencies {
     implementation 'com.github.bumptech.glide:glide:4.11.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
     implementation 'androidx.legacy:legacy-support-core-utils:1.0.0'
-    implementation 'joda-time:joda-time:2.10.5'
+    implementation 'joda-time:joda-time:2.10.6'
     implementation 'com.scottyab:aescrypt:0.0.1'
     implementation 'me.zhanghai.android.materialratingbar:library:1.4.0'
     implementation 'com.squareup.okhttp3:okhttp:3.12.1'
@@ -95,6 +95,8 @@ dependencies {
     implementation 'com.github.jakebonk:DraggableTreeView:1.0.1'
     implementation 'me.zhanghai.android.fastscroll:library:1.1.7'
     implementation("com.google.guava:guava:31.0.1-android")
+    implementation 'com.github.noowenz:CustomDateTimePicker:1.01'
+    implementation 'com.github.Kunzisoft:Android-SwitchDateTimePicker:2.1'
 
     implementation 'com.github.pchmn:MaterialChipsInput:1.0.8'
     api 'com.theartofdev.edmodo:android-image-cropper:2.8.0'

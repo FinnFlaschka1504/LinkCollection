@@ -766,7 +766,7 @@ public class Settings extends AppCompatActivity {
 
                     customRecycler.reload();
 
-                    Toast.makeText(context, (Database.saveAll_simple() ? "URL-Parser Gespeichert" : "Nichts zum speichern"), Toast.LENGTH_SHORT).show();
+                    Database.saveAll(context);
                 })
                 .enableDoubleClickOutsideToDismiss(customDialog -> {
                     String name = ((EditText) customDialog.findViewById(R.id.dialog_editOrAdd_urlParser_name)).getText().toString().trim();
@@ -1784,8 +1784,7 @@ public class Settings extends AppCompatActivity {
     }
     //  <------------------------- Export and Import -------------------------
 
-
-    //  ------------------------- Encryption ------------------------->
+    //  region ------------------------- Encryption ------------------------->
     public static void resetEncryption() {
         for (Space space : allSpaces) {
             changeSetting(SETTING_SPACE_ENCRYPTED_ + space.getItemId(), String.valueOf(false));
@@ -1798,7 +1797,7 @@ public class Settings extends AppCompatActivity {
             changeSetting(SETTING_SPACE_ENCRYPTED_ + space.getItemId(), String.valueOf(space.isEncrypted()));
         }
     }
-    //  <------------------------- Encryption -------------------------
+    //  endregion <------------------------- Encryption -------------------------
 
     void updateSpaceStatusSettings() {
         for (Space space : allSpaces) {

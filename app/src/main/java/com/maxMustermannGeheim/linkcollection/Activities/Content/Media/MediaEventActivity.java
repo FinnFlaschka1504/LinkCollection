@@ -694,6 +694,8 @@ public class MediaEventActivity extends AppCompatActivity {
         if (!Utility.isOnline(this))
             return;
 
+        boolean hasChanges = oldEvent.equals(newEvent);
+
         String title = ((TextInputLayout) editDialog.findViewById(R.id.dialog_editMediaEvent_title_layout)).getEditText().getText().toString().trim();
         String description = ((TextInputLayout) editDialog.findViewById(R.id.dialog_editMediaEvent_description_layout)).getEditText().getText().toString().trim();
         newEvent.setDescription(CustomUtility.stringExistsOrElse(description, null)).setName(title);
@@ -710,11 +712,13 @@ public class MediaEventActivity extends AppCompatActivity {
             oldEvent.getChangesFrom(newEvent);
         }
 
-        if (Database.saveAll_simple(this)) {
-            setResult(RESULT_OK);
+        Database.saveAll_err(this, hasChange -> {
+            if (hasChanges) {
+                setResult(RESULT_OK);
+                reLoadRecycler();
+            };
             editDialog.dismiss();
-            reLoadRecycler();
-        }
+        });
     }
     /**  <------------------------- Edit -------------------------  */
 

@@ -40,7 +40,8 @@
             android:name=".Activities.Content.Media.MediaActivity"
             android:configChanges="orientation|screenSize"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:theme="@style/AppTheme.NoTitle">
+            android:theme="@style/AppTheme.NoTitle"
+            android:exported="true">
             <intent-filter
                 android:icon="@drawable/ic_media"
                 android:label="Medien hinzufügen">
@@ -61,7 +62,8 @@
         <activity
             android:name=".Activities.Main.MainActivity"
             android:configChanges="orientation|screenSize"
-            android:theme="@style/AppTheme.NoTitle">
+            android:theme="@style/AppTheme.NoTitle"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -73,7 +75,8 @@
             android:configChanges="orientation|screenSize"
             android:label="@string/VideoActivity_label"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:theme="@style/DialogActivityTheme.NoTitle">
+            android:theme="@style/DialogActivityTheme.NoTitle"
+            android:exported="true">
             <intent-filter
                 android:icon="@drawable/ic_videos"
                 android:label="Video hinzufügen">
@@ -98,7 +101,8 @@
             android:configChanges="orientation|screenSize"
             android:label="Wissen"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:theme="@style/DialogActivityTheme.NoTitle">
+            android:theme="@style/DialogActivityTheme.NoTitle"
+            android:exported="true">
             <intent-filter
                 android:icon="@drawable/ic_knowledge"
                 android:label="Quelle hinzufügen">

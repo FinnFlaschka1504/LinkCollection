@@ -854,8 +854,7 @@ public class CategoriesActivity extends AppCompatActivity {
                     else
                         ((Map<String, ParentClass>) Utility.getMapFromDatabase(category)).put(editObject.getUuid(), editObject);
                     CustomUtility.runGenericInterface(onSave, isEdit ? oldObject : editObject);
-                    Toast.makeText(context, (Database.saveAll_simple() ? "" : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
-
+                    Database.saveAll(context);
                 })
                 .setView(R.layout.dialog_edit_tmdb_category)
                 .setSetViewContent((customDialog, view1, reload) -> {

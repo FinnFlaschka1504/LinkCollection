@@ -3,6 +3,7 @@ package com.maxMustermannGeheim.linkcollection.Utilities;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlarmManager;
+import android.app.Dialog;
 import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
@@ -64,9 +65,11 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ViewFlipper;
 
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
@@ -79,7 +82,9 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.content.ContextCompat;
 import androidx.core.widget.NestedScrollView;
+import androidx.lifecycle.DefaultLifecycleObserver;
 import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleOwner;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
@@ -103,12 +108,16 @@ import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.android.material.timepicker.MaterialTimePicker;
+import com.google.android.material.timepicker.TimeFormat;
 import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.kunzisoft.switchdatetime.SwitchDateTimeDialogFragment;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Media.MediaActivity;
@@ -142,6 +151,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.WatchList;
 import com.maxMustermannGeheim.linkcollection.R;
+import com.noowenz.customdatetimepicker.CustomDateTimePicker;
 //import com.pixplicity.sharp.Sharp;
 
 import org.jetbrains.annotations.NotNull;
@@ -196,7 +206,7 @@ import top.defaults.drawabletoolbox.DrawableBuilder;
 
 public class Utility {
 
-    /**  ------------------------- isOnline ------------------------->  */
+    // region ------------------------- isOnline ------------------------->
     static public boolean isOnline(Context context) {
         if (isOnline()) {
             return true;
@@ -295,8 +305,9 @@ public class Utility {
             return false;
         }
     }
-    /**  <------------------------- isOnline -------------------------  */
-
+    // test
+    // endregion <------------------------- isOnline -------------------------
+    // test
 
 
     /**  ------------------------- Internet Dialog ------------------------->  */
@@ -979,6 +990,19 @@ public class Utility {
         return new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.SpannableStringHelper().append("Möchtest du wirklich '").appendBold(name).append("' löschen?").get();
     }
 
+    public static void applyDialogChangeCallback(Object o, CustomDialog customDialog, GenericInterface<Boolean> changeCallback) {
+        int oldHash = o.hashCode();
+        customDialog.addOnDialogDismiss(customDialog1 -> changeCallback.run(oldHash != o.hashCode()));
+    }
+
+    public static void applyDialogChangeCallback(Object o, CustomDialog customDialog, Runnable changeCallback) {
+        applyDialogChangeCallback(o, customDialog, hasChange -> {
+            CustomUtility.logD(null, "applyDialogChangeCallback: %s", hasChange);
+            if (hasChange)
+                changeCallback.run();
+        });
+    }
+
 
     /**  ------------------------- Api ------------------------->  */
     public static void importTmdbGenre(Context context, boolean direct, boolean isVideo) {
@@ -1568,8 +1592,8 @@ public class Utility {
 /**  <------------------------- Filter -------------------------  */
 
 
+    /** ------------------------- Calender -------------------------> */
     private static Date currentDate;
-
     /**  ------------------------- FilmCalender ------------------------->  */
     public static void setupFilmCalender(Context context, CompactCalendarView calendarView, FrameLayout layout, List<Video> videoList, boolean openVideo) {
         calendarView.removeAllEvents();
@@ -1639,13 +1663,29 @@ public class Utility {
                     } else
                         itemView.findViewById(R.id.listItem_video_rating_layout).setVisibility(View.GONE);
 
-                });
+                })
+                .addOptionalModifications(customRecycler1 -> {
+                    if (openVideo)
+                        customRecycler1.setOnClickListener((customRecycler2, view, object, index) -> {
+                            ((MainActivity) context).startActivityForResult(new Intent(context, VideoActivity.class)
+                                    .putExtra(CategoriesActivity.EXTRA_SEARCH, ((ParentClass) ((Event) object).getData()).getUuid())
+                                    .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO), MainActivity.START_VIDEO_FROM_CALENDER);
+                        });
+                    else
+                        customRecycler1.setOnClickListener((customRecycler2, itemView, event, index) -> Toast.makeText(context, "Zum Bearbeiten lange drücken", Toast.LENGTH_SHORT).show());
+                })
+                .setOnLongClickListener((customRecycler1, view, event, index) -> showEditTimeDialog((AppCompatActivity) context, event, calendarView, newView -> {
+                    List<Date> dateList = ((Video) event.getData()).getDateList();
+                    Date oldView = new Date(event.getTimeInMillis());
+                    dateList.remove(oldView);
+                    dateList.add(newView);
 
-        if (openVideo)
-            customRecycler.setOnClickListener((customRecycler1, view, object, index) ->
-                    ((MainActivity) context).startActivityForResult(new Intent(context, VideoActivity.class)
-                            .putExtra(CategoriesActivity.EXTRA_SEARCH, ((ParentClass) ((Event) object).getData()).getUuid())
-                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO), MainActivity.START_VIDEO_FROM_CALENDER));
+                    List<Event> events = calendarView.getEvents(currentDate);
+                    loadVideoList(events, layout, customRecycler1);
+                    setButtons(layout, events.isEmpty() ? 0 : 1, calendarView, videoList, customRecycler1);
+                    Database.saveAll(context);
+                }));
+
 
         for (Video video : videoList) {
             for (Date date : video.getDateList()) {
@@ -1692,7 +1732,6 @@ public class Utility {
                 Database.saveAll();
             };
             WatchListActivity.checkWatchList(context, videoList.get(0), addView);
-
         });
         layout.findViewById(R.id.dialog_editViews_remove).setOnClickListener(view -> {
             videoList.get(0).removeDate(currentDate);
@@ -1763,21 +1802,35 @@ public class Utility {
                     setDaysText.run();
 
 
-                });
+                })
+                .addOptionalModifications(customRecycler1 -> {
+                    if (openEpisode)
+                        customRecycler1.setOnClickListener((customRecycler2, view, event, index) -> {
+                            Show.Episode episode = (Show.Episode) event.getData();
+                            if (context instanceof ShowActivity) {
+                                ((ShowActivity) context).showEpisodeDetailDialog(null, episode, true, null);
+                            } else {
+                                ((AppCompatActivity) context).startActivityForResult(new Intent(context, ShowActivity.class)
+                                        .putExtra(CategoriesActivity.EXTRA_SEARCH, episode.getShowId())
+                                        .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.EPISODE)
+                                        .putExtra(ShowActivity.EXTRA_EPISODE, new Gson().toJson(episode)), MainActivity.START_SHOW_FROM_CALENDER);
+                            }
+                        });
+                    else
+                        customRecycler1.setOnClickListener((customRecycler2, itemView, event, index) -> Toast.makeText(context, "Zum Bearbeiten lange drücken", Toast.LENGTH_SHORT).show());
+                })
+                .setOnLongClickListener((customRecycler1, view, event, index) -> showEditTimeDialog((AppCompatActivity) context, event, calendarView, newView -> {
+                    List<Date> dateList = ((Show.Episode) event.getData()).getDateList();
+                    Date oldView = new Date(event.getTimeInMillis());
+                    dateList.remove(oldView);
+                    dateList.add(newView);
 
-        if (openEpisode)
-            customRecycler.setOnClickListener((customRecycler1, view, event, index) ->
-            {
-                Show.Episode episode = (Show.Episode) event.getData();
-                if (context instanceof ShowActivity) {
-                    ((ShowActivity) context).showEpisodeDetailDialog(null, episode, true, null);
-                } else {
-                    ((AppCompatActivity) context).startActivityForResult(new Intent(context, ShowActivity.class)
-                            .putExtra(CategoriesActivity.EXTRA_SEARCH, episode.getShowId())
-                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.EPISODE)
-                            .putExtra(ShowActivity.EXTRA_EPISODE, new Gson().toJson(episode)), MainActivity.START_SHOW_FROM_CALENDER);
-                }
-            });
+                    List<Event> events = calendarView.getEvents(currentDate);
+                    loadVideoList(events, layout, customRecycler1);
+                    setButtons(layout, events.isEmpty() ? 0 : 1, calendarView, episodeList, customRecycler1);
+                    Database.saveAll(context);
+                }));
+
 
         for (Show.Episode episode : episodeList) {
             for (Date date : episode.getDateList()) {
@@ -1847,9 +1900,81 @@ public class Utility {
             });
         });
     }
-    /**  <------------------------- EpisodeCalender -------------------------  */
+    /** <------------------------- EpisodeCalender ------------------------- */
 
+    private static void showEditTimeDialog(AppCompatActivity context, Event event, CompactCalendarView calendarView, GenericInterface<Date> applyDate) {
+        SwitchDateTimeDialogFragment dateTimePicker = SwitchDateTimeDialogFragment.newInstance(
+                "Zeit Auswählen",
+                "OK",
+                "Abbrechen",
+                null,
+                "de"
+        );
+//        CustomUtility.logD(null, "showEditTimeDialog: %", );
+        // region Test
+        dateTimePicker.startAtTimeView();
+        dateTimePicker.set24HoursMode(true);
+        dateTimePicker.setDefaultDateTime(Utility.shiftTime(new Date(event.getTimeInMillis()), Calendar.HOUR, 6));
+        // endregion
+        try {
+            dateTimePicker.setSimpleDateMonthAndDayFormat(new SimpleDateFormat("dd MMMM", Locale.getDefault()));
+        } catch (SwitchDateTimeDialogFragment.SimpleDateMonthAndDayFormatException ignored) { }
+        dateTimePicker.setOnButtonClickListener(new SwitchDateTimeDialogFragment.OnButtonClickListener() {
+            @Override
+            public void onPositiveButtonClick(Date selectedDate) {
+                Date shiftedDate = Utility.shiftTime(selectedDate, Calendar.HOUR, -6);
+                calendarView.removeEvent(event);
+                calendarView.addEvent(new Event(context.getColor(R.color.colorDayNightContent), shiftedDate.getTime(), event.getData()));
+                applyDate.run(shiftedDate);
+            }
 
+            @Override
+            public void onNegativeButtonClick(Date date) {
+
+            }
+        });
+        dateTimePicker.showNow(context.getSupportFragmentManager(), "dialog_time");
+        Dialog pickerDialog = dateTimePicker.getDialog();
+        if (pickerDialog != null) {
+            dateTimePicker.getLifecycle().addObserver(new DefaultLifecycleObserver() {
+                @Override
+                public void onResume(@NonNull LifecycleOwner owner) {
+                    try {
+                        pickerDialog.getWindow().getDecorView().findViewById(R.id.datetime_picker).setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, 2000));
+                        View buttonPanel = pickerDialog.getWindow().getDecorView().findViewById(R.id.buttonPanel);
+                        Button button = (Button) ((ViewGroup) ((ScrollView) buttonPanel).getChildAt(0)).getChildAt(3);
+                        button.setBackground(context.getDrawable(R.drawable.abc_btn_colored_material));
+                        button.setTextColor(context.getColor(R.color.colorTileBackground));
+                        ViewFlipper viewFlipper = pickerDialog.getWindow().getDecorView().findViewById(R.id.dateSwitcher);
+                        viewFlipper.getInAnimation().setDuration(100);
+                        viewFlipper.getOutAnimation().setDuration(100);
+//                        MaterialCalendarView calendarView1 = pickerDialog.getWindow().getDecorView().findViewById(R.id.datePicker);
+                    } catch (Exception e) {
+                        Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                    DefaultLifecycleObserver.super.onResume(owner);
+                }
+            });
+        } else
+            CustomUtility.logD(null, "showEditTimeDialog: no");
+//        CustomDateTimePicker timePicker = new CustomDateTimePicker(context, new CustomDateTimePicker.ICustomDateTimeListener() {
+//            @Override
+//            public void onSet(@NonNull Dialog dialog, @NonNull Calendar calendar, @NonNull Date selectedDate, int i, @NonNull String s, @NonNull String s1, int i1, int i2, @NonNull String s2, @NonNull String s3, int i3, int i4, int i5, int i6, @NonNull String s4) {
+//                Date shiftedDate = Utility.shiftTime(selectedDate, Calendar.HOUR, -6);
+//                calendarView.removeEvent(event);
+//                calendarView.addEvent(new Event(context.getColor(R.color.colorDayNightContent), shiftedDate.getTime(), event.getData()));
+//                applyDate.run(shiftedDate);
+//            }
+//
+//            @Override
+//            public void onCancel() {
+//
+//            }
+//        });
+//        timePicker.set24HourFormat(false);
+//        timePicker.setDate(Utility.shiftTime(new Date(event.getTimeInMillis()), Calendar.HOUR, 6));
+//        timePicker.showDialog();
+    }
 
     private static void loadVideoList(List<Event> eventList, FrameLayout layout, CustomRecycler<Event> customRecycler) {
         eventList = new ArrayList<>(eventList);
@@ -1935,6 +2060,7 @@ public class Utility {
         customRecycler.getRecycler().setOnTouchListener(touchListener);
         layout.findViewById(R.id.fragmentCalender_noViews).setOnTouchListener(touchListener);
     }
+    /** <------------------------- Calender ------------------------- */
 
 
     public static class OnSwipeTouchListener implements View.OnTouchListener {
@@ -2464,14 +2590,14 @@ public class Utility {
                 .setSetItemContent((customRecycler, itemView, parentClass, index) -> {
                     ImageView thumbnail = itemView.findViewById(R.id.selectList_thumbnail);
                     String imagePath;
-                    if ((parentClass instanceof ParentClass_Image && CustomUtility.stringExists(imagePath = ((ParentClass_Image) parentClass).getImagePath())) || (parentClass instanceof Video) && CustomUtility.stringExists(imagePath = ((Video) parentClass).getImagePath())) {
-//                        if (Utility.stringExists(imagePath)) {
+                    if (parentClass instanceof ParentClass_Image || parentClass instanceof Video) {
+                        if ((parentClass instanceof ParentClass_Image && CustomUtility.stringExists(imagePath = ((ParentClass_Image) parentClass).getImagePath()))
+                                || (parentClass instanceof Video) && CustomUtility.stringExists(imagePath = ((Video) parentClass).getImagePath())) {
                             Utility.loadUrlIntoImageView(context, thumbnail, ImageCropUtility.applyCropTransformation(parentClass), getTmdbImagePath_ifNecessary(imagePath, false),
                                     getTmdbImagePath_ifNecessary(imagePath, true), null, () -> roundImageView(thumbnail, 4), searchView::clearFocus);
                             thumbnail.setVisibility(View.VISIBLE);
-//                        } else
-//                            thumbnail.setVisibility(View.GONE);
-
+                        } else
+                            thumbnail.setVisibility(View.INVISIBLE);
                     } else
                         thumbnail.setVisibility(View.GONE);
 
@@ -3561,7 +3687,7 @@ public class Utility {
     }
 
     public enum DateFormat {
-        DATE_DASH("dd-MM-yyyy"), DATE_DOT("dd.MM.yyyy"), DATE_DASH_REVERSE("yyyy-MM-dd"), DATE_DOT_REVERSE("yyyy.MM.dd"), DATE_TIME_DASH("hh:mm 'Uhr' dd-MM-yyyy"), DATE_TIME_DOT("hh:mm 'Uhr' dd.MM.yyyy"), ;
+        DATE_DASH("dd-MM-yyyy"), DATE_DOT("dd.MM.yyyy"), DATE_DASH_REVERSE("yyyy-MM-dd"), DATE_DOT_REVERSE("yyyy.MM.dd"), DATE_TIME_DASH("HH:mm 'Uhr' dd-MM-yyyy"), DATE_TIME_DOT("HH:mm 'Uhr' dd.MM.yyyy"), ;
 
         public final String format;
 
@@ -4256,15 +4382,15 @@ public class Utility {
         return bitmap;
     }
 
-    public static void simpleLoadUrlIntoImageView(Context context, ImageView imageView, @Nullable Boolean show, String imagePath, @Nullable String fullScreenPath, int roundedRadiusDp, Runnable... onFail_onSuccess_onFullscreen) {
-        if ((show == null && stringExists(imagePath) || (show != null && show))) {
+    public static void simpleLoadUrlIntoImageView(Context context, ImageView imageView, @Nullable Boolean visible, String imagePath, @Nullable String fullScreenPath, int roundedRadiusDp, Runnable... onFail_onSuccess_onFullscreen) {
+        if ((visible == null && stringExists(imagePath)) || (visible != null && visible)) {
             imageView.setVisibility(View.VISIBLE);
             Utility.simpleLoadUrlIntoImageView(context, imageView, imagePath, fullScreenPath, roundedRadiusDp, onFail_onSuccess_onFullscreen);
         } else
             imageView.setVisibility(View.GONE);
     }
 
-    public static void simpleLoadUrlIntoImageView(Context context, ImageView imageView, String imagePath, @Nullable String fullScreenPath, int roundedRadiusDp, Runnable... onFail_onSuccess_onFullscreen) {
+    public static void simpleLoadUrlIntoImageView(Context context, ImageView imageView, @NonNull String imagePath, @Nullable String fullScreenPath, int roundedRadiusDp, Runnable... onFail_onSuccess_onFullscreen) {
         Runnable round = () -> roundImageView(imageView, roundedRadiusDp);
 
         Runnable[] runnables = onFail_onSuccess_onFullscreen;
@@ -4289,15 +4415,18 @@ public class Utility {
             runnables = onFail_onSuccess_onFullscreen;
         }
 
+        if (imagePath == null)
+            imagePath = "";
+
         loadUrlIntoImageView(context, imageView, null, getTmdbImagePath_ifNecessary(imagePath, false), CustomUtility.stringExists(fullScreenPath) ? getTmdbImagePath_ifNecessary(fullScreenPath, true) : null, runnables);
     }
 
-    public static void loadUrlIntoImageView(Context context, ImageView imageView, String imagePath, @Nullable String fullScreenPath, Runnable... onFail_onSuccess_onFullscreen) {
+    public static void loadUrlIntoImageView(Context context, ImageView imageView, @NonNull String imagePath, @Nullable String fullScreenPath, Runnable... onFail_onSuccess_onFullscreen) {
         loadUrlIntoImageView(context, imageView, null, imagePath, fullScreenPath, onFail_onSuccess_onFullscreen);
     }
 
     // ToDo: Rounded Corners direkt mit Glide umsetzen
-    public static void loadUrlIntoImageView(Context context, ImageView imageView, @Nullable GenericInterface<RequestBuilder<Drawable>> requestModifications, String imagePath, @Nullable String fullScreenPath, Runnable... onFail_onSuccess_onFullscreen) {
+    public static void loadUrlIntoImageView(Context context, ImageView imageView, @Nullable GenericInterface<RequestBuilder<Drawable>> requestModifications, @NonNull String imagePath, @Nullable String fullScreenPath, Runnable... onFail_onSuccess_onFullscreen) {
 //        if (imagePath.matches(ActivityResultHelper.uriRegex)) {
 ////            CustomUtility.ifNotNull(getBitmapFromUri(Uri.parse(imagePath), context), imageView::setImageBitmap);
 //            Uri uri = Uri.parse(imagePath);
@@ -4308,7 +4437,9 @@ public class Utility {
             Utility.fetchSvg(context, imagePath, imageView, onFail_onSuccess_onFullscreen);
         } else {
             RequestBuilder<Drawable> requestBuilder;
-            if (imagePath.startsWith(context.getFilesDir().getAbsolutePath())) {
+            if (imagePath.isEmpty()) {
+                requestBuilder = Glide.with(context).load(R.drawable.ic_no_image);
+            } else if (imagePath.startsWith(context.getFilesDir().getAbsolutePath())) {
                 Uri imageUri = Uri.fromFile(new File(imagePath));
                 requestBuilder = Glide.with(context).load(imageUri);
             } else
@@ -4349,35 +4480,42 @@ public class Utility {
 //                    .into(imageView);
         }
 //        }
-        if (fullScreenPath == null)
+        if (fullScreenPath == null) {
+//            imageView.setOnClickListener(null);
             return;
+        }
         imageView.setOnClickListener(v -> {
             if (onFail_onSuccess_onFullscreen.length > 2 && onFail_onSuccess_onFullscreen[2] != null)
                 onFail_onSuccess_onFullscreen[2].run();
-            CustomDialog.Builder(context)
-                    .setView(R.layout.dialog_poster)
-                    .setSetViewContent((customDialog1, view1, reload1) -> {
-                        PhotoView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
-                        dialog_poster_poster.setMaximumScale(6f);
-                        dialog_poster_poster.setMediumScale(2.5f);
+            showFullScreenImage(context, requestModifications, fullScreenPath, onFail_onSuccess_onFullscreen);
+        });
+    }
+
+    public static void showFullScreenImage(Context context, @Nullable GenericInterface<RequestBuilder<Drawable>> requestModifications, @NonNull String fullScreenPath, Runnable... onFail_onSuccess_onFullscreen) {
+        CustomDialog.Builder(context)
+                .setView(R.layout.dialog_poster)
+                .setSetViewContent((customDialog1, view1, reload1) -> {
+                    PhotoView dialog_poster_poster = view1.findViewById(R.id.dialog_poster_poster);
+                    dialog_poster_poster.setMaximumScale(6f);
+                    dialog_poster_poster.setMediumScale(2.5f);
 //                        if (fullScreenPath.endsWith(".png") || fullScreenPath.endsWith(".svg"))
 //                            dialog_poster_poster.setPadding(0, 0, 0, 0);
 
-                        if (fullScreenPath.endsWith(".svg")) {
-                            Utility.fetchSvg(context, fullScreenPath, dialog_poster_poster, onFail_onSuccess_onFullscreen);
-                        } else {
-                            RequestBuilder<Drawable> requestBuilder;
-                            if (fullScreenPath.startsWith(context.getFilesDir().getAbsolutePath())) {
-                                Uri imageUri = Uri.fromFile(new File(fullScreenPath));
-                                requestBuilder = Glide.with(context).load(imageUri);
-                            } else
-                                requestBuilder = Glide.with(context).load(fullScreenPath);
-                            if (requestModifications != null)
-                                requestModifications.run(requestBuilder);
-                            requestBuilder
-                                    .error(R.drawable.ic_broken_image)
-                                    .placeholder(R.drawable.ic_download)
-                                    .into(dialog_poster_poster);
+                    if (fullScreenPath.endsWith(".svg")) {
+                        Utility.fetchSvg(context, fullScreenPath, dialog_poster_poster, onFail_onSuccess_onFullscreen);
+                    } else {
+                        RequestBuilder<Drawable> requestBuilder;
+                        if (fullScreenPath.startsWith(context.getFilesDir().getAbsolutePath())) {
+                            Uri imageUri = Uri.fromFile(new File(fullScreenPath));
+                            requestBuilder = Glide.with(context).load(imageUri);
+                        } else
+                            requestBuilder = Glide.with(context).load(fullScreenPath);
+                        if (requestModifications != null)
+                            requestModifications.run(requestBuilder);
+                        requestBuilder
+                                .error(R.drawable.ic_broken_image)
+                                .placeholder(R.drawable.ic_download)
+                                .into(dialog_poster_poster);
 //                                    .into(new DrawableImageViewTarget(dialog_poster_poster) {
 //                                        @Override
 //                                        protected void setResource(@Nullable Drawable resource) {
@@ -4404,31 +4542,30 @@ public class Utility {
 //                                            }
 //                                        }
 //                                    }*/);
-                        }
+                    }
 
-                        dialog_poster_poster.setOnContextClickListener(v1 -> {
-                            customDialog1.dismiss();
-                            return true;
-                        });
-                        dialog_poster_poster.setOnOutsidePhotoTapListener(imageView1 -> customDialog1.dismiss());
-                    })
-                    .addOptionalModifications(customDialog -> {
-                        if ((!fullScreenPath.contains(".png") && !fullScreenPath.contains(".svg"))) {
-                            customDialog.removeBackground_and_margin();
+                    dialog_poster_poster.setOnContextClickListener(v1 -> {
+                        customDialog1.dismiss();
+                        return true;
+                    });
+                    dialog_poster_poster.setOnOutsidePhotoTapListener(imageView1 -> customDialog1.dismiss());
+                })
+                .addOptionalModifications(customDialog -> {
+                    if ((!fullScreenPath.contains(".png") && !fullScreenPath.contains(".svg"))) {
+                        customDialog.removeBackground_and_margin();
+                    }
+                })
+                .addOnDialogShown(customDialog -> {
+                    if ((fullScreenPath.contains(".png") || fullScreenPath.contains(".svg"))) {
+                        Window window = customDialog.getDialog().getWindow();
+                        if (window != null) {
+                            window.setBackgroundDrawable(new ColorDrawable(0x99ffffff));
                         }
-                    })
-                    .addOnDialogShown(customDialog -> {
-                        if ((fullScreenPath.contains(".png") || fullScreenPath.contains(".svg"))) {
-                            Window window = customDialog.getDialog().getWindow();
-                            if (window != null) {
-                                window.setBackgroundDrawable(new ColorDrawable(0x99ffffff));
-                            }
-                        }
-                    })
-                    .disableScroll()
-                    .setDimensionsFullscreen()
-                    .show();
-        });
+                    }
+                })
+                .disableScroll()
+                .setDimensionsFullscreen()
+                .show();
     }
 
     private static void setImageViewBackgroundColor(ImageView imageView, int color, int borderPx) {
@@ -4606,7 +4743,7 @@ public class Utility {
     // ---------------
 
     public static String getTmdbImagePath_ifNecessary(String imagePath, String size) {
-        if (imagePath.matches(ActivityResultHelper.uriRegex))
+        if (imagePath == null || imagePath.matches(ActivityResultHelper.uriRegex))
             return imagePath;
         return (!imagePath.matches("\\/\\w+\\.\\w+") ? "" : "https://image.tmdb.org/t/p/" + size + "/") + imagePath;
     }

@@ -29,7 +29,7 @@
                 android:id="@+id/dialog_permutations_minLength"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0" />
+                android:text="1" />
 
             <com.innovattic.rangeseekbar.RangeSeekBar
                 android:id="@+id/dialog_intersections_lengthLimit"
@@ -41,7 +41,7 @@
                 app:rsb_max="20"
                 app:rsb_maxThumbDrawable="@drawable/ic_dot"
                 app:rsb_maxThumbOffsetHorizontal="7dp"
-                app:rsb_minRange="0"
+                app:rsb_minRange="1"
                 app:rsb_minThumbDrawable="@drawable/ic_dot"
                 app:rsb_minThumbOffsetHorizontal="-7dp"
                 app:rsb_touchRadius="25dp"
@@ -96,19 +96,19 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0" />
+                android:text="2" />
 
             <com.innovattic.rangeseekbar.RangeSeekBar
                 android:id="@+id/dialog_intersections_countLimit"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                app:rsb_initialMaxThumbValue="11"
-                app:rsb_initialMinThumbValue="2"
-                app:rsb_max="11"
+                app:rsb_initialMaxThumbValue="10"
+                app:rsb_initialMinThumbValue="1"
+                app:rsb_max="10"
                 app:rsb_maxThumbDrawable="@drawable/ic_dot"
                 app:rsb_maxThumbOffsetHorizontal="7dp"
-                app:rsb_minRange="0"
+                app:rsb_minRange="1"
                 app:rsb_minThumbDrawable="@drawable/ic_dot"
                 app:rsb_minThumbOffsetHorizontal="-7dp"
                 app:rsb_touchRadius="25dp"

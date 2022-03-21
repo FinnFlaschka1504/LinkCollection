@@ -823,7 +823,7 @@ public class MediaActivity extends AppCompatActivity {
                                     newMedia.forEach(media -> database.mediaMap.remove(media.getUuid()));
                                     reLoadRecycler();
                                     selectHelper.checkSelectionStatusAndUpdateToolbarTitle();
-                                    Toast.makeText(this, (Database.saveAll_simple() ? plural : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
+                                    Database.saveAll(this);
                                 })
                                 .alignPreviousButtonsLeft()
                                 .transformLastAddedButtonToImageButton()
@@ -892,8 +892,7 @@ public class MediaActivity extends AppCompatActivity {
             }
         }
 
-        Toast.makeText(this, (Database.saveAll_simple() ? size + " " + (size > 1 ? plural : singular) : "Nichts") + " Gespeichert", Toast.LENGTH_SHORT).show();
-
+        Database.saveAll(this);
         reLoadRecycler();
     }
 

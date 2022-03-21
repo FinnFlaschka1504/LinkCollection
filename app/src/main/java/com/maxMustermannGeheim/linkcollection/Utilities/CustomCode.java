@@ -2,13 +2,22 @@ package com.maxMustermannGeheim.linkcollection.Utilities;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.net.Uri;
+import android.os.Build;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.TextPaint;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
+import android.text.style.DynamicDrawableSpan;
 import android.text.style.ForegroundColorSpan;
+import android.text.style.ImageSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
@@ -28,10 +37,18 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.LayoutRes;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.SimpleTarget;
+import com.bumptech.glide.request.target.Target;
+import com.bumptech.glide.request.transition.Transition;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomRecycler;
@@ -57,6 +74,7 @@ import org.liquidplayer.javascript.JSException;
 import org.liquidplayer.javascript.JSFunction;
 import org.liquidplayer.javascript.JSValue;
 
+import java.io.File;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -213,6 +231,7 @@ public abstract class CustomCode extends ParentClass {
                     "   return allList[Math.floor(Math.random() * allList.length)];\n" +
                     "}\n");
 
+            // region format
             js.evaluateScript("var format = (key, text = '', params = '') => {\n" +
                     "    if (key != undefined && typeof key == \"string\" && key.match(UUID_REGEX)) {\n" +
                     "        return `\\\\idM${text == '' ? '' : ':' + text}{${key}}`\n" +
@@ -221,7 +240,9 @@ public abstract class CustomCode extends ParentClass {
                     "    }\n" +
                     "    return `\\\\${key}${params == '' ? '' : ':' + params}{${text}}`\n" +
                     "}");
+            // endregion
 
+            // region getAllDays
             js.evaluateScript("var getAllDays = (sorted) => {\n" +
                     "    let allDays = {};\n" +
                     "    getAllList().forEach(video => {\n" +
@@ -243,6 +264,7 @@ public abstract class CustomCode extends ParentClass {
                     "        Object.values(allDays).forEach(a => a.sort((o1, o2) => (o1[1] - o2[1]) * (sorted ? -1 : 1)))\n" +
                     "    return allDays;\n" +
                     "}");
+            // endregion
 
             JSFunction getById = new JSFunction(js, "getById") {
                 public Map getById(String id) {
@@ -260,6 +282,7 @@ public abstract class CustomCode extends ParentClass {
                 }
             };
             js.property("getByName", getByName);
+
             js.evaluateScript("var VIDEO = 'VIDEO';\n" +
                     "var DARSTELLER = 'DARSTELLER';\n" +
                     "var STUDIOS = 'STUDIOS';\n" +
@@ -267,6 +290,7 @@ public abstract class CustomCode extends ParentClass {
                     "var COLLECTION = 'COLLECTION';\n" +
                     "var WATCH_LIST = 'WATCH_LIST';");
 
+            // region getAllViews
             js.evaluateScript("var getAllViews = (sorted = undefined) => {\n" +
                     "    let res = [];\n" +
                     "    let all = getAllList();\n" +
@@ -276,7 +300,9 @@ public abstract class CustomCode extends ParentClass {
                     "    else\n" +
                     "        return res.sort((a1, a2) => (a2[0] - a1[0]) * (sorted ? 1 : -1))\n" +
                     "}");
+            // endregion
 
+            // region toGroup
             js.evaluateScript("var toGroup = (list, getKey, keyMapper, valueMapper, expanded) => {\n" +
                     "    let transformRes = o => {\n" +
                     "        if (expanded === null)\n" +
@@ -317,7 +343,9 @@ public abstract class CustomCode extends ParentClass {
                     "    } else\n" +
                     "        return transformRes(res);\n" +
                     "}");
+            // endregion
 
+            // region df
             js.evaluateScript("var DF_DATE = \"dd.MM.yyyy\";\n" +
                     "var DF_DATE_LONG = \"dd MMMM yyyy\";\n" +
                     "var DF_MONTH = \"MMMM yyyy\";\n" +
@@ -334,7 +362,7 @@ public abstract class CustomCode extends ParentClass {
                                 Toast.makeText(cont, "Kein Format mitgegeben", Toast.LENGTH_SHORT).show();
                                 return null;
                             }
-                            return new SimpleDateFormat(format, Locale.getDefault()).format(parseDate.parse(value.toString().substring(4,24)));
+                            return new SimpleDateFormat(format, Locale.getDefault()).format(parseDate.parse(value.toString().substring(4, 24)));
                         } else if (value.isNumber()) {
                             if (format == null) {
                                 Toast.makeText(cont, "Kein Format mitgegeben", Toast.LENGTH_SHORT).show();
@@ -353,23 +381,72 @@ public abstract class CustomCode extends ParentClass {
                                 return new SimpleDateFormat(format, Locale.getDefault()).parse(date);
                             }
                         }
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                    }
                     return null;
                 }
             };
             js.property("df", df);
+            // endregion
 
+            // region getConstants
             JSFunction getConstants = new JSFunction(js, "getConstants") {
                 public String getConstants() {
                     return Arrays.stream(js.propertyNames()).filter(s -> s.matches("[A-Z\\d_]+")).map(s -> s + ": " + js.property(s)).collect(Collectors.joining("\n"));
                 }
             };
             js.property("getConstants", getConstants);
+            // endregion
 
-            js.evaluateScript("var getIntervall = (period, start, end, rolling = false) => {\n" +
+            // region shiftTime
+            js.evaluateScript("var shiftTime = (time, shift) => {\n" +
+                    "    if (typeof time === \"number\")\n" +
+                    "        time = new Date(time);\n" +
+                    "\n" +
+                    "    let type = shift.slice(-1);\n" +
+                    "    let period = +shift.slice(0, -1);\n" +
+                    "\n" +
+                    "    switch (type) {\n" +
+                    "        case \"d\":\n" +
+                    "            return new Date(time.getFullYear(), time.getMonth(), time.getDate() + period);\n" +
+                    "        case \"w\":\n" +
+                    "            return new Date(time.getFullYear(), time.getMonth(), time.getDate() + (period * 7));\n" +
+                    "        case \"m\":\n" +
+                    "            return new Date(time.getFullYear(), time.getMonth() + period, time.getDate());\n" +
+                    "        case \"y\":\n" +
+                    "            return new Date(time.getFullYear() + period, time.getMonth(), time.getDate());\n" +
+                    "        default:\n" +
+                    "            return null;\n" +
+                    "    }\n" +
+                    "}");
+            // endregion
+
+            // region rollingHelper
+            js.evaluateScript("var rollingHelper = (start, period, rolling, push) => {\n" +
+                    "    if (/^[1-9]+[dwmy]$/.test(rolling)) {\n" +
+                    "        let res = [];\n" +
+                    "        let firstShift = shiftTime(start, period);\n" +
+                    "        let nextStart = start;\n" +
+                    "        let pos = +period.slice(0, -1) >= 0\n" +
+                    "        rolling = pos ? rolling : \"-\" + rolling;\n" +
+                    "        while ((pos ? firstShift > nextStart : firstShift < nextStart) && res.length <= 100000) {\n" +
+                    "            push(res, nextStart)\n" +
+                    "            nextStart = shiftTime(nextStart, rolling);\n" +
+                    "        }\n" +
+                    "        return res;\n" +
+                    "    }\n" +
+                    "}");
+            // endregion
+
+            // region getIntervall
+            js.evaluateScript("var getIntervall = (period, start, end, rolling) => {\n" +
                     "    if (typeof start == \"number\")\n" +
                     "        start = new Date(start);\n" +
-                    "    start = new Date(start.getFullYear(), start.getMonth(), start.getDate())\n" +
+                    "    start = new Date(start.getFullYear(), start.getMonth(), start.getDate());\n" +
+                    "\n" +
+                    "    let rollRes;\n" +
+                    "    if (rollRes = rollingHelper(start, period, rolling, (res, nextStart) => res.push(getIntervall(period, nextStart, end))))\n" +
+                    "        return rollRes;\n" +
                     "    \n" +
                     "    let amount = false;\n" +
                     "    if (typeof end == \"number\") {\n" +
@@ -380,30 +457,13 @@ public abstract class CustomCode extends ParentClass {
                     "    }\n" +
                     "        \n" +
                     "    let current = start;\n" +
-                    "    let type = period.slice(-1);\n" +
-                    "    period = +period.slice(0, -1);\n" +
-                    "    if (!period || period == 0)\n" +
-                    "        return []\n" +
+                    "    if (!period || period == 0 || !/^-?[1-9]+[dwmy]$/.test(period))\n" +
+                    "        return [];\n" +
                     "    let result = [];\n" +
                     "    Loop:\n" +
-                    "    while ((amount && end > 0) || (!amount && (period > 0 ? end <= current : end >= current))) {\n" +
-                    "        let next;\n" +
-                    "        switch (type) {\n" +
-                    "            case \"d\":\n" +
-                    "                next = new Date(current.getFullYear(), current.getMonth(), current.getDate() - period);\n" +
-                    "                break;\n" +
-                    "            case \"w\":\n" +
-                    "                next = new Date(current.getFullYear(), current.getMonth(), current.getDate() - (period * 7));\n" +
-                    "                break;\n" +
-                    "            case \"m\":\n" +
-                    "                next = new Date(current.getFullYear(), current.getMonth() - period, current.getDate());\n" +
-                    "                break;\n" +
-                    "            case \"y\":\n" +
-                    "                next = new Date(current.getFullYear() - period, current.getMonth(), current.getDate());\n" +
-                    "                break;\n" +
-                    "            default:\n" +
-                    "                break Loop;\n" +
-                    "        }\n" +
+                    "    while ((amount && end > 0) || (!amount && (+period.slice(0, -1) < 0 ? end <= current : end >= current))) {\n" +
+                    "        let next = shiftTime(current, period);\n" +
+                    "        \n" +
                     "        result.push([current.getTime(), next.getTime()]);\n" +
                     "        current = next;\n" +
                     "        if (amount)\n" +
@@ -414,30 +474,53 @@ public abstract class CustomCode extends ParentClass {
                     "    }\n" +
                     "    return result;\n" +
                     "}");
+            // endregion
 
-            js.evaluateScript("var toIntervall = (list, period, start, end, filter = true) => {\n" +
+            js.evaluateScript("if (!Array.prototype.flatMap) {\n" +
+                    "  function flatMap (f, ctx) {\n" +
+                    "    return this.reduce\n" +
+                    "      ( (r, x, i, a) =>\n" +
+                    "          r.concat(f.call(ctx, x, i, a))\n" +
+                    "      , []\n" +
+                    "      )\n" +
+                    "  }\n" +
+                    "  Array.prototype.flatMap = flatMap\n" +
+                    "}");
+
+            // region toIntervall
+            js.evaluateScript("var toIntervall = (list, period, start, end, rolling, filter = true) => {\n" +
                     "    if (!start)\n" +
                     "        start = new Date();\n" +
-                    "    let decr = +period.slice(0, -1) > 0\n" +
+                    "\n" +
+                    "    let rollRes;\n" +
+                    "    if (rollRes = rollingHelper(start, period, rolling, (res, nextStart) => res.push(toIntervall(list, period, nextStart, end, null, filter))))\n" +
+                    "        return rollRes;\n" +
+                    "    \n" +
+                    "    let decr = +period.slice(0, -1) < 0\n" +
+                    "    \n" +
                     "    if (!end && end != 0) {\n" +
                     "        let arr= list.sort((a1, a2) => a2[0] - a1[0])\n" +
                     "        end = arr[decr ? arr.length - 1 : 0][0]\n" +
                     "    } else if (end == 0 || end == -1)\n" +
                     "        end = list[end == -1 ? list.length - 1 : 0][0]\n" +
-                    "    let interList = getIntervall(period, start, end).map(a => [new Date(a[0]), new Date(a[1])]).map(a => [a, []]);\n" +
+                    "    \n" +
+                    "    let interList = getIntervall(period, start, end).map(a => [new Date(a[0]), new Date(a[1])]).map(a => {return {\"inter\": a, \"views\": []};});\n" +
                     "\n" +
                     "    list.forEach(view => {\n" +
                     "        interList.forEach(inter => {\n" +
-                    "            if((decr && (view[0] < inter[0][0] && view[0] >= inter[0][1])) || (!decr && (view[0] >= inter[0][0] && view[0] < inter[0][1])))\n" +
-                    "                inter[1].push(view);\n" +
+                    "            if((decr && (view[0] < inter.inter[0] && view[0] >= inter.inter[1])) || (!decr && (view[0] >= inter.inter[0] && view[0] < inter.inter[1])))\n" +
+                    "                inter.views.push(view);\n" +
                     "        })\n" +
                     "    })\n" +
+                    "    \n" +
                     "    if (!filter)\n" +
                     "        return interList\n" +
                     "    else\n" +
-                    "        return interList.filter(a => a[1].length)\n" +
+                    "        return interList.filter(a => a.views.length)\n" +
                     "}");
+            // endregion
 
+            // region removeTime
             js.evaluateScript("var removeTime = (d) => {\n" +
                     "    let time;\n" +
                     "    if (typeof d == \"object\")    \n" +
@@ -447,7 +530,9 @@ public abstract class CustomCode extends ParentClass {
                     "    }\n" +
                     "        \n" +
                     "}");
+            // endregion
 
+            // region getByCat
             js.evaluateScript("var getByCat = (category, single, mapper) => {\n" +
                     "    let allVid = getAllList();\n" +
                     "\n" +
@@ -506,7 +591,7 @@ public abstract class CustomCode extends ParentClass {
                     "        return res;\n" +
                     "    }\n" +
                     "}");
-
+            // endregion
         }
 
         @Override
@@ -559,10 +644,11 @@ public abstract class CustomCode extends ParentClass {
         }
 
         @Override
-        public CharSequence applyFormatting(AppCompatActivity context, CharSequence text) {
+        public CharSequence applyFormatting(AppCompatActivity context, CharSequence text, @Nullable Utility.GenericInterface<SpannableString>[] updateText) {
             List<CustomUtility.Triple<Integer, Integer, String>> idMatches = new ArrayList<>();
             List<CustomUtility.Triple<Integer, Integer, String>> idMapMatches = new ArrayList<>();
             List<CustomUtility.Triple<Integer, Integer, String>> dateMatches = new ArrayList<>();
+            List<CustomUtility.Triple<Integer, Integer, String>> imageMatches = new ArrayList<>();
             List<CustomUtility.Triple<Integer, Integer, Object>> paramsList = new ArrayList<>();
 
             Pattern pattern = Pattern.compile("\\\\(\\w*)(?::(\\w+(?:\\|\\w+)*))*\\{(.*?)\\}");
@@ -609,6 +695,9 @@ public abstract class CustomCode extends ParentClass {
                                 addToList(dateMatches, matchResult, match, offset, formatDate, String.format("{[dt:%s]}", formatDate), CustomUtility.Triple.create(context, params, paramsList));
                             }
                             break;
+                        case "im":
+                            addToList(imageMatches, matchResult, match, offset, "<Bild>", null, CustomUtility.Triple.create(context, params, paramsList));
+                            break;
                         case "":
                             Pair<String, Integer> pair = ellipseString(params, match[0]);
                             offset += pair.second;
@@ -642,6 +731,75 @@ public abstract class CustomCode extends ParentClass {
             idMatches.forEach(triple -> resultSpan.setSpan(getClickableSpan.run(triple.third), triple.first, triple.second, Spannable.SPAN_COMPOSING));
             idMapMatches.forEach(triple -> resultSpan.setSpan(getClickableSpan.run(triple.third), triple.first, triple.second, Spannable.SPAN_COMPOSING));
             dateMatches.forEach(triple -> resultSpan.setSpan(getClickableSpan.run(triple.third), triple.first, triple.second, Spannable.SPAN_COMPOSING));
+            imageMatches.forEach(triple -> {
+                ImageSpan placeholder = new ImageSpan(context, R.drawable.ic_download);
+                int maxSize = CustomUtility.dpToPx(50);
+                Glide.with(context)
+                        .asBitmap()
+                        .load(Utility.getTmdbImagePath_ifNecessary(triple.third, false))
+                        .into(new SimpleTarget<Bitmap>(maxSize, maxSize) {
+                            @Override
+                            public void onResourceReady(@NonNull Bitmap resource, Transition<? super Bitmap> transition) {
+                                double height = resource.getHeight();
+                                double width = resource.getWidth();
+                                Bitmap scaledBitmap;
+                                if (height == maxSize)
+                                    scaledBitmap = Bitmap.createScaledBitmap(resource, maxSize, (int) ((maxSize / width) * height), true);
+                                else
+                                    scaledBitmap = Bitmap.createScaledBitmap(resource, (int) ((maxSize / height) * width), maxSize, true);
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+                                    resultSpan.setSpan(new ImageSpan(context, scaledBitmap) {
+//                                        public void draw(Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, Paint paint) {
+//                                            Drawable b = getDrawable();
+//                                            canvas.save();
+//
+//                                            int transY = bottom - b.getBounds().bottom;
+//                                            // this is the key
+//                                            transY -= paint.getFontMetricsInt().descent / 2;
+//
+//                                            canvas.translate(x, transY);
+//                                            b.draw(canvas);
+//                                            canvas.restore();
+//                                        }
+                                        @Override
+                                        public void draw(Canvas canvas, CharSequence text,
+                                                         int start, int end, float x,
+                                                         int top, int y, int bottom, Paint paint) {
+                                            Drawable b = getDrawable();
+                                            canvas.save();
+
+                                            int bCenter = b.getIntrinsicHeight() / 2;
+                                            int fontTop = paint.getFontMetricsInt().top;
+                                            int fontBottom = paint.getFontMetricsInt().bottom;
+                                            int transY = (bottom - b.getBounds().bottom) -
+                                                    (((fontBottom - fontTop) / 2) - bCenter);
+
+
+                                            canvas.translate(x, transY);
+                                            b.draw(canvas);
+                                            canvas.restore();
+                                        }
+                                    }, triple.first, triple.second, Spannable.SPAN_COMPOSING);
+                                else
+                                    resultSpan.setSpan(new ImageSpan(context, scaledBitmap), triple.first, triple.second, Spannable.SPAN_COMPOSING);
+                                if (updateText != null && updateText[0] != null)
+                                    updateText[0].run(resultSpan);
+                            }
+                        });
+                resultSpan.setSpan(new ClickableSpan() {
+                    @Override
+                    public void onClick(View textView) {
+                        Utility.showFullScreenImage(context, null, Utility.getTmdbImagePath_ifNecessary(triple.third, true), () -> Toast.makeText(context, "Fehler", Toast.LENGTH_SHORT).show());
+                    }
+
+                    @Override
+                    public void updateDrawState(TextPaint ds) {
+                        super.updateDrawState(ds);
+                        ds.setUnderlineText(false);
+                    }
+                }, triple.first, triple.second, Spannable.SPAN_COMPOSING);
+                resultSpan.setSpan(placeholder, triple.first, triple.second, Spannable.SPAN_COMPOSING);
+            });
             paramsList.forEach(triple -> resultSpan.setSpan(triple.third, triple.first, triple.second, Spannable.SPAN_COMPOSING));
 
             return resultSpan;
@@ -898,7 +1056,7 @@ public abstract class CustomCode extends ParentClass {
 
     public abstract JSValue executeCode(Context context, String... params);
 
-    public abstract CharSequence applyFormatting(AppCompatActivity context, CharSequence text);
+    public abstract CharSequence applyFormatting(AppCompatActivity context, CharSequence text, @Nullable Utility.GenericInterface<SpannableString>[] updateText);
 
     public abstract void showHelpDialog(AppCompatActivity context, @Nullable CustomDialog editDialog);
 
@@ -1061,12 +1219,13 @@ public abstract class CustomCode extends ParentClass {
                         CharSequence dialogText;
                         Boolean hasFormatting = jsValue.getContext().property("hasFormatting").toBoolean();
                         Boolean hasHighlight = jsValue.getContext().property("hasHighlight").toBoolean();
+                        Utility.GenericInterface<SpannableString>[] updateText = new Utility.GenericInterface[]{null};
                         if (hasFormatting) {
-                            dialogText = newCustomCode.applyFormatting(context, text);
+                            dialogText = newCustomCode.applyFormatting(context, text, updateText);
                         } else
                             dialogText = text;
 
-                        CustomDialog.Builder(context)
+                        CustomDialog dialog = CustomDialog.Builder(context)
                                 .setTitle("Ergebnis")
                                 .enableTitleBackButton()
                                 .setText(dialogText)
@@ -1079,6 +1238,7 @@ public abstract class CustomCode extends ParentClass {
                                     Utility.applySelectionSearch(context, CategoriesActivity.CATEGORIES.VIDEO, textTextView);
                                 })
                                 .show();
+                        updateText[0] = dialog::setText;
                     } else
                         Toast.makeText(context, "Kein Ergebnis", Toast.LENGTH_SHORT).show();
                 }, false)
@@ -1240,12 +1400,14 @@ public abstract class CustomCode extends ParentClass {
                                 CharSequence dialogText;
                                 Boolean hasFormatting = jsValue.getContext().property("hasFormatting").toBoolean();
                                 Boolean hasHighlight = jsValue.getContext().property("hasHighlight").toBoolean();
+                                Utility.GenericInterface<SpannableString>[] updateText = new Utility.GenericInterface[]{null};
                                 if (hasFormatting) {
-                                    dialogText = customCode.applyFormatting(context, text);
+                                    dialogText = customCode.applyFormatting(context, text, updateText);
                                 } else
                                     dialogText = text;
 
                                 TextView textView = new TextView(context);
+                                updateText[0] = textView::setText;
                                 Utility.applySelectionSearch(context, CategoriesActivity.CATEGORIES.VIDEO, textView);
                                 ScrollView scrollView = new ScrollView(context);
                                 scrollView.addView(textView);

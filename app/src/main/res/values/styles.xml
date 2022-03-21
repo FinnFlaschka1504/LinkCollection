@@ -31,7 +31,7 @@
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
     </style>
-    
+
     <style name="ImageButtonStyle">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
@@ -110,4 +110,24 @@
     <!--    <style name="Widget.AppCompat.Button.Borderless.Colored" parent="Base.Widget.AppCompat.Button.Borderless.Colored">-->
 <!--        <item name="android:textColor">@color/colorAccent</item>-->
 <!--    </style>-->
+    <style name="Theme.SwitchDateTime.TitleDateTimeLabelText">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textColor">?android:attr/textColorPrimaryInverse</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="Theme.SwitchDateTime.TimeLabelText">
+        <item name="android:textSize">40sp</item>
+        <item name="android:textColor">?android:attr/textColorSecondaryInverse</item>
+<!--        <item name="android:textStyle">bold</item>-->
+    </style>
+    <style name="Theme.SwitchDateTime.DateLabelMonthAndDay">
+        <item name="android:textSize">34sp</item>
+        <item name="android:textColor">?android:attr/textColorSecondaryInverse</item>
+<!--        <item name="android:textStyle">bold</item>-->
+    </style>
+    <style name="Theme.SwitchDateTime.DateLabelYear">
+        <item name="android:textSize">26sp</item>
+        <item name="android:textColor">?android:attr/textColorSecondaryInverse</item>
+        <item name="android:textStyle">bold</item>
+    </style>
 </resources>

@@ -1744,7 +1744,6 @@ public class VideoActivity extends AppCompatActivity {
         th.setPriority(Thread.NORM_PRIORITY);
         th.start();
 
-//                CustomList<CustomUtility.Triple<Integer, Integer, String>> tripleList = Stream.iterate(1, count -> count + 1).limit(300).map(integer -> CustomUtility.Triple.create(integer, integer, "Test " + integer)).collect(Collectors.toCollection(CustomList::new));
         Utility.GenericReturnInterface<String, Boolean> alreadyExists = text -> {
             if (Utility.findObjectByName(CategoriesActivity.CATEGORIES.DARSTELLER, text, true) != null)
                 return true;
@@ -1759,18 +1758,23 @@ public class VideoActivity extends AppCompatActivity {
 
         showDialog[0] = () -> {
             int maxLength = tripleList[0].stream().mapToInt(value -> value.second).max().orElse(0);
-            int[] lengthRange = {0, maxLength};
+            int[] lengthRange = {1, maxLength};
             int[] countRange = {3, 11};
             final String[] regex = {""};
             final boolean[] isBlacklist = {true};
 
             Utility.GenericInterface<View> setLengthTexts = view -> {
-                ((TextView) view.findViewById(R.id.dialog_intersections_maxLength)).setText("" + maxLength);
-                ((TextView) view.findViewById(R.id.dialog_intersections_minMaxLength)).setText(String.format("%d–%d", lengthRange[0], lengthRange[1]));
+                ((TextView) view.findViewById(R.id.dialog_intersections_maxLength)).setText(String.valueOf(maxLength));
+
+                ((TextView) view.findViewById(R.id.dialog_intersections_minMaxLength)).setText(
+                        lengthRange[0] == lengthRange[1] ? String.valueOf(lengthRange[0]) : String.format(Locale.getDefault(), "%d–%d", lengthRange[0], lengthRange[1]));
             };
 
             Utility.GenericInterface<View> setCountTexts = view -> {
-                ((TextView) view.findViewById(R.id.dialog_intersections_minMaxCount)).setText(String.format("%d–%s", countRange[0], countRange[1] != 11 ? countRange[1] + "" : "Max."));
+                String min = countRange[0] != 11 ? String.valueOf(countRange[0]) : "Max.";
+                String max = countRange[1] != 11 ? String.valueOf(countRange[1]) : "Max.";
+                ((TextView) view.findViewById(R.id.dialog_intersections_minMaxCount)).setText(
+                        min.equals(max) ? min : String.format(Locale.getDefault(), "%s–%s", min, max));
             };
 
             CustomRecycler<CustomUtility.Triple<Integer, Integer, String>> customRecycler = new CustomRecycler<CustomUtility.Triple<Integer, Integer, String>>(context)
@@ -1977,7 +1981,7 @@ public class VideoActivity extends AppCompatActivity {
                     .setView(R.layout.dialog_intersection)
                     .setSetViewContent((customDialog, view, reload) -> {
                         RangeSeekBar lengthSeekBar = view.findViewById(R.id.dialog_intersections_lengthLimit);
-                        lengthSeekBar.setMax(maxLength + 1);
+                        lengthSeekBar.setMax(maxLength);
                         setLengthTexts.run(view);
                         lengthSeekBar.setSeekBarChangeListener(new RangeSeekBar.SeekBarChangeListener() {
                             @Override
@@ -1992,8 +1996,8 @@ public class VideoActivity extends AppCompatActivity {
 
                             @Override
                             public void onValueChanged(int i, int i1) {
-                                lengthRange[0] = i;
-                                lengthRange[1] = i1 - 1;
+                                lengthRange[0] = i + 1;
+                                lengthRange[1] = i1;
                                 customRecycler.reload();
                                 setLengthTexts.run(view);
                             }
@@ -2014,8 +2018,8 @@ public class VideoActivity extends AppCompatActivity {
 
                             @Override
                             public void onValueChanged(int i, int i1) {
-                                countRange[0] = i + 1;
-                                countRange[1] = i1;
+                                countRange[0] = i + 2;
+                                countRange[1] = i1 + 1;
                                 customRecycler.reload();
                                 setCountTexts.run(view);
                             }
@@ -3368,7 +3372,7 @@ public class VideoActivity extends AppCompatActivity {
                                 if (!extraStrings.isEmpty()) {
                                     TextView textView = itemView.findViewById(R.id.listItem_video_extraText);
                                     textView.setVisibility(View.VISIBLE);
-                                    textView.setText(customCode.applyFormatting(this, extraStrings.get(index)));
+                                    textView.setText(customCode.applyFormatting(this, extraStrings.get(index), null));
                                 }
                             },
                             customRecycler -> {

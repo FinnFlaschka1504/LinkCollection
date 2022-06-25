@@ -96,6 +96,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -112,6 +113,7 @@ public class ShowActivity extends AppCompatActivity {
     private final String ADVANCED_SEARCH_CRITERIA_GENRE = "g";
     private final DecimalFormat decimalFormat = new DecimalFormat("#.##");
     private Database.OnChangeListener<Object> onChangeListener;
+//    private CustomUtility.LogTiming logTiming;
 
     {
         decimalFormat.setRoundingMode(RoundingMode.HALF_UP);
@@ -184,6 +186,7 @@ public class ShowActivity extends AppCompatActivity {
             setContentView(R.layout.activity_show);
         mySPR_data = getSharedPreferences(SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
+//        logTiming = CustomUtility.logTiming();
         loadDatabase();
     }
 
@@ -195,8 +198,7 @@ public class ShowActivity extends AppCompatActivity {
 //            }
 
             setContentView(R.layout.activity_show);
-            allShowList = new CustomList<>(database.showMap.values());
-            sortList(allShowList);
+//            logTiming.run(true);
 
             Toolbar toolbar = findViewById(R.id.toolbar);
             toolbar.setTitle(plural);
@@ -221,6 +223,7 @@ public class ShowActivity extends AppCompatActivity {
                     .enableColoration()
                     .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_GENRE, CategoriesActivity.CATEGORIES.SHOW_GENRES, Show::getGenreIdList);
 
+//            logTiming.run(true);
             loadRecycler();
 
             textListener = new SearchView.OnQueryTextListener() {
@@ -416,6 +419,7 @@ public class ShowActivity extends AppCompatActivity {
             setSearchHint();
 
             onChangeListener = Database.addOnChangeListener(Database.SHOW_MAP, change -> reLoadRecycler());
+//            logTiming.run(false);
         };
 
         if (database == null || !Database.isReady()) {
@@ -435,7 +439,9 @@ public class ShowActivity extends AppCompatActivity {
     }
 
     private CustomList<Show> sortList(CustomList<Show> showList) {
+//        logTiming.run(true);
         Map<Show, List<Show.Episode>> showEpisodeMap = showList.stream().collect(Collectors.toMap(show -> show, this::getEpisodeList));
+//        logTiming.run(true);
 
         new Helpers.SortHelper<>(showList)
                 .setAllReversed(reverse)
@@ -444,113 +450,17 @@ public class ShowActivity extends AppCompatActivity {
                 .addSorter(SORT_TYPE.VIEWS)
                 .changeType(show -> getViews(showEpisodeMap.get(show)))
                 .enableReverseDefaultComparable()
-//                .addCondition((views1, views2) -> {
-//
-////                    List<Show.Episode> episodeList1 = showEpisodeMap.get(views1);
-////                    List<Show.Episode> episodeList2 = showEpisodeMap.get(views2);
-////                    int views1 = getViews(episodeList1);
-////                    int views2 = getViews(episodeList2);
-//
-////                    if (views1 == views2)
-////                        return views1.getName().compareTo(views2.getName());
-////                    else
-//                        return Integer.compare(views1, views2) * (reverse ? 1 : -1);
-//                })
 
-                .addSorter(SORT_TYPE.RATING/*, (show1, show2) -> {
-                    List<Show.Episode> episodeList1 = showEpisodeMap.get(show1);
-                    List<Show.Episode> episodeList2 = showEpisodeMap.get(show2);
-
-                    double rating1 = getRating(episodeList1);
-                    double rating2 = getRating(episodeList2);
-
-                    if (rating1 == rating2)
-                        return show1.getName().compareTo(show2.getName());
-                    else
-                        return Double.compare(rating1, rating2) * (reverse ? 1 : -1);
-                }*/)
-                .changeType(show -> getRating(showEpisodeMap.get(show)))
+                .addSorter(SORT_TYPE.RATING)
+                .changeType(show -> getRatingWithTendency(showEpisodeMap.get(show)))
                 .enableReverseDefaultComparable()
 
-                .addSorter(SORT_TYPE.LATEST/*, (show1, show2) -> {
-                    List<Show.Episode> episodeList1 = showEpisodeMap.get(show1);
-                    List<Show.Episode> episodeList2 = showEpisodeMap.get(show2);
-
-                    Date latest1 = getLatest(episodeList1);
-                    Date latest2 = getLatest(episodeList2);
-
-                    if (latest1 == null && latest2 == null)
-                        return show1.getName().compareTo(show2.getName());
-                    else if (latest1 == null)
-                        return reverse ? -1 : 1;
-                    else if (latest2 == null)
-                        return reverse ? 1 : -1;
-
-                    if (latest1.equals(latest2))
-                        return show1.getName().compareTo(show2.getName());
-                    else
-                        return latest1.compareTo(latest2) * (reverse ? 1 : -1);
-                }*/)
+                .addSorter(SORT_TYPE.LATEST)
                 .changeType(show -> getLatest(showEpisodeMap.get(show)))
                 .enableReverseDefaultComparable()
 
                 .finish()
                 .sort(() -> sort_type);
-
-//        switch (sort_type) {
-//            case NAME:
-//                showList.sort((show1, show2) -> show1.getName().compareTo(show2.getName()) * (reverse ? -1 : 1));
-//                break;
-//            case COUNT:
-//                showList.sort((show1, show2) -> {
-//                    List<Show.Episode> episodeList1 = showEpisodeMap.get(show1);
-//                    List<Show.Episode> episodeList2 = showEpisodeMap.get(show2);
-//                    int views1 = getViews(episodeList1);
-//                    int views2 = getViews(episodeList2);
-//
-//                    if (views1 == views2)
-//                        return show1.getName().compareTo(show2.getName());
-//                    else
-//                        return Integer.compare(views1, views2) * (reverse ? 1 : -1);
-//                });
-//                break;
-//            case RATING:
-//                showList.sort((show1, show2) -> {
-//                    List<Show.Episode> episodeList1 = showEpisodeMap.get(show1);
-//                    List<Show.Episode> episodeList2 = showEpisodeMap.get(show2);
-//
-//                    double rating1 = getRating(episodeList1);
-//                    double rating2 = getRating(episodeList2);
-//
-//                    if (rating1 == rating2)
-//                        return show1.getName().compareTo(show2.getName());
-//                    else
-//                        return Double.compare(rating1, rating2) * (reverse ? 1 : -1);
-//                });
-//                break;
-//            case LATEST:
-//                showList.sort((show1, show2) -> {
-//                    List<Show.Episode> episodeList1 = showEpisodeMap.get(show1);
-//                    List<Show.Episode> episodeList2 = showEpisodeMap.get(show2);
-//
-//                    Date latest1 = getLatest(episodeList1);
-//                    Date latest2 = getLatest(episodeList2);
-//
-//                    if (latest1 == null && latest2 == null)
-//                        return show1.getName().compareTo(show2.getName());
-//                    else if (latest1 == null)
-//                        return reverse ? -1 : 1;
-//                    else if (latest2 == null)
-//                        return reverse ? 1 : -1;
-//
-//                    if (latest1.equals(latest2))
-//                        return show1.getName().compareTo(show2.getName());
-//                    else
-//                        return latest1.compareTo(latest2) * (reverse ? 1 : -1);
-//                });
-//                break;
-//
-//        }
         return showList;
     }
 
@@ -559,7 +469,9 @@ public class ShowActivity extends AppCompatActivity {
         customRecycler_ShowList = new CustomRecycler<Show>(this, findViewById(R.id.recycler))
                 .setItemLayout(R.layout.list_item_show)
                 .setGetActiveObjectList(customRecycler -> {
+//                    logTiming.run(true);
                     CustomList<Show> filteredList = sortList(filterList(new CustomList<>(database.showMap.values())));
+//                    logTiming.run(true);
                     TextView noItem = findViewById(R.id.no_item);
                     String text = shows_search.getQuery().toString().isEmpty() ? "Keine Einträge" : "Kein Eintrag für diese Suche";
                     int size = filteredList.size();
@@ -570,6 +482,7 @@ public class ShowActivity extends AppCompatActivity {
                     int views = getViews(episodeList);
                     String viewsCountText = (views > 1 ? views + " Episoden" : (views == 1 ? "Eine" : "Keine") + " Episode") + " angesehen";
                     SpannableStringBuilder builder = new SpannableStringBuilder().append(elementCountText).append("\n", new RelativeSizeSpan(0.5f), Spannable.SPAN_EXCLUSIVE_INCLUSIVE);
+//                    logTiming.run(true);
 
                     int watchedMinutes = filteredList.stream().mapToInt(show -> {
                         int averageRuntime = CustomUtility.isNotValueOrElse(show.getAverageRuntime(), 0, -1);
@@ -581,6 +494,7 @@ public class ShowActivity extends AppCompatActivity {
                         builder.append(timeString).append("\n");
 
                     elementCount.setText(builder.append(viewsCountText));
+//                    logTiming.run(true);
                     return filteredList;
                 })
                 .setSetItemContent((customRecycler, itemView, show, index) -> {
@@ -612,7 +526,7 @@ public class ShowActivity extends AppCompatActivity {
                     } else
                         itemView.findViewById(R.id.listItem_show_Views_layout).setVisibility(View.GONE);
 
-                    double rating = getRating(episodeList);
+                    double rating = getRatingWithTendency(episodeList);
                     if (rating > 0) {
                         itemView.findViewById(R.id.listItem_show_rating_layout).setVisibility(View.VISIBLE);
                         ((TextView) itemView.findViewById(R.id.listItem_show_rating)).setText(decimalFormat.format(rating));
@@ -652,7 +566,7 @@ public class ShowActivity extends AppCompatActivity {
                             .setTitle("Gehe Zu")
                             .addButton("Ansichten-Historie", customDialog -> showViewHistoryDialog(list))
                             .addButton("Ansichten-Kalender", customDialog -> showCalenderDialog(show))
-                            .addButton("Gesehene Episoden", customDialog -> showSeenEpisodesDialog(show))
+                            .addButton("Gesehene Episoden", customDialog -> showSeenEpisodesDialogForShow(show))
                             .addButton("Zuletzt gesehen", customDialog -> onDecided.run())
                             .addButton("Nächste Episode", customDialog -> {
                                 getNextEpisode(episode[0], episode1 -> {
@@ -763,14 +677,23 @@ public class ShowActivity extends AppCompatActivity {
                 .show();
     }
 
-    private void showSeenEpisodesDialog(Show show) {
-        CustomList<Show.Episode> episodeList = new CustomList<>(CustomUtility.concatenateCollections(show.getSeasonList(), season -> season.getEpisodeMap().values()));
+    private void showSeenEpisodesDialogAll() {
+        List<Show.Episode> episodeList = CustomUtility.concatenateCollections(
+                CustomUtility.concatenateCollections(database.showMap.values(), Show::getSeasonList),
+                season -> season.getEpisodeMap().values());
+        showSeenEpisodesDialog(episodeList, true);
+    }
 
+    private void showSeenEpisodesDialogForShow(Show show) {
+        List<Show.Episode> episodeList = CustomUtility.concatenateCollections(show.getSeasonList(), season -> season.getEpisodeMap().values());
+        showSeenEpisodesDialog(episodeList, false);
+    }
 
+    private void showSeenEpisodesDialog(List<Show.Episode> episodeList, boolean showShowName) {
         Helpers.SortHelper<Show.Episode>.Sorter<Float> sorter = new Helpers.SortHelper<Show.Episode>()
                 .setList(episodeList)
                 .addSorter()
-                .changeType(Show.Episode::getRating)
+                .changeType(episode -> episode._getRatingWithTendency().orElse(-1f))
                 .enableReverseDefaultComparable();
 
 
@@ -780,11 +703,15 @@ public class ShowActivity extends AppCompatActivity {
                         .setGetActiveObjectList(customRecycler -> sorter.sort())
                         .setItemLayout(R.layout.list_item_episode)
                         .setSetItemContent((customRecycler, itemView, episode, index) -> {
-//                            Utility.setMargins(itemView, 8, 5, 8, 5);
                             itemView.findViewById(R.id.listItem_episode_seen).setVisibility(View.GONE);
 
                             itemView.findViewById(R.id.listItem_episode_extraInfo).setVisibility(View.VISIBLE);
-                            itemView.findViewById(R.id.listItem_episode_showName_layout).setVisibility(View.GONE);
+                            if (showShowName) {
+                                Show show = database.showMap.get(episode.getShowId());
+                                itemView.findViewById(R.id.listItem_episode_showName_layout).setVisibility(View.VISIBLE);
+                                ((TextView) itemView.findViewById(R.id.listItem_episode_showName)).setText(show.getName());
+                            } else
+                                itemView.findViewById(R.id.listItem_episode_showName_layout).setVisibility(View.GONE);
                             ((TextView) itemView.findViewById(R.id.listItem_episode_seasonNumber)).setText(String.valueOf(episode.getSeasonNumber()));
 
                             ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(episode.getEpisodeNumber()));
@@ -815,6 +742,7 @@ public class ShowActivity extends AppCompatActivity {
                         })
                         .setOnClickListener((customRecycler, itemView, episode, index) -> showEpisodeDetailDialog(null, episode, true, null))
                         .setOnLongClickListener((customRecycler, itemView, episode, index) -> {
+                            Show show = database.showMap.get(episode.getShowId());
                             int seasonNumber = episode.getSeasonNumber();
                             getTempSeason(show, seasonNumber, stringEpisodeMap -> {
                                 CustomRecycler<Show.Season> seasonRecycler = showSeasonsDialog(show);
@@ -823,6 +751,7 @@ public class ShowActivity extends AppCompatActivity {
                                     showEpisodeDetailDialog(episodeRecycler, episode, false, null);
                             });
                         })
+                        .enableFastScroll((episodeCustomRecycler, episode, integer) -> episode._getRatingWithTendency().map(rating -> decimalFormat.format(rating) + " ☆").orElse("Keine Bewertung"))
                         .generateRecyclerView())
                 .setDimensionsFullscreen()
                 .enableTitleBackButton()
@@ -839,11 +768,16 @@ public class ShowActivity extends AppCompatActivity {
         return episodeList.stream().filter(episode -> !(episode.getRating().equals(-1f) || episode.getRating().equals(0f))).mapToDouble(Show.Episode::getRating).average().orElse(-1);
     }
 
+    private double getRatingWithTendency(List<Show.Episode> episodeList) {
+        return episodeList.stream().map(ParentClass_Ratable::_getRatingWithTendency).filter(Optional::isPresent).mapToDouble(optRating -> (double) optRating.get()).average().orElse(-1);
+    }
+
     private Date getLatest(List<Show.Episode> episodeList) {
         List<Date> dateList = Utility.concatenateCollections(episodeList, Show.Episode::getDateList);
         if (dateList.isEmpty())
             return null;
-        return Collections.max(dateList);
+        Date max = Collections.max(dateList);
+        return max;
     }
 
     private int getViews(List<Show.Episode> episodeList) {
@@ -1066,7 +1000,7 @@ public class ShowActivity extends AppCompatActivity {
                     });
                     view.findViewById(R.id.dialog_detailShow_list).setOnClickListener(view1 -> showSeasonsDialog(show));
                     view.findViewById(R.id.dialog_detailShow_list).setOnLongClickListener(view1 -> {
-                        showSeenEpisodesDialog(show);
+                        showSeenEpisodesDialogForShow(show);
                         return true;
                     });
                     view.findViewById(R.id.dialog_detailShow_internet).setOnClickListener(v -> {
@@ -1406,7 +1340,7 @@ public class ShowActivity extends AppCompatActivity {
                     }
                     ((TextView) itemView.findViewById(R.id.listItem_season_episodes)).setText(helper.get());
 
-                    double averageRating = season.getEpisodeMap().values().stream().filter(ParentClass_Ratable::hasRating).mapToDouble(ParentClass_Ratable::getRating).average().orElse(-1);
+                    double averageRating = season.getEpisodeMap().values().stream().map(ParentClass_Ratable::_getRatingWithTendency).filter(Optional::isPresent).mapToDouble(optRating -> (double) optRating.get()).average().orElse(-1);
                     ((TextView) itemView.findViewById(R.id.listItem_season_rating)).setText(averageRating != -1 ? decimalFormat.format(averageRating) + " ☆" : "");
                 })
                 .setOnClickListener((customRecycler, itemView, season, index) -> {
@@ -1587,15 +1521,10 @@ public class ShowActivity extends AppCompatActivity {
                         Runnable runnable = getImdbIdAndDetails(new CustomList<>(episode), false, () -> customRecycler.update(selectedEpisode[0]));
                         new Handler().postDelayed(() -> runnable.equals(null), 10000);
                     }
-                    if (!episode.hasRating()) {
-                        ParentClass_Ratable.showRatingDialog(this, selectedEpisode[0], itemView, false, () -> {
-                            customRecycler.update(selectedEpisode[0]);
-                            addView.run();
-                        });
-                    } else {
-                        addView.run();
+                    ParentClass_Ratable.showRatingDialog(this, selectedEpisode[0], itemView, true, () -> {
                         customRecycler.update(selectedEpisode[0]);
-                    }
+                        addView.run();
+                    });
                 })
                 .addSubOnLongClickListener(R.id.listItem_episode_seen, (customRecycler, itemView, episode, index) -> {
                     if (episode.isWatched())
@@ -1605,14 +1534,8 @@ public class ShowActivity extends AppCompatActivity {
                         Runnable runnable = getImdbIdAndDetails(new CustomList<>(episode), false, () -> customRecycler.update(selectedEpisode[0]));
                         new Handler().postDelayed(() -> runnable.equals(null), 10000);
                     }
-                    if (!episode.hasRating()) {
-                        addView.run();
-                        customRecycler.update(selectedEpisode[0]);
-                    } else
-                        ParentClass_Ratable.showRatingDialog(this, selectedEpisode[0], itemView, true, () -> {
-                            customRecycler.update(selectedEpisode[0]);
-                            addView.run();
-                        });
+                    addView.run();
+                    customRecycler.update(selectedEpisode[0]);
 
                 })
                 .setOnClickListener((customRecycler, itemView, episode, index) -> {
@@ -1915,8 +1838,8 @@ public class ShowActivity extends AppCompatActivity {
                     if (change instanceof Show && ((Show) change).getUuid().equals(editEpisode.getShowId())) {
                         Show.Episode savedEpisode = database.showMap.get(editEpisode.getShowId()).getSeasonList().get(editEpisode.getSeasonNumber()).getEpisodeMap().get("E:" + editEpisode.getEpisodeNumber());
 //                        if (savedEpisode == null || savedEpisode != episode) {
-                            showEpisodeDetailDialog(customRecycler, savedEpisode, startedDirectly, customDialog);
-                            new Handler().postDelayed(customDialog::dismiss, 1000);
+                        showEpisodeDetailDialog(customRecycler, savedEpisode, startedDirectly, customDialog);
+                        new Handler().postDelayed(customDialog::dismiss, 1000);
 //                        } else
 //                            customDialog.reloadView(false);
                     }
@@ -2446,7 +2369,8 @@ public class ShowActivity extends AppCompatActivity {
     private Runnable getDetailsFromImdb(com.finn.androidUtilities.CustomList<Show.Episode> episodeList, boolean showDialog, Runnable onComplete) {
         episodeList.filter(episode -> Utility.stringExists(episode.getImdbId()), true);
         if (episodeList.isEmpty())
-            return () -> {};
+            return () -> {
+            };
         episodeList.sort((e1, e2) -> {
             int compare;
             if ((compare = Integer.compare(e1.getSeasonNumber(), e2.getSeasonNumber())) != 0)
@@ -2500,7 +2424,7 @@ public class ShowActivity extends AppCompatActivity {
     //  <--------------- Api ---------------
 
 
-    /**  ------------------------- ChangeManagement ------------------------->  */
+    /** ------------------------- ChangeManagement -------------------------> */
     public static Database.ChangeHandler<Map, Show> getShowChangeHandler() {
         return (newShow, content) -> {
             Database database = Database.getInstance();
@@ -2558,7 +2482,8 @@ public class ShowActivity extends AppCompatActivity {
             }
         };
     }
-    /**  <------------------------- ChangeManagement -------------------------  */
+
+    /** <------------------------- ChangeManagement ------------------------- */
 
     private void removeFocusFromSearch() {
         shows_search.clearFocus();
@@ -2597,6 +2522,9 @@ public class ShowActivity extends AppCompatActivity {
                     scrolling = true;
                 }
                 reLoadRecycler();
+                break;
+            case R.id.taskBar_show_allEpisodes:
+                showSeenEpisodesDialogAll();
                 break;
 
             case R.id.taskBar_show_sortByName:

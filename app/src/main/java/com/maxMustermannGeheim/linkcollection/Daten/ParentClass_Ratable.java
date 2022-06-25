@@ -17,6 +17,9 @@ import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomPopupWindow;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 
+import java.util.Objects;
+import java.util.Optional;
+
 public class ParentClass_Ratable extends ParentClass {
     private Float rating = -1f;
     private Integer ratingTendency;
@@ -50,6 +53,17 @@ public class ParentClass_Ratable extends ParentClass {
         return ratingTendency != null && hasRating();
     }
 
+    public Optional<Float> _getRatingWithTendency() {
+        if (!hasRating())
+            return Optional.empty();
+        float tendency;
+        if (ratingTendency == null)
+            tendency = 0;
+        else
+            tendency = 0.0833f * ratingTendency;
+        return Optional.of(rating + tendency);
+    }
+
     public static void showRatingDialog(Context context, ParentClass_Ratable ratable, View anchor, boolean showOldRating, @Nullable Runnable runnable){
         Helpers.RatingHelper ratingHelper = Helpers.RatingHelper.inflate(context);
         if (showOldRating)
@@ -74,7 +88,9 @@ public class ParentClass_Ratable extends ParentClass {
         View removeButton = layout.findViewById(R.id.popup_ratingTendency_remove);
         View upButton = layout.findViewById(R.id.popup_ratingTendency_up);
 
-        removeButton.setVisibility(ratable.hasRatingTendency() ? View.VISIBLE : View.GONE);
+        downButton.setVisibility(!Objects.equals(ratable.getRatingTendency(), -1) ? View.VISIBLE : View.GONE);
+        removeButton.setVisibility(ratable.getRatingTendency() != null ? View.VISIBLE : View.GONE);
+        upButton.setVisibility(!Objects.equals(ratable.getRatingTendency(), 1) ? View.VISIBLE : View.GONE);
 
         CustomPopupWindow customPopupWindow = CustomPopupWindow.Builder(anchor, layout).setPositionRelativeToAnchor(CustomPopupWindow.POSITION_RELATIVE_TO_ANCHOR.TOP_RIGHT).show();
 

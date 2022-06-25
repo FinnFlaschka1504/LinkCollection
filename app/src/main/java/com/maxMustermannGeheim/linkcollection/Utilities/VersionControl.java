@@ -1,6 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Utilities;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
@@ -202,6 +203,7 @@ public class VersionControl {
                     if (c.moveToFirst()) {
                         int columnIndex = c.getColumnIndex(DownloadManager.COLUMN_STATUS);
                         if (DownloadManager.STATUS_SUCCESSFUL == c.getInt(columnIndex)) {
+                            @SuppressLint("Range")
                             String uriString = c.getString(c.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI));
 
                             if (uriString.substring(0, 7).matches("file://")) {
@@ -359,7 +361,12 @@ public class VersionControl {
                 "CustomCode hinzugefügt",
                 "Angesehen-Markierungen in Serien überarbeitet",
                 "Updates können geschlummert werden");
-        addChange("3.4", "ExternalCode hinzugefügt", "Berwertungstendenzen zu Episoden hinzugefügt", "RealtimeUpdate zu Serien hinzugefügt");
+        addChange("3.4", "ExternalCode hinzugefügt",
+                "Bewertungstendenzen zu Episoden hinzugefügt",
+                "RealtimeUpdate zu Serien hinzugefügt");
+        addChange("3.5", "Bewertungstendenzen werden bei Bewertungsdurchschnitten berücksichtigt",
+                "Alle gesehenen Episoden können nach Bewertung sortiert werden",
+                "Kommentare können zu Videos hinzugefügt werden");
     };
 
     private static void addChange(String version, String... changes) {

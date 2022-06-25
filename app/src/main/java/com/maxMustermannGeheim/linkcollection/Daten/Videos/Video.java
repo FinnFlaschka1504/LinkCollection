@@ -34,6 +34,7 @@ public class Video extends ParentClass_Ratable {
     private CustomList<ParentClass_Tmdb> tempStudioList = new CustomList<>();
     private int length;
     private int ageRating = -1;
+    private String comment;
 
     public Video(String name) {
         uuid = "video_" + UUID.randomUUID().toString();
@@ -216,6 +217,15 @@ public class Video extends ParentClass_Ratable {
 
     public Video setAgeRating(int ageRating) {
         this.ageRating = ageRating;
+        return this;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public Video setComment(String comment) {
+        this.comment = comment;
         return this;
     }
 

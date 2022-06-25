@@ -71,9 +71,12 @@ import com.unnamed.b.atv.model.TreeNode;
 import com.unnamed.b.atv.view.AndroidTreeView;
 
 import org.intellij.lang.annotations.Language;
+import org.joda.time.Days;
+import org.joda.time.LocalDate;
 import org.json.JSONException;
 
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -637,7 +640,8 @@ public class CategoriesActivity extends AppCompatActivity {
                         String timeExtra = "";
                         Date date;
                         if (showTime && (date = getDateFromParentClass(parentClass)) != null) {
-                            timeExtra = " – " + Helpers.DurationFormatter.formatDefault(date, new Date(), "'%d% d'");
+                            long days = Days.daysBetween(new LocalDate(date), new LocalDate(new Date())).getDays();
+                            timeExtra = " – " + Helpers.DurationFormatter.formatDefault(Duration.ofDays(days), "'%d% d'");
                         }
                         itemCountTextView.setText(parentClassIntegerPair.second + timeExtra);
                     }

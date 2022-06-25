@@ -1652,13 +1652,13 @@ public class Helpers {
             return addCriteria_defaultName(editTextId, negatedLayoutId, t -> ((ParentClass) t).getName());
         }
 
-        public AdvancedQueryHelper<T> addCriteria_defaultName(@Nullable @IdRes Integer editTextId, @Nullable @IdRes Integer negatedLayoutId, Utility.GenericReturnInterface<T, String> toString) {
+        public AdvancedQueryHelper<T> addCriteria_defaultName(@Nullable @IdRes Integer editTextId, @Nullable @IdRes Integer negatedLayoutId, @NonNull Utility.GenericReturnInterface<T, String> toString) {
             SearchCriteria<T, String> criteria = new SearchCriteria<T, String>(ADVANCED_SEARCH_CRITERIA_NAME, "[^]]+?")
                     .setParser(s -> s)
                     .setBuildPredicate(sub -> {
                         sub = sub.toLowerCase();
-                        String finalSub = sub;
-                        return t -> toString.run(t).toLowerCase().contains(finalSub);
+                        String finalSub = sub.replaceAll("[^\\wöäüß]+", "");
+                        return t -> toString.run(t).toLowerCase().replaceAll("[^\\wöäüß]+", "").contains(finalSub);
                     });
             if (editTextId != null) {
                 criteria.setApplyDialog((customDialog, s, criteria1) -> {

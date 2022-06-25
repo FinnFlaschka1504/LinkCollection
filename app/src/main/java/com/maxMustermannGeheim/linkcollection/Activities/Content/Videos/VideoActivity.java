@@ -1495,6 +1495,21 @@ public class VideoActivity extends AppCompatActivity {
                     } else
                         urlTextView.setClickable(true);
 
+                    View commentLayout = view.findViewById(R.id.dialog_video_comment_layout);
+                    if (CustomUtility.stringExists(video.getComment())) {
+                        commentLayout.setVisibility(View.VISIBLE);
+                        TextView commentTextView = view.findViewById(R.id.dialog_video_comment);
+                        commentTextView.setText(video.getComment());
+                        commentTextView.setOnClickListener(v -> {
+                            CustomDialog.Builder(this)
+                                    .setTitle("Kommentar")
+                                    .setText(video.getComment())
+                                    .addButton(CustomDialog.BUTTON_TYPE.CLOSE_BUTTON)
+                                    .show();
+                        });
+                    } else
+                        commentLayout.setVisibility(View.GONE);
+
                     TextView viewsTextView = view.findViewById(R.id.dialog_video_views);
                     Utility.GenericInterface<Boolean> setViewsText = flip -> {
                         Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
@@ -1807,7 +1822,7 @@ public class VideoActivity extends AppCompatActivity {
                     .setOnClickListener((customRecycler1, itemView, triple, index) -> {
                         context.startActivity(
                                 new Intent(context, VideoActivity.class)
-                                        .putExtra(CategoriesActivity.EXTRA_SEARCH, triple.third)
+                                        .putExtra(CategoriesActivity.EXTRA_SEARCH, String.format("{[n:%s]}", triple.third))
                                         .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO)
                         );
                     })
@@ -1842,7 +1857,7 @@ public class VideoActivity extends AppCompatActivity {
                                             if (allMatchesList.isEmpty()) {
                                                 allMatchesList.addAll(Database.getInstance().videoMap.values().stream()
                                                         .filter(video -> video.getName().replaceAll("[^\\wöäüß]+", " ").toLowerCase().matches(".*(\\b" + triple.third + "\\b).*"))
-                                                        .sorted((o1, o2) -> o1.getName().compareTo(o2.getName()))
+                                                        .sorted(Comparator.comparing(com.finn.androidUtilities.ParentClass::getName))
                                                         .collect(Collectors.toList()));
                                             }
                                             CustomRecycler<Video> selectRecycler = new CustomRecycler<Video>(context)
@@ -2110,6 +2125,9 @@ public class VideoActivity extends AppCompatActivity {
         CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle(video == null ? "Neu: " + singular : singular + " Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
+                .enableTitleRightButton(R.drawable.ic_comment, customDialog -> {
+                    showEditCommentDialog(editVideo[0]);
+                })
                 .addOptionalModifications(customDialog -> {
                     if (Utility.boolOr(Integer.parseInt(Settings.getSingleSetting(this, Settings.SETTING_VIDEO_QUICK_SEARCH)), 0, 2))
                         customDialog
@@ -2565,6 +2583,18 @@ public class VideoActivity extends AppCompatActivity {
                 .enableDynamicWrapHeight(videos_search.getRootView())
                 .show();
         return Pair.create(returnDialog, editVideo[0]);
+    }
+
+    private void showEditCommentDialog(Video editVideo) {
+        CustomDialog.Builder(this)
+                .setTitle("Kommentar Bearbeiten")
+                .standardEdit("Kommentar", editVideo.getComment())
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
+                    String comment = customDialog.getEditText().trim();
+                    editVideo.setComment(CustomUtility.stringExistsOrElse(comment, null));
+                })
+                .show();
     }
 
     private void setThumbnailButton(Video video, CustomDialog customDialog) {

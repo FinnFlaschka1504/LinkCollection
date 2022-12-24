@@ -48,7 +48,7 @@
             android:layout_height="wrap_content"
             android:tint="#4CAF50"
             android:visibility="gone"
-            app:srcCompat="@drawable/ic_check"
+            app:srcCompat="@drawable/ic_check_white"
             tools:visibility="visible" />
 
     </LinearLayout>

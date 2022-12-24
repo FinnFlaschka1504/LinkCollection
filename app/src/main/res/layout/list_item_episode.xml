@@ -109,6 +109,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginRight="8dp"
                 android:layout_weight="1"
+                tools:ellipsize="end"
                 android:textColor="@color/colorPrimaryDark"
                 android:textStyle="bold"
                 tools:singleLine="true"
@@ -233,7 +234,7 @@
             android:clickable="true"
             android:foreground="@drawable/ripple"
             android:padding="5dp"
-            app:srcCompat="@drawable/ic_check"
+            app:srcCompat="@drawable/ic_check_white"
             app:tint="@color/colorDrawable" />
     </FrameLayout>
 

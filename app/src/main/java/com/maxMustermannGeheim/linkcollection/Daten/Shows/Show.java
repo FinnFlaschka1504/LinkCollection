@@ -279,13 +279,13 @@ public class Show extends ParentClass {
         return episode != null && episode.isWatched();
     }
 
-//    public boolean _isLatestSeasonCompleted() {
-//        Season lastSeason = seasonList.stream().filter(season -> season.airDate != null && !Utility.isUpcoming(season.airDate)).reduce((first, second) -> second).orElse(null);
-//        if (lastSeason == null)
-//            return false;
-//        Episode episode = lastSeason.episodeMap.get("E:" + lastSeason.episodesCount);
-//        return episode != null && episode.isWatched();
-//    }
+    public boolean _isLatestSeasonCompleted() {
+        Season lastSeason = seasonList.stream().filter(season -> season.airDate != null && !Utility.isUpcoming(season.airDate)).reduce((first, second) -> second).orElse(null);
+        if (lastSeason == null)
+            return false;
+        Episode episode = lastSeason.episodeMap.get("E:" + lastSeason.episodesCount);
+        return episode != null && episode.isWatched();
+    }
 
     public Pair<Episode, Boolean> _getEpisode(int seasonNumber, int episodeNumber, boolean includeTemp) {
         Episode episode = null;

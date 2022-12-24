@@ -57,6 +57,6 @@
             android:layout_margin="10dp"
             android:background="@drawable/grey_rounded_corners"
             android:backgroundTint="#8CE81E61"
-            app:srcCompat="@drawable/ic_check" />
+            app:srcCompat="@drawable/ic_check_white" />
     </FrameLayout>
 </FrameLayout>

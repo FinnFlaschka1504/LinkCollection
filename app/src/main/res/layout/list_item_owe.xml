@@ -142,7 +142,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:tint="@color/colorDrawable"
-            app:srcCompat="@drawable/ic_check"/>
+            app:srcCompat="@drawable/ic_check_white"/>
 
         <!--        <ImageView-->
 <!--            android:id="@+id/listItem_owe_details"-->

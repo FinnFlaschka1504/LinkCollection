@@ -1,5 +1,7 @@
 package com.maxMustermannGeheim.linkcollection.Activities.Content;
 
+import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
+
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -12,6 +14,7 @@ import android.text.Editable;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StrikethroughSpan;
@@ -39,12 +42,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.res.ResourcesCompat;
 
-import com.finn.androidUtilities.CustomList;
-import com.finn.androidUtilities.CustomRecycler.Expandable;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.finn.androidUtilities.CustomDialog;
+import com.finn.androidUtilities.CustomList;
+import com.finn.androidUtilities.CustomRecycler;
+import com.finn.androidUtilities.CustomRecycler.Expandable;
 import com.finn.androidUtilities.CustomUtility;
 import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.google.android.material.appbar.AppBarLayout;
@@ -56,13 +61,13 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAutoCompleteAdapter;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.ImageAdapterItem;
-import com.finn.androidUtilities.CustomDialog;
-import com.finn.androidUtilities.CustomRecycler;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
@@ -97,12 +102,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 
 public class ShowActivity extends AppCompatActivity {
     public static final String WATCH_LATER_SEARCH = "WATCH_LATER_SEARCH";
@@ -111,6 +115,7 @@ public class ShowActivity extends AppCompatActivity {
     public static final String ACTION_NEXT_EPISODE = "ACTION_NEXT_EPISODE";
     public static final String EXTRA_NEXT_EPISODE_SELECT = "EXTRA_NEXT_EPISODE_SELECT";
     private final String ADVANCED_SEARCH_CRITERIA_GENRE = "g";
+    private final String ADVANCED_SEARCH_CRITERIA_FILTER = "f";
     private final DecimalFormat decimalFormat = new DecimalFormat("#.##");
     private Database.OnChangeListener<Object> onChangeListener;
 //    private CustomUtility.LogTiming logTiming;
@@ -141,6 +146,28 @@ public class ShowActivity extends AppCompatActivity {
 
         public String getName() {
             return name;
+        }
+    }
+
+    public enum SHOW_STATUS_FILTER {
+        OPEN("Weiterschaubar"), CURRENT("Aktuell"), FINISHED("Abgeschlossen"), UNSEEN("Ungesehen");
+
+        private final String uiText;
+
+        SHOW_STATUS_FILTER(String uiText) {
+            this.uiText = uiText;
+        }
+
+        public String getUiText() {
+            return uiText;
+        }
+
+        public static SHOW_STATUS_FILTER getEnum(String text) {
+            try {
+                return SHOW_STATUS_FILTER.valueOf(text);
+            } catch (IllegalArgumentException ignored) {
+            }
+            return Arrays.stream(values()).filter(filter -> filter.getUiText().equals(text)).findFirst().orElse(null);
         }
     }
 
@@ -221,7 +248,27 @@ public class ShowActivity extends AppCompatActivity {
                     })
                     .addCriteria_defaultName()
                     .enableColoration()
-                    .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_GENRE, CategoriesActivity.CATEGORIES.SHOW_GENRES, Show::getGenreIdList);
+                    .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_GENRE, CategoriesActivity.CATEGORIES.SHOW_GENRES, Show::getGenreIdList)
+                    .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Show, SHOW_STATUS_FILTER>(ADVANCED_SEARCH_CRITERIA_FILTER, "[^]]+?")
+                            .setCategory(CategoriesActivity.CATEGORIES.SHOW)
+                            .setParser(SHOW_STATUS_FILTER::getEnum)
+                            .setBuildPredicate(filterEnum -> {
+                                if (filterEnum == null)
+                                    return null;
+
+                                switch (filterEnum) {
+                                    case OPEN:
+                                        return show -> !show._isLatestEpisodeWatched() && !show.getSeasonList().stream().allMatch(season -> season.getEpisodeMap().isEmpty());
+                                    case CURRENT:
+                                        return show -> show._isLatestEpisodeWatched() && show._isBeforeNextEpisodeAir() && !show._isLatestSeasonCompleted();
+                                    case FINISHED:
+                                        return Show::_isLatestSeasonCompleted;
+                                    case UNSEEN:
+                                        return show -> show.getSeasonList().stream().allMatch(season -> season.getEpisodeMap().isEmpty());
+                                }
+
+                                return null;
+                            }));
 
 //            logTiming.run(true);
             loadRecycler();
@@ -410,7 +457,7 @@ public class ShowActivity extends AppCompatActivity {
 
                 String extraSearch = getIntent().getStringExtra(CategoriesActivity.EXTRA_SEARCH);
                 if (extraSearch != null) {
-                    if (extraSearchCategory == CategoriesActivity.CATEGORIES.SHOW_GENRES)
+                    if (extraSearchCategory == CategoriesActivity.CATEGORIES.SHOW_GENRES || extraSearchCategory == CategoriesActivity.CATEGORIES.SHOW)
                         advancedQueryHelper.wrapAndSetExtraSearch(extraSearchCategory, extraSearch);
                     else
                         shows_search.setQuery(extraSearch, true);
@@ -510,19 +557,17 @@ public class ShowActivity extends AppCompatActivity {
                     ((TextView) itemView.findViewById(R.id.listItem_show_Titel)).setText(show.getName());
                     List<Show.Episode> episodeList = getEpisodeList(show);
                     int watchedEpisodes = (int) episodeList.stream().filter(episode -> episode.getSeasonNumber() != 0).count();
-                    boolean releasedEpisodes = show.isNotifyNew() && !show.getAlreadyAiredList().stream().anyMatch(episode -> !episode.isWatched());
+                    boolean releasedEpisodes = show.isNotifyNew() && show.getAlreadyAiredList().stream().allMatch(Show.Episode::isWatched);
                     int views = getViews(episodeList);
                     if (views > 0) {
                         itemView.findViewById(R.id.listItem_show_Views_layout).setVisibility(View.VISIBLE);
                         Helpers.SpannableStringHelper helper = new Helpers.SpannableStringHelper();
-                        helper.appendColor(show.getAllEpisodesCount() <= watchedEpisodes ? "✓  " : "", getColor(R.color.colorGreen));
-                        if (releasedEpisodes || show.getAllEpisodesCount() <= watchedEpisodes || ((show._isLatestEpisodeWatched()/* || show._isLatestSeasonCompleted()*/) && show._isBeforeNextEpisodeAir()))
+                        helper.appendColor(show._isLatestSeasonCompleted() ? "✓  " : "", getColor(R.color.colorGreen));
+                        if (releasedEpisodes || show.getAllEpisodesCount() <= watchedEpisodes || ((show._isLatestEpisodeWatched()) && show._isBeforeNextEpisodeAir()))
                             helper.appendColor(String.valueOf(views), getColor(R.color.colorGreen));
                         else
                             helper.append(String.valueOf(views));
-                        ((TextView) itemView.findViewById(R.id.listItem_show_views)).setText(
-//
-                                helper.get());
+                        ((TextView) itemView.findViewById(R.id.listItem_show_views)).setText(helper.get());
                     } else
                         itemView.findViewById(R.id.listItem_show_Views_layout).setVisibility(View.GONE);
 
@@ -709,7 +754,9 @@ public class ShowActivity extends AppCompatActivity {
                             if (showShowName) {
                                 Show show = database.showMap.get(episode.getShowId());
                                 itemView.findViewById(R.id.listItem_episode_showName_layout).setVisibility(View.VISIBLE);
-                                ((TextView) itemView.findViewById(R.id.listItem_episode_showName)).setText(show.getName());
+                                TextView showNameTextView = itemView.findViewById(R.id.listItem_episode_showName);
+                                showNameTextView.setText(show.getName());
+                                showNameTextView.setSingleLine();
                             } else
                                 itemView.findViewById(R.id.listItem_episode_showName_layout).setVisibility(View.GONE);
                             ((TextView) itemView.findViewById(R.id.listItem_episode_seasonNumber)).setText(String.valueOf(episode.getSeasonNumber()));
@@ -733,7 +780,10 @@ public class ShowActivity extends AppCompatActivity {
                                 listItem_episode_image.setVisibility(View.GONE);
 
 
-                            ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode.getName());
+                            TextView episodeNameTextView = itemView.findViewById(R.id.listItem_episode_name);
+                            episodeNameTextView.setText(episode.getName());
+                            episodeNameTextView.setSingleLine();
+                            episodeNameTextView.setEllipsize(TextUtils.TruncateAt.END);
                             if (episode.getAirDate() != null)
                                 ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(episode.getAirDate()));
                             ParentClass_Ratable.applyRatingTendencyIndicator(itemView.findViewById(R.id.listItem_episode_ratingTendency), episode, episode.isWatched());
@@ -898,6 +948,38 @@ public class ShowActivity extends AppCompatActivity {
     public static void showNextEpisode(AppCompatActivity activity, View view, boolean longClick) {
         activity.startActivityForResult(new Intent(activity, ShowActivity.class).setAction(ACTION_NEXT_EPISODE).putExtra(EXTRA_NEXT_EPISODE_SELECT, longClick), MainActivity.START_SHOW_NEXT_EPISODE);
     }
+
+    public static void showFilterShowsMenu(AppCompatActivity activity, View view) {
+        if (!Database.isReady())
+            return;
+
+        CustomMenu.Builder(activity, view.findViewById(R.id.main_shows_filterLabel))
+                .setMenus((customMenu, items) -> {
+                    items.add(new CustomMenu.MenuItem(SHOW_STATUS_FILTER.OPEN.getUiText(), new Pair<>(new Intent(activity, ShowActivity.class)
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH, SHOW_STATUS_FILTER.OPEN.getUiText())
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.SHOW)
+                            , MainActivity.START_SHOW_STATUS_FILTER), R.drawable.ic_play_next));
+                    items.add(new CustomMenu.MenuItem(SHOW_STATUS_FILTER.CURRENT.getUiText(), new Pair<>(new Intent(activity, ShowActivity.class)
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH, SHOW_STATUS_FILTER.CURRENT.getUiText())
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.SHOW)
+                            , MainActivity.START_SHOW_STATUS_FILTER), R.drawable.ic_calendar));
+                    items.add(new CustomMenu.MenuItem(SHOW_STATUS_FILTER.FINISHED.getUiText(), new Pair<>(new Intent(activity, ShowActivity.class)
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH, SHOW_STATUS_FILTER.FINISHED.getUiText())
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.SHOW)
+                            , MainActivity.START_SHOW_STATUS_FILTER), R.drawable.ic_check));
+                    items.add(new CustomMenu.MenuItem(SHOW_STATUS_FILTER.UNSEEN.getUiText(), new Pair<>(new Intent(activity, ShowActivity.class)
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH, SHOW_STATUS_FILTER.UNSEEN.getUiText())
+                            .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.SHOW)
+                            , MainActivity.START_SHOW_STATUS_FILTER), R.drawable.ic_hide_password));
+                })
+                .setOnClickListener((customRecycler, itemView, item, index) -> {
+                    Pair<Intent, Integer> pair = (Pair<Intent, Integer>) item.getContent();
+                    activity.startActivityForResult(pair.first, pair.second);
+                })
+                .dismissOnClick()
+                .show();
+
+    }
     //  <--------------- Static ---------------
 
 
@@ -1028,10 +1110,10 @@ public class ShowActivity extends AppCompatActivity {
                                 .addOptionalModifications(customDialog1 -> {
                                     if (Utility.stringExists(show.getImdbId()))
                                         customDialog1.addButton("Löschen", customDialog2 -> {
-                                            show.setImdbId(null);
-                                            Toast.makeText(this, "IMDB-ID gelöscht", Toast.LENGTH_SHORT).show();
-                                            Database.saveAll();
-                                        })
+                                                    show.setImdbId(null);
+                                                    Toast.makeText(this, "IMDB-ID gelöscht", Toast.LENGTH_SHORT).show();
+                                                    Database.saveAll();
+                                                })
                                                 .alignPreviousButtonsLeft();
 
                                 })
@@ -1124,22 +1206,22 @@ public class ShowActivity extends AppCompatActivity {
                 .addOptionalModifications(customDialog0 -> {
                     if (show != null) {
                         customDialog0.addButton(R.drawable.ic_delete, customDialog -> {
-                            CustomDialog.Builder(this)
-                                    .setTitle("Löschen")
-                                    .setText("Willst du wirklich '" + show.getName() + "' löschen?")
-                                    .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
-                                    .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
-                                        database.showMap.remove(show.getUuid());
-                                        reLoadRecycler();
-                                        customDialog.dismiss();
-                                        Object payload = customDialog.getPayload();
-                                        if (payload != null) {
-                                            ((CustomDialog) payload).dismiss();
-                                        }
-                                        Database.saveAll(this, "Show gelöscht", null, null);
-                                    })
-                                    .show();
-                        }, false)
+                                    CustomDialog.Builder(this)
+                                            .setTitle("Löschen")
+                                            .setText("Willst du wirklich '" + show.getName() + "' löschen?")
+                                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                            .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
+                                                database.showMap.remove(show.getUuid());
+                                                reLoadRecycler();
+                                                customDialog.dismiss();
+                                                Object payload = customDialog.getPayload();
+                                                if (payload != null) {
+                                                    ((CustomDialog) payload).dismiss();
+                                                }
+                                                Database.saveAll(this, "Show gelöscht", null, null);
+                                            })
+                                            .show();
+                                }, false)
                                 .alignPreviousButtonsLeft();
                     }
                 })
@@ -1577,6 +1659,8 @@ public class ShowActivity extends AppCompatActivity {
                 oldEpisode.setStillPath(newEpisode.getStillPath());
                 oldEpisode.setAirDate(newEpisode.getAirDate());
                 oldEpisode.setName(newEpisode.getName());
+                if (oldEpisode.getLength() <= 0)
+                    oldEpisode.setLength(newEpisode.getLength());
             });
         }
         newMap.putAll(oldMap);
@@ -2119,6 +2203,29 @@ public class ShowActivity extends AppCompatActivity {
         JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {
             toast.cancel();
             try {
+                // check changed seasons
+                Set<Integer> watchedSeasonsIdSet = show.getSeasonList().stream().filter(season -> !season.getEpisodeMap().isEmpty()).map(ParentClass_Tmdb::getTmdbId).collect(Collectors.toSet());
+                Set<Integer> newSeasonsIdSet = new HashSet<>();
+                JSONArray seasons = response.getJSONArray("seasons");
+                for (int i = 0; i < seasons.length(); i++)
+                    newSeasonsIdSet.add(seasons.getJSONObject(i).getInt("id"));
+                if (!newSeasonsIdSet.containsAll(watchedSeasonsIdSet)) {
+                    CustomDialog.Builder(activity)
+                            .setTitle("Probleme Beim Updaten")
+                            .setText("Es wurde festgestellt, dass eine bereits angesehene Season in der aktuellen Form nicht mehr in der geupdateten Show vorhanden ist. " +
+                                    "Somit würden bei dem Update die darin beinhalteten Episoden verworfen werden.\n\n" +
+                                    "Um dies zu verhindern wurde der Updateprozess abgebrochen.")
+//                            .addButton("Reparieren", customDialog -> {
+//                                watchedSeasonsIdSet.removeAll(newSeasonsIdSet);
+//                                show.getSeasonList();
+//                                Map<String, Map<Integer, Map<String, Show.Episode>>> tempShowSeasonEpisodeMap = Database.getInstance().tempShowSeasonEpisodeMap;
+//                            })
+                            .alignPreviousButtonsLeft()
+                            .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON)
+                            .show();
+                    return;
+                }
+
                 if (response.has("number_of_seasons"))
                     show.setSeasonsCount(response.getInt("number_of_seasons"));
                 if (response.has("number_of_episodes"))
@@ -2232,7 +2339,7 @@ public class ShowActivity extends AppCompatActivity {
                 });
 
                 Map<Integer, Map<String, Show.Episode>> map;
-                if (database.tempShowSeasonEpisodeMap.containsKey(show))
+                if (database.tempShowSeasonEpisodeMap.containsKey(show.getUuid()))
                     map = database.tempShowSeasonEpisodeMap.get(show.getUuid());
                 else
                     map = new HashMap<>();
@@ -2266,8 +2373,15 @@ public class ShowActivity extends AppCompatActivity {
     private static Show.Episode jsonToEpisode(Show show, @Nullable Map<String, Show.Episode> episodeMap, JSONObject episode_json) {
         try {
             int episodeNumber = episode_json.getInt("episode_number");
-            Show.Episode episode = (Show.Episode) new Show.Episode(episode_json.getString("name")).setAirDate(Utility.getDateFromJsonString("air_date", episode_json))
-                    .setEpisodeNumber(episodeNumber).setTmdbId(episode_json.getInt("id")).setShowId(show.getUuid()).setSeasonNumber(episode_json.getInt("season_number")).setUuid("E:" + episodeNumber);
+            Show.Episode episode = (Show.Episode)
+                    new Show.Episode(episode_json.getString("name"))
+                            .setAirDate(Utility.getDateFromJsonString("air_date", episode_json))
+                            .setEpisodeNumber(episodeNumber)
+                            .setTmdbId(episode_json.getInt("id"))
+                            .setShowId(show.getUuid())
+                            .setSeasonNumber(episode_json.getInt("season_number"))
+                            .setLength(episode_json.getInt("runtime"))
+                            .setUuid("E:" + episodeNumber);
             if (episode_json.has("still_path")) {
                 String stillPath;
                 if (!(stillPath = episode_json.getString("still_path")).equals("null"))

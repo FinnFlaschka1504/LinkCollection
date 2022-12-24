@@ -107,7 +107,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     public static final int START_JOKE = ++count;
     public static final int START_JOKE_CATEGORY = ++count;
     public static final int START_SHOW = ++count;
-    public static final int START_SHOW_CATEGORY = ++count;
+    public static final int START_SHOW_STATUS_FILTER = ++count;
     public static final int START_SHOW_GENRE = ++count;
     public static final int START_SHOW_FROM_CALENDER = ++count;
     public static final int START_SHOW_NEXT_EPISODE = ++count;
@@ -1120,6 +1120,10 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
             return;
 
         ShowActivity.showNewEpisodesDialog(this);
+    }
+
+    public void showFilterShowsMenu(View view) {
+        ShowActivity.showFilterShowsMenu(this, view);
     }
     //  <----- Shows -----
 

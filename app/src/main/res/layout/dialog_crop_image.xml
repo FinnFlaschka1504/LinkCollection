@@ -39,7 +39,7 @@
             android:layout_margin="6dp"
             android:foreground="@drawable/ripple_round"
             android:padding="10dp"
-            app:srcCompat="@drawable/ic_check" />
+            app:srcCompat="@drawable/ic_check_white" />
     </LinearLayout>
 
     <FrameLayout

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/taskBar_episode_sort"
+        android:icon="@drawable/ic_sort"
+        android:title="Sortieren"
+        app:showAsAction="always">
+        <menu>
+            <group
+                android:id="@+id/g1"
+                android:checkableBehavior="single">
+                <item
+                    android:id="@+id/taskBar_episode_sortByName"
+                    android:title="Nach Name" />
+                <item
+                    android:id="@+id/taskBar_episode_sortByViews"
+                    android:title="Nach Ansichten" />
+                <item
+                    android:id="@+id/taskBar_episode_sortByRating"
+                    android:title="Nach Bewertung" />
+                <item
+                    android:id="@+id/taskBar_episode_sortByLatest"
+                    android:checked="true"
+                    android:title="Nach Datum" />
+                <item
+                    android:id="@+id/taskBar_episode_sortByLength"
+                    android:title="Nach Länge" />
+                <item
+                    android:id="@+id/taskBar_episode_sortByEpisodeNumber"
+                    android:title="Nach EpisodenNummer" />
+            </group>
+            <group android:id="@+id/g2">
+                <item
+                    android:id="@+id/taskBar_episode_sortReverse"
+                    android:checkable="true"
+                    android:title="Umkehren" />
+            </group>
+        </menu>
+    </item>
+    <item
+        android:id="@+id/taskBar_episode_filter"
+        android:icon="@drawable/ic_filter"
+        android:title="Filtern"
+        app:showAsAction="ifRoom" />
+</menu>

@@ -906,6 +906,7 @@ public class Helpers {
                     int result = 0;
 
                     for (Comparator<T> comparator : comparatorUnchangedList) {
+                        // ToDo: (07.01.2023) so anpassen, dass in der Korrekten Reihenfolge, wie hinzugefügt verglichen wird (Changed und Unchanged gemischt)
                         result = comparator.compare(o1, o2);
 
                         if (result != 0)
@@ -1046,7 +1047,7 @@ public class Helpers {
 
     //  ------------------------- RatingHelper ------------------------->
     public static class RatingHelper {
-        private FrameLayout layout;
+        private ViewGroup layout;
         private SeekBar seekBar;
         private MaterialRatingBar ratingBar;
         private float rating;
@@ -1055,7 +1056,7 @@ public class Helpers {
         private RatingBar.OnRatingBarChangeListener onRatingBarChangeListener;
 
         //  ------------------------- Constructors ------------------------->
-        public RatingHelper(FrameLayout layout) {
+        public RatingHelper(ViewGroup layout) {
             this.layout = layout;
             seekBar = layout.findViewById(R.id.customRating_seekBar);
             ratingBar = layout.findViewById(R.id.customRating_ratingBar);
@@ -1075,7 +1076,7 @@ public class Helpers {
 
 
         //  ------------------------- Getters & Setters ------------------------->
-        public FrameLayout getLayout() {
+        public ViewGroup getLayout() {
             return layout;
         }
 
@@ -1190,9 +1191,10 @@ public class Helpers {
 
         public static RatingHelper inflate(Context context) {
             LinearLayout inflate = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.custom_rating, null);
-            FrameLayout frameLayout = inflate.findViewById(R.id.customRating_layout);
-            inflate.removeAllViews();
-            return new RatingHelper(frameLayout);
+//            FrameLayout frameLayout = inflate.findViewById(R.id.customRating_layout);
+//            inflate.removeAllViews();
+//            return new RatingHelper(frameLayout);
+            return new RatingHelper(inflate);
         }
     }
     //  <------------------------- RatingHelper -------------------------
@@ -1603,8 +1605,10 @@ public class Helpers {
         private AppCompatActivity context;
         private EditText editText;
         private TextWatcher colorationWatcher;
+        private boolean noMatchColoration = true;
         private String historyKey;
         private CustomUtility.EventThrottler<Pair<String, CustomList<T>>> requestThrottler;
+        // ToDo: (20.01.2023) strings Escapen und Deescapen standardmäßig hinzufügen (auch für wrap search)
 
         /** ------------------------- Constructor -------------------------> */
         public AdvancedQueryHelper(AppCompatActivity context, SearchView searchView) {
@@ -1653,13 +1657,16 @@ public class Helpers {
         }
 
         public AdvancedQueryHelper<T> addCriteria_defaultName(@Nullable @IdRes Integer editTextId, @Nullable @IdRes Integer negatedLayoutId, @NonNull Utility.GenericReturnInterface<T, String> toString) {
+            return addCriteria_defaultName(editTextId, negatedLayoutId, (helper, sub) -> {
+                String finalSub = sub.toLowerCase().replaceAll("[^\\wöäüß]+", "");
+                return t -> toString.run(t).toLowerCase().replaceAll("[^\\wöäüß]+", "").contains(finalSub);
+            });
+        }
+
+        public AdvancedQueryHelper<T> addCriteria_defaultName(@Nullable @IdRes Integer editTextId, @Nullable @IdRes Integer negatedLayoutId, @NonNull Utility.DoubleGenericReturnInterface<AdvancedQueryHelper<T>, String, Predicate<T>> buildPredicate) {
             SearchCriteria<T, String> criteria = new SearchCriteria<T, String>(ADVANCED_SEARCH_CRITERIA_NAME, "[^]]+?")
-                    .setParser(s -> s)
-                    .setBuildPredicate(sub -> {
-                        sub = sub.toLowerCase();
-                        String finalSub = sub.replaceAll("[^\\wöäüß]+", "");
-                        return t -> toString.run(t).toLowerCase().replaceAll("[^\\wöäüß]+", "").contains(finalSub);
-                    });
+                    .setParser((s, matcher) -> s)
+                    .setBuildPredicate(s -> buildPredicate.run(this, s));
             if (editTextId != null) {
                 criteria.setApplyDialog((customDialog, s, criteria1) -> {
                     boolean[] negated = {false};
@@ -1687,7 +1694,7 @@ public class Helpers {
 
         public AdvancedQueryHelper<T> addCriteria_ParentClass(String key, CategoriesActivity.CATEGORIES category, Utility.GenericReturnInterface<T, List<String>> getList, @Nullable Context context, @Nullable @IdRes Integer textViewId, @Nullable @IdRes Integer spinnerId, @Nullable @IdRes Integer editButtonId) {
             SearchCriteria<T, Pair<String, CustomList<ParentClass>>> criteria = new SearchCriteria<T, Pair<String, CustomList<ParentClass>>>(key, PARENT_CLASS_PATTERN)
-                    .setParser(sub -> {
+                    .setParser((sub, matcher) -> {
                         CustomList<ParentClass> list = new CustomList<>();
                         if (sub.contains("|") || sub.contains("&")) {
                             for (String name : sub.split("(?<!\\\\)[|&]")) {
@@ -1760,6 +1767,10 @@ public class Helpers {
             return this;
         }
 
+        public boolean hasDialog() {
+            return dialogLayoutId != 0;
+        }
+
         public AdvancedQueryHelper<T> setSearchView(SearchView searchView) {
             this.searchView = searchView;
             return this;
@@ -1789,7 +1800,7 @@ public class Helpers {
         /**  <------------------------- Getter & Setter -------------------------  */
 
 
-        /** <------------------------- Convenience ------------------------- */
+        /** ------------------------- Convenience -------------------------> */
         public AdvancedQueryHelper<T> optionalModification(Utility.GenericInterface<AdvancedQueryHelper<T>> optional) {
             optional.run(this);
             return this;
@@ -1937,7 +1948,7 @@ public class Helpers {
             });
             this.context = context;
         }
-        /**  ------------------------- Convenience ------------------------->  */
+        /**  <------------------------- Convenience -------------------------  */
 
 
         /**  ------------------------- Function -------------------------> */
@@ -2027,7 +2038,7 @@ public class Helpers {
                             return;
                         Object o;
                         if (CustomUtility.stringExists(criteria.sub))
-                            o = criteria.tempResult = criteria.parser.run(criteria.sub);
+                            o = criteria.tempResult = criteria.parser.run(criteria.sub, criteria.matcher);
                         else
                             o = null;
                         Utility.GenericReturnInterface onSave = criteria.applyDialog.runApplyDialog(customDialog, o, criteria);
@@ -2155,6 +2166,54 @@ public class Helpers {
                     .show();
             return true;
         }
+
+        public static <T> void showFilterWithAdvancedQueryDialog(AppCompatActivity activity,
+                                                                 String title,
+                                                                 List<T> allList,
+                                                                 CustomList<T> filteredList,
+                                                                 com.maxMustermannGeheim.linkcollection.Utilities.Helpers.AdvancedQueryHelper<T>[] advancedQueryHelper,
+                                                                 Utility.GenericReturnInterface<android.widget.SearchView, com.maxMustermannGeheim.linkcollection.Utilities.Helpers.AdvancedQueryHelper<T>> getAdvancedQueryHelper,
+                                                                 Runnable onReload) {
+            if (advancedQueryHelper[0] == null) {
+                SearchView searchView = new SearchView(activity);
+                searchView.setIconified(false);
+                searchView.setQueryHint(title);
+                View searchPlate = searchView.findViewById(activity.getResources().getIdentifier("android:id/search_plate", null, null));
+                CustomUtility.ifNotNull((View) searchView.findViewById(activity.getResources().getIdentifier("android:id/search_mag_icon", null, null)),
+                        o -> ((LinearLayout.LayoutParams) o.getLayoutParams()).leftMargin = 0);
+                if (searchPlate != null)
+                    searchPlate.setBackgroundColor(Color.TRANSPARENT);
+                searchView.setPadding(-3, CustomUtility.dpToPx(4), 0, CustomUtility.dpToPx(2));
+                searchView.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+                searchView.setIconifiedByDefault(false);
+
+                advancedQueryHelper[0] = getAdvancedQueryHelper.run(searchView);
+                advancedQueryHelper[0].disableNoMatchColoration();
+            }
+
+            com.finn.androidUtilities.CustomDialog.Builder(activity)
+                    .setTitle(title)
+                    .setView(advancedQueryHelper[0].getSearchView())
+                    .setSetViewContent((customDialog1, view, reload) -> view.requestFocus())
+                    .addOptionalModifications(customDialog -> {
+                        if (advancedQueryHelper[0].hasDialog())
+                            customDialog.addButton(R.drawable.ic_settings_dialog, customDialog1 -> advancedQueryHelper[0].showAdvancedSearchDialog(), false);
+                    })
+                    .alignPreviousButtonsLeft()
+                    .addButton(com.finn.androidUtilities.CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
+                    .addButton("Filtern", customDialog1 -> {
+                        filteredList.replaceWith(allList);
+                        advancedQueryHelper[0].filterFull(filteredList);
+                        onReload.run();
+                    })
+                    .addIconDecorationToLastAddedButton(R.drawable.ic_filter, com.finn.androidUtilities.CustomDialog.IconDecorationPosition.LEFT)
+                    .colorLastAddedButton()
+                    .setOnDialogDismiss(customDialog1 -> {
+                        SearchView searchView = advancedQueryHelper[0].getSearchView();
+                        ((ViewGroup) searchView.getParent()).removeView(searchView);
+                    })
+                    .show();
+        }
         /**
          * <------------------------- Dialog -------------------------
          */
@@ -2191,9 +2250,14 @@ public class Helpers {
             return this;
         }
 
-        public AdvancedQueryHelper<T> disableColoration() {
+        public AdvancedQueryHelper<T> disableAllColoration() {
             if (colorationWatcher != null)
                 editText.removeTextChangedListener(colorationWatcher);
+            return this;
+        }
+
+        public AdvancedQueryHelper<T> disableNoMatchColoration() {
+            noMatchColoration = false;
             return this;
         }
 
@@ -2220,7 +2284,7 @@ public class Helpers {
                     Matcher criteriaMatcher = Pattern.compile(String.format("\\[!?%s: ?(%s)\\s*\\]", criteria.key, criteria.regEx)).matcher(queryResult.group());
                     if (criteriaMatcher.find()) {
                         MatchResult criteriaResult = criteriaMatcher.toMatchResult();
-                        editable.setSpan(new ForegroundColorSpan(criteria.tempResult == null ? incompleteTextColor : normalTextColor), criteriaResult.start() + queryStart, criteriaResult.end() + queryStart, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        editable.setSpan(new ForegroundColorSpan(criteria.tempResult == null && noMatchColoration ? incompleteTextColor : normalTextColor), criteriaResult.start() + queryStart, criteriaResult.end() + queryStart, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                     }
                 }
             }
@@ -2237,7 +2301,8 @@ public class Helpers {
             public String full;
             public String sub;
             public Boolean negated;
-            private Utility.GenericReturnInterface<String, Result> parser;
+            public Matcher matcher;
+            private Utility.DoubleGenericReturnInterface<String, Matcher, Result> parser;
             private Utility.GenericReturnInterface<Result, Predicate<T>> buildPredicate;
             public Predicate<T> predicate;
             private ApplyDialogInterface<T, Result> applyDialog;
@@ -2253,7 +2318,7 @@ public class Helpers {
 
 
             /**  ------------------------- Getter & Setter -------------------------> */
-            public SearchCriteria<T, Result> setParser(Utility.GenericReturnInterface<String, Result> parser) {
+            public SearchCriteria<T, Result> setParser(Utility.DoubleGenericReturnInterface<String, Matcher, Result> parser) {
                 this.parser = parser;
                 return this;
             }
@@ -2296,15 +2361,19 @@ public class Helpers {
                     Matcher matcher = getPattern().matcher(query);
                     if (matcher.find()) {
                         full = matcher.group();
+                        this.matcher = matcher;
                         return sub = matcher.group(1);
-                    }
+                    } else
+                        this.matcher = null;
                 }
                 return "";
             }
 
             public SearchCriteria<T, Result> buildPredicate() {
                 if (CustomUtility.stringExists(sub) && parser != null && buildPredicate != null) {
-                    predicate = buildPredicate.run(tempResult = parser.run(sub));
+                    tempResult = parser.run(sub, matcher);
+                    if (tempResult != null)
+                        predicate = buildPredicate.run(tempResult);
                 }
                 return this;
             }
@@ -2323,13 +2392,17 @@ public class Helpers {
                 return sub;
             }
 
+            public Matcher getMatcher() {
+                return matcher;
+            }
+
             public Result parse() {
                 return tempResult = parse(sub);
             }
 
             public Result parse(String text) {
                 if (CustomUtility.stringExists(text) && parser != null)
-                    return parser.run(text);
+                    return parser.run(text, matcher);
                 else
                     return null;
             }
@@ -2341,6 +2414,7 @@ public class Helpers {
             public void clear() {
                 full = "";
                 sub = "";
+                matcher = null;
                 predicate = null;
                 tempResult = null;
                 negated = null;

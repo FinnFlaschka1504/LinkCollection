@@ -914,11 +914,13 @@ public abstract class CustomCode extends ParentClass {
                                 "  \"url\": String,\n" +
                                 "  \"ageRating\": int,\n" +
                                 "  \"rating\": double,\n" +
+                                "  \"ratingTendency\": Float,\n" +
                                 "  \"imagePath\": String,\n" +
                                 "  \"imdbId\": String,\n" +
                                 "  \"tmdbId\": int,\n" +
                                 "  \"length\": int,\n" +
-                                "  \"watchLater\": boolean\n" +
+                                "  \"watchLater\": boolean,\n" +
+                                "  \"comment\": String\n" +
                                 "}";
 
                         String actorObject = "{\n" +

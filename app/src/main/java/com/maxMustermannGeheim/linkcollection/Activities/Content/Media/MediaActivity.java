@@ -290,7 +290,7 @@ public class MediaActivity extends AppCompatActivity {
                     .enableColoration()
                     .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<MultiSelectHelper.Selectable<Media>, MediaEvent>(ADVANCED_SEARCH_CRITERIA__EVENT, Helpers.AdvancedQueryHelper.PARENT_CLASS_PATTERN)
                             .setCategory(CategoriesActivity.CATEGORIES.MEDIA_EVENT)
-                            .setParser(sub -> (MediaEvent) ParentClass_Tree.findObjectByName(CategoriesActivity.CATEGORIES.MEDIA_EVENT, sub, false))
+                            .setParser((sub, matcher) -> (MediaEvent) ParentClass_Tree.findObjectByName(CategoriesActivity.CATEGORIES.MEDIA_EVENT, sub, false))
                             .setBuildPredicate(mediaEvent -> {
                                 if (mediaEvent == null)
                                     return null;

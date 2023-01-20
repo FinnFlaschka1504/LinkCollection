@@ -5,10 +5,8 @@ import android.content.SharedPreferences;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 import android.content.res.Configuration;
-import android.graphics.Color;
 import android.graphics.drawable.Icon;
 import android.os.Bundle;
-import android.text.InputType;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -18,7 +16,6 @@ import android.view.ViewStub;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.SearchView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -42,7 +39,8 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivi
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Media.MediaActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Media.MediaEventActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
-import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.Show.EpisodeActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.Show.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.CollectionActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.WatchListActivity;
@@ -107,6 +105,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
     public static final int START_JOKE = ++count;
     public static final int START_JOKE_CATEGORY = ++count;
     public static final int START_SHOW = ++count;
+    public static final int START_EPISODE = ++count;
     public static final int START_SHOW_STATUS_FILTER = ++count;
     public static final int START_SHOW_GENRE = ++count;
     public static final int START_SHOW_FROM_CALENDER = ++count;
@@ -921,8 +920,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                 .setDimensionsFullscreen()
                 .enableTitleBackButton()
                 .enableTitleRightButton(R.drawable.ic_filter, customDialog -> {
-
-                    if (advancedQueryHelper[0] == null) {
+                    com.maxMustermannGeheim.linkcollection.Utilities.Helpers.AdvancedQueryHelper.showFilterWithAdvancedQueryDialog(this, "Kalender Filtern", allVideos, shownVideos, advancedQueryHelper, searchView -> {
                         HashSet<VideoActivity.FILTER_TYPE> filterTypeSet = new HashSet<>();
                         filterTypeSet.add(VideoActivity.FILTER_TYPE.NAME);
                         filterTypeSet.add(VideoActivity.FILTER_TYPE.ACTOR);
@@ -930,48 +928,8 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                         filterTypeSet.add(VideoActivity.FILTER_TYPE.STUDIO);
                         filterTypeSet.add(VideoActivity.FILTER_TYPE.COLLECTION);
 
-                        SearchView searchView = new SearchView(this);
-                        searchView.setIconified(false);
-                        searchView.setQueryHint(currentSpace.getPlural() + " Filtern");
-                        View searchPlate = searchView.findViewById(getResources().getIdentifier("android:id/search_plate", null, null));
-                        CustomUtility.ifNotNull((View) searchView.findViewById(getResources().getIdentifier("android:id/search_mag_icon", null, null)),
-                                o -> ((LinearLayout.LayoutParams) o.getLayoutParams()).leftMargin = 0);
-//                        searchView.findViewById(getResources().getIdentifier("android:id/search_edit_frame", null, null));
-//                        View viewById2 = searchView.findViewById(androidx.appcompat.R.id.search_badge);
-//                        View viewById3 = searchView.findViewById(androidx.appcompat.R.id.search_button);
-                        if (searchPlate != null)
-                            searchPlate.setBackgroundColor(Color.TRANSPARENT);
-                        searchView.setPadding(-3, CustomUtility.dpToPx(4), 0, CustomUtility.dpToPx(2));
-                        searchView.setInputType(InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-                        searchView.setIconifiedByDefault(false);
-
-                        advancedQueryHelper[0] = VideoActivity.getAdvancedQueryHelper(this, searchView, filterTypeSet);
-                        advancedQueryHelper[0].disableColoration();
-                    }
-//                    else
-//                        advancedQueryHelper[0].setSearchView(searchView);
-
-                    CustomDialog.Builder(this)
-                            .setTitle("Kalender Filtern")
-                            .setView(advancedQueryHelper[0].getSearchView())
-                            .setSetViewContent((customDialog1, view, reload) -> view.requestFocus())
-                            .addButton(R.drawable.ic_settings_dialog, customDialog1 -> advancedQueryHelper[0].showAdvancedSearchDialog(), false)
-                            .alignPreviousButtonsLeft()
-                            .addButton(CustomDialog.BUTTON_TYPE.CANCEL_BUTTON)
-                            .addButton("Filtern", customDialog1 -> {
-                                shownVideos.replaceWith(allVideos);
-                                advancedQueryHelper[0].filterFull(shownVideos);
-                                customDialog.reloadView();
-                            })
-                            .addIconDecorationToLastAddedButton(R.drawable.ic_filter, CustomDialog.IconDecorationPosition.LEFT)
-                            .colorLastAddedButton()
-                            .setOnDialogDismiss(customDialog1 -> {
-                                SearchView searchView = advancedQueryHelper[0].getSearchView();
-                                ((ViewGroup) searchView.getParent()).removeView(searchView);
-                            })
-                            .show();
-//                    Toast.makeText(this, "Filter", Toast.LENGTH_SHORT).show();
-//                    shownVideos.filter(video -> video.getName().toLowerCase().contains("the"), true);
+                        return VideoActivity.getAdvancedQueryHelper(this, searchView, filterTypeSet);
+                    }, customDialog::reloadView);
                 })
                 .show();
     }
@@ -1073,6 +1031,12 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
         startActivityForResult(intent, START_SHOW_GENRE);
     }
 
+    public void openEpisodeActivity(View view) {
+        if (!Database.isReady())
+            return;
+        startActivityForResult(new Intent(this, EpisodeActivity.class), START_EPISODE);
+    }
+
     public void showShowCalenderDialog(View view1) {
         if (!Database.isReady())
             return;
@@ -1092,7 +1056,7 @@ public class MainActivity extends AppCompatActivity implements CustomInternetHel
                             episodeList.addAll(season.getEpisodeMap().values());
                         }
                     }
-                    Utility.setupEpisodeCalender(this, calendarView, ((FrameLayout) view), episodeList, true);
+                    Utility.setupEpisodeCalender(this, calendarView, ((FrameLayout) view), episodeList, true, false);
 //                    ViewCompat.setNestedScrollingEnabled(view.findViewById(R.id.fragmentCalender_videoList), false);
 
                 })

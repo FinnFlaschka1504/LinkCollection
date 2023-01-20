@@ -51,7 +51,7 @@ import com.google.gson.reflect.TypeToken;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
-import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.Show.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.DialogActivity;
@@ -133,6 +133,7 @@ public class Settings extends AppCompatActivity {
     public static final String SETTING_VIDEO_SCROLL = "SETTING_VIDEO_SCROLL";
     public static final String SETTING_VIDEO_CLICK_MODE = "SETTING_VIDEO_CLICK_MODE";
     public static final String SETTING_VIDEO_WARN_EMPTY_URL = "SETTING_VIDEO_WARN_EMPTY_URL";
+    public static final String SETTING_VIDEO_CATEGORY_SHOW_TIME = "SETTING_VIDEO_CATEGORY_SHOW_TIME";
 
     public static final String SETTING_SHOW_EPISODE_PREVIEW = "SETTING_SHOW_EPISODE_PREVIEW";
 
@@ -206,6 +207,7 @@ public class Settings extends AppCompatActivity {
         settingsMap.put(SETTING_VIDEO_SCROLL, "true");
         settingsMap.put(SETTING_VIDEO_CLICK_MODE, "0");
         settingsMap.put(SETTING_VIDEO_WARN_EMPTY_URL, "true");
+        settingsMap.put(SETTING_VIDEO_CATEGORY_SHOW_TIME, "false");
         settingsMap.put(SETTING_SHOW_EPISODE_PREVIEW, "1");
     }
 
@@ -289,6 +291,7 @@ public class Settings extends AppCompatActivity {
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_more_showCollections)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_COLLECTIONS));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_more_showWatchList)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_SHOW_WATCH_LIST));
                     ((Switch) view.findViewById(R.id.dialogSettingsVideo_edit_warnEmptyURL)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_WARN_EMPTY_URL));
+                    ((Switch) view.findViewById(R.id.dialogSettingsVideo_more_categoriesShowTime)).setChecked(getSingleSetting_boolean(context, SETTING_VIDEO_CATEGORY_SHOW_TIME));
 
                     view.findViewById(R.id.dialogSettingsVideo_more_findImages).setOnClickListener(v -> {
                         Utility.GenericInterface<String> showResult = s -> {
@@ -338,13 +341,6 @@ public class Settings extends AppCompatActivity {
                                     VideoActivity.showIntersectionsDialog(settingsContext);
                                 })
                                 .show();
-//                        Toast.makeText(context, "Einen Moment bitte...", Toast.LENGTH_SHORT).show();
-//                        new AsyncTask<Object, Object, Object>() {
-//                            @Override
-//                            protected Object doInBackground(Object... objects) {
-//                                return null;
-//                            }
-//                        }.doInBackground();
                     });
 
                     ((TextView) view.findViewById(R.id.dialogSettingsVideo_more_parseUrl_added)).setText(database.urlParserMap.values().stream().map(UrlParser::getName).collect(Collectors.joining(", ")));
@@ -434,6 +430,7 @@ public class Settings extends AppCompatActivity {
                         changeSetting(SETTING_VIDEO_SHOW_COLLECTIONS, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_more_showCollections)).isChecked()));
                         changeSetting(SETTING_VIDEO_SHOW_WATCH_LIST, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_more_showWatchList)).isChecked()));
                         changeSetting(SETTING_VIDEO_WARN_EMPTY_URL, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_edit_warnEmptyURL)).isChecked()));
+                        changeSetting(SETTING_VIDEO_CATEGORY_SHOW_TIME, String.valueOf(((Switch) customDialog.findViewById(R.id.dialogSettingsVideo_more_categoriesShowTime)).isChecked()));
                         Toast.makeText(context, space.getName() + " Einstellungen gespeichert", Toast.LENGTH_SHORT).show();
                     }
                 })));
@@ -452,19 +449,23 @@ public class Settings extends AppCompatActivity {
                                     .forEach(date -> dateSet.add(Utility.removeTime(date))));
                         }
                     }
-                    List<Show.Episode> episodeList = Utility.concatenateCollections(database.showMap.values(), show ->
+                    List<Show.Episode> airedEpisodeList = Utility.concatenateCollections(database.showMap.values(), show ->
                             show.getAlreadyAiredList().stream().filter(episode -> !episode.isWatched()).collect(Collectors.toList()));
 
                     ((TextView) view.findViewById(R.id.main_shows_viewCount)).setText(String.valueOf(dateSet.size()));
                     TextView main_shows_notificationIndicator = view.findViewById(R.id.main_shows_notificationIndicator);
 
                     SquareLayout main_shows_notificationIndicator_layout = view.findViewById(R.id.main_shows_notificationIndicator_layout);
-//                    Utility.squareView(main_shows_notificationIndicator_layout);
                     main_shows_notificationIndicator_layout.setBackground(Utility.drawableBuilder_oval(context.getColor(R.color.colorPrimary)));
-                    main_shows_notificationIndicator.setText(String.valueOf(episodeList.size()));
-                    main_shows_notificationIndicator_layout.setVisibility(episodeList.isEmpty() ? View.GONE : View.VISIBLE);
+                    main_shows_notificationIndicator.setText(String.valueOf(airedEpisodeList.size()));
+                    main_shows_notificationIndicator_layout.setVisibility(airedEpisodeList.isEmpty() ? View.GONE : View.VISIBLE);
 
                     view.findViewById(R.id.main_show_nextEpisode).setOnLongClickListener(MainActivity::showNextEpisode_longClick);
+
+                    long seenEpisodesCount = database.showMap.values().stream().flatMap(show ->
+                            show.getSeasonList().stream().flatMap(season -> season.getEpisodeMap().values().stream())).count();
+                    ((TextView) view.findViewById(R.id.main_shows_episodeCount)).setText(String.valueOf(seenEpisodesCount));
+
                 })
                 .setAssociatedClasses(Show.class, ShowGenre.class)
                 .setSettingsDialog(new Utility.Triple<>(R.layout.dialog_settings_show, (customDialog, view, space) -> {

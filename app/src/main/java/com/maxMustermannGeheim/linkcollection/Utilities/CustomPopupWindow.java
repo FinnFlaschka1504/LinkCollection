@@ -34,6 +34,7 @@ public class CustomPopupWindow {
     private POSITION_RELATIVE_TO_ANCHOR positionRelativeToAnchor = POSITION_RELATIVE_TO_ANCHOR.DEFAULT;
     private int xoff;
     private int yoff;
+    private CustomUtility.GenericInterface<CustomPopupWindow> onDismissListener;
 
     public CustomPopupWindow(View anchor, View view) {
         popupWindow = new PopupWindow(widthParam.value, heightParam.value);
@@ -86,6 +87,11 @@ public class CustomPopupWindow {
 
     public CustomPopupWindow setYoff(int yoff) {
         this.yoff = yoff;
+        return this;
+    }
+
+    public CustomPopupWindow setOnDismissListener(CustomUtility.GenericInterface<CustomPopupWindow> onDismissListener) {
+        this.onDismissListener = onDismissListener;
         return this;
     }
     //  <--------------- Getters & Setters ---------------
@@ -146,6 +152,9 @@ public class CustomPopupWindow {
 
         if (dimBackground)
             dimBehind();
+
+        if (onDismissListener != null)
+            popupWindow.setOnDismissListener(() -> onDismissListener.run(this));
 
         return this;
     }

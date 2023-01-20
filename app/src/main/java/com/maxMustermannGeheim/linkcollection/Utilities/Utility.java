@@ -108,12 +108,9 @@ import com.github.sundeepk.compactcalendarview.CompactCalendarView;
 import com.github.sundeepk.compactcalendarview.domain.Event;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
-import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
-import com.google.android.material.timepicker.MaterialTimePicker;
-import com.google.android.material.timepicker.TimeFormat;
 import com.google.common.hash.Hashing;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -122,7 +119,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Media.MediaActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
-import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.Show.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.CollectionActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.WatchListActivity;
@@ -140,6 +137,8 @@ import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image_I;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tree;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
@@ -151,7 +150,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.Videos.UrlParser;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.WatchList;
 import com.maxMustermannGeheim.linkcollection.R;
-import com.noowenz.customdatetimepicker.CustomDateTimePicker;
 //import com.pixplicity.sharp.Sharp;
 
 import org.jetbrains.annotations.NotNull;
@@ -1662,6 +1660,7 @@ public class Utility {
                         ((TextView) itemView.findViewById(R.id.listItem_video_rating)).setText(String.valueOf(video.getRating()));
                     } else
                         itemView.findViewById(R.id.listItem_video_rating_layout).setVisibility(View.GONE);
+                    ParentClass_Ratable.applyRatingTendencyIndicator(itemView.findViewById(R.id.listItem_video_ratingTendency), video, true, false);
 
                 })
                 .addOptionalModifications(customRecycler1 -> {
@@ -1682,7 +1681,7 @@ public class Utility {
 
                     List<Event> events = calendarView.getEvents(currentDate);
                     loadVideoList(events, layout, customRecycler1);
-                    setButtons(layout, events.isEmpty() ? 0 : 1, calendarView, videoList, customRecycler1);
+                    setButtons(layout, events.isEmpty() ? 0 : 1, calendarView, videoList, customRecycler1, true);
                     Database.saveAll(context);
                 }));
 
@@ -1702,7 +1701,7 @@ public class Utility {
             public void onDayClick(Date dateClicked) {
                 currentDate = dateClicked;
                 calendarView.setCurrentDate(currentDate);
-                setButtons(layout, calendarView.getEvents(dateClicked).size(), calendarView, videoList, customRecycler);
+                setButtons(layout, calendarView.getEvents(dateClicked).size(), calendarView, videoList, customRecycler, true);
                 loadVideoList(calendarView.getEvents(dateClicked), layout, customRecycler);
             }
 
@@ -1714,7 +1713,7 @@ public class Utility {
 
         loadVideoList(calendarView.getEvents(new Date()), layout, customRecycler);
 
-        setButtons(layout, calendarView.getEvents(new Date()).size(), calendarView, videoList, customRecycler);
+        setButtons(layout, calendarView.getEvents(new Date()).size(), calendarView, videoList, customRecycler, true);
 
         if (videoList.size() != 1)
             return;
@@ -1728,7 +1727,7 @@ public class Utility {
                 calendarView.addEvent(new Event(context.getColor(R.color.colorDayNightContent)
                         , currentDate.getTime(), videoList.get(0)));
                 loadVideoList(calendarView.getEvents(currentDate), layout, customRecycler);
-                setButtons(layout, 1, calendarView, videoList, customRecycler);
+                setButtons(layout, 1, calendarView, videoList, customRecycler, true);
                 Database.saveAll();
             };
             WatchListActivity.checkWatchList(context, videoList.get(0), addView);
@@ -1737,7 +1736,7 @@ public class Utility {
             videoList.get(0).removeDate(currentDate);
             calendarView.removeEvents(currentDate);
             loadVideoList(calendarView.getEvents(currentDate), layout, customRecycler);
-            setButtons(layout, 0, calendarView, videoList, customRecycler);
+            setButtons(layout, 0, calendarView, videoList, customRecycler, true);
             Database.saveAll();
         });
     }
@@ -1746,7 +1745,7 @@ public class Utility {
     // ToDo: Alignment von den Buttons ändern
 
     /**  ------------------------- EpisodeCalender ------------------------->  */
-    public static void setupEpisodeCalender(Context context, CompactCalendarView calendarView, FrameLayout layout, List<Show.Episode> episodeList, boolean openEpisode) {
+    public static void setupEpisodeCalender(Context context, CompactCalendarView calendarView, FrameLayout layout, List<Show.Episode> episodeList, boolean openEpisode, boolean editMode) {
         calendarView.removeAllEvents();
         TextView calender_month = layout.findViewById(R.id.fragmentCalender_month);
         ImageView calender_previousMonth = layout.findViewById(R.id.fragmentCalender_previousMonth);
@@ -1783,9 +1782,10 @@ public class Utility {
                     ((TextView) itemView.findViewById(R.id.listItem_episode_number)).setText(String.valueOf(episode.getEpisodeNumber()));
                     ((TextView) itemView.findViewById(R.id.listItem_episode_name)).setText(episode.getName());
                     ((TextView) itemView.findViewById(R.id.listItem_episode_rating)).setText(episode.getRating() != -1 ? episode.getRating() + " ☆" : "");
+                    ParentClass_Ratable.applyRatingTendencyIndicator(itemView.findViewById(R.id.listItem_episode_ratingTendency), episode, episode.isWatched(), false);
                     ((TextView) itemView.findViewById(R.id.listItem_episode_release)).setText(Utility.isNullReturnOrElse(episode.getAirDate(), "", date -> new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(date)));
 
-                    TextView daysTextView = (TextView) itemView.findViewById(R.id.listItem_episode_viewCount);
+                    TextView daysTextView = itemView.findViewById(R.id.listItem_episode_viewCount);
                     daysTextView.setText("");
                     Runnable setDaysText = () -> {
                         String daysText;
@@ -1808,7 +1808,7 @@ public class Utility {
                         customRecycler1.setOnClickListener((customRecycler2, view, event, index) -> {
                             Show.Episode episode = (Show.Episode) event.getData();
                             if (context instanceof ShowActivity) {
-                                ((ShowActivity) context).showEpisodeDetailDialog(null, episode, true, null);
+                                ShowActivity.showEpisodeDetailDialog((AppCompatActivity) context, null, episode);
                             } else {
                                 ((AppCompatActivity) context).startActivityForResult(new Intent(context, ShowActivity.class)
                                         .putExtra(CategoriesActivity.EXTRA_SEARCH, episode.getShowId())
@@ -1816,20 +1816,23 @@ public class Utility {
                                         .putExtra(ShowActivity.EXTRA_EPISODE, new Gson().toJson(episode)), MainActivity.START_SHOW_FROM_CALENDER);
                             }
                         });
-                    else
+                    else if (editMode)
                         customRecycler1.setOnClickListener((customRecycler2, itemView, event, index) -> Toast.makeText(context, "Zum Bearbeiten lange drücken", Toast.LENGTH_SHORT).show());
-                })
-                .setOnLongClickListener((customRecycler1, view, event, index) -> showEditTimeDialog((AppCompatActivity) context, event, calendarView, newView -> {
-                    List<Date> dateList = ((Show.Episode) event.getData()).getDateList();
-                    Date oldView = new Date(event.getTimeInMillis());
-                    dateList.remove(oldView);
-                    dateList.add(newView);
 
-                    List<Event> events = calendarView.getEvents(currentDate);
-                    loadVideoList(events, layout, customRecycler1);
-                    setButtons(layout, events.isEmpty() ? 0 : 1, calendarView, episodeList, customRecycler1);
-                    Database.saveAll(context);
-                }));
+                    if (editMode)
+                        customRecycler1.setOnLongClickListener((customRecycler2, view, event, index) -> showEditTimeDialog((AppCompatActivity) context, event, calendarView, newView -> {
+                        List<Date> dateList = ((Show.Episode) event.getData()).getDateList();
+                        Date oldView = new Date(event.getTimeInMillis());
+                        dateList.remove(oldView);
+                        dateList.add(newView);
+
+                        List<Event> events = calendarView.getEvents(currentDate);
+                        loadVideoList(events, layout, customRecycler1);
+                        setButtons(layout, events.isEmpty() ? 0 : 1, calendarView, episodeList, customRecycler1, editMode);
+                        Database.saveAll(context);
+                    }));
+
+                });
 
 
         for (Show.Episode episode : episodeList) {
@@ -1847,7 +1850,7 @@ public class Utility {
                 currentDate = dateClicked;
 //                selectedDate[0] = dateClicked;
 //                if (episodeList.size() == 1)
-                setButtons(layout, calendarView.getEvents(dateClicked).size(), calendarView, episodeList, customRecycler);
+                setButtons(layout, calendarView.getEvents(dateClicked).size(), calendarView, episodeList, customRecycler, editMode);
                 loadVideoList(calendarView.getEvents(dateClicked), layout, customRecycler);
             }
 
@@ -1859,9 +1862,9 @@ public class Utility {
 
         loadVideoList(calendarView.getEvents(new Date()), layout, customRecycler);
 
-        setButtons(layout, calendarView.getEvents(new Date()).size(), calendarView, episodeList, customRecycler);
+        setButtons(layout, calendarView.getEvents(new Date()).size(), calendarView, episodeList, customRecycler, editMode);
 
-        if (episodeList.size() != 1)
+        if (!editMode)
             return;
 
         Show.Episode episode = episodeList.get(0);
@@ -1887,7 +1890,7 @@ public class Utility {
             calendarView.addEvent(new Event(context.getColor(R.color.colorDayNightContent)
                     , currentDate.getTime(), episode));
             loadVideoList(calendarView.getEvents(currentDate), layout, customRecycler);
-            setButtons(layout, 1, calendarView, episodeList, customRecycler);
+            setButtons(layout, 1, calendarView, episodeList, customRecycler, editMode);
         });
         layout.findViewById(R.id.dialog_editViews_remove).setOnClickListener(view -> {
             List<Event> events = calendarView.getEvents(currentDate);
@@ -1896,7 +1899,7 @@ public class Utility {
                 calendarView.removeEvent(event);
                 List<Event> eventList = calendarView.getEvents(currentDate);
                 loadVideoList(eventList, layout, customRecycler);
-                setButtons(layout, eventList.size(), calendarView, episodeList, customRecycler);
+                setButtons(layout, eventList.size(), calendarView, episodeList, customRecycler, editMode);
             });
         });
     }
@@ -1994,8 +1997,8 @@ public class Utility {
 
     }
 
-    private static void setButtons(FrameLayout layout, int size, CompactCalendarView calendarView, List list, CustomRecycler<Event> customRecycler) {
-        if (list.size() == 1) {
+    private static void setButtons(FrameLayout layout, int size, CompactCalendarView calendarView, List list, CustomRecycler<Event> customRecycler, boolean allowEdit) {
+        if (allowEdit && list.size() == 1) {
             layout.findViewById(R.id.dialog_editViews_add).setVisibility(size == 0 ? View.VISIBLE : View.GONE);
             layout.findViewById(R.id.dialog_editViews_remove).setVisibility(size != 0 ? View.VISIBLE : View.GONE);
         }
@@ -2005,11 +2008,9 @@ public class Utility {
             if (o instanceof Video) {
                 Video video = (Video) o;
                 dateList.addAll(video.getDateList());
-//                video.getDateList().forEach(date -> dateSet.add(Utility.removeTime(date)));
             } else if (o instanceof Show.Episode) {
                 Show.Episode episode = (Show.Episode) o;
                 dateList.addAll(episode.getDateList());
-//                episode.getDateList().forEach(date -> dateSet.add(Utility.removeTime(date)));
             }
         }
         dateList.sorted(Date::compareTo).replaceAll(Utility::removeTime);
@@ -2022,7 +2023,7 @@ public class Utility {
                 calendarView.setCurrentDate(previous);
                 ((TextView) layout.findViewById(R.id.fragmentCalender_month)).setText(new SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(previous));
                 currentDate = previous;
-                setButtons(layout, 1, calendarView, list, customRecycler);
+                setButtons(layout, 1, calendarView, list, customRecycler, allowEdit);
                 loadVideoList(calendarView.getEvents(previous), layout, customRecycler);
 
             }
@@ -2035,7 +2036,7 @@ public class Utility {
                 calendarView.setCurrentDate(next);
                 ((TextView) layout.findViewById(R.id.fragmentCalender_month)).setText(new SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(next));
                 currentDate = next;
-                setButtons(layout, 1, calendarView, list, customRecycler);
+                setButtons(layout, 1, calendarView, list, customRecycler, allowEdit);
                 loadVideoList(calendarView.getEvents(next), layout, customRecycler);
             }
         });
@@ -2415,7 +2416,7 @@ public class Utility {
                 .setDimensionsFullscreen()
                 .disableScroll()
                 .addOptionalModifications(customDialog0 -> {
-                    if (category.equals(CategoriesActivity.CATEGORIES.VIDEO))
+                    if (CustomUtility.boolOr(category, CategoriesActivity.CATEGORIES.VIDEO, CategoriesActivity.CATEGORIES.SHOW))
                         return;
                     customDialog0
                             .addButton(R.drawable.ic_add, customDialog -> {
@@ -2424,7 +2425,7 @@ public class Utility {
                                         .enableDynamicWrapHeight((AppCompatActivity) context)
                                         .enableAutoUpdateDynamicWrapHeight()
                                         .addOptionalModifications(customDialog1 -> {
-                                            if (newParentClass instanceof ParentClass_Image) {
+                                            if (newParentClass instanceof ParentClass_Image_I) {
                                                 customDialog1
                                                         .addButton("Testen", customDialog2 -> {
                                                             String url = ((EditText) customDialog2.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
@@ -2443,9 +2444,9 @@ public class Utility {
                                         .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
                                         .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
                                             ParentClass_Alias.applyNameAndAlias(newParentClass, ((EditText) customDialog1.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim());
-                                            if (newParentClass instanceof ParentClass_Image) {
+                                            if (newParentClass instanceof ParentClass_Image_I) {
                                                 String url = ((EditText) customDialog1.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
-                                                ((ParentClass_Image) newParentClass).setImagePath(CustomUtility.stringExists(url) ? url : null);
+                                                ((ParentClass_Image_I) newParentClass).setImagePath(CustomUtility.stringExists(url) ? url : null);
                                             }
 
                                             switch (category) {
@@ -2504,11 +2505,11 @@ public class Utility {
                                             if (newParentClass instanceof ParentClass_Alias)
                                                 dialog_editTmdbCategory_name.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_CLASS_TEXT);
 
-                                            if (newParentClass instanceof ParentClass_Image) {
+                                            if (newParentClass instanceof ParentClass_Image_I) {
                                                 CustomUtility.setMargins(view1.findViewById(R.id.dialog_editTmdbCategory_nameLayout), -1, -1, -1, 0);
                                                 view1.findViewById(R.id.dialog_editTmdbCategory_urlLayout).setVisibility(View.VISIBLE);
                                                 TextInputLayout dialog_editTmdbCategory_url_layout = view1.findViewById(R.id.dialog_editTmdbCategory_url_layout);
-//                                                dialog_editTmdbCategory_url_layout.getEditText().setText(((ParentClass_Image) newParentClass).getImagePath());
+//                                                dialog_editTmdbCategory_url_layout.getEditText().setText(((ParentClass_Image_I) newParentClass).getImagePath());
                                                 helper.addValidator(dialog_editTmdbCategory_url_layout).setValidation(dialog_editTmdbCategory_url_layout, (validator, text) -> {
                                                     validator.asWhiteList();
                                                     if (text.isEmpty() || text.matches(CategoriesActivity.pictureRegexAll) || text.matches(ActivityResultHelper.uriRegex))
@@ -2548,7 +2549,7 @@ public class Utility {
                 .setSetItemContent((customRecycler, itemView, uuid, index) -> {
                     ParentClass parentClass = getObjectFromDatabase(category, uuid);
                     String imagePath;
-                    if ((parentClass instanceof ParentClass_Image && CustomUtility.stringExists(imagePath = ((ParentClass_Image) parentClass).getImagePath())) || (parentClass instanceof Video) && CustomUtility.stringExists(imagePath = ((Video) parentClass).getImagePath())) {
+                    if ((parentClass instanceof ParentClass_Image_I && CustomUtility.stringExists(imagePath = ((ParentClass_Image_I) parentClass).getImagePath())) || (parentClass instanceof Video) && CustomUtility.stringExists(imagePath = ((Video) parentClass).getImagePath())) {
                         ImageView imageView = itemView.findViewById(R.id.list_bubble_image);
                         loadUrlIntoImageView(context, imageView, ImageCropUtility.applyCropTransformation(parentClass), getTmdbImagePath_ifNecessary(imagePath, false), null, null, () -> Utility.roundImageView(imageView, 3));
                         imageView.setVisibility(View.VISIBLE);
@@ -2590,8 +2591,8 @@ public class Utility {
                 .setSetItemContent((customRecycler, itemView, parentClass, index) -> {
                     ImageView thumbnail = itemView.findViewById(R.id.selectList_thumbnail);
                     String imagePath;
-                    if (parentClass instanceof ParentClass_Image || parentClass instanceof Video) {
-                        if ((parentClass instanceof ParentClass_Image && CustomUtility.stringExists(imagePath = ((ParentClass_Image) parentClass).getImagePath()))
+                    if (parentClass instanceof ParentClass_Image_I) {
+                        if ((parentClass instanceof ParentClass_Image_I && CustomUtility.stringExists(imagePath = ((ParentClass_Image_I) parentClass).getImagePath()))
                                 || (parentClass instanceof Video) && CustomUtility.stringExists(imagePath = ((Video) parentClass).getImagePath())) {
                             Utility.loadUrlIntoImageView(context, thumbnail, ImageCropUtility.applyCropTransformation(parentClass), getTmdbImagePath_ifNecessary(imagePath, false),
                                     getTmdbImagePath_ifNecessary(imagePath, true), null, () -> roundImageView(thumbnail, 4), searchView::clearFocus);
@@ -2796,7 +2797,7 @@ public class Utility {
     public static ParentClass findObjectById(CategoriesActivity.CATEGORIES category, String id) {
         switch (category) {
             case MEDIA_CATEGORY:
-                return (ParentClass) ParentClass_Tree.findObjectById(category, id);
+                return ParentClass_Tree.findObjectById(category, id);
             default:
                 return getMapFromDatabase(category).values().stream().filter(parentClass -> parentClass.getUuid().equals(id)).findFirst().orElse(null);
         }

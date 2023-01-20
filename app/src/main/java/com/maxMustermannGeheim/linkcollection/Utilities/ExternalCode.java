@@ -82,7 +82,7 @@ public class ExternalCode {
                 fetchUpdates(context, updateList);
         }, volleyError -> {
             CustomUtility.logD(null, "initialize_ifNecessary <volley err.>: %s", volleyError.getMessage());
-            Toast.makeText(context, volleyError.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, CustomUtility.stringExistsOrElse(volleyError.getMessage(), "CustomCode VolleyError No Message"), Toast.LENGTH_SHORT).show();
         });
         return true;
     }

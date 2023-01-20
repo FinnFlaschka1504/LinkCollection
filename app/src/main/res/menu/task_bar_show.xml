@@ -71,7 +71,4 @@
         android:checkable="true"
         android:checked="true"
         android:title="Scrollen" />
-    <item
-        android:id="@+id/taskBar_show_allEpisodes"
-        android:title="Alle Episoden" />
 </menu>

@@ -8,7 +8,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
-import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -29,14 +28,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultCallback;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.app.ActivityOptionsCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.finn.androidUtilities.CustomDialog;
@@ -49,9 +44,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
-import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
-import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
-import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image_I;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.WatchList;
 import com.maxMustermannGeheim.linkcollection.R;
@@ -59,7 +52,6 @@ import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
-import com.maxMustermannGeheim.linkcollection.Utilities.ImageCropUtility;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
 import java.text.SimpleDateFormat;
@@ -74,9 +66,7 @@ import java.util.stream.Collectors;
 public class WatchListActivity extends AppCompatActivity {
 
     /**
-     * Zufällig listen als WatchList speichern
      * Benennen und Beschreiben können
-     * Benutzerdefinierte reihenfolgen bilden können
      */
 
 
@@ -224,9 +214,6 @@ public class WatchListActivity extends AppCompatActivity {
         return mediaEventList;
     }
 
-    CustomList<PorterDuff.Mode> modes = new CustomList<>(PorterDuff.Mode.values());
-    PorterDuff.Mode currentMode = modes.get(0);
-
     private void loadRecycler() {
         RecyclerView recyclerView = findViewById(R.id.recycler);
         int imageWidth = CustomUtility.dpToPx(68);
@@ -276,12 +263,12 @@ public class WatchListActivity extends AppCompatActivity {
                                     thumbnail.setImageResource(R.drawable.ic_no_image);
 
                                 if (watchList.getWatchedVideoIdList().contains(videoId)) {
-                                    itemView1.findViewById(R.id.listItem_collectionVideo_check).setVisibility(View.VISIBLE);
+                                    itemView1.findViewById(R.id.listItem_collectionVideo_icon).setVisibility(View.VISIBLE);
                                     int[][] states = {{ android.R.attr.state_enabled}};
                                     int[] colors = {0x66000000};
                                     thumbnail.setImageTintList(new ColorStateList(states, colors));
                                 } else {
-                                    itemView1.findViewById(R.id.listItem_collectionVideo_check).setVisibility(View.GONE);
+                                    itemView1.findViewById(R.id.listItem_collectionVideo_icon).setVisibility(View.GONE);
                                     int[][] states = {{ android.R.attr.state_enabled}};
                                     int[] colors = {0x00000000};
                                     thumbnail.setImageTintList(new ColorStateList(states, colors));
@@ -446,9 +433,9 @@ public class WatchListActivity extends AppCompatActivity {
                     // ---------------
 
                     ViewGroup parentView = view.findViewById(R.id.dialog_editWatchList_selectParent);
-                    videoSelectorFragmentBuilder(context, parentView, editWatchList.getVideoIdList(), videoIds -> {
+                    videoSelectorFragmentBuilder(context, parentView, CategoriesActivity.CATEGORIES.VIDEO, editWatchList.getVideoIdList(), videoIds -> {
                         helper.validate(new TextInputLayout[]{null});
-                    });
+                    }, null, null);
 
                 })
                 .addOptionalModifications(customDialog -> {
@@ -487,7 +474,7 @@ public class WatchListActivity extends AppCompatActivity {
                 .show();
     }
 
-    private static void videoSelectorFragmentBuilder(AppCompatActivity context, ViewGroup parentView, List<String> selectedVideoIds, Utility.GenericInterface<List<String>> onSelection) {
+    public static void videoSelectorFragmentBuilder(AppCompatActivity context, ViewGroup parentView, CategoriesActivity.CATEGORIES category, List<String> selectedIds, @Nullable CustomUtility.GenericInterface<List<String>> onSelection, @Nullable CustomUtility.DoubleGenericInterface<CustomRecycler<String>, String> onClick, @Nullable CustomUtility.DoubleGenericInterface<View, String> itemContentModification) {
         FrameLayout view = (FrameLayout) LayoutInflater.from(context).inflate(R.layout.fragment_select_media_helper_selection, parentView, false);
         view.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         TextView emptyText = view.findViewById(R.id.fragment_selectMediaHelper_selection_empty);
@@ -497,25 +484,25 @@ public class WatchListActivity extends AppCompatActivity {
         CustomUtility.setPadding(recyclerView, -1, -1, 46, -1);
         CustomRecycler<String> recycler = new CustomRecycler<String>(context, recyclerView)
                 .setGetActiveObjectList(customRecycler -> {
-                    emptyText.setVisibility(selectedVideoIds.isEmpty() ? View.VISIBLE : View.GONE);
-                    return selectedVideoIds;
+                    emptyText.setVisibility(selectedIds.isEmpty() ? View.VISIBLE : View.GONE);
+                    return selectedIds;
                 })
                 .setItemLayout(R.layout.list_item_collection_video)
-                .setSetItemContent((customRecycler, itemView, videoId, index) -> {
-                    Video video = (Video) Utility.findObjectById(CategoriesActivity.CATEGORIES.VIDEO, videoId);
+                .setSetItemContent((customRecycler, itemView, id, index) -> {
+                    ParentClass_Image_I parentClass = (ParentClass_Image_I) Utility.findObjectById(category, id);
 
-                    String imagePath = video.getImagePath();
+                    String imagePath = parentClass.getImagePath();
                     ImageView thumbnail = itemView.findViewById(R.id.listItem_collectionVideo_thumbnail);
                     thumbnail.setLayoutParams(new FrameLayout.LayoutParams(imageWidth, LinearLayout.LayoutParams.WRAP_CONTENT));
                     if (Utility.stringExists(imagePath)) {
                         Utility.loadUrlIntoImageView(context, thumbnail,
-                                Utility.getTmdbImagePath_ifNecessary(imagePath, "w500"), Utility.getTmdbImagePath_ifNecessary(imagePath, true), null, () -> Utility.roundImageView(thumbnail, 8));
+                                Utility.getTmdbImagePath_ifNecessary(imagePath, "w500"), onClick == null ? Utility.getTmdbImagePath_ifNecessary(imagePath, true) : null, null, () -> Utility.roundImageView(thumbnail, 8));
                         thumbnail.setVisibility(View.VISIBLE);
 
                         thumbnail.setOnLongClickListener(v -> {
                             ActivityResultHelper.addGenericRequest(context, appCompatActivity -> {
-                                appCompatActivity.startActivityForResult(new Intent(context, VideoActivity.class)
-                                                .putExtra(CategoriesActivity.EXTRA_SEARCH, video.getUuid())
+                                appCompatActivity.startActivityForResult(new Intent(context, category.getSearchIn())
+                                                .putExtra(CategoriesActivity.EXTRA_SEARCH, parentClass.getUuid())
                                                 .putExtra(CategoriesActivity.EXTRA_SEARCH_CATEGORY, CategoriesActivity.CATEGORIES.VIDEO),
                                         CategoriesActivity.START_CATEGORY_SEARCH);
                             }, (requestCode, resultCode, data) -> {
@@ -528,20 +515,23 @@ public class WatchListActivity extends AppCompatActivity {
                     } else
                         thumbnail.setImageResource(R.drawable.ic_no_image);
 
+                    if (onClick != null)
+                        thumbnail.setOnClickListener(v -> onClick.run(customRecycler, id));
+
                     CustomUtility.setPadding(itemView, 4, -1);
 
-                    TextView nameTextView = (TextView) itemView.findViewById(R.id.listItem_collectionVideo_text);
-                    nameTextView.setText(video.getName());
+                    TextView nameTextView = itemView.findViewById(R.id.listItem_collectionVideo_text);
+                    nameTextView.setText(parentClass.getName());
                     nameTextView.setLines(1);
 
-//                    loadPathIntoImageView(media.getImagePath(), itemView, CustomUtility.dpToPx(120), 1);
+                    CustomUtility.runDoubleGenericInterface(itemContentModification, itemView, id);
                 })
                 .enableSwiping((customRecycler, objectList, direction, media, index) -> {
-                    selectedVideoIds.remove(index);
-                    emptyText.setVisibility(selectedVideoIds.isEmpty() ? View.VISIBLE : View.GONE);
-                    onSelection.run(selectedVideoIds);
+                    selectedIds.remove(index);
+                    emptyText.setVisibility(selectedIds.isEmpty() ? View.VISIBLE : View.GONE);
+                    CustomUtility.runGenericInterface(onSelection, selectedIds);
                 }, true, false)
-                .enableDragAndDrop((customRecycler, objectList) -> CustomList.replace(selectedVideoIds, objectList))
+                .enableDragAndDrop((customRecycler, objectList) -> CustomList.replace(selectedIds, objectList))
                 .setOrientation(CustomRecycler.ORIENTATION.HORIZONTAL)
                 .generate();
 
@@ -549,11 +539,11 @@ public class WatchListActivity extends AppCompatActivity {
         editButton.setImageResource(R.drawable.ic_edit);
 
         editButton.setOnClickListener(v -> {
-            Utility.showEditItemDialog(context, selectedVideoIds, CategoriesActivity.CATEGORIES.VIDEO, (customDialog, selectedIds) -> {
-                selectedVideoIds.clear();
-                selectedVideoIds.addAll(selectedIds);
+            Utility.showEditItemDialog(context, selectedIds, category, (customDialog, newIds) -> {
+                selectedIds.clear();
+                selectedIds.addAll(newIds);
                 recycler.reload();
-                onSelection.run(selectedIds);
+                CustomUtility.runGenericInterface(onSelection, selectedIds);
             });
         });
     }

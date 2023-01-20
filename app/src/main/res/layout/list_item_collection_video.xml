@@ -27,7 +27,7 @@
             tools:tint="#66000000" />
 
         <ImageView
-            android:id="@+id/listItem_collectionVideo_check"
+            android:id="@+id/listItem_collectionVideo_icon"
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:layout_gravity="center"

@@ -10,9 +10,11 @@ import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomUtility;
+import com.google.firebase.database.Exclude;
 import com.google.gson.Gson;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image_I;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
@@ -34,12 +36,14 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Show extends ParentClass {
+public class Show extends ParentClass implements ParentClass_Image_I {
     public static final String EMPTY_SEASON = "EMPTY_SEASON";
 
     public enum REQUEST_IMDB_ID_TYPE {
@@ -64,6 +68,7 @@ public class Show extends ParentClass {
     private boolean inProduction;
     private Date nextEpisodeAir;
     private String latestEpisode;
+    private String nextEpisode;
     private String status;
     private Date lastUpdated;
     private boolean notifyNew;
@@ -260,12 +265,33 @@ public class Show extends ParentClass {
         return this;
     }
 
+    public Show setNextEpisode(String nextEpisode) {
+        this.nextEpisode = nextEpisode;
+        return this;
+    }
+
+    public String getNextEpisode() {
+        return nextEpisode;
+    }
 
     /**  ------------------------- Convenience ------------------------->  */
     public boolean _isBeforeNextEpisodeAir() {
         if (nextEpisodeAir == null)
             return true;
         return nextEpisodeAir.after(new Date());
+    }
+
+    public boolean _isNextEpisodeReleasedAndNotWatched() {
+        if (_isBeforeNextEpisodeAir())
+            return false;
+        if (nextEpisode == null)
+            return false;
+        String[] split = nextEpisode.split("(?<!\\\\)\\|");
+        int seasonNumber = Integer.parseInt(split[0]);
+        if (seasonList.size() <= seasonNumber)
+            return false;
+        Episode episode = seasonList.get(seasonNumber).episodeMap.get("E:" + split[1]);
+        return episode == null || !episode.isWatched();
     }
 
     public boolean _isLatestEpisodeWatched() {
@@ -750,6 +776,23 @@ public class Show extends ParentClass {
                 season = show.getSeasonList().get(seasonNumber);
                 return season.episodeMap.get("E:" + (episodeNumber - 1));
             }
+        }
+
+        @Exclude
+        public int getAbsoluteEpisodeNumber(@Nullable Show show) {
+            if (getSeasonNumber() == 0) {
+                Season season = show.getSeasonList().get(0);
+                return -season.getEpisodesCount() - 1 + getEpisodeNumber();
+            }
+            if (show == null)
+                show = Database.getInstance().showMap.get(showId);
+            return show.getSeasonList().subList(1, getSeasonNumber()).stream().mapToInt(Season::getEpisodesCount).sum() + getEpisodeNumber();
+        }
+
+        @Exclude
+        public Optional<Integer> getAbsoluteEpisodeNumber_withoutSpecials(@Nullable Show show) {
+            int episodeNumber = getAbsoluteEpisodeNumber(show);
+            return episodeNumber < 0 ? Optional.empty() : Optional.of(episodeNumber);
         }
         /**  <------------------------- Convenience -------------------------  */
 

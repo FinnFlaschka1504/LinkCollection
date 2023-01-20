@@ -25,21 +25,21 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
-<!--                <TextView-->
-<!--                    android:layout_width="wrap_content"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:layout_marginRight="8dp"-->
-<!--                    android:text="Titel:"-->
-<!--                    android:textStyle="bold" />-->
+                <!--                <TextView-->
+                <!--                    android:layout_width="wrap_content"-->
+                <!--                    android:layout_height="wrap_content"-->
+                <!--                    android:layout_marginRight="8dp"-->
+                <!--                    android:text="Titel:"-->
+                <!--                    android:textStyle="bold" />-->
 
                 <TextView
-                    android:visibility="gone"
                     android:id="@+id/dialog_video_Titel"
+                    style="@style/CaptionStyle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    style="@style/CaptionStyle"
-                    android:text="Name1" />
+                    android:text="Name1"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <LinearLayout
@@ -97,8 +97,8 @@
                     android:id="@+id/dialog_video_Genre"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:clickable="true"
-                    android:layout_weight="1" />
+                    android:layout_weight="1"
+                    android:clickable="true" />
             </LinearLayout>
 
             <LinearLayout
@@ -128,10 +128,10 @@
         <ImageView
             android:id="@+id/dialog_video_poster"
             android:layout_width="wrap_content"
-            android:maxWidth="75dp"
             android:layout_height="75dp"
             android:layout_marginLeft="8dp"
             android:adjustViewBounds="true"
+            android:maxWidth="75dp"
             android:visibility="gone"
             app:srcCompat="@drawable/ic_download"
             tools:srcCompat="@drawable/simpsons_movie_poster"
@@ -173,29 +173,6 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/dialog_video_comment_layout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="8dp"
-                android:text="Kommentar:"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/dialog_video_comment"
-                style="@style/TextButtonStyle.Normal"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:singleLine="true" />
-        </LinearLayout>
-
-        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
@@ -210,11 +187,11 @@
 
             <TextView
                 android:id="@+id/dialog_video_views"
+                style="@style/TextButtonStyle.Normal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:clickable="false"
-                style="@style/TextButtonStyle.Normal"
                 tools:text="1" />
 
             <ImageView
@@ -246,7 +223,7 @@
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"/>
+                    app:layout_constraintTop_toTopOf="parent" />
 
                 <ImageView
                     android:id="@+id/dialog_video_watchLater"
@@ -274,8 +251,8 @@
                 android:id="@+id/dialog_video_release_layout"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
                 android:layout_weight="1"
+                android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
@@ -339,6 +316,65 @@
 
             </LinearLayout>
 
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="end"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/dialog_video_comment_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="8dp"
+                    android:text="Kommentar:"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/dialog_video_comment"
+                    style="@style/TextButtonStyle.Normal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:singleLine="true" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/dialog_video_ratingTendency_layout"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginTop="5dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="8dp"
+                    android:text="Tendenz:"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/dialog_video_ratingTendency_icon"
+                    android:layout_width="17dp"
+                    android:layout_height="17dp"
+                    android:layout_gravity="end"
+                    android:src="@drawable/ic_arrow_up"
+                    android:visibility="gone"
+                    app:tint="@color/colorGreen"
+                    tools:layout_gravity="center_vertical"
+                    tools:visibility="visible" />
+
+            </LinearLayout>
         </LinearLayout>
 
 

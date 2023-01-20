@@ -5,7 +5,7 @@ import com.scottyab.aescrypt.AESCrypt;
 
 import java.security.GeneralSecurityException;
 
-public class ParentClass_Image extends ParentClass {
+public class ParentClass_Image extends ParentClass implements ParentClass_Image_I {
     private String imagePath;
 
     public String getImagePath() {

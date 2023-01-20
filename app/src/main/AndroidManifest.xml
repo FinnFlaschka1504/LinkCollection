@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.maxMustermannGeheim.linkcollection">
+    package="com.maxMustermannGeheim.linkcollection" >
 
     <uses-sdk tools:overrideLibrary="com.finn.androidUtilities" />
 
@@ -24,7 +24,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme.NoTitle"
-        tools:ignore="GoogleAppIndexingWarning">
+        tools:ignore="GoogleAppIndexingWarning" >
         <activity
             android:name=".Activities.Content.Videos.WatchListActivity"
             android:exported="false" />
@@ -39,12 +39,12 @@
         <activity
             android:name=".Activities.Content.Media.MediaActivity"
             android:configChanges="orientation|screenSize"
+            android:exported="true"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:theme="@style/AppTheme.NoTitle"
-            android:exported="true">
+            android:theme="@style/AppTheme.NoTitle" >
             <intent-filter
                 android:icon="@drawable/ic_media"
-                android:label="Medien hinzufügen">
+                android:label="Medien hinzufügen" >
                 <action android:name="android.intent.action.SEND" />
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
 
@@ -62,8 +62,8 @@
         <activity
             android:name=".Activities.Main.MainActivity"
             android:configChanges="orientation|screenSize"
-            android:theme="@style/AppTheme.NoTitle"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@style/AppTheme.NoTitle" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -73,13 +73,13 @@
         <activity
             android:name=".Activities.Content.Videos.VideoActivity"
             android:configChanges="orientation|screenSize"
+            android:exported="true"
             android:label="@string/VideoActivity_label"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:theme="@style/DialogActivityTheme.NoTitle"
-            android:exported="true">
+            android:theme="@style/DialogActivityTheme.NoTitle" >
             <intent-filter
                 android:icon="@drawable/ic_videos"
-                android:label="Video hinzufügen">
+                android:label="Video hinzufügen" >
                 <action android:name="android.intent.action.SEND" />
 
                 <category android:name="android.intent.category.DEFAULT" />
@@ -92,20 +92,25 @@
             android:configChanges="orientation|screenSize"
             android:parentActivityName=".Activities.Main.MainActivity" />
         <activity
-            android:name=".Activities.Content.ShowActivity"
+            android:name=".Activities.Content.Show.ShowActivity"
             android:configChanges="orientation|screenSize"
             android:parentActivityName=".Activities.Main.MainActivity"
             android:theme="@style/AppTheme.NoTitle" />
         <activity
+            android:name=".Activities.Content.Show.EpisodeActivity"
+            android:configChanges="orientation|screenSize"
+            android:parentActivityName=".Activities.Main.MainActivity"
+            android:theme="@style/AppTheme.NoTitle"/>
+        <activity
             android:name=".Activities.Content.KnowledgeActivity"
             android:configChanges="orientation|screenSize"
+            android:exported="true"
             android:label="Wissen"
             android:parentActivityName=".Activities.Main.MainActivity"
-            android:theme="@style/DialogActivityTheme.NoTitle"
-            android:exported="true">
+            android:theme="@style/DialogActivityTheme.NoTitle" >
             <intent-filter
                 android:icon="@drawable/ic_knowledge"
-                android:label="Quelle hinzufügen">
+                android:label="Quelle hinzufügen" >
                 <action android:name="android.intent.action.SEND" />
 
                 <category android:name="android.intent.category.DEFAULT" />
@@ -146,7 +151,7 @@
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
             android:exported="false"
-            android:grantUriPermissions="true">
+            android:grantUriPermissions="true" >
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/provider_paths" />

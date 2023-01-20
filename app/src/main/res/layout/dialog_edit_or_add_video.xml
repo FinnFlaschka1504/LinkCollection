@@ -306,6 +306,83 @@
 
             </LinearLayout>
         </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginVertical="5dp"
+            android:orientation="horizontal">
+            <LinearLayout
+                android:id="@+id/dialog_editOrAddVideo_comment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="2"
+                android:layout_marginEnd="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="8dp"
+                    android:text="Kommentar:"
+                    android:textColor="@color/clickable_text_color_normal"
+                    style="@style/TextButtonStyle.Normal"
+                    android:clickable="false"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/dialog_editOrAddVideo_comment_edit"
+                    android:layout_width="17dp"
+                    android:layout_height="17dp"
+                    android:layout_gravity="end"
+                    android:src="@drawable/ic_edit"
+                    android:visibility="gone"
+                    tools:layout_gravity="center_vertical"
+                    tools:visibility="visible"
+                    app:tint="@color/clickable_text_color_normal" />
+
+                <TextView
+                    android:id="@+id/dialog_editOrAddVideo_comment_text"
+                    style="@style/TextButtonStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:clickable="false"
+                    tools:layout_gravity="center_vertical"
+                    tools:text="Das ist ein Beispielkommentar"
+                    tools:visibility="visible" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/dialog_editOrAddVideo_ratingTendency"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="3"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="8dp"
+                    android:text="Tendenz:"
+                    android:textColor="@color/clickable_text_color_normal"
+                    style="@style/TextButtonStyle.Normal"
+                    android:clickable="false"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/dialog_editOrAddVideo_ratingTendency_icon"
+                    android:layout_width="17dp"
+                    android:layout_height="17dp"
+                    android:layout_gravity="end"
+                    android:src="@drawable/ic_arrow_up"
+                    android:visibility="gone"
+                    app:tint="@color/colorGreen"
+                    tools:layout_gravity="center_vertical"
+                    tools:visibility="visible" />
+
+            </LinearLayout>
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/dialog_editOrAddVideo_rating_layout"
@@ -360,10 +437,12 @@
 
         </LinearLayout>
 
+
         <CheckBox
             android:id="@+id/dialog_editOrAddVideo_watchLater"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginStart="-7dp"
             android:text="Zu 'Später-Ansehen' hinzufügen?"
             android:visibility="gone"
             tools:visibility="visible" />

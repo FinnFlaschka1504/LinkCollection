@@ -1,5 +1,6 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Videos;
 
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image_I;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.finn.androidUtilities.CustomList;
@@ -15,7 +16,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class Video extends ParentClass_Ratable {
+public class Video extends ParentClass_Ratable implements ParentClass_Image_I {
 //    private String uuid = "video_" + UUID.randomUUID().toString();
 //
 //    private String name;

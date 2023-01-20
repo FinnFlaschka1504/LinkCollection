@@ -21,7 +21,6 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.SearchView;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -45,7 +44,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.JokeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.KnowledgeActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Media.MediaActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.OweActivity;
-import com.maxMustermannGeheim.linkcollection.Activities.Content.ShowActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Content.Show.ShowActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
@@ -295,62 +294,25 @@ public class CategoriesActivity extends AppCompatActivity {
                 .optionalModification(helper -> {
                     if (!category.getSearchIn().equals(VideoActivity.class))
                         return;
-                    helper.addCriteria(helper1 -> new Helpers.AdvancedQueryHelper.SearchCriteria<Pair<ParentClass, Integer>, Pair<Date, Date>>(ADVANCED_SEARCH_CRITERIA_DURATION, "((-?\\d+[dmy])|(-?\\d+[dmy]|_(-?\\d+)?[my])(;-?\\d+[dmy]))")
-                            .setParser(VideoActivity.getDurationParser())
-                            .setBuildPredicate(dateDatePair -> {
-                                Pair<Long, Long> dateMinMaxTime = Pair.create(dateDatePair.first.getTime(), dateDatePair.second.getTime());
-                                return pair -> {
-                                    Date date = getDateFromParentClass(pair.first);
-                                    if (date == null)
-                                        return false;
-                                    return date.getTime() >= dateMinMaxTime.first && date.getTime() <= dateMinMaxTime.second;
-                                };
+                    helper.addCriteria(helper1 -> new Helpers.AdvancedQueryHelper.SearchCriteria<Pair<ParentClass, Integer>, Pair<Date, Date>>(VideoActivity.ADVANCED_SEARCH_CRITERIA_DATE, VideoActivity.ADVANCED_SEARCH_CRITERIA_DATE_REGEX)
+                                    .setParser(VideoActivity.getDateRangeParser())
+                                    .setBuildPredicate(dateDatePair -> {
+                                        Pair<Long, Long> dateMinMaxTime = Pair.create(dateDatePair.first.getTime(), dateDatePair.second.getTime());
+                                        return pair -> {
+                                            Date date = getDateFromParentClass(pair.first);
+                                            if (date == null)
+                                                return false;
+                                            return date.getTime() >= dateMinMaxTime.first && date.getTime() <= dateMinMaxTime.second;
+                                        };
+                                    }))
+                            .addCriteria(helper1 -> new Helpers.AdvancedQueryHelper.SearchCriteria<Pair<ParentClass, Integer>, Pair<Date, Date>>(VideoActivity.ADVANCED_SEARCH_CRITERIA_DURATION, VideoActivity.ADVANCED_SEARCH_CRITERIA_DURATION_REGEX)
+                                    .setParser(VideoActivity.getDurationParser())
+                                    .setBuildPredicate_fromLastAdded(helper)
+                                    .setApplyDialog((customDialog, dateDatePair, criteria) -> {
+                                        customDialog.findViewById(R.id.dialog_advancedSearch_category_dateRangeOrDuration_layout).setVisibility(View.VISIBLE);
+                                        return VideoActivity.getApplyDialogDateRangeAndDuration(this, helper).runApplyDialog(customDialog, dateDatePair, criteria);
+                                    }));
 
-                            })
-                            .setApplyDialog((customDialog, dateDatePair, criteria) -> {
-                                customDialog.findViewById(R.id.dialog_advancedSearch_category_dateRangeOrDuration_layout).setVisibility(View.VISIBLE);
-
-                                boolean[] negated = {false};
-                                final String[] pivot = {""};
-                                final String[] duration = {""};
-                                final Runnable[] applyStrings = {() -> {}};
-                                Runnable resetDateRange = () -> {};
-
-                                if (criteria.has()) {
-                                    String[] split = criteria.sub.split(";");
-                                    if (split.length == 1) {
-                                        duration[0] = split[0];
-                                    } else {
-                                        pivot[0] = split[0];
-                                        duration[0] = split[1];
-                                    }
-                                }
-
-
-                                TextView dialog_advancedSearch_viewed_text = customDialog.findViewById(R.id.dialog_advancedSearch_category_dateRange_text);
-                                TextInputEditText since_edit = customDialog.findViewById(R.id.dialog_advancedSearch_category_viewed_since_edit);
-                                Spinner since_unit = customDialog.findViewById(R.id.dialog_advancedSearch_category_viewed_since_unit);
-                                TextInputEditText duration_edit = customDialog.findViewById(R.id.dialog_advancedSearch_category_viewed_duration_edit);
-                                Spinner duration_unit = customDialog.findViewById(R.id.dialog_advancedSearch_category_viewed_duration_unit);
-
-                                VideoActivity.applyDurationDialog(criteria, pivot, duration, applyStrings, dialog_advancedSearch_viewed_text, resetDateRange, since_edit, since_unit, duration_edit, duration_unit);
-
-                                negated[0] = criteria.isNegated();
-                                Helpers.AdvancedQueryHelper.applyNegationButton(customDialog.findViewById(R.id.dialog_advancedSearch_category_negationLayout_dateRangeOrDuration), negated);
-
-                                return customDialog1 -> {
-                                    if (CustomUtility.stringExists(duration[0])) {
-                                        String dateDurationFilter;
-                                        if (CustomUtility.stringExists(pivot[0]))
-                                            dateDurationFilter = String.format(Locale.getDefault(), "%s%s:%s;%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_DURATION, pivot[0], duration[0]);
-                                        else
-                                            dateDurationFilter = String.format(Locale.getDefault(), "%s%s:%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_DURATION, duration[0]);
-                                        return dateDurationFilter;
-                                    }
-
-                                    return null;
-                                };
-                            }));
                 })
                 .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Pair<ParentClass, Integer>, Pair<Integer, Integer>>(ADVANCED_SEARCH_CRITERIA_COUNT, "(((\\d+)-?(\\d+)?)|((\\d+)?-?(\\d+)))")
                         .setParser(VideoActivity.getNumberRangeParser())
@@ -412,6 +374,12 @@ public class CategoriesActivity extends AppCompatActivity {
         setToolbarTitle = Utility.applyExpendableToolbar_recycler(this, findViewById(R.id.recycler), toolbar, appBarLayout, collapsingToolbarLayout, noItem, toolbar.getTitle().toString());
 
         categories_search = findViewById(R.id.search);
+
+        if (category.getSearchIn() == VideoActivity.class && Settings.getSingleSetting_boolean(this, Settings.SETTING_VIDEO_CATEGORY_SHOW_TIME)) {
+            showTime = true;
+            if (toolBarMenu != null)
+                toolBarMenu.findItem(R.id.taskBar_category_showTime).setChecked(true);
+        }
 
         if (isTreeCategory)
             loadTreeRecycler();
@@ -1159,6 +1127,9 @@ public class CategoriesActivity extends AppCompatActivity {
             menu.findItem(R.id.taskBar_category_showAs).setVisible(false);
         }
 
+        if (showTime)
+            toolBarMenu.findItem(R.id.taskBar_category_showTime).setChecked(true);
+
         new Handler().post(() -> {
             final View v = findViewById(R.id.taskBar_category_sort);
 
@@ -1250,6 +1221,8 @@ public class CategoriesActivity extends AppCompatActivity {
                 item.setChecked(true);
                 reverse = true;
                 toolBarMenu.findItem(R.id.taskBar_category_sortReverse).setChecked(true);
+                showTime = true;
+                toolBarMenu.findItem(R.id.taskBar_category_showTime).setChecked(true);
                 reloadRecycler();
                 break;
             case R.id.taskBar_category_sortReverse:

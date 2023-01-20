@@ -64,6 +64,7 @@ import com.innovattic.rangeseekbar.RangeSeekBar;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
+import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomCode;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
@@ -89,6 +90,7 @@ import com.maxMustermannGeheim.linkcollection.Utilities.MinDimensionLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.mikhaellopez.lazydatepicker.LazyDatePicker;
 
+import org.intellij.lang.annotations.Language;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 import org.json.JSONArray;
@@ -97,6 +99,7 @@ import org.json.JSONObject;
 import org.liquidplayer.javascript.JSBaseArray;
 import org.liquidplayer.javascript.JSValue;
 
+import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -116,6 +119,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
@@ -127,10 +131,18 @@ public class VideoActivity extends AppCompatActivity {
     public static final String WATCH_LATER_SEARCH = "WATCH_LATER_SEARCH";
     public static final String UPCOMING_SEARCH = "UPCOMING_SEARCH";
 
-    private static final String ADVANCED_SEARCH_CRITERIA_DATE = "dt";
-    private static final String ADVANCED_SEARCH_CRITERIA_RATING = "r";
-    private static final String ADVANCED_SEARCH_CRITERIA_LENGTH = "l";
-    private static final String ADVANCED_SEARCH_CRITERIA_DURATION = "du";
+    public static final String ADVANCED_SEARCH_CRITERIA_DATE = "dt";
+    @Language("RegExp")
+    public static final String ADVANCED_SEARCH_CRITERIA_DATE_REGEX = "(\\d{1,2}\\.\\d{1,2}\\.(\\d{4}|\\d{2}))(-\\d{1,2}\\.\\d{1,2}\\.(\\d{4}|\\d{2}))?";
+    public static final String ADVANCED_SEARCH_CRITERIA_RATING = "r";
+    @Language("RegExp")
+    public static final String ADVANCED_SEARCH_CRITERIA_RATING_REGEX = "(([0-4]((\\.|,)\\d{1,2})?)|5((\\.|,)00?)?)(-(([0-4]((\\5|\\7|(?<![,.]\\d{1,2}-\\d)[,.])\\d{1,2})?)|5((\\5|\\7|(?<![,.]\\d{1,2}-\\d)[,.])00?)?))?";
+    public static final String ADVANCED_SEARCH_CRITERIA_LENGTH = "l";
+    @Language("RegExp")
+    public static final String ADVANCED_SEARCH_CRITERIA_NUMBER_RANGE_REGEX = "(((\\d+)-?(\\d+)?)|((\\d+)?-?(\\d+)))";
+    public static final String ADVANCED_SEARCH_CRITERIA_DURATION = "du";
+    @Language("RegExp")
+    public static final String ADVANCED_SEARCH_CRITERIA_DURATION_REGEX = "((-?\\d+[dmy])|(-?\\d+[dmy]|_(-?\\d+)?[my])(;-?\\d+[dmy]))";
     private static final String ADVANCED_SEARCH_CRITERIA_ACTOR = "a";
     private static final String ADVANCED_SEARCH_CRITERIA_STUDIO = "s";
     private static final String ADVANCED_SEARCH_CRITERIA_GENRE = "g";
@@ -186,6 +198,7 @@ public class VideoActivity extends AppCompatActivity {
     private boolean isShared;
     private boolean isDialog;
     private Runnable setToolbarTitle;
+    private final DecimalFormat decimalFormat = new DecimalFormat("#.##");
 
     List<Video> allVideoList = new ArrayList<>();
     CustomList<Video> filteredVideoList = new CustomList<>();
@@ -476,180 +489,16 @@ public class VideoActivity extends AppCompatActivity {
                 .enableColoration()
                 .enableHistory("ADVANCED_QUERY_VIDEO")
                 .setDialogOptions(R.layout.dialog_advanced_search_video, null)
-                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Float, Float>>(ADVANCED_SEARCH_CRITERIA_RATING, "(([0-4]((\\.|,)\\d{1,2})?)|5((\\.|,)00?)?)(-(([0-4]((\\5|\\7|(?<![,.]\\d{1,2}-\\d)[,.])\\d{1,2})?)|5((\\5|\\7|(?<![,.]\\d{1,2}-\\d)[,.])00?)?))?")
-                        .setParser(sub -> {
-                            String[] range = sub.replaceAll(",", ".").split("-");
-                            float min = Float.parseFloat(range[0]);
-                            float max = Float.parseFloat(range.length < 2 ? range[0] : range[1]);
-
-                            return Pair.create(min, max);
-                        })
+                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Float, Float>>(ADVANCED_SEARCH_CRITERIA_RATING, ADVANCED_SEARCH_CRITERIA_RATING_REGEX)
+                        .setParser(getRatingParser())
                         .setBuildPredicate(ratingMinMax -> video -> video.getRating() >= ratingMinMax.first && video.getRating() <= ratingMinMax.second)
-                        .setApplyDialog((customDialog, ratingMinMax, criteria) -> {
-                            boolean[] negated = {false};
-                            boolean[] singleMode = {false};
-                            final int[] min = {0};
-                            final int[] max = {20};
-
-                            // ---------------
-
-                            if (criteria.has()) {
-                                min[0] = Math.round(ratingMinMax.first * 4);
-                                max[0] = Math.round(ratingMinMax.second * 4);
-                                singleMode[0] = ratingMinMax.first.equals(ratingMinMax.second);
-                                negated[0] = criteria.isNegated();
-                            }
-                            Helpers.AdvancedQueryHelper.applyNegationButton(customDialog.findViewById(R.id.dialog_advancedSearch_video_negationLayout_rating), negated);
-
-                            // ---------------
-
-                            TextView rangeText = customDialog.findViewById(R.id.dialog_advancedSearch_video_range);
-                            RangeSeekBar rangeBar = customDialog.findViewById(R.id.dialog_advancedSearch_video_rangeBar);
-                            SeekBar singleBar = customDialog.findViewById(R.id.dialog_advancedSearch_video_singleBar);
-                            CustomUtility.GenericInterface<Pair<Integer, Integer>> setText = pair -> {
-                                singleBar.setEnabled(singleMode[0]);
-                                if (singleMode[0])
-                                    rangeText.setText(String.format(Locale.getDefault(), "%.2f ☆", pair.first / 4d));
-                                else
-                                    rangeText.setText(String.format(Locale.getDefault(), "%.2f ☆ – %.2f ☆", pair.first / 4d, pair.second / 4d));
-                            };
-                            rangeBar.setVisibility(singleMode[0] ? View.INVISIBLE : View.VISIBLE);
-                            singleBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                                @Override
-                                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                                    if (fromUser) {
-                                        rangeBar.setMinThumbValue(progress);
-                                        setText.run(Pair.create(progress, progress));
-                                    }
-                                }
-
-                                @Override
-                                public void onStartTrackingTouch(SeekBar seekBar) {
-
-                                }
-
-                                @Override
-                                public void onStopTrackingTouch(SeekBar seekBar) {
-
-                                }
-                            });
-                            rangeText.setOnClickListener(v -> {
-                                if (singleMode[0] && singleBar.getProgress() == 20) {
-                                    singleBar.setProgress(19);
-                                    rangeBar.setMaxThumbValue(20);
-                                }
-                                singleMode[0] = !singleMode[0];
-                                rangeBar.setVisibility(singleMode[0] ? View.INVISIBLE : View.VISIBLE);
-                                setText.run(Pair.create(rangeBar.getMinThumbValue(), rangeBar.getMaxThumbValue()));
-                            });
-                            singleBar.setProgress(min[0]);
-                            rangeBar.setMaxThumbValue(max[0]);
-                            rangeBar.setMinThumbValue(min[0]);
-                            setText.run(Pair.create(min[0], max[0]));
-
-                            rangeBar.setSeekBarChangeListener(new RangeSeekBar.SeekBarChangeListener() {
-                                @Override
-                                public void onStartedSeeking() {
-
-                                }
-
-                                @Override
-                                public void onStoppedSeeking() {
-                                }
-
-                                @Override
-                                public void onValueChanged(int min, int max) {
-                                    setText.run(Pair.create(min, max));
-                                    singleBar.setProgress(min);
-                                }
-                            });
-
-                            // ---------------
-
-                            return customDialog1 -> {
-                                min[0] = rangeBar.getMinThumbValue();
-                                max[0] = rangeBar.getMaxThumbValue();
-
-                                if (min[0] != 0 || max[0] != 20) {
-                                    String ratingFilter;
-                                    if (singleMode[0])
-                                        ratingFilter = String.format(Locale.getDefault(), "%s%s:%.2f", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_RATING, min[0] / 4d);
-                                    else
-                                        ratingFilter = String.format(Locale.getDefault(), "%s%s:%.2f-%.2f", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_RATING, min[0] / 4d, max[0] / 4d);
-
-                                    return ratingFilter;
-                                } else
-                                    return null;
-                            };
-                        }))
+                        .setApplyDialog(getRatingApplyDialog()))
                 .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Integer, Integer>>(ADVANCED_SEARCH_CRITERIA_LENGTH, "(((\\d+)-?(\\d+)?)|((\\d+)?-?(\\d+)))")
                         .setParser(getNumberRangeParser())
                         .setBuildPredicate(lengthMinMax -> video -> video.getLength() >= lengthMinMax.first && (lengthMinMax.second == -1 || video.getLength() <= lengthMinMax.second))
-                        .setApplyDialog((customDialog, lengthMinMax, criteria) -> {
-                            boolean[] negated = {false};
-                            final Integer[] minLength = {null};
-                            final Integer[] maxLength = {null};
-
-                            // ---------------
-
-                            if (criteria.has()) {
-                                minLength[0] = lengthMinMax.first;
-                                maxLength[0] = lengthMinMax.second;
-                                negated[0] = criteria.isNegated();
-                            }
-                            Helpers.AdvancedQueryHelper.applyNegationButton(customDialog.findViewById(R.id.dialog_advancedSearch_video_negationLayout_length), negated);
-
-                            // ---------------
-
-                            TextInputEditText minLength_edit = customDialog.findViewById(R.id.dialog_advancedSearch_video_length_min_edit);
-                            TextInputEditText maxLength_edit = customDialog.findViewById(R.id.dialog_advancedSearch_video_length_max_edit);
-
-                            if (minLength[0] != null) {
-                                minLength_edit.setText(CustomUtility.isNotValueReturnOrElse(minLength[0], String::valueOf, integer -> null, -1));
-                                maxLength_edit.setText(CustomUtility.isNotValueReturnOrElse(maxLength[0], String::valueOf, integer -> null, -1));
-                            }
-
-                            // ---------------
-
-                            return customDialog1 -> {
-                                String minLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_video_length_min_edit)).getText().toString().trim();
-                                String maxLength_str = ((TextInputEditText) customDialog.findViewById(R.id.dialog_advancedSearch_video_length_max_edit)).getText().toString().trim();
-
-                                if (CustomUtility.stringExists(minLength_str) && CustomUtility.stringExists(maxLength_str)) {
-                                    if (Objects.equals(minLength_str, maxLength_str))
-                                        return String.format(Locale.getDefault(), "l:%s", minLength_str);
-                                    else
-                                        return String.format(Locale.getDefault(), "l:%s-%s", minLength_str, maxLength_str);
-                                } else if (CustomUtility.stringExists(minLength_str))
-                                    return String.format(Locale.getDefault(), "%s%s:%s-", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_LENGTH, minLength_str);
-                                else if (CustomUtility.stringExists(maxLength_str))
-                                    return String.format(Locale.getDefault(), "%s%s:-%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_LENGTH, maxLength_str);
-                                return null;
-                            };
-                        }))
-                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Date, Date>>(ADVANCED_SEARCH_CRITERIA_DATE, "(\\d{1,2}\\.\\d{1,2}\\.(\\d{4}|\\d{2}))(-\\d{1,2}\\.\\d{1,2}\\.(\\d{4}|\\d{2}))?")
-                        .setParser(sub -> {
-                            String[] range = sub.split("-");
-                            Date min = null;
-                            Date max = null;
-                            try {
-                                Utility.GenericReturnInterface<String, String> expandYear = s -> {
-                                    String[] split = s.split("\\.");
-                                    if (split[2].length() == 2) {
-                                        split[2] = "20" + split[2];
-                                        return String.join(".", split);
-                                    } else
-                                        return s;
-                                };
-                                SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
-                                min = dateFormat.parse(expandYear.run(range[0]));
-                                if (range.length > 1)
-                                    max = dateFormat.parse(expandYear.run(range[1]));
-                            } catch (ParseException ignored) {
-                            }
-
-                            return Pair.create(min, CustomUtility.isNotNullOrElse(max, min));
-                        })
+                        .setApplyDialog(getLengthApplyDialog()))
+                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Date, Date>>(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DATE_REGEX)
+                        .setParser(getDateRangeParser())
                         .setBuildPredicate(dateDatePair -> {
                             Pair<Long, Long> dateMinMaxTime = Pair.create(dateDatePair.first.getTime(), dateDatePair.second.getTime());
                             return video -> (
@@ -660,146 +509,23 @@ public class VideoActivity extends AppCompatActivity {
                                     )
                             );
                         }))
-                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Date, Date>>(ADVANCED_SEARCH_CRITERIA_DURATION, "((-?\\d+[dmy])|(-?\\d+[dmy]|_(-?\\d+)?[my])(;-?\\d+[dmy]))")
+                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Date, Date>>(ADVANCED_SEARCH_CRITERIA_DURATION, ADVANCED_SEARCH_CRITERIA_DURATION_REGEX)
                         .setParser(getDurationParser())
                         .setBuildPredicate_fromLastAdded(helper)
-                        .setApplyDialog((customDialog, dateDatePair, durationCriteria) -> {
-                            Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Date, Date>> dateCriteria = helper.getSearchCriteriaByKey(ADVANCED_SEARCH_CRITERIA_DATE);
-
-                            // ---------------
-
-                            boolean[] negated = {false};
-                            final Date[] from = {null};
-                            final Date[] to = {null};
-
-                            final String[] pivot = {""};
-                            final String[] duration = {""};
-
-                            SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.ENGLISH);
-                            int timezoneOffset = new Date().getTimezoneOffset() * 60 * 1000;
-                            final Runnable[] applyStrings = {() -> {
-                            }};
-
-                            // ---------------
-
-                            if (dateCriteria.has()) {
-                                Pair<Date, Date> dateMinMax = dateCriteria.parse();
-                                from[0] = dateMinMax.first;
-                                to[0] = dateMinMax.second;
-                            }
-
-                            // ---------------
-
-                            if (durationCriteria.has()) {
-                                String[] split = durationCriteria.sub.split(";");
-                                if (split.length == 1) {
-                                    duration[0] = split[0];
-                                } else {
-                                    pivot[0] = split[0];
-                                    duration[0] = split[1];
-                                }
-                            }
-
-                            negated[0] = durationCriteria.isNegated() || dateCriteria.isNegated();
-                            Helpers.AdvancedQueryHelper.applyNegationButton(customDialog.findViewById(R.id.dialog_advancedSearch_video_negationLayout_dateRangeOrDuration), negated);
-
-                            /**  ------------------------- DateRange ------------------------->  */
-                            TextView dialog_advancedSearch_viewed_text = customDialog.findViewById(R.id.dialog_advancedSearch_video_dateRange_text);
-                            Runnable setDateRangeTextView = () -> {
-                                if (from[0] != null && to[0] != null) {
-                                    dialog_advancedSearch_viewed_text.setText(String.format("%s - %s", dateFormat.format(from[0]), dateFormat.format(to[0])));
-                                } else if (from[0] != null) {
-                                    dialog_advancedSearch_viewed_text.setText(dateFormat.format(from[0]));
-                                } else {
-                                    dialog_advancedSearch_viewed_text.setText("Nicht ausgewählt");
-                                }
-                            };
-                            setDateRangeTextView.run();
-
-                            MaterialDatePicker.Builder<androidx.core.util.Pair<Long, Long>> builder = MaterialDatePicker.Builder.dateRangePicker();
-                            builder.setTitleText("Zeitraum Auswählen");
-                            if (from[0] != null && to[0] != null) {
-                                builder.setSelection(androidx.core.util.Pair.create(from[0].getTime() - timezoneOffset, to[0].getTime() - timezoneOffset));
-                            } else if (from[0] != null) {
-                                builder.setSelection(androidx.core.util.Pair.create(from[0].getTime() - timezoneOffset, from[0].getTime() - timezoneOffset));
-                            }
-                            MaterialDatePicker<androidx.core.util.Pair<Long, Long>> picker = builder.build();
-
-                            picker.addOnPositiveButtonClickListener(selection -> {
-                                from[0] = new Date(selection.first + timezoneOffset);
-                                if (!Objects.equals(selection.first, selection.second))
-                                    to[0] = new Date(selection.second + timezoneOffset);
-                                else
-                                    to[0] = null;
-                                setDateRangeTextView.run();
-                                pivot[0] = "";
-                                duration[0] = "";
-                                applyStrings[0].run();
-                            });
-
-                            customDialog.findViewById(R.id.dialog_advancedSearch_video_dateRange_change).setOnClickListener(v -> picker.show(context.getSupportFragmentManager(), picker.toString()));
-                            Runnable resetDateRange = () -> {
-                                if (from[0] != null || to[0] != null) {
-                                    from[0] = null;
-                                    to[0] = null;
-                                    setDateRangeTextView.run();
-                                }
-                            };
-
-                            customDialog.findViewById(R.id.dialog_advancedSearch_video_dateRange_change).setOnLongClickListener(v -> {
-                                resetDateRange.run();
-                                return true;
-                            });
-                            /**  <------------------------- DateRange -------------------------  */
-
-
-                            /**  ------------------------- Duration ------------------------->  */
-                            TextInputEditText since_edit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_since_edit);
-                            Spinner since_unit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_since_unit);
-                            TextInputEditText duration_edit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_duration_edit);
-                            Spinner duration_unit = customDialog.findViewById(R.id.dialog_advancedSearch_video_viewed_duration_unit);
-                            applyDurationDialog(durationCriteria, pivot, duration, applyStrings, dialog_advancedSearch_viewed_text, resetDateRange, since_edit, since_unit, duration_edit, duration_unit);
-                            /**  <------------------------- Duration -------------------------  */
-
-
-                            return customDialog1 -> {
-                                if (from[0] != null) {
-                                    String dateFilter;
-                                    if (to[0] != null)
-                                        dateFilter = String.format(Locale.getDefault(), "%s%s:%s-%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_DATE, dateFormat.format(from[0]), dateFormat.format(to[0]));
-                                    else
-                                        dateFilter = String.format(Locale.getDefault(), "%s%s:%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_DATE, dateFormat.format(from[0]));
-
-                                    return dateFilter;
-                                }
-
-                                // ---------------
-
-                                if (CustomUtility.stringExists(duration[0])) {
-                                    String dateDurationFilter;
-                                    if (CustomUtility.stringExists(pivot[0]))
-                                        dateDurationFilter = String.format(Locale.getDefault(), "%s%s:%s;%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_DURATION, pivot[0], duration[0]);
-                                    else
-                                        dateDurationFilter = String.format(Locale.getDefault(), "%s%s:%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_DURATION, duration[0]);
-                                    return dateDurationFilter;
-                                }
-
-                                return null;
-                            };
-                        }))
+                        .setApplyDialog(getApplyDialogDateRangeAndDuration(context, helper)))
                 .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_ACTOR, CategoriesActivity.CATEGORIES.DARSTELLER, Video::getDarstellerList, context, R.id.dialog_advancedSearch_video_actor, R.id.dialog_advancedSearch_video_actor_connector, R.id.dialog_advancedSearch_video_editActor)
                 .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_STUDIO, CategoriesActivity.CATEGORIES.STUDIOS, Video::getStudioList, context, R.id.dialog_advancedSearch_video_studio, R.id.dialog_advancedSearch_video_studio_connector, R.id.dialog_advancedSearch_video_editStudio)
                 .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_GENRE, CategoriesActivity.CATEGORIES.GENRE, Video::getGenreList, context, R.id.dialog_advancedSearch_video_genre, R.id.dialog_advancedSearch_video_genre_connector, R.id.dialog_advancedSearch_video_editGenre)
                 .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, String>(ADVANCED_SEARCH_CRITERIA_COLLECTION, "[^]]+?")
                         .setCategory(CategoriesActivity.CATEGORIES.COLLECTION)
-                        .setParser(sub -> sub)
+                        .setParser((sub, matcher) -> sub)
                         .setBuildPredicate(sub -> video -> Utility.containedInCollection(sub, video.getUuid(), true)))
                 .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, String>(ADVANCED_SEARCH_CRITERIA_WATCH_LIST, "[^]]+?")
                         .setCategory(CategoriesActivity.CATEGORIES.WATCH_LIST)
-                        .setParser(sub -> sub)
+                        .setParser((sub, matcher) -> sub)
                         .setBuildPredicate(sub -> video -> Utility.containedInWatchList(sub, video.getUuid(), true)))
                 .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<CustomCode.CustomCode_Video, String[]>>(ADVANCED_SEARCH_CRITERIA_CUSTOM_CODE, "\\w+(= *([^,]+)(, *[^,]+)*)?")
-                        .setParser(sub -> {
+                        .setParser((sub, matcher) -> {
                             String[] split = sub.split("=");
                             String name = split[0];
                             if (CustomUtility.stringExists(name)) {
@@ -855,6 +581,289 @@ public class VideoActivity extends AppCompatActivity {
                                 return String.format("%s:%s%s", ADVANCED_SEARCH_CRITERIA_CUSTOM_CODE, selectCustomCode.getSelectedItem().toString(), CustomUtility.stringExists(parameter) ? "=" + parameter : "");
                             };
                         }));
+    }
+
+    public static <T> Helpers.AdvancedQueryHelper.SearchCriteria.ApplyDialogInterface<T, Pair<Integer, Integer>> getLengthApplyDialog() {
+        return (customDialog, lengthMinMax, criteria) -> {
+            boolean[] negated = {false};
+            final Integer[] minLength = {null};
+            final Integer[] maxLength = {null};
+
+            // ---------------
+
+            if (criteria.has()) {
+                minLength[0] = lengthMinMax.first;
+                maxLength[0] = lengthMinMax.second;
+                negated[0] = criteria.isNegated();
+            }
+            Helpers.AdvancedQueryHelper.applyNegationButton(customDialog.findViewById(R.id.module_advancedSearch_length_negationLayout), negated);
+
+            // ---------------
+
+            TextInputEditText minLength_edit = customDialog.findViewById(R.id.module_advancedSearch_length_min_edit);
+            TextInputEditText maxLength_edit = customDialog.findViewById(R.id.module_advancedSearch_length_max_edit);
+
+            if (minLength[0] != null) {
+                minLength_edit.setText(CustomUtility.isNotValueReturnOrElse(minLength[0], String::valueOf, integer -> null, -1));
+                maxLength_edit.setText(CustomUtility.isNotValueReturnOrElse(maxLength[0], String::valueOf, integer -> null, -1));
+            }
+
+            // ---------------
+
+            return customDialog1 -> {
+                String minLength_str = ((TextInputEditText) customDialog.findViewById(R.id.module_advancedSearch_length_min_edit)).getText().toString().trim();
+                String maxLength_str = ((TextInputEditText) customDialog.findViewById(R.id.module_advancedSearch_length_max_edit)).getText().toString().trim();
+
+                if (CustomUtility.stringExists(minLength_str) && CustomUtility.stringExists(maxLength_str)) {
+                    if (Objects.equals(minLength_str, maxLength_str))
+                        return String.format(Locale.getDefault(), "l:%s", minLength_str);
+                    else
+                        return String.format(Locale.getDefault(), "l:%s-%s", minLength_str, maxLength_str);
+                } else if (CustomUtility.stringExists(minLength_str))
+                    return String.format(Locale.getDefault(), "%s%s:%s-", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_LENGTH, minLength_str);
+                else if (CustomUtility.stringExists(maxLength_str))
+                    return String.format(Locale.getDefault(), "%s%s:-%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_LENGTH, maxLength_str);
+                return null;
+            };
+        };
+    }
+
+    public static <T> Helpers.AdvancedQueryHelper.SearchCriteria.ApplyDialogInterface<T, Pair<Float, Float>> getRatingApplyDialog() {
+        return (customDialog, ratingMinMax, criteria) -> {
+            boolean[] negated = {false};
+            boolean[] singleMode = {false};
+            final int[] min = {0};
+            final int[] max = {20};
+
+            // ---------------
+
+            if (criteria.has()) {
+                min[0] = Math.round(ratingMinMax.first * 4);
+                max[0] = Math.round(ratingMinMax.second * 4);
+                singleMode[0] = ratingMinMax.first.equals(ratingMinMax.second);
+                negated[0] = criteria.isNegated();
+            }
+            Helpers.AdvancedQueryHelper.applyNegationButton(customDialog.findViewById(R.id.module_advancedSearch_rating_negationLayout), negated);
+
+            // ---------------
+
+            TextView rangeText = customDialog.findViewById(R.id.module_advancedSearch_rating_range);
+            RangeSeekBar rangeBar = customDialog.findViewById(R.id.module_advancedSearch_rating_rangeBar);
+            SeekBar singleBar = customDialog.findViewById(R.id.module_advancedSearch_rating_singleBar);
+            CustomUtility.GenericInterface<Pair<Integer, Integer>> setText = pair -> {
+                singleBar.setEnabled(singleMode[0]);
+                if (singleMode[0])
+                    rangeText.setText(String.format(Locale.getDefault(), "%.2f ☆", pair.first / 4d));
+                else
+                    rangeText.setText(String.format(Locale.getDefault(), "%.2f ☆ – %.2f ☆", pair.first / 4d, pair.second / 4d));
+            };
+            rangeBar.setVisibility(singleMode[0] ? View.INVISIBLE : View.VISIBLE);
+            singleBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    if (fromUser) {
+                        rangeBar.setMinThumbValue(progress);
+                        setText.run(Pair.create(progress, progress));
+                    }
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+
+                }
+            });
+            rangeText.setOnClickListener(v -> {
+                if (singleMode[0] && singleBar.getProgress() == 20) {
+                    singleBar.setProgress(19);
+                    rangeBar.setMaxThumbValue(20);
+                }
+                singleMode[0] = !singleMode[0];
+                rangeBar.setVisibility(singleMode[0] ? View.INVISIBLE : View.VISIBLE);
+                setText.run(Pair.create(rangeBar.getMinThumbValue(), rangeBar.getMaxThumbValue()));
+            });
+            singleBar.setProgress(min[0]);
+            rangeBar.setMaxThumbValue(max[0]);
+            rangeBar.setMinThumbValue(min[0]);
+            setText.run(Pair.create(min[0], max[0]));
+
+            rangeBar.setSeekBarChangeListener(new RangeSeekBar.SeekBarChangeListener() {
+                @Override
+                public void onStartedSeeking() {
+
+                }
+
+                @Override
+                public void onStoppedSeeking() {
+                }
+
+                @Override
+                public void onValueChanged(int min, int max) {
+                    setText.run(Pair.create(min, max));
+                    singleBar.setProgress(min);
+                }
+            });
+
+            // ---------------
+
+            return customDialog1 -> {
+                min[0] = rangeBar.getMinThumbValue();
+                max[0] = rangeBar.getMaxThumbValue();
+
+                if (min[0] != 0 || max[0] != 20) {
+                    String ratingFilter;
+                    if (singleMode[0])
+                        ratingFilter = String.format(Locale.getDefault(), "%s%s:%.2f", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_RATING, min[0] / 4d);
+                    else
+                        ratingFilter = String.format(Locale.getDefault(), "%s%s:%.2f-%.2f", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_RATING, min[0] / 4d, max[0] / 4d);
+
+                    return ratingFilter;
+                } else
+                    return null;
+            };
+        };
+    }
+
+    @NonNull
+    public static Utility.DoubleGenericReturnInterface<String, Matcher, Pair<Float, Float>> getRatingParser() {
+        return (sub, matcher) -> {
+            String[] range = sub.replaceAll(",", ".").split("-");
+            float min = Float.parseFloat(range[0]);
+            float max = Float.parseFloat(range.length < 2 ? range[0] : range[1]);
+
+            return Pair.create(min, max);
+        };
+    }
+
+    public static <T> Helpers.AdvancedQueryHelper.SearchCriteria.ApplyDialogInterface<T, Pair<Date, Date>> getApplyDialogDateRangeAndDuration(AppCompatActivity context, Helpers.AdvancedQueryHelper<T> helper) {
+        return (customDialog, dateDatePair, durationCriteria) -> {
+            Helpers.AdvancedQueryHelper.SearchCriteria<T, Pair<Date, Date>> dateCriteria = helper.getSearchCriteriaByKey(ADVANCED_SEARCH_CRITERIA_DATE);
+
+            // ---------------
+
+            boolean[] negated = {false};
+            final Date[] from = {null};
+            final Date[] to = {null};
+
+            final String[] pivot = {""};
+            final String[] duration = {""};
+
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.ENGLISH);
+            int timezoneOffset = new Date().getTimezoneOffset() * 60 * 1000;
+            final Runnable[] applyStrings = {() -> {
+            }};
+
+            // ---------------
+
+            if (dateCriteria.has()) {
+                Pair<Date, Date> dateMinMax = dateCriteria.parse();
+                from[0] = dateMinMax.first;
+                to[0] = dateMinMax.second;
+            }
+
+            // ---------------
+
+            if (durationCriteria.has()) {
+                String[] split = durationCriteria.sub.split(";");
+                if (split.length == 1) {
+                    duration[0] = split[0];
+                } else {
+                    pivot[0] = split[0];
+                    duration[0] = split[1];
+                }
+            }
+
+            negated[0] = durationCriteria.isNegated() || dateCriteria.isNegated();
+            Helpers.AdvancedQueryHelper.applyNegationButton(customDialog.findViewById(R.id.module_advancedSearch_time_negationLayout_dateRangeOrDuration), negated);
+
+            /**  ------------------------- DateRange ------------------------->  */
+            TextView dialog_advancedSearch_viewed_text = customDialog.findViewById(R.id.module_advancedSearch_time_dateRange_text);
+            Runnable setDateRangeTextView = () -> {
+                if (from[0] != null && to[0] != null) {
+                    dialog_advancedSearch_viewed_text.setText(String.format("%s - %s", dateFormat.format(from[0]), dateFormat.format(to[0])));
+                } else if (from[0] != null) {
+                    dialog_advancedSearch_viewed_text.setText(dateFormat.format(from[0]));
+                } else {
+                    dialog_advancedSearch_viewed_text.setText("Nicht ausgewählt");
+                }
+            };
+            setDateRangeTextView.run();
+
+            MaterialDatePicker.Builder<androidx.core.util.Pair<Long, Long>> builder = MaterialDatePicker.Builder.dateRangePicker();
+            builder.setTitleText("Zeitraum Auswählen");
+            if (from[0] != null && to[0] != null) {
+                builder.setSelection(androidx.core.util.Pair.create(from[0].getTime() - timezoneOffset, to[0].getTime() - timezoneOffset));
+            } else if (from[0] != null) {
+                builder.setSelection(androidx.core.util.Pair.create(from[0].getTime() - timezoneOffset, from[0].getTime() - timezoneOffset));
+            }
+            MaterialDatePicker<androidx.core.util.Pair<Long, Long>> picker = builder.build();
+
+            picker.addOnPositiveButtonClickListener(selection -> {
+                from[0] = new Date(selection.first + timezoneOffset);
+                if (!Objects.equals(selection.first, selection.second))
+                    to[0] = new Date(selection.second + timezoneOffset);
+                else
+                    to[0] = null;
+                setDateRangeTextView.run();
+                pivot[0] = "";
+                duration[0] = "";
+                applyStrings[0].run();
+            });
+
+            customDialog.findViewById(R.id.module_advancedSearch_time_dateRange_change).setOnClickListener(v -> picker.show(context.getSupportFragmentManager(), picker.toString()));
+            Runnable resetDateRange = () -> {
+                if (from[0] != null || to[0] != null) {
+                    from[0] = null;
+                    to[0] = null;
+                    setDateRangeTextView.run();
+                }
+            };
+
+            customDialog.findViewById(R.id.module_advancedSearch_time_dateRange_change).setOnLongClickListener(v -> {
+                resetDateRange.run();
+                return true;
+            });
+            /**  <------------------------- DateRange -------------------------  */
+
+
+            /**  ------------------------- Duration ------------------------->  */
+            TextInputEditText since_edit = customDialog.findViewById(R.id.module_advancedSearch_time_viewed_since_edit);
+            Spinner since_unit = customDialog.findViewById(R.id.module_advancedSearch_time_viewed_since_unit);
+            TextInputEditText duration_edit = customDialog.findViewById(R.id.module_advancedSearch_time_viewed_duration_edit);
+            Spinner duration_unit = customDialog.findViewById(R.id.module_advancedSearch_time_viewed_duration_unit);
+            applyDurationDialog(durationCriteria, pivot, duration, applyStrings, dialog_advancedSearch_viewed_text, resetDateRange, since_edit, since_unit, duration_edit, duration_unit);
+            /**  <------------------------- Duration -------------------------  */
+
+
+            return customDialog1 -> {
+                if (from[0] != null) {
+                    String dateFilter;
+                    if (to[0] != null)
+                        dateFilter = String.format(Locale.getDefault(), "%s%s:%s-%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_DATE, dateFormat.format(from[0]), dateFormat.format(to[0]));
+                    else
+                        dateFilter = String.format(Locale.getDefault(), "%s%s:%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_DATE, dateFormat.format(from[0]));
+
+                    return dateFilter;
+                }
+
+                // ---------------
+
+                if (CustomUtility.stringExists(duration[0])) {
+                    String dateDurationFilter;
+                    if (CustomUtility.stringExists(pivot[0]))
+                        dateDurationFilter = String.format(Locale.getDefault(), "%s%s:%s;%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_DURATION, pivot[0], duration[0]);
+                    else
+                        dateDurationFilter = String.format(Locale.getDefault(), "%s%s:%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_DURATION, duration[0]);
+                    return dateDurationFilter;
+                }
+
+                return null;
+            };
+        };
     }
 
     public static void applyDurationDialog(Helpers.AdvancedQueryHelper.SearchCriteria<?, Pair<Date, Date>> durationCriteria, String[] pivot, String[] duration, Runnable[] applyStrings, TextView dialog_advancedSearch_viewed_text, Runnable resetDateRange, TextInputEditText since_edit, Spinner since_unit, TextInputEditText duration_edit, Spinner duration_unit) {
@@ -987,8 +996,8 @@ public class VideoActivity extends AppCompatActivity {
         duration_unit.setOnItemSelectedListener(spinnerListener);
     }
 
-    public static Utility.GenericReturnInterface<String, Pair<Integer, Integer>> getNumberRangeParser() {
-        return sub -> {
+    public static Utility.DoubleGenericReturnInterface<String, Matcher, Pair<Integer, Integer>> getNumberRangeParser() {
+        return (sub, matcher) -> {
             String[] range = sub.split("-");
             int min = range.length > 0 ? Integer.parseInt(CustomUtility.isNotValueOrElse(range[0], "-1", "")) : -1;
             int max = range.length > 1 ? Integer.parseInt(CustomUtility.isNotValueOrElse(range[1], "-1", "")) : (sub.endsWith("-") ? -1 : min);
@@ -997,8 +1006,8 @@ public class VideoActivity extends AppCompatActivity {
         };
     }
 
-    public static Utility.GenericReturnInterface<String, Pair<Date, Date>> getDurationParser() {
-        return sub -> {
+    public static Utility.DoubleGenericReturnInterface<String, Matcher, Pair<Date, Date>> getDurationParser() {
+        return (sub, matcher) -> {
             String[] range = sub.split(";");
             Date pivot;
             Calendar cal = Calendar.getInstance();
@@ -1051,6 +1060,31 @@ public class VideoActivity extends AppCompatActivity {
 //            }
 
             return datePair;
+        };
+    }
+
+    public static Utility.DoubleGenericReturnInterface<String, Matcher, Pair<Date, Date>> getDateRangeParser() {
+        return (sub, matcher) -> {
+            String[] range = sub.split("-");
+            Date min = null;
+            Date max = null;
+            try {
+                Utility.GenericReturnInterface<String, String> expandYear = s -> {
+                    String[] split = s.split("\\.");
+                    if (split[2].length() == 2) {
+                        split[2] = "20" + split[2];
+                        return String.join(".", split);
+                    } else
+                        return s;
+                };
+                SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+                min = dateFormat.parse(expandYear.run(range[0]));
+                if (range.length > 1)
+                    max = dateFormat.parse(expandYear.run(range[1]));
+            } catch (ParseException ignored) {
+            }
+
+            return Pair.create(min, CustomUtility.isNotNullOrElse(max, min));
         };
     }
     /** <------------------------- AdvancedQuery ------------------------- */
@@ -1129,10 +1163,11 @@ public class VideoActivity extends AppCompatActivity {
                 break;
             case RATING:
                 videoList.sort((video1, video2) -> {
-                    if (video1.getRating().equals(video2.getRating()))
-                        return video1.getName().compareTo(video2.getName());
+                    int compare = video1._getRatingWithTendency().orElse(-1f).compareTo(video2._getRatingWithTendency().orElse(-1f));
+                    if (compare != 0)
+                        return compare * (reverse ? 1 : -1);
                     else
-                        return video1.getRating().compareTo(video2.getRating()) * (reverse ? 1 : -1);
+                        return video1.getName().compareTo(video2.getName());
                 });
                 break;
             case LATEST:
@@ -1242,9 +1277,9 @@ public class VideoActivity extends AppCompatActivity {
                                 viewSum[0] += videoViews;
                                 watchedMinutes[0] += video.getLength() * videoViews;
 
-                                Float rating = video.getRating();
-                                if (rating > 0) {
-                                    ratingSum[0] += rating;
+                                Optional<Float> rating = video._getRatingWithTendency();
+                                if (rating.isPresent()) {
+                                    ratingSum[0] += rating.get();
                                     ratingCount[0]++;
                                 }
                             });
@@ -1315,6 +1350,7 @@ public class VideoActivity extends AppCompatActivity {
                         ((TextView) itemView.findViewById(R.id.listItem_video_rating)).setText(String.valueOf(video.getRating()));
                     } else
                         itemView.findViewById(R.id.listItem_video_rating_layout).setVisibility(View.GONE);
+                    ParentClass_Ratable.applyRatingTendencyIndicator(itemView.findViewById(R.id.listItem_video_ratingTendency), video, true, false);
 
                     String studioNames = video.getStudioList().stream().map(uuid -> database.studioMap.get(uuid).getName()).sorted(containsComparator).collect(Collectors.joining(", "));
                     String studioSub = advancedQueryHelper.getSearchCriteriaByKey(ADVANCED_SEARCH_CRITERIA_STUDIO).getSub();
@@ -1370,10 +1406,8 @@ public class VideoActivity extends AppCompatActivity {
                                 return "Keine Ansichten";
                             return size + (size > 1 ? " Ansichten" : " Ansicht");
                         case RATING:
-                            float rating = video.getRating();
-                            if (rating == 0)
-                                return "Keine Bewertung";
-                            return rating + " ☆";
+                            Optional<Float> ratingOptional = video._getRatingWithTendency();
+                            return ratingOptional.map(rating -> decimalFormat.format(rating) + " ☆").orElse("Keine Bewertung");
                         case LATEST:
                             CustomList<Date> dateList = new CustomList<>(video.getDateList());
                             if (CustomUtility.stringExists(searchQuery) && advancedQueryHelper != null && advancedQueryHelper.has(ADVANCED_SEARCH_CRITERIA_DATE, ADVANCED_SEARCH_CRITERIA_DURATION)) {
@@ -1509,6 +1543,13 @@ public class VideoActivity extends AppCompatActivity {
                         });
                     } else
                         commentLayout.setVisibility(View.GONE);
+
+                    View ratingTendencyLayout = view.findViewById(R.id.dialog_video_ratingTendency_layout);
+                    if (video.hasRatingTendency(false)) {
+                        ratingTendencyLayout.setVisibility(View.VISIBLE);
+                        ParentClass_Ratable.applyRatingTendencyIndicator(view.findViewById(R.id.dialog_video_ratingTendency_icon), video, true, false);
+                    } else
+                        ratingTendencyLayout.setVisibility(View.GONE);
 
                     TextView viewsTextView = view.findViewById(R.id.dialog_video_views);
                     Utility.GenericInterface<Boolean> setViewsText = flip -> {
@@ -1830,7 +1871,11 @@ public class VideoActivity extends AppCompatActivity {
 
                         CustomUtility.GenericInterface<CategoriesActivity.CATEGORIES> showAddCategoryDialog = category -> {
                             CustomList<Video> allMatchesList = new CustomList<>();
-                            CustomList<Video> selectedMatchesList = new CustomList<>();
+                            allMatchesList.addAll(Database.getInstance().videoMap.values().stream()
+                                    .filter(video -> video.getName().replaceAll("[^\\wöäüß]+", " ").toLowerCase().matches(".*(\\b" + triple.third + "\\b).*"))
+                                    .sorted(Comparator.comparing(com.finn.androidUtilities.ParentClass::getName))
+                                    .collect(Collectors.toList()));
+                            CustomList<Video> selectedMatchesList = new CustomList<>(allMatchesList);
                             CategoriesActivity.showEditCategoryDialog(context, category, null, parentClass -> {
                                 if (!selectedMatchesList.isEmpty()) {
                                     selectedMatchesList.forEach(video -> {
@@ -1854,12 +1899,6 @@ public class VideoActivity extends AppCompatActivity {
                                         .transformLastAddedButtonToImageButton()
                                         .enableTransformAutoGeneratedButtonsToImageButtons()
                                         .addButton(R.drawable.ic_add, customDialog1 -> {
-                                            if (allMatchesList.isEmpty()) {
-                                                allMatchesList.addAll(Database.getInstance().videoMap.values().stream()
-                                                        .filter(video -> video.getName().replaceAll("[^\\wöäüß]+", " ").toLowerCase().matches(".*(\\b" + triple.third + "\\b).*"))
-                                                        .sorted(Comparator.comparing(com.finn.androidUtilities.ParentClass::getName))
-                                                        .collect(Collectors.toList()));
-                                            }
                                             CustomRecycler<Video> selectRecycler = new CustomRecycler<Video>(context)
                                                     .setObjectList(allMatchesList)
                                                     .setItemLayout(R.layout.list_item_select)
@@ -2125,9 +2164,6 @@ public class VideoActivity extends AppCompatActivity {
         CustomDialog returnDialog = CustomDialog.Builder(this)
                 .setTitle(video == null ? "Neu: " + singular : singular + " Bearbeiten")
                 .setView(R.layout.dialog_edit_or_add_video)
-                .enableTitleRightButton(R.drawable.ic_comment, customDialog -> {
-                    showEditCommentDialog(editVideo[0]);
-                })
                 .addOptionalModifications(customDialog -> {
                     if (Utility.boolOr(Integer.parseInt(Settings.getSingleSetting(this, Settings.SETTING_VIDEO_QUICK_SEARCH)), 0, 2))
                         customDialog
@@ -2560,6 +2596,33 @@ public class VideoActivity extends AppCompatActivity {
 
                         return true;
                     });
+
+                    // comment
+                    View commentEditButton = view.findViewById(R.id.dialog_editOrAddVideo_comment_edit);
+                    TextView commentText = view.findViewById(R.id.dialog_editOrAddVideo_comment_text);
+                    Runnable setTextOrIcon = () -> {
+                        if (editVideo[0].getComment() == null) {
+                            commentEditButton.setVisibility(View.VISIBLE);
+                            commentText.setVisibility(View.GONE);
+                        } else {
+                            commentEditButton.setVisibility(View.GONE);
+                            commentText.setVisibility(View.VISIBLE);
+                            commentText.setText(editVideo[0].getComment());
+                        }
+                    };
+                    setTextOrIcon.run();
+                    view.findViewById(R.id.dialog_editOrAddVideo_comment).setOnClickListener(v -> showEditCommentDialog(editVideo[0], setTextOrIcon));
+
+                    // ratingTendency
+                    View ratingTendencyButton = view.findViewById(R.id.dialog_editOrAddVideo_ratingTendency);
+                    ImageView ratingTendencyIcon = view.findViewById(R.id.dialog_editOrAddVideo_ratingTendency_icon);
+                    Runnable setRatingTendencyIcon = () -> ParentClass_Ratable.applyRatingTendencyIndicator(ratingTendencyIcon, editVideo[0], true, true);
+                    setRatingTendencyIcon.run();
+                    ratingTendencyButton.setOnClickListener(v -> {
+                        ParentClass_Ratable.showRatingTendencyDialog(this, editVideo[0], ratingTendencyButton, null, parentClass_ratable -> {
+                            setRatingTendencyIcon.run();
+                        });
+                    });
                 })
                 .setOnDialogShown(customDialog -> {
                     Toast toast = Utility.centeredToast(this, "");
@@ -2576,7 +2639,7 @@ public class VideoActivity extends AppCompatActivity {
                     String length = ((EditText) customDialog.findViewById(R.id.dialog_editOrAddVideo_length)).getText().toString().trim();
                     float rating = ((RatingBar) customDialog.findViewById(R.id.customRating_ratingBar)).getRating();
                     if (video == null)
-                        return !title.isEmpty() || !url.isEmpty() || !Utility.boolOr(rating, -1f, 0f) || !ageRating.isEmpty() || !length.isEmpty() || !editVideo[0].getDarstellerList().isEmpty() || !editVideo[0].getStudioList().isEmpty() || !editVideo[0].getGenreList().isEmpty();
+                        return !title.isEmpty() || !url.isEmpty() || !Utility.boolOr(rating, -1f, 0f) || !ageRating.isEmpty() || !length.isEmpty() || !editVideo[0].getDarstellerList().isEmpty() || !editVideo[0].getStudioList().isEmpty() || !editVideo[0].getGenreList().isEmpty() || editVideo[0].hasRatingTendency(true);
                     else
                         return !title.equals(video.getName()) || !url.equals(video.getUrl()) || rating != video.getRating() || (ageRating.isEmpty() ? -1 : Integer.parseInt(ageRating)) != video.getAgeRating() || (length.isEmpty() ? 0 : Integer.parseInt(length)) != video.getLength() || !editVideo[0].equals(video);
                 })
@@ -2585,14 +2648,18 @@ public class VideoActivity extends AppCompatActivity {
         return Pair.create(returnDialog, editVideo[0]);
     }
 
-    private void showEditCommentDialog(Video editVideo) {
+    private void showEditCommentDialog(Video editVideo, Runnable setTextOrIcon) {
         CustomDialog.Builder(this)
                 .setTitle("Kommentar Bearbeiten")
-                .standardEdit("Kommentar", editVideo.getComment())
+                .setEdit(new CustomDialog.EditBuilder()
+                        .setHint("Kommentar")
+                        .setText(editVideo.getComment())
+                        .allowEmpty())
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     String comment = customDialog.getEditText().trim();
                     editVideo.setComment(CustomUtility.stringExistsOrElse(comment, null));
+                    setTextOrIcon.run();
                 })
                 .show();
     }

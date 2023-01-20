@@ -26,9 +26,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
-import com.maxMustermannGeheim.linkcollection.Daten.Jokes.JokeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
-import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.finn.androidUtilities.CustomDialog;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
@@ -492,7 +490,7 @@ public class JokeActivity extends AppCompatActivity {
                 .addButton(R.drawable.ic_info, customDialog -> detailDialog = showDetailDialog(randomJoke[0]).setPayload(customDialog), false)
                 .alignPreviousButtonsLeft()
                 .addButton("", customDialog -> {
-                    ParentClass_Ratable.showRatingDialog(this, randomJoke[0], customDialog.getButton(ratingButtonId).getButton(), true, () -> {
+                    ParentClass_Ratable.showRatingDialog(this, randomJoke[0], customDialog.getButton(ratingButtonId).getButton(), true, false, () -> {
                         Database.saveAll();
                         customDialog.reloadView();
                         reLoadRecycler();

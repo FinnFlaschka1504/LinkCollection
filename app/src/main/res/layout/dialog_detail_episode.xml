@@ -131,6 +131,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         app:srcCompat="@drawable/ic_sync" />
+
                     <ImageView
                         android:id="@+id/dialog_detailEpisode_internet"
                         style="@style/ImageButtonStyle"
@@ -140,13 +141,14 @@
 
                 </LinearLayout>
             </LinearLayout>
+
             <ImageView
                 android:id="@+id/dialog_detailEpisode_preview"
                 android:layout_width="wrap_content"
-                android:maxWidth="75dp"
                 android:layout_height="75dp"
                 android:layout_marginLeft="8dp"
                 android:adjustViewBounds="true"
+                android:maxWidth="75dp"
                 android:visibility="gone"
                 app:srcCompat="@drawable/ic_download"
                 tools:srcCompat="@drawable/simpsons_movie_poster"
@@ -169,10 +171,10 @@
 
             <TextView
                 android:id="@+id/dialog_detailEpisode_views"
+                style="@style/TextButtonStyle.Normal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                style="@style/TextButtonStyle.Normal"
                 android:text="1" />
 
             <ImageView
@@ -184,33 +186,33 @@
                 android:padding="5dp"
                 app:srcCompat="@drawable/ic_calendar_grey" />
 
-<!--            <FrameLayout-->
-<!--                android:layout_width="wrap_content"-->
-<!--                android:layout_height="wrap_content">-->
+            <!--            <FrameLayout-->
+            <!--                android:layout_width="wrap_content"-->
+            <!--                android:layout_height="wrap_content">-->
 
-<!--                <LinearLayout-->
-<!--                    android:id="@+id/dialog_detailEpisode_watchLater_background"-->
-<!--                    android:layout_width="0dp"-->
-<!--                    android:layout_height="0dp"-->
-<!--                    android:foreground="@drawable/ripple"-->
-<!--                    android:orientation="vertical"-->
-<!--                    app:layout_constraintBottom_toBottomOf="parent"-->
-<!--                    app:layout_constraintEnd_toEndOf="parent"-->
-<!--                    app:layout_constraintStart_toStartOf="parent"-->
-<!--                    app:layout_constraintTop_toTopOf="parent"/>-->
+            <!--                <LinearLayout-->
+            <!--                    android:id="@+id/dialog_detailEpisode_watchLater_background"-->
+            <!--                    android:layout_width="0dp"-->
+            <!--                    android:layout_height="0dp"-->
+            <!--                    android:foreground="@drawable/ripple"-->
+            <!--                    android:orientation="vertical"-->
+            <!--                    app:layout_constraintBottom_toBottomOf="parent"-->
+            <!--                    app:layout_constraintEnd_toEndOf="parent"-->
+            <!--                    app:layout_constraintStart_toStartOf="parent"-->
+            <!--                    app:layout_constraintTop_toTopOf="parent"/>-->
 
-<!--                <ImageView-->
-<!--                    android:id="@+id/dialog_detailEpisode_watchLater"-->
-<!--                    android:layout_width="wrap_content"-->
-<!--                    android:layout_height="wrap_content"-->
-<!--                    android:clickable="true"-->
-<!--                    android:padding="5dp"-->
-<!--                    app:layout_constraintBottom_toBottomOf="parent"-->
-<!--                    app:layout_constraintEnd_toEndOf="parent"-->
-<!--                    app:layout_constraintStart_toStartOf="parent"-->
-<!--                    app:layout_constraintTop_toTopOf="parent"-->
-<!--                    app:srcCompat="@android:drawable/ic_menu_recent_history" />-->
-<!--            </FrameLayout>-->
+            <!--                <ImageView-->
+            <!--                    android:id="@+id/dialog_detailEpisode_watchLater"-->
+            <!--                    android:layout_width="wrap_content"-->
+            <!--                    android:layout_height="wrap_content"-->
+            <!--                    android:clickable="true"-->
+            <!--                    android:padding="5dp"-->
+            <!--                    app:layout_constraintBottom_toBottomOf="parent"-->
+            <!--                    app:layout_constraintEnd_toEndOf="parent"-->
+            <!--                    app:layout_constraintStart_toStartOf="parent"-->
+            <!--                    app:layout_constraintTop_toTopOf="parent"-->
+            <!--                    app:srcCompat="@android:drawable/ic_menu_recent_history" />-->
+            <!--            </FrameLayout>-->
 
         </LinearLayout>
 
@@ -220,20 +222,57 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="8dp"
-                android:text="Release:"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/dialog_detailEpisode_release"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:layout_marginRight="8dp"
-                tools:text="13.11.2019"/>
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="8dp"
+                    android:text="Release:"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/dialog_detailEpisode_release"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="8dp"
+                    android:layout_weight="1"
+                    tools:text="13.11.2019" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/dialog_detailEpisode_ratingTendency"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="8dp"
+                    android:text="Tendenz:"
+                    android:textColor="@color/clickable_text_color_normal"
+                    style="@style/TextButtonStyle.Normal"
+                    android:clickable="false"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/dialog_detailEpisode_ratingTendency_icon"
+                    android:layout_width="17dp"
+                    android:layout_height="17dp"
+                    android:layout_gravity="end"
+                    android:src="@drawable/ic_arrow_up"
+                    android:visibility="gone"
+                    app:tint="@color/colorGreen"
+                    tools:layout_gravity="center_vertical"
+                    tools:visibility="visible" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
@@ -243,31 +282,14 @@
             android:layout_height="match_parent"
             android:orientation="horizontal">
 
-            <LinearLayout
+
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:layout_marginTop="8dp"
+                android:text="Bewertung:"
+                android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/dialog_detailEpisode_ratingTendency"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Bewertung:"
-                    style="@style/TextButtonStyle.Normal"
-                    android:textStyle="bold" />
-
-                <ImageView
-                    android:id="@+id/dialog_detailEpisode_ratingTendency_icon"
-                    android:layout_width="17dp"
-                    android:layout_height="17dp"
-                    android:src="@drawable/ic_arrow_up"
-                    android:visibility="gone"
-                    app:tint="@color/colorGreen"
-                    android:layout_gravity="end"
-                    tools:visibility="visible" />
-
-            </LinearLayout>
 
             <FrameLayout
                 android:id="@+id/customRating_layout"

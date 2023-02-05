@@ -1954,7 +1954,7 @@ public class VideoActivity extends AppCompatActivity {
 //                                        .show();
 //                            }, false)
                                 ;
-                            });
+                            }, null, null, null);
                         };
 
                         CustomUtility.GenericInterface<CategoriesActivity.CATEGORIES> showAddAliasDialog = category -> {

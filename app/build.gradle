@@ -10,8 +10,8 @@ android {
         applicationId "com.maxMustermannGeheim.linkcollection"
         minSdkVersion 27
         targetSdkVersion 31
-        versionCode 12
-        versionName "3.3"
+        versionCode 15
+        versionName "3.6"
         testInstrumentationRunner "androidx.dialog_poster.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -30,7 +30,7 @@ android {
 //        abi {
 //            enable true
 //            reset()
-//            include "arm64-v8a", "x86", "x86_64"
+//            include "arm64-v8a"// , "x86", "x86_64"
 //            universalApk true
 //        }
 //    }

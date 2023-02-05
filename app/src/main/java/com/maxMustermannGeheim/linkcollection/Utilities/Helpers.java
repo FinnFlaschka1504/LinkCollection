@@ -174,7 +174,7 @@ public class Helpers {
             return this;
         }
 
-        public TextInputHelper setValidation(TextInputLayout textInputLayout, String regEx) {
+        public TextInputHelper setValidation(TextInputLayout textInputLayout, @Language("RegExp") String regEx) {
             inputValidationMap.get(textInputLayout).setRegEx(regEx);
             return this;
         }
@@ -1789,7 +1789,7 @@ public class Helpers {
             requestThrottler = new CustomUtility.EventThrottler<Pair<String, CustomList<T>>>((eventThrottler, eventBuffer, event, time) -> {
                 clean().splitQuery(event[0].first).filter(event[0].second);
             }, minDelayMillis)
-            .enableOnlyKeepLastEvent();
+                    .enableOnlyKeepLastEvent();
             return this;
         }
 
@@ -1927,8 +1927,10 @@ public class Helpers {
                 public void sendAccessibilityEvent(View host, int eventType) {
                     super.sendAccessibilityEvent(host, eventType);
                     if (eventType == AccessibilityEvent.TYPE_VIEW_TEXT_SELECTION_CHANGED) {
-                        int selectionStart = editText.getSelectionStart();
-                        int selectionEnd = editText.getSelectionEnd();
+                        int start = editText.getSelectionStart();
+                        int end = editText.getSelectionEnd();
+                        int selectionStart = Math.min(start, end);
+                        int selectionEnd = Math.max(start, end);
                         if (selectionStart != selectionEnd && oldSelection[0] == oldSelection[1]) {
                             oldSelection[0] = selectionStart;
                             oldSelection[1] = selectionEnd;
@@ -1951,7 +1953,7 @@ public class Helpers {
         /**  <------------------------- Convenience -------------------------  */
 
 
-        /**  ------------------------- Function -------------------------> */
+        /** ------------------------- Function -------------------------> */
         public AdvancedQueryHelper<T> splitQuery() {
             return splitQuery(null);
         }
@@ -2079,11 +2081,12 @@ public class Helpers {
                             else
                                 list = new CustomList<>();
 
-                            list.add(0, advancedQuery);
-                            list.distinct();
-                            list.sorted(CustomUtility.comparatorSimpleBool(s1 -> s1.startsWith("☆")));
-                            historyString = gson.toJson(list);
-                            sharedPreferences.edit().putString(historyKey, historyString).apply();
+                            if (!list.contains(advancedQuery) && !list.contains("☆ " + advancedQuery)) {
+                                list.add(0, advancedQuery);
+                                list.sorted(CustomUtility.comparatorSimpleBool(s1 -> s1.startsWith("☆")));
+                                historyString = gson.toJson(list);
+                                sharedPreferences.edit().putString(historyKey, historyString).apply();
+                            }
                         }
                         newQuery += advancedQuery;
                         searchView.setQuery(newQuery, false);
@@ -2309,7 +2312,7 @@ public class Helpers {
             private CategoriesActivity.CATEGORIES category;
             // ToDo: In und aus Dialog
 
-            /**  ------------------------- Constructor -------------------------> */
+            /** ------------------------- Constructor -------------------------> */
             public SearchCriteria(String key, @Language("RegExp") String regEx) {
                 this.key = key;
                 this.regEx = regEx;
@@ -2317,7 +2320,7 @@ public class Helpers {
             /**  <------------------------- Constructor -------------------------  */
 
 
-            /**  ------------------------- Getter & Setter -------------------------> */
+            /** ------------------------- Getter & Setter -------------------------> */
             public SearchCriteria<T, Result> setParser(Utility.DoubleGenericReturnInterface<String, Matcher, Result> parser) {
                 this.parser = parser;
                 return this;
@@ -2351,7 +2354,7 @@ public class Helpers {
             /**  <------------------------- Getter & Setter -------------------------  */
 
 
-            /**  ------------------------- Convenience -------------------------> */
+            /** ------------------------- Convenience -------------------------> */
             public Pattern getPattern() {
                 return Pattern.compile(String.format("\\[!?%s: ?(%s)\\s*\\]", key, regEx));
             }
@@ -2419,6 +2422,7 @@ public class Helpers {
                 tempResult = null;
                 negated = null;
             }
+
             /** <------------------------- Convenience ------------------------- */
 
             public interface ApplyDialogInterface<T, Result> {
@@ -2426,6 +2430,7 @@ public class Helpers {
             }
         }
     }
+
     /** <------------------------- AdvancedSearch ------------------------- */
 
 

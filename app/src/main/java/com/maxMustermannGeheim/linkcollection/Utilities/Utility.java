@@ -136,7 +136,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaTag;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
-import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image_I;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
@@ -251,7 +250,7 @@ public class Utility {
         OnResult onResult;
         Context context;
 
-        /**  ------------------------- Constructors ------------------------->  */
+        /** ------------------------- Constructors -------------------------> */
         public PingThread(Runnable onTrue, Runnable onFalse) {
             this.onTrue = onTrue;
             this.onFalse = onFalse;
@@ -271,7 +270,8 @@ public class Utility {
             this.onResult = onResult;
             this.context = context;
         }
-        /**  <------------------------- Constructors -------------------------  */
+
+        /** <------------------------- Constructors ------------------------- */
 
         @Override
         public void run() {
@@ -308,7 +308,7 @@ public class Utility {
     // test
 
 
-    /**  ------------------------- Internet Dialog ------------------------->  */
+    /** ------------------------- Internet Dialog -------------------------> */
     public static CustomDialog showInternetDialog(Context context, String url, @NonNull CustomDialog[] internetDialog, boolean mobileView, boolean disableForwarding, @Nullable DoubleGenericInterface<CustomDialog, String> onImageSelected, @Nullable DoubleGenericInterface<CustomDialog, String> onVideoSelected, @Nullable DoubleGenericInterface<CustomDialog, String> onTextSelected, @Nullable TripleGenericInterface<WebView, Boolean, DoubleGenericInterface<List<String>, Boolean>> optionalParser) {
         if (internetDialog[0] == null) {
             internetDialog[0] = CustomDialog.Builder(context)
@@ -513,7 +513,7 @@ public class Utility {
         return internetDialog[0];
     }
 
-    static public void setDesktopMode(WebView webView,boolean enabled) { // ToDo: in WebViewHelper integrieren
+    static public void setDesktopMode(WebView webView, boolean enabled) { // ToDo: in WebViewHelper integrieren
         String newUserAgent = webView.getSettings().getUserAgentString();
         if (enabled) {
             try {
@@ -719,7 +719,8 @@ public class Utility {
         }
         return urlList;
     }
-    /**  <------------------------- Internet Dialog -------------------------  */
+
+    /** <------------------------- Internet Dialog ------------------------- */
 
 
     public static void openFileChooser(AppCompatActivity activity, String imeType, int... requestCode) {
@@ -743,7 +744,7 @@ public class Utility {
         System.exit(0);
     }
 
-    public static boolean isActivityInForeground(AppCompatActivity activity){
+    public static boolean isActivityInForeground(AppCompatActivity activity) {
         return activity.getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED);
     }
 
@@ -980,7 +981,7 @@ public class Utility {
             Utility.addSelectionMenuItem(textView, "Suche", onSelection);
     }
 
-    public static void colorMenuItemIcon(Menu menu, @IdRes int id, int color){
+    public static void colorMenuItemIcon(Menu menu, @IdRes int id, int color) {
         menu.findItem(id).setIconTintList(new ColorStateList(new int[][]{new int[]{android.R.attr.state_enabled}}, new int[]{color}));
     }
 
@@ -1002,7 +1003,7 @@ public class Utility {
     }
 
 
-    /**  ------------------------- Api ------------------------->  */
+    /** ------------------------- Api -------------------------> */
     public static void importTmdbGenre(Context context, boolean direct, boolean isVideo) {
         Runnable executeImport = () -> {
             String requestUrl = "https://api.themoviedb.org/3/genre/" +
@@ -1162,7 +1163,7 @@ public class Utility {
 
     // --------------- WerStreamtEs
 
-    public static void doWerStreamtEsRequest(AppCompatActivity context, String query){
+    public static void doWerStreamtEsRequest(AppCompatActivity context, String query) {
         ExternalCode.CodeEntry codeEntry = ExternalCode.getEntry(ExternalCode.ENTRY.GET_WER_STREAMT_ES);
         new com.maxMustermannGeheim.linkcollection.Utilities.Helpers.WebViewHelper(context, "https://www.werstreamt.es/filme-serien/?q=" + query.replaceAll(" ", "+"))
                 .enableLoadImages()
@@ -1170,10 +1171,11 @@ public class Utility {
                     try {
                         JSONArray resArr = new JSONArray(s);
                         List<JSONObject> resList = new ArrayList<>();
-                        for (int i=0; i<resArr.length(); i++) {
+                        for (int i = 0; i < resArr.length(); i++) {
                             try {
                                 resList.add(resArr.getJSONObject(i));
-                            } catch (JSONException ignored) {}
+                            } catch (JSONException ignored) {
+                            }
                         }
 
                         JSONObject[] currentSelected = {resList.stream().filter(jsonObject -> {
@@ -1240,7 +1242,8 @@ public class Utility {
                                                         nameTextView.setText(new com.finn.androidUtilities.Helpers.SpannableStringHelper().appendUnderlined(jsonObject.getString("name")).get());
                                                     else
                                                         nameTextView.setText(jsonObject.getString("name"));
-                                                } catch (JSONException ignored) {}
+                                                } catch (JSONException ignored) {
+                                                }
                                             })
                                             .setOnClickListener((customRecycler, itemView, jsonObject, index) -> {
                                                 currentSelected[0] = jsonObject;
@@ -1298,8 +1301,7 @@ public class Utility {
     /**  <------------------------- Api -------------------------  */
 
 
-
-    /**  ------------------------- watchLater ------------------------->  */
+    /** ------------------------- watchLater -------------------------> */
     public static List<String> getWatchLaterList_uuid() {
         return getWatchLaterList().stream().map(ParentClass::getUuid).collect(Collectors.toList());
     }
@@ -1314,8 +1316,7 @@ public class Utility {
     /**  <------------------------- watchLater -------------------------  */
 
 
-
-    /**  ------------------------- Copy ------------------------->  */
+    /** ------------------------- Copy -------------------------> */
     public static <T> T deepCopy(T t) {
         Gson gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS").create();
         return (T) gson.fromJson(gson.toJson(t), t.getClass());
@@ -1323,8 +1324,7 @@ public class Utility {
     /**  <------------------------- Copy -------------------------  */
 
 
-
-    /**  ------------------------- OnClickListener ------------------------->  */
+    /** ------------------------- OnClickListener -------------------------> */
     public static View.OnClickListener getOnClickListener(View view) {
         View.OnClickListener retrievedListener = null;
         String viewStr = "android.view.View";
@@ -1368,9 +1368,8 @@ public class Utility {
     /**  <------------------------- OnClickListener -------------------------  */
 
 
-
     /**  ------------------------- Filter ------------------------->  */
-    /**  ------------------------- ... in Videos ------------------------->  */
+    /** ------------------------- ... in Videos -------------------------> */
     public static boolean containedInVideo(String query, Video video, HashSet<VideoActivity.FILTER_TYPE> filterTypeSet) {
         if (video.getUuid().equals(query)) return true;
         if (filterTypeSet.contains(VideoActivity.FILTER_TYPE.NAME)) {
@@ -1494,7 +1493,7 @@ public class Utility {
     }
     /**  <------------------------- ... in Videos -------------------------  */
 
-    /**  ------------------------- ... in Knowledge ------------------------->  */
+    /** ------------------------- ... in Knowledge -------------------------> */
     public static boolean containedInKnowledge(String query, Knowledge knowledge, HashSet<KnowledgeActivity.FILTER_TYPE> filterTypeSet) {
         if (filterTypeSet.contains(KnowledgeActivity.FILTER_TYPE.NAME) && knowledge.getName().toLowerCase().contains(query.toLowerCase()))
             return true;
@@ -1515,7 +1514,7 @@ public class Utility {
     }
     /**  <------------------------- ... in Knowledge -------------------------  */
 
-    /**  ------------------------- ... in Owe ------------------------->  */
+    /** ------------------------- ... in Owe -------------------------> */
     public static boolean containedInOwe(String query, Owe owe, HashSet<OweActivity.FILTER_TYPE> filterTypeSet) {
         if (!filterTypeSet.contains(OweActivity.FILTER_TYPE.OWN) && owe.getOwnOrOther() == Owe.OWN_OR_OTHER.OWN)
             return false;
@@ -1545,7 +1544,7 @@ public class Utility {
     }
     /**  <------------------------- ... in Owe -------------------------  */
 
-    /**  ------------------------- ... in Joke ------------------------->  */
+    /** ------------------------- ... in Joke -------------------------> */
     public static boolean containedInJoke(String query, Joke joke, HashSet<JokeActivity.FILTER_TYPE> filterTypeSet) {
         if (filterTypeSet.contains(JokeActivity.FILTER_TYPE.NAME) && joke.getName().toLowerCase().contains(query.toLowerCase()))
             return true;
@@ -1562,7 +1561,7 @@ public class Utility {
     }
     /**  <------------------------- ... in Joke -------------------------  */
 
-    /**  ------------------------- ... in Show ------------------------->  */
+    /** ------------------------- ... in Show -------------------------> */
     public static boolean containedInShow(String query, Show show, HashSet<ShowActivity.FILTER_TYPE> filterTypeSet) {
         if (show.getUuid().equals(query)) return true;
         if (filterTypeSet.contains(ShowActivity.FILTER_TYPE.NAME) && show.getName().toLowerCase().contains(query.toLowerCase()))
@@ -1574,7 +1573,7 @@ public class Utility {
     }
     /**  <------------------------- ... in Show -------------------------  */
 
-    /**  ------------------------- ... in Media ------------------------->  */
+    /** ------------------------- ... in Media -------------------------> */
     public static boolean containedInMedia(String query, Media media, HashSet<MediaActivity.FILTER_TYPE> filterTypeSet) {
 //        if (media.getUuid().equals(query)) return true;
 //        if (filterTypeSet.contains(MediaActivity.FILTER_TYPE.PERSON) && media.getName().toLowerCase().contains(query.toLowerCase()))
@@ -1592,7 +1591,8 @@ public class Utility {
 
     /** ------------------------- Calender -------------------------> */
     private static Date currentDate;
-    /**  ------------------------- FilmCalender ------------------------->  */
+
+    /** ------------------------- FilmCalender -------------------------> */
     public static void setupFilmCalender(Context context, CompactCalendarView calendarView, FrameLayout layout, List<Video> videoList, boolean openVideo) {
         calendarView.removeAllEvents();
         TextView calender_month = layout.findViewById(R.id.fragmentCalender_month);
@@ -1744,7 +1744,7 @@ public class Utility {
 
     // ToDo: Alignment von den Buttons ändern
 
-    /**  ------------------------- EpisodeCalender ------------------------->  */
+    /** ------------------------- EpisodeCalender -------------------------> */
     public static void setupEpisodeCalender(Context context, CompactCalendarView calendarView, FrameLayout layout, List<Show.Episode> episodeList, boolean openEpisode, boolean editMode) {
         calendarView.removeAllEvents();
         TextView calender_month = layout.findViewById(R.id.fragmentCalender_month);
@@ -1821,16 +1821,16 @@ public class Utility {
 
                     if (editMode)
                         customRecycler1.setOnLongClickListener((customRecycler2, view, event, index) -> showEditTimeDialog((AppCompatActivity) context, event, calendarView, newView -> {
-                        List<Date> dateList = ((Show.Episode) event.getData()).getDateList();
-                        Date oldView = new Date(event.getTimeInMillis());
-                        dateList.remove(oldView);
-                        dateList.add(newView);
+                            List<Date> dateList = ((Show.Episode) event.getData()).getDateList();
+                            Date oldView = new Date(event.getTimeInMillis());
+                            dateList.remove(oldView);
+                            dateList.add(newView);
 
-                        List<Event> events = calendarView.getEvents(currentDate);
-                        loadVideoList(events, layout, customRecycler1);
-                        setButtons(layout, events.isEmpty() ? 0 : 1, calendarView, episodeList, customRecycler1, editMode);
-                        Database.saveAll(context);
-                    }));
+                            List<Event> events = calendarView.getEvents(currentDate);
+                            loadVideoList(events, layout, customRecycler1);
+                            setButtons(layout, events.isEmpty() ? 0 : 1, calendarView, episodeList, customRecycler1, editMode);
+                            Database.saveAll(context);
+                        }));
 
                 });
 
@@ -1903,6 +1903,7 @@ public class Utility {
             });
         });
     }
+
     /** <------------------------- EpisodeCalender ------------------------- */
 
     private static void showEditTimeDialog(AppCompatActivity context, Event event, CompactCalendarView calendarView, GenericInterface<Date> applyDate) {
@@ -1921,7 +1922,8 @@ public class Utility {
         // endregion
         try {
             dateTimePicker.setSimpleDateMonthAndDayFormat(new SimpleDateFormat("dd MMMM", Locale.getDefault()));
-        } catch (SwitchDateTimeDialogFragment.SimpleDateMonthAndDayFormatException ignored) { }
+        } catch (SwitchDateTimeDialogFragment.SimpleDateMonthAndDayFormatException ignored) {
+        }
         dateTimePicker.setOnButtonClickListener(new SwitchDateTimeDialogFragment.OnButtonClickListener() {
             @Override
             public void onPositiveButtonClick(Date selectedDate) {
@@ -2061,6 +2063,7 @@ public class Utility {
         customRecycler.getRecycler().setOnTouchListener(touchListener);
         layout.findViewById(R.id.fragmentCalender_noViews).setOnTouchListener(touchListener);
     }
+
     /** <------------------------- Calender ------------------------- */
 
 
@@ -2113,8 +2116,7 @@ public class Utility {
                                 result = onSwipeLeft();
                             }
                         }
-                    }
-                    else if (Math.abs(diffY) > SWIPE_THRESHOLD && Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD) {
+                    } else if (Math.abs(diffY) > SWIPE_THRESHOLD && Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD) {
                         if (diffY > 0) {
                             result = onSwipeBottom();
                         } else {
@@ -2148,9 +2150,9 @@ public class Utility {
     }
 
 
-
-    /**  ------------------------- Checks ------------------------->  */
+    /** ------------------------- Checks -------------------------> */
     public static final String urlPattern = "(?i)^(?:(?:https?|ftp)://)(?:\\S+(?::\\S*)?@)?(?:(?!(?:10|127)(?:\\.\\d{1,3}){3})(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))\\.?)(?::\\d{2,5})?(?:[/?#]\\S*)?$";
+
     public static boolean isUrl(String text) {
         return text.matches(urlPattern);
     }
@@ -2173,8 +2175,7 @@ public class Utility {
     /**  <------------------------- Checks -------------------------  */
 
 
-
-    /**  ------------------------- Text ------------------------->  */
+    /** ------------------------- Text -------------------------> */
     public static String removeTrailingZeros(double d) {
         return removeTrailingZeros(String.valueOf(d));
     }
@@ -2302,7 +2303,7 @@ public class Utility {
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
             if (inputStream != null) {
                 while ((str = reader.readLine()) != null) {
-                    buf.append(str + "\n" );
+                    buf.append(str + "\n");
                 }
             }
         } catch (IOException e) {
@@ -2313,8 +2314,7 @@ public class Utility {
     /**  <------------------------- Text -------------------------  */
 
 
-
-    /**  ------------------------- Time ------------------------->  */
+    /** ------------------------- Time -------------------------> */
     public static Date removeTime(Date date) {
         return new Date(date.getYear(), date.getMonth(), date.getDate());
 //        Calendar cal = Calendar.getInstance();
@@ -2347,14 +2347,13 @@ public class Utility {
         return new Date().before(date);
     }
 
-    public static long getTimezoneOffsetMillis(){
+    public static long getTimezoneOffsetMillis() {
         return Calendar.getInstance().get(Calendar.ZONE_OFFSET) + Calendar.getInstance().get(Calendar.DST_OFFSET);
     }
     /**  <------------------------- Time -------------------------  */
 
 
-
-    /**  ------------------------- Toast ------------------------->  */
+    /** ------------------------- Toast -------------------------> */
     public static Toast centeredToast(Context context, String text) {
         Toast toast = Toast.makeText(context, text, Toast.LENGTH_SHORT);
         View toastView = toast.getView();
@@ -2391,9 +2390,12 @@ public class Utility {
     /**  <------------------------- Toast -------------------------  */
 
 
+    /** ------------------------- EditItem -------------------------> */
+    public static CustomDialog showEditItemDialog(Context context, List<String> preSelectedUuidList, CategoriesActivity.CATEGORIES category, CustomUtility.DoubleGenericInterface<CustomDialog, List<String>> onSaved) {
+        return showEditItemDialog(context, preSelectedUuidList, category, null, onSaved, null, null, null, null);
+    }
 
-    /**  ------------------------- EditItem ------------------------->  */
-    public static CustomDialog showEditItemDialog(Context context, List<String> preSelectedUuidList, CategoriesActivity.CATEGORIES category, DoubleGenericInterface<CustomDialog, List<String>> onSaved) {
+    public static CustomDialog showEditItemDialog(Context context, List<String> preSelectedUuidList, CategoriesActivity.CATEGORIES category, @Nullable CustomUtility.GenericReturnOnlyInterface<List<? extends ParentClass>> getAllObjectsList, CustomUtility.DoubleGenericInterface<CustomDialog, List<String>> onSaved, @Nullable CustomUtility.GenericReturnInterface<String, ParentClass> getItemById, @Nullable CustomUtility.DoubleGenericReturnInterface<String, String, ParentClass> saveNew, @Nullable TripleGenericInterface<CustomDialog, CustomRecycler<ParentClass>, ParentClass> onClick, @Nullable CustomUtility.TripleGenericInterface<CustomDialog, CustomRecycler<ParentClass>, ParentClass> onLongClick) {
         Database database = Database.getInstance();
 
         if (preSelectedUuidList == null)
@@ -2401,17 +2403,14 @@ public class Utility {
 
         List<String> selectedUuidList = new ArrayList<>(preSelectedUuidList);
         List<ParentClass> allObjectsList;
-        String editType_string = category.getPlural();
         final String[] searchQuery = {""};
 
-        allObjectsList = new ArrayList<>(getMapFromDatabase(category).values());
+        allObjectsList = getAllObjectsList != null ? (List<ParentClass>) getAllObjectsList.run() : new ArrayList<>(getMapFromDatabase(category).values());
 
         int saveButtonId = View.generateViewId();
-        ParentClass newParentClass = ParentClass.newCategory(category, "");
 
         CustomDialog dialog_AddActorOrGenre = CustomDialog.Builder(context)
-                .setTitle(editType_string + " Bearbeiten")
-                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                .setTitle(category.getPlural() + (onClick == null ? " Bearbeiten" : ""))
                 .setView(R.layout.dialog_edit_item)
                 .setDimensionsFullscreen()
                 .disableScroll()
@@ -2420,134 +2419,40 @@ public class Utility {
                         return;
                     customDialog0
                             .addButton(R.drawable.ic_add, customDialog -> {
-                                CustomDialog.Builder(context)
-                                        .setTitle(editType_string + " Hinzufügen")
-                                        .enableDynamicWrapHeight((AppCompatActivity) context)
-                                        .enableAutoUpdateDynamicWrapHeight()
-                                        .addOptionalModifications(customDialog1 -> {
-                                            if (newParentClass instanceof ParentClass_Image_I) {
-                                                customDialog1
-                                                        .addButton("Testen", customDialog2 -> {
-                                                            String url = ((EditText) customDialog2.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
-                                                            ImageView preview = customDialog2.findViewById(R.id.dialog_editTmdbCategory_preview);
-                                                            if (CustomUtility.stringExists(url)) {
-                                                                Utility.loadUrlIntoImageView(context, preview, Utility.getTmdbImagePath_ifNecessary(url, true), null);
-                                                                preview.setVisibility(View.VISIBLE);
-                                                            } else {
-                                                                Toast.makeText(context, "Nichts eingegeben", Toast.LENGTH_SHORT).show();
-                                                                preview.setVisibility(View.GONE);
-                                                            }
-                                                        }, false)
-                                                        .alignPreviousButtonsLeft();
-                                            }
-                                        })
-                                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
-                                        .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
-                                            ParentClass_Alias.applyNameAndAlias(newParentClass, ((EditText) customDialog1.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim());
-                                            if (newParentClass instanceof ParentClass_Image_I) {
-                                                String url = ((EditText) customDialog1.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
-                                                ((ParentClass_Image_I) newParentClass).setImagePath(CustomUtility.stringExists(url) ? url : null);
-                                            }
-
-                                            switch (category) {
-                                                case DARSTELLER:
-                                                    database.darstellerMap.put(newParentClass.getUuid(), (Darsteller) newParentClass);
-                                                    break;
-                                                case STUDIOS:
-                                                    database.studioMap.put(newParentClass.getUuid(), (Studio) newParentClass);
-                                                    break;
-                                                case GENRE:
-                                                    database.genreMap.put(newParentClass.getUuid(), (Genre) newParentClass);
-                                                    break;
-                                                case KNOWLEDGE_CATEGORIES:
-                                                    database.knowledgeCategoryMap.put(newParentClass.getUuid(), (KnowledgeCategory) newParentClass);
-                                                    break;
-                                                case JOKE_CATEGORIES:
-                                                    database.jokeCategoryMap.put(newParentClass.getUuid(), (JokeCategory) newParentClass);
-                                                    break;
-                                                case SHOW_GENRES:
-                                                    database.showGenreMap.put(newParentClass.getUuid(), (ShowGenre) newParentClass);
-                                                    break;
-                                                case MEDIA_PERSON:
-                                                    database.mediaPersonMap.put(newParentClass.getUuid(), (MediaPerson) newParentClass);
-                                                    break;
-                                                case MEDIA_TAG:
-                                                    database.mediaTagMap.put(newParentClass.getUuid(), (MediaTag) newParentClass);
-                                                    break;
-                                            }
-                                            selectedUuidList.add(newParentClass.getUuid());
-                                            customDialog1.dismiss();
-                                            customDialog.dismiss();
-                                            showEditItemDialog(context, selectedUuidList, category, onSaved);
-                                            Database.saveAll();
-                                        })
-                                        .setView(R.layout.dialog_edit_tmdb_category)
-                                        .setSetViewContent((customDialog1, view1, reload) -> {
-
-                                            TextInputLayout dialog_editTmdbCategory_name_layout = view1.findViewById(R.id.dialog_editTmdbCategory_name_layout);
-                                            dialog_editTmdbCategory_name_layout.setHint(editType_string + "-Name");
-                                            String searchText = ((SearchView) customDialog.findViewById(R.id.dialogEditCategory_search)).getQuery().toString();
-                                            EditText dialog_editTmdbCategory_name = dialog_editTmdbCategory_name_layout.getEditText();
-
-                                            Helpers.TextInputHelper helper = new Helpers.TextInputHelper(dialog_editTmdbCategory_name_layout)
-                                                    .defaultDialogValidation(customDialog1)
-                                                    .setValidation(dialog_editTmdbCategory_name_layout, (validator, text) -> {
-                                                        if (Utility.findObjectByName(category, text) != null)
-                                                            validator.setInvalid(category.getSingular() + " bereits vorhanden");
-                                                    });
-//                                            helper.validate();
-                                            if (CustomUtility.stringExists(searchText))
-                                                dialog_editTmdbCategory_name.setText(searchText);
-                                            else
-                                                helper.validate((TextInputLayout[]) null);
-                                            dialog_editTmdbCategory_name.requestFocus();
-
-                                            if (newParentClass instanceof ParentClass_Alias)
-                                                dialog_editTmdbCategory_name.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_CLASS_TEXT);
-
-                                            if (newParentClass instanceof ParentClass_Image_I) {
-                                                CustomUtility.setMargins(view1.findViewById(R.id.dialog_editTmdbCategory_nameLayout), -1, -1, -1, 0);
-                                                view1.findViewById(R.id.dialog_editTmdbCategory_urlLayout).setVisibility(View.VISIBLE);
-                                                TextInputLayout dialog_editTmdbCategory_url_layout = view1.findViewById(R.id.dialog_editTmdbCategory_url_layout);
-//                                                dialog_editTmdbCategory_url_layout.getEditText().setText(((ParentClass_Image_I) newParentClass).getImagePath());
-                                                helper.addValidator(dialog_editTmdbCategory_url_layout).setValidation(dialog_editTmdbCategory_url_layout, (validator, text) -> {
-                                                    validator.asWhiteList();
-                                                    if (text.isEmpty() || text.matches(CategoriesActivity.pictureRegexAll) || text.matches(ActivityResultHelper.uriRegex))
-                                                        validator.setValid();
-                                                    if (text.toLowerCase().contains("http") && !text.toLowerCase().contains("https"))
-                                                        validator.setInvalid("Die URL muss 'https' sein!");
-                                                });
-
-                                                view1.findViewById(R.id.dialog_editTmdbCategory_localStorage).setOnClickListener(v -> {
-                                                    ActivityResultHelper.addFileChooserRequest((AppCompatActivity) context, "image/*", o1 -> {
-                                                        String path = ActivityResultHelper.getPath(context, ((Intent) o1).getData());
-                                                        dialog_editTmdbCategory_url_layout.getEditText().setText(path);
-                                                    });
-                                                });
-
-                                            }
-                                        })
-                                        .show();
+                                showEditEditItemDialog(context, category, getAllObjectsList, onSaved, getItemById, saveNew, onClick, onLongClick, database, selectedUuidList, allObjectsList, customDialog);
 
                             }, false)
                             .alignPreviousButtonsLeft();
                 })
-                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
-                    onSaved.run(customDialog, selectedUuidList);
-                }, saveButtonId)
+                .addOptionalModifications(customDialog -> {
+                    if (onClick == null) {
+                        customDialog
+                                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                                .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog1 -> {
+                                    onSaved.run(customDialog1, selectedUuidList);
+                                }, saveButtonId);
+                    } else
+                        customDialog.setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.BACK);
+                })
                 .show();
 
         SearchView searchView = dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_search);
         TextView emptyTextView = dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_empty);
+
+        if (onClick != null) {
+            dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_selectedCategories_layout).setVisibility(View.GONE);
+            dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_selectedDivider).setVisibility(View.GONE);
+        }
 
         CustomRecycler<ParentClass> customRecycler_selectList = new CustomRecycler<>((AppCompatActivity) context, dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_selectCategories));
 
         CustomRecycler<String> customRecycler_selectedList = new CustomRecycler<String>((AppCompatActivity) context, dialog_AddActorOrGenre.findViewById(R.id.dialogEditCategory_selectedCategories))
                 .setItemLayout(R.layout.list_item_bubble)
                 .setObjectList(selectedUuidList)
-                .enableDragAndDrop((customRecycler, objectList) -> {})
+                .enableDragAndDrop((customRecycler, objectList) -> {
+                })
                 .setSetItemContent((customRecycler, itemView, uuid, index) -> {
-                    ParentClass parentClass = getObjectFromDatabase(category, uuid);
+                    ParentClass parentClass = getItemById != null ? getItemById.run(uuid) : getObjectFromDatabase(category, uuid);
                     String imagePath;
                     if ((parentClass instanceof ParentClass_Image_I && CustomUtility.stringExists(imagePath = ((ParentClass_Image_I) parentClass).getImagePath())) || (parentClass instanceof Video) && CustomUtility.stringExists(imagePath = ((Video) parentClass).getImagePath())) {
                         ImageView imageView = itemView.findViewById(R.id.list_bubble_image);
@@ -2577,7 +2482,7 @@ public class Utility {
                         resultList = allObjectsList;
                     } else
                         resultList = allObjectsList.stream().filter(parentClass -> ParentClass_Alias.containsQuery(parentClass, searchQuery[0]))
-                            .sorted(ParentClass::compareByName).collect(Collectors.toList());
+                                .sorted(ParentClass::compareByName).collect(Collectors.toList());
 
                     if (resultList.isEmpty()) {
                         emptyTextView.setVisibility(View.VISIBLE);
@@ -2604,9 +2509,17 @@ public class Utility {
 
                     ((TextView) itemView.findViewById(R.id.selectList_name)).setText(parentClass.getName());
 
-                    ((CheckBox) itemView.findViewById(R.id.selectList_selected)).setChecked(selectedUuidList.contains(parentClass.getUuid()));
+                    if (onClick == null) {
+                        ((CheckBox) itemView.findViewById(R.id.selectList_selected)).setChecked(selectedUuidList.contains(parentClass.getUuid()));
+                    } else {
+                        itemView.findViewById(R.id.selectList_selected).setVisibility(View.GONE);
+                    }
                 })
                 .setOnClickListener((customRecycler, view, parentClass, index) -> {
+                    if (onClick != null) {
+                        onClick.run(dialog_AddActorOrGenre, customRecycler, parentClass);
+                        return;
+                    }
                     CheckBox checkBox = view.findViewById(R.id.selectList_selected);
                     checkBox.setChecked(!checkBox.isChecked());
                     if (selectedUuidList.contains(parentClass.getUuid()))
@@ -2622,6 +2535,11 @@ public class Utility {
                     dialog_AddActorOrGenre.findViewById(saveButtonId).setEnabled(true);
 
                     customRecycler_selectedList.reload();
+                })
+                .addOptionalModifications(customRecycler -> {
+                    if (onLongClick == null)
+                        return;
+                    customRecycler.setOnLongClickListener((customRecycler1, view, parentClass, index) -> onLongClick.run(dialog_AddActorOrGenre, customRecycler, parentClass));
                 })
                 .enableFastScroll((parentClassCustomRecycler, parentClass, integer) -> parentClass.getName().substring(0, 1).toUpperCase())
                 .generate();
@@ -2644,6 +2562,128 @@ public class Utility {
         });
 
         return dialog_AddActorOrGenre;
+    }
+
+    private static void showEditEditItemDialog(Context context, CategoriesActivity.CATEGORIES category, @Nullable CustomUtility.GenericReturnOnlyInterface<List<? extends ParentClass>> getAllObjectsList, CustomUtility.DoubleGenericInterface<CustomDialog, List<String>> onSaved, @Nullable CustomUtility.GenericReturnInterface<String, ParentClass> getItemById, @Nullable CustomUtility.DoubleGenericReturnInterface<String, String, ParentClass> saveNew, TripleGenericInterface<CustomDialog, CustomRecycler<ParentClass>, ParentClass> onClick, @Nullable CustomUtility.TripleGenericInterface<CustomDialog, CustomRecycler<ParentClass>, ParentClass> onLongClick, Database database, List<String> selectedUuidList, List<ParentClass> allObjectsList, CustomDialog customDialog) {
+        CustomDialog.Builder(context)
+                .setTitle(category.getSingular() + " Hinzufügen")
+                .enableDynamicWrapHeight((AppCompatActivity) context)
+                .enableAutoUpdateDynamicWrapHeight()
+                .addOptionalModifications(customDialog1 -> {
+                    if (ParentClass_Image_I.class.isAssignableFrom(category.getObjectClass())) {
+                        customDialog1
+                                .addButton("Testen", customDialog2 -> {
+                                    String url = ((EditText) customDialog2.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
+                                    ImageView preview = customDialog2.findViewById(R.id.dialog_editTmdbCategory_preview);
+                                    if (CustomUtility.stringExists(url)) {
+                                        Utility.loadUrlIntoImageView(context, preview, Utility.getTmdbImagePath_ifNecessary(url, true), null);
+                                        preview.setVisibility(View.VISIBLE);
+                                    } else {
+                                        Toast.makeText(context, "Nichts eingegeben", Toast.LENGTH_SHORT).show();
+                                        preview.setVisibility(View.GONE);
+                                    }
+                                }, false)
+                                .alignPreviousButtonsLeft();
+                    }
+                })
+                .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog1 -> {
+                    String newName = ((EditText) customDialog1.findViewById(R.id.dialog_editTmdbCategory_name)).getText().toString().trim();
+                    String newImgUrl = ((EditText) customDialog1.findViewById(R.id.dialog_editTmdbCategory_url)).getText().toString().trim();
+                    ParentClass newParentClass;
+
+                    if (saveNew != null) {
+                        newParentClass = saveNew.run(newName, newImgUrl);
+                    } else {
+                        newParentClass = ParentClass.newCategory(category, "");
+
+                        ParentClass_Alias.applyNameAndAlias(newParentClass, newName);
+                        if (ParentClass_Image_I.class.isAssignableFrom(category.getObjectClass())) {
+                            ((ParentClass_Image_I) newParentClass).setImagePath(CustomUtility.stringExists(newImgUrl) ? newImgUrl : null);
+                        }
+
+                        switch (category) {
+                            case DARSTELLER:
+                                database.darstellerMap.put(newParentClass.getUuid(), (Darsteller) newParentClass);
+                                break;
+                            case STUDIOS:
+                                database.studioMap.put(newParentClass.getUuid(), (Studio) newParentClass);
+                                break;
+                            case GENRE:
+                                database.genreMap.put(newParentClass.getUuid(), (Genre) newParentClass);
+                                break;
+                            case KNOWLEDGE_CATEGORIES:
+                                database.knowledgeCategoryMap.put(newParentClass.getUuid(), (KnowledgeCategory) newParentClass);
+                                break;
+                            case JOKE_CATEGORIES:
+                                database.jokeCategoryMap.put(newParentClass.getUuid(), (JokeCategory) newParentClass);
+                                break;
+                            case SHOW_GENRES:
+                                database.showGenreMap.put(newParentClass.getUuid(), (ShowGenre) newParentClass);
+                                break;
+                            case MEDIA_PERSON:
+                                database.mediaPersonMap.put(newParentClass.getUuid(), (MediaPerson) newParentClass);
+                                break;
+                            case MEDIA_TAG:
+                                database.mediaTagMap.put(newParentClass.getUuid(), (MediaTag) newParentClass);
+                                break;
+                        }
+                    }
+
+
+                    selectedUuidList.add(newParentClass.getUuid());
+                    customDialog1.dismiss();
+                    customDialog.dismiss();
+                    showEditItemDialog(context, selectedUuidList, category, getAllObjectsList, onSaved, getItemById, saveNew, onClick, onLongClick);
+                    Database.saveAll();
+                })
+                .setView(R.layout.dialog_edit_tmdb_category)
+                .setSetViewContent((customDialog1, view1, reload) -> {
+
+                    TextInputLayout dialog_editTmdbCategory_name_layout = view1.findViewById(R.id.dialog_editTmdbCategory_name_layout);
+                    dialog_editTmdbCategory_name_layout.setHint(category.getSingular() + "-Name");
+                    String searchText = ((SearchView) customDialog.findViewById(R.id.dialogEditCategory_search)).getQuery().toString();
+                    EditText dialog_editTmdbCategory_name = dialog_editTmdbCategory_name_layout.getEditText();
+
+                    Helpers.TextInputHelper helper = new Helpers.TextInputHelper(dialog_editTmdbCategory_name_layout)
+                            .defaultDialogValidation(customDialog1)
+                            .setValidation(dialog_editTmdbCategory_name_layout, (validator, text) -> {
+                                if (allObjectsList.stream().anyMatch(parentClass -> parentClass.getName().equalsIgnoreCase(text)))
+                                    validator.setInvalid(category.getSingular() + " bereits vorhanden");
+                            });
+//                                            helper.validate();
+                    if (CustomUtility.stringExists(searchText))
+                        dialog_editTmdbCategory_name.setText(searchText);
+                    else
+                        helper.validate((TextInputLayout[]) null);
+                    dialog_editTmdbCategory_name.requestFocus();
+
+                    if (ParentClass_Alias.class.isAssignableFrom(category.getObjectClass()))
+                        dialog_editTmdbCategory_name.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_CLASS_TEXT);
+
+                    if (ParentClass_Image_I.class.isAssignableFrom(category.getObjectClass())) {
+                        CustomUtility.setMargins(view1.findViewById(R.id.dialog_editTmdbCategory_nameLayout), -1, -1, -1, 0);
+                        view1.findViewById(R.id.dialog_editTmdbCategory_urlLayout).setVisibility(View.VISIBLE);
+                        TextInputLayout dialog_editTmdbCategory_url_layout = view1.findViewById(R.id.dialog_editTmdbCategory_url_layout);
+//                                                dialog_editTmdbCategory_url_layout.getEditText().setText(((ParentClass_Image_I) newParentClass).getImagePath());
+                        helper.addValidator(dialog_editTmdbCategory_url_layout).setValidation(dialog_editTmdbCategory_url_layout, (validator, text) -> {
+                            validator.asWhiteList();
+                            if (text.isEmpty() || text.matches(CategoriesActivity.pictureRegexAll) || text.matches(ActivityResultHelper.uriRegex))
+                                validator.setValid();
+                            if (text.toLowerCase().contains("http") && !text.toLowerCase().contains("https"))
+                                validator.setInvalid("Die URL muss 'https' sein!");
+                        });
+
+                        view1.findViewById(R.id.dialog_editTmdbCategory_localStorage).setOnClickListener(v -> {
+                            ActivityResultHelper.addFileChooserRequest((AppCompatActivity) context, "image/*", o1 -> {
+                                String path = ActivityResultHelper.getPath(context, ((Intent) o1).getData());
+                                dialog_editTmdbCategory_url_layout.getEditText().setText(path);
+                            });
+                        });
+
+                    }
+                })
+                .show();
     }
 
     public static CustomDialog showEditTreeItemDialog(Context context, List<String> preSelectedIdList, GenericInterface<List<String>> onSaved, CategoriesActivity.CATEGORIES category) {
@@ -2672,7 +2712,8 @@ public class Utility {
                     selectedRecycler
                             .setItemLayout(R.layout.list_item_bubble)
                             .setObjectList(selectedIds)
-                            .enableDragAndDrop((customRecycler, objectList) -> {})
+                            .enableDragAndDrop((customRecycler, objectList) -> {
+                            })
                             .setSetItemContent((customRecycler, itemView, uuid, index) -> {
                                 ((TextView) itemView.findViewById(R.id.list_bubble_name)).setText(ParentClass_Tree.findObjectById(category, uuid).getName());
                                 view.findViewById(R.id.dialogEditCategory_nothingSelected).setVisibility(View.GONE);
@@ -2711,12 +2752,12 @@ public class Utility {
                     // vvvvvvvvvvvvvvv Add
                     customDialog.getButtonByType(CustomDialog.BUTTON_TYPE.ADD_BUTTON)
                             .getButton().setOnClickListener(v -> {
-                        ParentClass_Tree.addNew(context, null, searchQuery[0], category, newObject -> {
-                            selectedIds.add(((ParentClass) newObject).getUuid());
-                            updateSelectedRecycler.run();
-                            ParentClass_Tree.buildTreeView(editCategoryLayout, category, selectedIds, searchQuery[0], updateSelectedRecycler, treeComparator, emptyTextView, null, null);
-                        });
-                    });
+                                ParentClass_Tree.addNew(context, null, searchQuery[0], category, newObject -> {
+                                    selectedIds.add(((ParentClass) newObject).getUuid());
+                                    updateSelectedRecycler.run();
+                                    ParentClass_Tree.buildTreeView(editCategoryLayout, category, selectedIds, searchQuery[0], updateSelectedRecycler, treeComparator, emptyTextView, null, null);
+                                });
+                            });
                 })
                 .addButton(CustomDialog.BUTTON_TYPE.ADD_BUTTON)
                 .transformLastAddedButtonToImageButton()
@@ -2729,8 +2770,7 @@ public class Utility {
     /**  <------------------------- EditItem -------------------------  */
 
 
-
-    /**  <------------------------- Objects from Database -------------------------  */
+    /** <------------------------- Objects from Database ------------------------- */
     public static ParentClass getObjectFromDatabase(CategoriesActivity.CATEGORIES category, String uuid) {
         switch (category) {
             case MEDIA_CATEGORY:
@@ -2806,8 +2846,8 @@ public class Utility {
     public static com.finn.androidUtilities.CustomList<? extends ParentClass> findAllObjectById(CategoriesActivity.CATEGORIES category, Collection<String> ids) {
         return ids.stream().map(id -> findObjectById(category, id)).collect(Collectors.toCollection(com.finn.androidUtilities.CustomList::new));
     }
-    /**  ------------------------- Objects from Database ------------------------->  */
 
+    /** ------------------------- Objects from Database -------------------------> */
 
 
     public static class Triple<A, B, C> {
@@ -2900,8 +2940,7 @@ public class Utility {
     }
 
 
-
-    /**  ------------------------- Pixels ------------------------->  */
+    /** ------------------------- Pixels -------------------------> */
     public static int pxToDp(int px) {
         return (int) (px / Resources.getSystem().getDisplayMetrics().density);
     }
@@ -2927,13 +2966,12 @@ public class Utility {
         return Pair.create(width, height);
     }
 
-    public static int getScreenAvailableWidth(AppCompatActivity context){
+    public static int getScreenAvailableWidth(AppCompatActivity context) {
         Integer fullWidth = getScreenSize(context).first;
         boolean isPortrait = Utility.isPortrait(context);
         return fullWidth - (isPortrait ? 0 : 100);
     }
     /**  <------------------------- Pixels -------------------------  */
-
 
 
     /**  ------------------------- Advanced Search ------------------------->  */
@@ -3659,7 +3697,8 @@ public class Utility {
 //        }
 //        /**  <------------------------- Convenience -------------------------  */
 //    }
-    /**  <------------------------- Advanced Search -------------------------  */
+
+    /** <------------------------- Advanced Search ------------------------- */
 
 
     public static void sendText(AppCompatActivity activity, String text) {
@@ -3674,7 +3713,7 @@ public class Utility {
 
     }
 
-    /**  ------------------------- Date & String ------------------------->  */
+    /** ------------------------- Date & String -------------------------> */
     public static Date getDateFromJsonString(String key, JSONObject jsonObject) {
         try {
             return new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(jsonObject.getString(key));
@@ -3688,7 +3727,8 @@ public class Utility {
     }
 
     public enum DateFormat {
-        DATE_DASH("dd-MM-yyyy"), DATE_DOT("dd.MM.yyyy"), DATE_DASH_REVERSE("yyyy-MM-dd"), DATE_DOT_REVERSE("yyyy.MM.dd"), DATE_TIME_DASH("HH:mm 'Uhr' dd-MM-yyyy"), DATE_TIME_DOT("HH:mm 'Uhr' dd.MM.yyyy"), ;
+        DATE_DASH("dd-MM-yyyy"), DATE_DOT("dd.MM.yyyy"), DATE_DASH_REVERSE("yyyy-MM-dd"), DATE_DOT_REVERSE("yyyy.MM.dd"), DATE_TIME_DASH("HH:mm 'Uhr' dd-MM-yyyy"), DATE_TIME_DOT("HH:mm 'Uhr' dd.MM.yyyy"),
+        ;
 
         public final String format;
 
@@ -3703,8 +3743,7 @@ public class Utility {
     /**  <------------------------- Date & String -------------------------  */
 
 
-
-    /**  ------------------------- SetDimensions ------------------------->  */
+    /** ------------------------- SetDimensions -------------------------> */
     public static void setDimensions(View view, boolean width, boolean height) {
         ViewGroup.LayoutParams lp = view.getLayoutParams();
         if (lp == null) {
@@ -3725,8 +3764,7 @@ public class Utility {
     /**  <------------------------- SetDimensions -------------------------  */
 
 
-
-    /**  ------------------------- getViews ------------------------->  */
+    /** ------------------------- getViews -------------------------> */
     public static <T extends View> ArrayList<T> getViewsByType(ViewGroup root, Class<T> tClass) {
         final ArrayList<T> result = new ArrayList<>();
         for (int i = 0; i < root.getChildCount(); i++) {
@@ -3773,14 +3811,13 @@ public class Utility {
         void runTransferState(S source, T target);
     }
 
-    public static EditText getEditTextFromSearchView(SearchView searchView){
+    public static EditText getEditTextFromSearchView(SearchView searchView) {
         return searchView.findViewById(Resources.getSystem().getIdentifier("search_src_text", "id", "android"));
     }
     /**  <------------------------- getViews -------------------------  */
 
 
-
-    /**  ------------------------- SquareView ------------------------->  */
+    /** ------------------------- SquareView -------------------------> */
     enum EQUAL_MODE {
         HEIGHT, WIDTH, MAX, MIN
     }
@@ -3856,7 +3893,7 @@ public class Utility {
 //    /**  <------------------------- ViewAspectRatio -------------------------  */
 
 
-    /**  ------------------------- ScaleMatchingParent ------------------------->  */
+    /** ------------------------- ScaleMatchingParent -------------------------> */
     public static void scaleMatchingParentWidth(View view) {
         view.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
             ViewGroup parent = (ViewGroup) v.getParent();
@@ -3879,7 +3916,7 @@ public class Utility {
     /**  <------------------------- ScaleMatchingParent -------------------------  */
 
 
-    /**  ------------------------- Generated Visuals ------------------------->  */
+    /** ------------------------- Generated Visuals -------------------------> */
     public static Drawable drawableBuilder_rectangle(int color, int corners, boolean ripple) {
         DrawableBuilder drawableBuilder = new DrawableBuilder()
                 .rectangle()
@@ -3905,7 +3942,7 @@ public class Utility {
     /**  <------------------------- Generated Visuals -------------------------  */
 
 
-    /**  ------------------------- ConcatCollections ------------------------->  */
+    /** ------------------------- ConcatCollections -------------------------> */
     public interface GetCollections<T, V> {
         Collection<V> runGetCollections(T t);
     }
@@ -3933,7 +3970,7 @@ public class Utility {
     /**  <------------------------- ConcatCollections -------------------------  */
 
 
-    /**  ------------------------- ifNotNull ------------------------->  */
+    /** ------------------------- ifNotNull -------------------------> */
     public static <E> boolean ifNotNull(E e, ExecuteIfNotNull<E> executeIfNotNull) {
         if (e == null)
             return false;
@@ -3969,7 +4006,7 @@ public class Utility {
     /**  <------------------------- ifNotNull -------------------------  */
 
 
-    /**  ------------------------- Reflections ------------------------->  */
+    /** ------------------------- Reflections -------------------------> */
     public static List<TextWatcher> removeTextListeners(TextView view) {
         List<TextWatcher> returnList = null;
         try {
@@ -4009,7 +4046,7 @@ public class Utility {
     /**  <------------------------- Reflections -------------------------  */
 
 
-    /**  ------------------------- EasyLogic ------------------------->  */
+    /** ------------------------- EasyLogic -------------------------> */
     public static class NoArgumentException extends RuntimeException {
         public static final String DEFAULT_MESSAGE = "Keine Argumente mitgegeben";
 
@@ -4095,7 +4132,7 @@ public class Utility {
 
     // ---
 
-    public static boolean containsIgnoreCase(String in, String query){
+    public static boolean containsIgnoreCase(String in, String query) {
         if (in == null || query == null)
             return false;
         return in.toLowerCase().contains(query.toLowerCase());
@@ -4159,7 +4196,7 @@ public class Utility {
     /**  <------------------------- EasyLogic -------------------------  */
 
 
-    /**  ------------------------- Switch Expression ------------------------->  */
+    /** ------------------------- Switch Expression -------------------------> */
     public static class SwitchExpression<Input, Output> {
         private Input input;
         private CustomList<Pair<Input, Object>> caseList = new CustomList<>();
@@ -4173,14 +4210,14 @@ public class Utility {
             return new SwitchExpression<>(input);
         }
 
-        /**  ------------------------- Getters & Setters ------------------------->  */
+        /** ------------------------- Getters & Setters -------------------------> */
         public Input getInput() {
             return input;
         }
         /**  <------------------------- Getters & Setters -------------------------  */
 
 
-        /**  ------------------------- Cases ------------------------->  */
+        /** ------------------------- Cases -------------------------> */
         public <Type> SwitchExpression<Input, Type> addCase(Input inputCase, ExecuteOnCase<Input, Type> executeOnCase) {
             caseList.add(new Pair<>(inputCase, executeOnCase));
             return (SwitchExpression<Input, Type>) this;
@@ -4218,7 +4255,8 @@ public class Utility {
         public interface ExecuteOnCase<Input, Output> {
             Output runExecuteOnCase(Input input);
         }
-        /**  <------------------------- Cases -------------------------  */
+
+        /** <------------------------- Cases ------------------------- */
 
 
         public Output evaluate() {
@@ -4243,7 +4281,7 @@ public class Utility {
     /**  <------------------------- Switch Expression -------------------------  */
 
 
-    /**  ------------------------- Interfaces ------------------------->  */
+    /** ------------------------- Interfaces -------------------------> */
     public interface GenericInterface<T> {
         void run(T t);
     }
@@ -4280,7 +4318,7 @@ public class Utility {
         return false;
     }
 
-    public static <T,T2> boolean runDoubleGenericInterface(DoubleGenericInterface<T,T2> genericInterface, T parameter, T2 parameter2) {
+    public static <T, T2> boolean runDoubleGenericInterface(DoubleGenericInterface<T, T2> genericInterface, T parameter, T2 parameter2) {
         if (genericInterface != null) {
             genericInterface.run(parameter, parameter2);
             return true;
@@ -4288,7 +4326,7 @@ public class Utility {
         return false;
     }
 
-    public static <T,T2, T3> boolean runTripleGenericInterface(TripleGenericInterface<T,T2, T3> genericInterface, T parameter, T2 parameter2, T3 parameter3) {
+    public static <T, T2, T3> boolean runTripleGenericInterface(TripleGenericInterface<T, T2, T3> genericInterface, T parameter, T2 parameter2, T3 parameter3) {
         if (genericInterface != null) {
             genericInterface.run(parameter, parameter2, parameter3);
             return true;
@@ -4304,7 +4342,7 @@ public class Utility {
         return false;
     }
 
-    public static boolean runVarArgRunnable(int index, Runnable... varArg){
+    public static boolean runVarArgRunnable(int index, Runnable... varArg) {
         if (varArg != null && index >= 0) {
             if (varArg.length > index && varArg[index] != null)
                 varArg[index].run();
@@ -4315,7 +4353,7 @@ public class Utility {
         return true;
     }
 
-    public static <T> boolean runVarArgGenericInterface(int index, T input, GenericInterface<T>... varArg){
+    public static <T> boolean runVarArgGenericInterface(int index, T input, GenericInterface<T>... varArg) {
         if (varArg != null && index >= 0) {
             if (varArg.length > index && varArg[index] != null)
                 varArg[index].run(input);
@@ -4336,7 +4374,7 @@ public class Utility {
         recursiveInterface.run(t, recursiveInterface);
     }
 
-    public interface RecursiveGenericReturnInterface<T,R> {
+    public interface RecursiveGenericReturnInterface<T, R> {
         R run(T t, RecursiveGenericReturnInterface<T, R> recursiveInterface);
     }
 
@@ -4346,7 +4384,7 @@ public class Utility {
     /**  <------------------------- Interfaces -------------------------  */
 
 
-    /**  ------------------------- ImageView ------------------------->  */
+    /** ------------------------- ImageView -------------------------> */
     private static Bitmap getBitmapFromUri(Uri uri, Context context) {
         ParcelFileDescriptor parcelFileDescriptor = null;
         try {
@@ -4598,7 +4636,7 @@ public class Utility {
         Bitmap newBitmap = Bitmap.createBitmap(old.getWidth() + borderPx, old.getHeight() + borderPx, old.getConfig());
         Canvas canvas = new Canvas(newBitmap);
         canvas.drawColor(color);
-        float centreX = (canvas.getWidth()  - old.getWidth()) / 2F;
+        float centreX = (canvas.getWidth() - old.getWidth()) / 2F;
         float centreY = (canvas.getHeight() - old.getHeight()) / 2F;
         canvas.drawBitmap(old, centreX, centreY, null);
         imageView.setDrawingCacheEnabled(false);
@@ -4755,7 +4793,7 @@ public class Utility {
     /**  <------------------------- ImageView -------------------------  */
 
 
-    /**  ------------------------- GetOpenGraphFromWebsite ------------------------->  */
+    /** ------------------------- GetOpenGraphFromWebsite -------------------------> */
     public static void getOpenGraphFromWebsite(String url, GenericInterface<OpenGraph> onResult) {
         @SuppressLint("StaticFieldLeak") AsyncTask<GenericInterface<OpenGraph>, Object, OpenGraph> task = new AsyncTask<Utility.GenericInterface<OpenGraph>, Object, OpenGraph>() {
             Utility.GenericInterface<OpenGraph> onResult;
@@ -4787,7 +4825,7 @@ public class Utility {
     }
     /**  <------------------------- GetOpenGraphFromWebsite -------------------------  */
 
-    /**  ------------------------- Videos Aktualisieren ------------------------->  */
+    /** ------------------------- Videos Aktualisieren -------------------------> */
     public static void updateVideos(Context context, CustomList<Video> updateList) {
         Database database = Database.getInstance();
         RequestQueue requestQueue = Volley.newRequestQueue(context);
@@ -5022,7 +5060,7 @@ public class Utility {
     /**  <------------------------- Videos Aktualisieren -------------------------  */
 
 
-    /**  ------------------------- ExpendableToolbar ------------------------->  */
+    /** ------------------------- ExpendableToolbar -------------------------> */
     public static Runnable applyExpendableToolbar_recycler(Context context, RecyclerView recycler, Toolbar toolbar, AppBarLayout appBarLayout, CollapsingToolbarLayout collapsingToolbarLayout, TextView noItem, String title) {
         final boolean[] canExpand = {true};
         int tolerance = 50;
@@ -5144,7 +5182,7 @@ public class Utility {
     }
     /**  <------------------------- ExpendableToolbar -------------------------  */
 
-    /**  ------------------------- Arrays ------------------------->  */
+    /** ------------------------- Arrays -------------------------> */
     public static int getIndexByString(Context context, int arrayId, String language) {
         String[] array = context.getResources().getStringArray(arrayId);
         for (int i = 0; i < array.length; i++) {
@@ -5160,7 +5198,7 @@ public class Utility {
 
     // --------------- VarArgs
 
-//    private static <T> T get0(Class<T> t,T[] test) {
+    //    private static <T> T get0(Class<T> t,T[] test) {
 //        return (T) test[0];
 //    }
 //
@@ -5187,7 +5225,7 @@ public class Utility {
     }
     /**  <------------------------- Arrays -------------------------  */
 
-    /**  ------------------------- Maps ------------------------->  */
+    /** ------------------------- Maps -------------------------> */
     public static <T, E> Set<T> getKeysByValue(Map<T, E> map, E value) {
         return map.entrySet()
                 .stream()

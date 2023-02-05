@@ -152,7 +152,7 @@
                 android:visibility="gone"
                 app:srcCompat="@drawable/ic_download"
                 tools:srcCompat="@drawable/simpsons_movie_poster"
-                tools:visibility="visible" />
+                tools:visibility="invisible" />
 
         </LinearLayout>
 
@@ -219,6 +219,56 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:id="@+id/dialog_detailEpisode_labels_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="8dp"
+                android:text="Labels:"
+                android:textStyle="bold" />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/dialog_detailEpisode_labels_layout"
+                android:layout_width="match_parent"
+                android:clickable="true"
+                android:layout_height="match_parent">
+
+                <TextView
+                    android:id="@+id/dialog_detailEpisode_labels_text"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/dialog_detailEpisode_labels_edit"
+                    app:layout_constraintHorizontal_bias="0.0"
+                    app:layout_constraintHorizontal_chainStyle="packed"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintWidth_default="wrap"
+                    android:textColor="@color/clickable_text_color_normal"
+                    tools:text="Very long text asdasd asd asd asdasd asd asdad  sdasd" />
+
+                <ImageView
+                    android:id="@+id/dialog_detailEpisode_labels_edit"
+                    android:layout_width="17dp"
+                    android:layout_height="17dp"
+                    android:layout_marginStart="8dp"
+                    android:src="@drawable/ic_edit"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_chainStyle="packed"
+                    app:layout_constraintStart_toEndOf="@id/dialog_detailEpisode_labels_text"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:tint="@color/clickable_text_color_normal" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -265,12 +315,8 @@
                     android:id="@+id/dialog_detailEpisode_ratingTendency_icon"
                     android:layout_width="17dp"
                     android:layout_height="17dp"
-                    android:layout_gravity="end"
-                    android:src="@drawable/ic_arrow_up"
-                    android:visibility="gone"
-                    app:tint="@color/colorGreen"
-                    tools:layout_gravity="center_vertical"
-                    tools:visibility="visible" />
+                    android:layout_gravity="center_vertical"
+                    android:src="@drawable/ic_edit" />
 
             </LinearLayout>
 

@@ -49,17 +49,30 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoAct
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
 import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.Knowledge;
+import com.maxMustermannGeheim.linkcollection.Daten.Knowledge.KnowledgeCategory;
 import com.maxMustermannGeheim.linkcollection.Daten.Media.Media;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaCategory;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaEvent;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaPerson;
+import com.maxMustermannGeheim.linkcollection.Daten.Media.MediaTag;
 import com.maxMustermannGeheim.linkcollection.Daten.Owe.Owe;
+import com.maxMustermannGeheim.linkcollection.Daten.Owe.Person;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Alias;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tree;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
+import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowGenre;
+import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowLabel;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Darsteller;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Genre;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.Studio;
 import com.maxMustermannGeheim.linkcollection.Daten.Videos.Video;
+import com.maxMustermannGeheim.linkcollection.Daten.Videos.WatchList;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
+import com.maxMustermannGeheim.linkcollection.Utilities.CustomCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
@@ -110,20 +123,23 @@ public class CategoriesActivity extends AppCompatActivity {
     }
 
     public enum CATEGORIES {
-        VIDEO("Video", "Videos", VideoActivity.class), DARSTELLER("Darsteller", "Darsteller", VideoActivity.class), STUDIOS("Studio", "Studios", VideoActivity.class),
-        GENRE("Genre", "Genres", VideoActivity.class), COLLECTION("Sammlung", "Sammlungen", VideoActivity.class), WATCH_LIST("WatchList", "WatchLists", VideoActivity.class),
-        KNOWLEDGE_CATEGORIES("Kategorie", "Kategorien", KnowledgeActivity.class), CUSTOM_CODE_VIDEO("VideoCustomCode", "VideoCustomCodes", VideoActivity.class),
-        PERSON("Person", "Personen", OweActivity.class), JOKE_CATEGORIES("Witz", "Witze", JokeActivity.class), SHOW_GENRES("Genre", "Genres", ShowActivity.class),
-        SHOW("Serie", "Serien", ShowActivity.class), EPISODE("Episode", "Episoden", ShowActivity.class), MEDIA("Medium", "Medien", MediaActivity.class), MEDIA_PERSON("Person", "Personen", MediaActivity.class),
-        MEDIA_CATEGORY("Kategorie", "Kategorien", MediaActivity.class), MEDIA_TAG("Tag", "Tags", MediaActivity.class), MEDIA_EVENT("Event", "Events", MediaActivity.class);
+        VIDEO("Video", "Videos", Video.class, VideoActivity.class), DARSTELLER("Darsteller", "Darsteller", Darsteller.class, VideoActivity.class), STUDIOS("Studio", "Studios", Studio.class, VideoActivity.class),
+        GENRE("Genre", "Genres", Genre.class, VideoActivity.class), COLLECTION("Sammlung", "Sammlungen", com.maxMustermannGeheim.linkcollection.Daten.Videos.Collection.class, VideoActivity.class), WATCH_LIST("WatchList", "WatchLists", WatchList.class, VideoActivity.class),
+        KNOWLEDGE_CATEGORIES("Kategorie", "Kategorien", KnowledgeCategory.class, KnowledgeActivity.class), CUSTOM_CODE_VIDEO("VideoCustomCode", "VideoCustomCodes", CustomCode.CustomCode_Video.class, VideoActivity.class),
+        PERSON("Person", "Personen", Person.class, OweActivity.class), JOKE_CATEGORIES("Witz", "Witze", Joke.class, JokeActivity.class), SHOW_GENRES("Genre", "Genres", ShowGenre.class, ShowActivity.class),
+        SHOW("Serie", "Serien", Show.class, ShowActivity.class), SHOW_LABEL("Label", "Labels", ShowLabel.class, ShowActivity.class), EPISODE("Episode", "Episoden", Show.Episode.class, ShowActivity.class),
+        MEDIA("Medium", "Medien", Media.class, MediaActivity.class), MEDIA_PERSON("Person", "Personen", MediaPerson.class, MediaActivity.class),
+        MEDIA_CATEGORY("Kategorie", "Kategorien", MediaCategory.class, MediaActivity.class), MEDIA_TAG("Tag", "Tags", MediaTag.class, MediaActivity.class), MEDIA_EVENT("Event", "Events", MediaEvent.class, MediaActivity.class);
 
         private String singular;
         private String plural;
+        private Class objectClass;
         private Class searchIn;
 
-        CATEGORIES(String singular, String plural, Class searchIn) {
+        CATEGORIES(String singular, String plural, Class objectClass, Class searchIn) {
             this.singular = singular;
             this.plural = plural;
+            this.objectClass = objectClass;
             this.searchIn = searchIn;
         }
 
@@ -137,6 +153,10 @@ public class CategoriesActivity extends AppCompatActivity {
 
         public Class getSearchIn() {
             return searchIn;
+        }
+
+        public Class getObjectClass() {
+            return objectClass;
         }
 
         public boolean isTreeCategory() {
@@ -660,7 +680,7 @@ public class CategoriesActivity extends AppCompatActivity {
                         treeObjectCountMap.remove(editObject.getUuid());
                         setResult(RESULT_OK);
                         reloadRecycler();
-                    }, null);
+                    }, null, null, null, null);
                 })
                 .enableFastScroll(Pair.create(topMargin, bottomMargin), (customRecycler1, pair, integer) -> {
                     switch (sort_type) {
@@ -702,7 +722,7 @@ public class CategoriesActivity extends AppCompatActivity {
                             treeObjectCountMap.remove(editObject.getUuid());
                             setResult(RESULT_OK);
                             reloadRecycler();
-                        }, null);
+                        }, null, null, null, null);
                         return true;
                     });
                     CustomUtility.Triple<AndroidTreeView, View, TreeNode> triple = ParentClass_Tree.buildTreeView((ViewGroup) itemView, category,
@@ -746,7 +766,7 @@ public class CategoriesActivity extends AppCompatActivity {
 
 
     //  ------------------------- Edit ------------------------->
-    public static void showEditCategoryDialog(AppCompatActivity context, CATEGORIES category, @Nullable ParentClass oldObject, @Nullable CustomUtility.GenericInterface<ParentClass> onSave, @Nullable CustomUtility.GenericInterface<ParentClass> onDelete, @Nullable CustomUtility.GenericInterface<CustomDialog> optionalModifications) {
+    public static void showEditCategoryDialog(AppCompatActivity context, CATEGORIES category, @Nullable ParentClass oldObject, @Nullable CustomUtility.GenericInterface<ParentClass> onSave, @Nullable CustomUtility.GenericInterface<ParentClass> onDelete, @Nullable CustomUtility.GenericInterface<CustomDialog> optionalModifications, @Nullable CustomUtility.GenericInterface<ParentClass> performAddNew, @Nullable CustomUtility.GenericInterface<ParentClass> performDelete, @Nullable CustomUtility.GenericReturnInterface<String, ParentClass> getObjByName) {
         if (!CustomUtility.isOnline(context))
             return;
 
@@ -780,12 +800,15 @@ public class CategoriesActivity extends AppCompatActivity {
                                         return;
                                     }
                                     CustomDialog.Builder(context)
-                                            .setTitle("Löschen")
-                                            .setText(new Helpers.SpannableStringHelper().append("Wirklich '").appendBold(editObject.getName()).append("' löschen?").get())
-                                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
-                                            .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog2 -> {
+                                            .setTitle(category.getSingular() + " Löschen")
+                                            .setText(new Helpers.SpannableStringHelper().append("Möchtest du wirklich '").appendBold(editObject.getName()).append("' löschen?").get())
+                                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.DELETE_CANCEL)
+                                            .addButton(CustomDialog.BUTTON_TYPE.DELETE_BUTTON, customDialog2 -> {
                                                 customDialog1.dismiss();
-                                                removeCategory(category, oldObject, onDelete);
+                                                if (performDelete == null)
+                                                    removeCategory(category, oldObject, onDelete);
+                                                else
+                                                    performDelete.run(oldObject);
                                             })
                                             .show();
                                 }, false)
@@ -823,8 +846,12 @@ public class CategoriesActivity extends AppCompatActivity {
                     }
                     if (isEdit)
                         oldObject.getChangesFrom(editObject);
-                    else
-                        ((Map<String, ParentClass>) Utility.getMapFromDatabase(category)).put(editObject.getUuid(), editObject);
+                    else {
+                        if (performAddNew == null)
+                            ((Map<String, ParentClass>) Utility.getMapFromDatabase(category)).put(editObject.getUuid(), editObject);
+                        else
+                            performAddNew.run(editObject);
+                    }
                     CustomUtility.runGenericInterface(onSave, isEdit ? oldObject : editObject);
                     Database.saveAll(context);
                 })
@@ -838,7 +865,7 @@ public class CategoriesActivity extends AppCompatActivity {
                             new com.finn.androidUtilities.Helpers.TextInputHelper(dialog_editTmdbCategory_name_layout)
                                     .defaultDialogValidation(customDialog)
                                     .setValidation(dialog_editTmdbCategory_name_layout, (validator, text) -> {
-                                        ParentClass parentClass = Utility.findObjectByName(category, text);
+                                        ParentClass parentClass = getObjByName == null ? Utility.findObjectByName(category, text) : getObjByName.run(text);
                                         if (parentClass != null && parentClass != oldObject)
                                             validator.setInvalid(category.singular + " bereits vorhanden");
                                     });
@@ -1161,7 +1188,7 @@ public class CategoriesActivity extends AppCompatActivity {
                     else
                         allDatenObjektPairList.add(new Pair<>(parentClass, 0));
                     reloadRecycler();
-                }, null, null);
+                }, null, null, null, null, null);
                 break;
             case R.id.taskBar_category_multiSelect:
                 if ((selectedList.isEmpty() || isTreeCategory) && selectedTreeList.isEmpty()) {

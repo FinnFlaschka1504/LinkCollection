@@ -20,6 +20,7 @@ import android.view.ContextThemeWrapper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -160,7 +161,7 @@ public class Settings extends AppCompatActivity {
     Button settings_others_spaceSelector;
     TextView settings_others_encryptedSpaces;
     Button settings_others_encryptedSelector;
-    Button settings_others_showShortcuts;
+    Button settings_others_moreSettings;
     Button settings_others_checkForUpdate;
     TextView settings_others_version;
     TextView settings_others_changeLog;
@@ -879,7 +880,7 @@ public class Settings extends AppCompatActivity {
         settings_others_spaceSelector = findViewById(R.id.settings_others_spaceSelector);
         settings_others_encryptedSpaces = findViewById(R.id.settings_others_encryptedSpaces);
         settings_others_encryptedSelector = findViewById(R.id.settings_others_encryptedSelector);
-        settings_others_showShortcuts = findViewById(R.id.settings_others_showShortcuts);
+        settings_others_moreSettings = findViewById(R.id.settings_others_moreSettings);
         settings_others_version = findViewById(R.id.settings_others_version);
         settings_others_checkForUpdate = findViewById(R.id.settings_others_checkForUpdate);
         settings_others_changeLog = findViewById(R.id.settings_others_changeLog);
@@ -1341,48 +1342,86 @@ public class Settings extends AppCompatActivity {
                     .show();
         });
 
-        settings_others_showShortcuts.setOnClickListener(v ->
+        settings_others_moreSettings.setOnClickListener(v ->
                 CustomDialog.Builder(this)
-                        .setTitle("Shortcuts-Hinzufügen")
-                        .enableTitleBackButton()
-                        .setView(R.layout.dialog_settings_show_shortcuts)
+                        .setTitle("Weitere Einstellungen")
+                        .setView(R.layout.dialog_settings_more)
                         .setSetViewContent((customDialog, view, reload) -> {
-                            view.findViewById(R.id.dialog_settingsShowShortcuts_randomVideo).setOnClickListener(v1 -> {
-                                Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "RandomVideoShortcut")
-                                        .setShortLabel("Zufälliges Video")
-                                        .setIcon(Icon.createWithResource(this, R.drawable.ic_videos))
-                                        .setIntent(new Intent(this, VideoActivity.class).setAction(MainActivity.ACTION_SHOW_AS_DIALOG).putExtra(MainActivity.EXTRA_SHOW_RANDOM, true))
-                                        .build(), null));
-                            });
-                            view.findViewById(R.id.dialog_settingsShowShortcuts_randomKnowledge).setOnClickListener(v1 -> {
-                                Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "RandomKnowledgeShortcut")
-                                        .setShortLabel("Zufälliges Wissen")
-                                        .setIcon(Icon.createWithResource(this, R.drawable.ic_knowledge))
-                                        .setIntent(new Intent(this, KnowledgeActivity.class).setAction(MainActivity.ACTION_SHOW_AS_DIALOG).putExtra(MainActivity.EXTRA_SHOW_RANDOM, true))
-                                        .build(), null));
-                            });
-                            view.findViewById(R.id.dialog_settingsShowShortcuts_randomJoke).setOnClickListener(v1 -> {
-                                Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "RandomJokeShortcut")
-                                        .setShortLabel("Zufälliger Witz")
-                                        .setIcon(Icon.createWithResource(this, R.drawable.ic_jokes))
-                                        .setIntent(new Intent(this, JokeActivity.class).setAction(MainActivity.ACTION_SHOW_AS_DIALOG).putExtra(MainActivity.EXTRA_SHOW_RANDOM, true))
-                                        .build(), null));
-                            });
-                            view.findViewById(R.id.dialog_settingsShowShortcuts_random).setOnClickListener(v1 -> {
-                                Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "RandomShortcut")
-                                        .setShortLabel("Zufällig Auswahl")
-                                        .setIcon(Icon.createWithResource(this, R.drawable.ic_random_grey))
-                                        .setIntent(new Intent(this, DialogActivity.class).setAction(DialogActivity.ACTION_RANDOM))
-                                        .build(), null));
+                            view.findViewById(R.id.dialogSettingsMore_general_importGenres).setOnClickListener(v2 -> {
+                                CustomDialog.Builder(this)
+                                        .setTitle("Shortcuts-Hinzufügen")
+                                        .enableTitleBackButton()
+                                        .setView(R.layout.dialog_settings_show_shortcuts)
+                                        .setSetViewContent((customDialog1, view1, reload1) -> {
+                                            view1.findViewById(R.id.dialog_settingsShowShortcuts_randomVideo).setOnClickListener(v1 -> {
+                                                Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "RandomVideoShortcut")
+                                                        .setShortLabel("Zufälliges Video")
+                                                        .setIcon(Icon.createWithResource(this, R.drawable.ic_videos))
+                                                        .setIntent(new Intent(this, VideoActivity.class).setAction(MainActivity.ACTION_SHOW_AS_DIALOG).putExtra(MainActivity.EXTRA_SHOW_RANDOM, true))
+                                                        .build(), null));
+                                            });
+                                            view1.findViewById(R.id.dialog_settingsShowShortcuts_randomKnowledge).setOnClickListener(v1 -> {
+                                                Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "RandomKnowledgeShortcut")
+                                                        .setShortLabel("Zufälliges Wissen")
+                                                        .setIcon(Icon.createWithResource(this, R.drawable.ic_knowledge))
+                                                        .setIntent(new Intent(this, KnowledgeActivity.class).setAction(MainActivity.ACTION_SHOW_AS_DIALOG).putExtra(MainActivity.EXTRA_SHOW_RANDOM, true))
+                                                        .build(), null));
+                                            });
+                                            view1.findViewById(R.id.dialog_settingsShowShortcuts_randomJoke).setOnClickListener(v1 -> {
+                                                Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "RandomJokeShortcut")
+                                                        .setShortLabel("Zufälliger Witz")
+                                                        .setIcon(Icon.createWithResource(this, R.drawable.ic_jokes))
+                                                        .setIntent(new Intent(this, JokeActivity.class).setAction(MainActivity.ACTION_SHOW_AS_DIALOG).putExtra(MainActivity.EXTRA_SHOW_RANDOM, true))
+                                                        .build(), null));
+                                            });
+                                            view1.findViewById(R.id.dialog_settingsShowShortcuts_random).setOnClickListener(v1 -> {
+                                                Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "RandomShortcut")
+                                                        .setShortLabel("Zufällig Auswahl")
+                                                        .setIcon(Icon.createWithResource(this, R.drawable.ic_random_grey))
+                                                        .setIntent(new Intent(this, DialogActivity.class).setAction(DialogActivity.ACTION_RANDOM))
+                                                        .build(), null));
+                                            });
+
+                                            view1.findViewById(R.id.dialog_settingsShowShortcuts_nextEpisode).setOnClickListener(v1 -> {
+                                                Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "NextEpisodeShortcut")
+                                                        .setShortLabel("Nächste Folge")
+                                                        .setIcon(Icon.createWithResource(this, R.drawable.ic_play_next))
+                                                        .setIntent(new Intent(this, ShowActivity.class).setAction(ShowActivity.ACTION_NEXT_EPISODE))
+                                                        .build(), null));
+                                            });
+                                        })
+                                        .show();
                             });
 
-                            view.findViewById(R.id.dialog_settingsShowShortcuts_nextEpisode).setOnClickListener(v1 -> {
-                                Utility.ifNotNull(getSystemService(ShortcutManager.class), shortcutManager -> shortcutManager.requestPinShortcut(new ShortcutInfo.Builder(this, "NextEpisodeShortcut")
-                                        .setShortLabel("Nächste Folge")
-                                        .setIcon(Icon.createWithResource(this, R.drawable.ic_play_next))
-                                        .setIntent(new Intent(this, ShowActivity.class).setAction(ShowActivity.ACTION_NEXT_EPISODE))
-                                        .build(), null));
+                            Switch enableHighlightsSwitch = view.findViewById(R.id.dialogSettingsMore_general_enableHighlights);
+                            enableHighlightsSwitch.setOnCheckedChangeListener((v2, checked) -> {
+                                final Helpers.HighlightClickListenerHelper highlightHelper = new Helpers.HighlightClickListenerHelper(Settings.this);
+                                if (!checked) {
+                                    CustomDialog.setGlobalCallbacks(null);
+                                    CustomRecycler.setGlobalLifeCycleCallback(null);
+                                    return;
+                                }
+                                CustomDialog.setGlobalCallbacks(new CustomDialog.LifeCycleCallback() {
+                                    @Override
+                                    public void onDialogShown(CustomDialog customDialog) {
+                                        ViewGroup dialogRoot = customDialog.getDialog().findViewById(R.id.dialog_custom_root);
+                                        highlightHelper.applyHighlightsRecursive(dialogRoot);
+                                    }
+
+                                    @Override
+                                    public void onDialogReloadAfter(CustomDialog customDialog) {
+                                        ViewGroup dialogRoot = customDialog.getDialog().findViewById(R.id.dialog_custom_root);
+                                        highlightHelper.applyHighlightsRecursive(dialogRoot);
+                                    }
+                                });
+                                CustomRecycler.setGlobalLifeCycleCallback(new CustomRecycler.LifeCycleCallback() {
+                                    @Override
+                                    public void afterSetItemContent(CustomRecycler<?> customRecycler, View itemView, Object o, int position) {
+                                        highlightHelper.applyHighlightsRecursive(itemView);
+                                    }
+                                });
                             });
+                            enableHighlightsSwitch.setChecked(CustomDialog.getGlobalCallbacks() != null);
                         })
                         .show()
         );

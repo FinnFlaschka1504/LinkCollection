@@ -9,6 +9,7 @@ import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.finn.androidUtilities.CustomDialog;
+import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomUtility;
 import com.google.firebase.database.Exclude;
 import com.google.gson.Gson;
@@ -17,7 +18,6 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image_I;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
-import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
@@ -42,6 +42,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class Show extends ParentClass implements ParentClass_Image_I {
     public static final String EMPTY_SEASON = "EMPTY_SEASON";
@@ -78,6 +79,7 @@ public class Show extends ParentClass implements ParentClass_Image_I {
     private String imdbId;
     private REQUEST_IMDB_ID_TYPE requestImdbIdType = REQUEST_IMDB_ID_TYPE.TMDB;
     private int averageRuntime = -1;
+    private List<ShowLabel> showLabels = new ArrayList<>();
 
     public Show(String name) {
         uuid = "show_" + UUID.randomUUID().toString();
@@ -272,6 +274,15 @@ public class Show extends ParentClass implements ParentClass_Image_I {
 
     public String getNextEpisode() {
         return nextEpisode;
+    }
+
+    public List<ShowLabel> getShowLabels() {
+        return showLabels;
+    }
+
+    public Show setShowLabels(List<ShowLabel> showLabels) {
+        this.showLabels = showLabels;
+        return this;
     }
 
     /**  ------------------------- Convenience ------------------------->  */
@@ -497,6 +508,7 @@ public class Show extends ParentClass implements ParentClass_Image_I {
         private String imdbId;
         private int length = -1;
         private String ageRating;
+        private List<String> showLabelIds = new ArrayList<>();
 
         public Episode(String name) {
             uuid = "episode_" + UUID.randomUUID().toString();
@@ -638,7 +650,7 @@ public class Show extends ParentClass implements ParentClass_Image_I {
 
                     JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, requestUrl, null, response -> {
                         try {
-                            if (response.has("imdb_id"))
+                            if (!response.isNull("imdb_id"))
                                 imdbId = response.getString("imdb_id");
                             Utility.runRunnable(onFinished);
 
@@ -738,6 +750,20 @@ public class Show extends ParentClass implements ParentClass_Image_I {
 
         public Episode setAgeRating(String ageRating) {
             this.ageRating = ageRating;
+            return this;
+        }
+
+        public List<String> getShowLabelIds() {
+            return showLabelIds;
+        }
+
+        @Exclude
+        public CustomList<ShowLabel> getShowLabels() {
+            return Database.getInstance().showMap.get(showId).getShowLabels().stream().filter(showLabel -> showLabelIds.contains(showLabel.getUuid())).collect(Collectors.toCollection(CustomList::new));
+        }
+
+        public Episode setShowLabelIds(List<String> showLabelIds) {
+            this.showLabelIds = showLabelIds;
             return this;
         }
 

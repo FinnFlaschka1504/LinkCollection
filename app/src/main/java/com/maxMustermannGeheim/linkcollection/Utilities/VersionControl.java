@@ -93,7 +93,7 @@ public class VersionControl {
         if (visible)
             Toast.makeText(activity, "Einen Moment bitte...", Toast.LENGTH_SHORT).show();
 
-        JsonObjectRequest jsonArrayRequest = new JsonObjectRequest(Request.Method.GET, URL_JSON, null, response -> {
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, URL_JSON, null, response -> {
             try {
                 final String version = getVersion(activity);
                 final String newVersion = response.getJSONArray("elements").getJSONObject(0).getString("versionName");
@@ -173,7 +173,7 @@ public class VersionControl {
                 Toast.makeText(activity, "Fehler", Toast.LENGTH_SHORT).show();
         });
 
-        requestQueue.add(jsonArrayRequest);
+        requestQueue.add(jsonObjectRequest);
     }
 
     public static void updateApp(Activity activity, String newVersion) {
@@ -365,8 +365,12 @@ public class VersionControl {
                 "Bewertungstendenzen zu Episoden hinzugefügt",
                 "RealtimeUpdate zu Serien hinzugefügt");
         addChange("3.5", "Bewertungstendenzen werden bei Bewertungsdurchschnitten berücksichtigt",
-                "Alle gesehenen Episoden können nach Bewertung sortiert werden",
                 "Kommentare können zu Videos hinzugefügt werden");
+        addChange("3.6", "Bewertungstendenzen zu Videos hinzugefügt",
+                "EpisodenAktivität hinzugefügt",
+                "EpisodenLängen werden direkt von TMDb geladen",
+                "Kommentare können zu Videos hinzugefügt werden",
+                "Alle ClickListener in Dialogen und Listen können gehighlighted werden");
     };
 
     private static void addChange(String version, String... changes) {

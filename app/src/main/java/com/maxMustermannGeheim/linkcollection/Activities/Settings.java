@@ -324,7 +324,7 @@ public class Settings extends AppCompatActivity {
                                     ActivityResultHelper.addFileChooserRequest(settingsContext, "text/*", intent -> {
                                         String text = Utility.getTextFromUri(settingsContext, intent.getData()).toString();
                                         CustomList<String> list = Utility.getImageUrlsFromText(text);
-                                        Utility.showSelectImageDialog(settingsContext, list, showResult);
+                                        Utility.showSelectImageDialog(settingsContext, list, null, showResult);
                                     });
                                 })
                                 .enableStackButtons()

@@ -85,7 +85,7 @@ public class EpisodeActivity extends AppCompatActivity {
 
     public static final String ADVANCED_SEARCH_CRITERIA_SHOW = "s";
     @Language("RegExp")
-    public static final String ADVANCED_SEARCH_CRITERIA_SHOW_REGEX_SEASON_AND_EPISODE = "(?:(?:\\d+(?:\\[(?:(?:\\d+|-\\d+|\\d+-|\\d+-\\d+)(?:,(?=[\\d-])|(?![\\d-])))+\\])?|E?(-\\d+|\\d+-|\\d+-\\d+)|E\\d+)(?:,(?=[^)])|(?![^)])))+";
+    public static final String ADVANCED_SEARCH_CRITERIA_SHOW_REGEX_SEASON_AND_EPISODE = "(?:!?(?:\\d+(?:\\[(?:(?:\\d+|-\\d+|\\d+-|\\d+-\\d+)(?:,(?=[\\d-])|(?![\\d-])))+\\])?|E?(-\\d+|\\d+-|\\d+-\\d+)|E\\d+)(?:,(?=[^)])|(?![^)])))+";
     @Language("RegExp")
     public static final String ADVANCED_SEARCH_CRITERIA_SHOW_REGEX_SHOW_LABELS = "!?((([^<>,&\\\\!]|\\\\[<>,&\\\\!])+)(?:(?<!(?<!\\\\)\\\\)[,&!](?=[^>,&])|(?![^>])))+";
     @Language("RegExp")
@@ -431,7 +431,7 @@ public class EpisodeActivity extends AppCompatActivity {
                         .setParser(VideoActivity.getDurationParser())
                         .setBuildPredicate_fromLastAdded(helper)
                         .setApplyDialog(VideoActivity.getApplyDialogDateRangeAndDuration(this, helper)))
-                .addCriteria(episodeAdvancedQueryHelper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Show.Episode, List<CustomUtility.Triple<Show, Pair<Map<Integer, List<Integer>>, String>, Pair<List<Pair<List<String>, List<String>>>, String>>>>(ADVANCED_SEARCH_CRITERIA_SHOW, ADVANCED_SEARCH_CRITERIA_SHOW_REGEX)
+                .addCriteria(episodeAdvancedQueryHelper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Show.Episode, List<CustomUtility.Triple<Show, CustomUtility.Triple<Map<Integer, List<Integer>>, Map<Integer, List<Integer>>, String>, Pair<List<Pair<List<String>, List<String>>>, String>>>>(ADVANCED_SEARCH_CRITERIA_SHOW, ADVANCED_SEARCH_CRITERIA_SHOW_REGEX)
                         .setParser(getShowParser())
                         .setBuildPredicate(getShowPredicate())
                         .setApplyDialog((customDialog, triples, criteria) -> {
@@ -444,7 +444,7 @@ public class EpisodeActivity extends AppCompatActivity {
                                 triples.forEach(triple -> {
                                     String id = triple.first.getUuid();
                                     selectedShowsIds.add(id);
-                                    showIdSeasonStringMap.put(id, Pair.create(triple.second != null ? triple.second.second : null, triple.third != null ? triple.third.second : null));
+                                    showIdSeasonStringMap.put(id, Pair.create(triple.second != null ? triple.second.third : null, triple.third != null ? triple.third.second : null));
                                 });
                             }
 
@@ -511,20 +511,27 @@ public class EpisodeActivity extends AppCompatActivity {
                 .enableColoration();
     }
 
-    public static Utility.GenericReturnInterface<List<CustomUtility.Triple<Show, Pair<Map<Integer, List<Integer>>, String>, Pair<List<Pair<List<String>, List<String>>>, String>>>, Predicate<Show.Episode>> getShowPredicate() {
+    public static Utility.GenericReturnInterface<List<CustomUtility.Triple<Show, CustomUtility.Triple<Map<Integer, List<Integer>>, Map<Integer, List<Integer>>, String>, Pair<List<Pair<List<String>, List<String>>>, String>>>, Predicate<Show.Episode>> getShowPredicate() {
         return list -> episode -> {
-            for (CustomUtility.Triple<Show, Pair<Map<Integer, List<Integer>>, String>, Pair<List<Pair<List<String>, List<String>>>, String>> triple : list) {
+            for (CustomUtility.Triple<Show, CustomUtility.Triple<Map<Integer, List<Integer>>, Map<Integer, List<Integer>>, String>, Pair<List<Pair<List<String>, List<String>>>, String>> triple : list) {
                 boolean inShow = episode.getShowId().equals(triple.first.getUuid());
                 if (!inShow)
                     continue;
-                if (triple.second == null && triple.third == null)
+                CustomUtility.Triple<Map<Integer, List<Integer>>, Map<Integer, List<Integer>>, String> seasonTripple = triple.second;
+                if (seasonTripple == null && triple.third == null)
                     return true;
                 boolean secondRes = false;
                 boolean fourthRes = false;
-                if (triple.second != null) {
+                if (seasonTripple != null) {
                     List<Integer> episodeList;
-                    if (triple.second.first.containsKey(episode.getSeasonNumber())) {
-                        secondRes = (episodeList = triple.second.first.get(episode.getSeasonNumber())) == null || episodeList.contains(episode.getEpisodeNumber());
+                    if (seasonTripple.first == null) {
+                        secondRes = true;
+                    }
+                    if (seasonTripple.first != null && seasonTripple.first.containsKey(episode.getSeasonNumber())) {
+                        secondRes = (episodeList = seasonTripple.first.get(episode.getSeasonNumber())) == null || episodeList.contains(episode.getEpisodeNumber());
+                    }
+                    if (secondRes && seasonTripple.second != null && seasonTripple.second.containsKey(episode.getSeasonNumber())) {
+                        secondRes = !((episodeList = seasonTripple.second.get(episode.getSeasonNumber())) == null || episodeList.contains(episode.getEpisodeNumber()));
                     }
                     if (secondRes && triple.third == null)
                         return true;
@@ -536,7 +543,7 @@ public class EpisodeActivity extends AppCompatActivity {
                         return positiveRes && negativeRes;
                     });
 
-                    return (triple.second == null || secondRes) && fourthRes;
+                    return (seasonTripple == null || secondRes) && fourthRes;
                 }
                 return false;
             }
@@ -544,7 +551,7 @@ public class EpisodeActivity extends AppCompatActivity {
         };
     }
 
-    public static Utility.DoubleGenericReturnInterface<String, Matcher, List<CustomUtility.Triple<Show, Pair<Map<Integer, List<Integer>>, String>, Pair<List<Pair<List<String>, List<String>>>, String>>>> getShowParser() {
+    public static Utility.DoubleGenericReturnInterface<String, Matcher, List<CustomUtility.Triple<Show, CustomUtility.Triple<Map<Integer, List<Integer>>, Map<Integer, List<Integer>>, String>, Pair<List<Pair<List<String>, List<String>>>, String>>>> getShowParser() {
         Database database = Database.getInstance();
         return (s, matcher) -> {
             List<CustomUtility.Triple<Show, String, String>> showSeasonsTriples = Arrays.stream(s.split("(?<!\\\\)\\|"))
@@ -566,17 +573,25 @@ public class EpisodeActivity extends AppCompatActivity {
                     .filter(pair -> pair.first != null)
                     .collect(Collectors.toList());
 
-            List<CustomUtility.Triple<Show, Pair<Map<Integer, List<Integer>>, String>, Pair<List<Pair<List<String>, List<String>>>, String>>> resultList = new ArrayList<>();
+            List<CustomUtility.Triple<Show, CustomUtility.Triple<Map<Integer, List<Integer>>, Map<Integer, List<Integer>>, String>, Pair<List<Pair<List<String>, List<String>>>, String>>> resultList = new ArrayList<>();
 
             for (CustomUtility.Triple<Show, String, String> triple : showSeasonsTriples) {
                 Show show = triple.first;
                 String seasonsString = triple.second;
                 String showLabelsString = triple.third;
                 Map<Integer, List<Integer>> seasonMap = seasonsString != null ? new HashMap<>() : null;
+                Map<Integer, List<Integer>> seasonNotMap = seasonsString != null ? new HashMap<>() : null;
                 List<Pair<List<String>, List<String>>> labelIdsList;
 
                 if (seasonsString != null) {
                     for (String part : seasonsString.split(",")) {
+                        Map<Integer, List<Integer>> targetMap;
+                        if (part.startsWith("!")) {
+                            part = part.substring(1);
+                            targetMap = seasonNotMap;
+                        } else {
+                            targetMap = seasonMap;
+                        }
                         if (part.contains("E")) {
                             Pair<Integer, Integer> range = parseNumberRange(part.substring(1), show.getAllEpisodesCount());
                             int currentAbs = 1;
@@ -595,12 +610,12 @@ public class EpisodeActivity extends AppCompatActivity {
                                 }
 
                                 for (; episodeNumber <= season.getEpisodesCount() && currentAbs <= range.second; episodeNumber++) {
-                                    if (seasonMap.containsKey(season.getSeasonNumber()) && seasonMap.get(season.getSeasonNumber()) != null) {
-                                        seasonMap.get(season.getSeasonNumber()).add(episodeNumber);
+                                    if (targetMap.containsKey(season.getSeasonNumber()) && targetMap.get(season.getSeasonNumber()) != null) {
+                                        targetMap.get(season.getSeasonNumber()).add(episodeNumber);
                                     } else {
                                         ArrayList<Integer> episodes = new ArrayList<>();
                                         episodes.add(episodeNumber);
-                                        seasonMap.put(season.getSeasonNumber(), episodes);
+                                        targetMap.put(season.getSeasonNumber(), episodes);
                                     }
                                     currentAbs++;
                                 }
@@ -612,16 +627,16 @@ public class EpisodeActivity extends AppCompatActivity {
                         }
 
                         if (part.contains("-") && !part.contains("[")) {
-                            parseNumberRange_toList(part, show.getSeasonsCount()).forEach(seasonNumber -> seasonMap.putIfAbsent(seasonNumber, null));
+                            parseNumberRange_toList(part, show.getSeasonsCount()).forEach(seasonNumber -> targetMap.putIfAbsent(seasonNumber, null));
                         } else {
                             if (!part.contains("["))
-                                seasonMap.putIfAbsent(Integer.parseInt(part), null);
+                                targetMap.putIfAbsent(Integer.parseInt(part), null);
                             else {
                                 String[] split = part.split("[\\[\\]]");
                                 int seasonNumber = Integer.parseInt(split[0]);
                                 if (seasonNumber <= show.getSeasonList().size()) {
                                     int episodesCount = show.getSeasonList().get(seasonNumber).getEpisodesCount();
-                                    seasonMap.put(seasonNumber, parseNumberRange_toList(split[1], episodesCount));
+                                    targetMap.put(seasonNumber, parseNumberRange_toList(split[1], episodesCount));
                                 }
                             }
                         }
@@ -665,7 +680,7 @@ public class EpisodeActivity extends AppCompatActivity {
                     labelIdsList = null;
 
                 resultList.add(CustomUtility.Triple.create(show,
-                        seasonMap != null ? Pair.create(seasonMap, seasonsString) : null,
+                        seasonsString != null ? CustomUtility.Triple.create(seasonMap.isEmpty() ? null : seasonMap, seasonNotMap.isEmpty() ? null : seasonNotMap, seasonsString) : null,
                         labelIdsList != null ? Pair.create(labelIdsList, showLabelsString) : null));
             }
 
@@ -814,8 +829,9 @@ public class EpisodeActivity extends AppCompatActivity {
                 "*a-:*   Von Season a bis maximale Season\n\n" +
                 "_Episoden_ können spezifiziert werden, indem sie nach selbigem Schema, von Eckigen-Klammern umgeben, nach einer einzelnen Season angegeben werden.\n\n" +
                 "_Absolute Episoden Nummern_ können angegeben werden, indem ein 'E' vor das obrige Schema geschrieben wird.\n\n" +
+                "Vor all diese Filter kann ein '!' geschrieben werden. Damit werden diese ausgewählten Seasons und Episoden explizit ausgeschlossen. Gibt es nur negierte Filter, werden alle Episoden, abgesehen von den ausgeschlossenen angezeigt.\n\n" +
                 "_Beispiel:_\n" +
-                "/-3, 5[5, 10-], 8-10, 12-, E12-17/ ⇒ Ausgewählte Seasons: 1,2,3,5,8,9,10,12,…; Bei Season 5 die Episoden: 5,10,…; Die 12te bis 17te Episode der Serie";
+                "/-3, 5[5, 10-], 8-10, 12-, E12-17, !S9[5]/ ⇒ Ausgewählte Seasons: 1,2,3,5,8,9,10,12,…; Bei Season 5 die Episoden: 5,10,…; Die 12te bis 17te Episode der Serie; Die 5te Folge der 9ten Season ist ausgeschlossen";
         String showLabelText = "^ShowLabels Hinweise:^\n" +
                 "_ShowLabels_ können mit einem '&', '!', oder ',' getrennt angegeben werden.\n" +
                 "*&:* Und-Verknüpfung der verbundenen Labels\n" +

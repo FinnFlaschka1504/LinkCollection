@@ -1151,7 +1151,7 @@ public class ShowActivity extends AppCompatActivity {
                                                 boolean modeAdd = spinner.getSelectedItemPosition() == 0;
 
                                                 String query = String.format("%s(%s)", show.getName(), selectDialog.getEditText());
-                                                List<CustomUtility.Triple<Show, Pair<Map<Integer, List<Integer>>, String>, Pair<List<Pair<List<String>, List<String>>>, String>>> resTriple =
+                                                List<CustomUtility.Triple<Show, CustomUtility.Triple<Map<Integer, List<Integer>>, Map<Integer, List<Integer>>, String>, Pair<List<Pair<List<String>, List<String>>>, String>>> resTriple =
                                                         EpisodeActivity.getShowParser().run(query, null);
                                                 Predicate<Show.Episode> predicate = EpisodeActivity.getShowPredicate().run(resTriple);
                                                 List<Show.Episode> episodes = show.getSeasonList().stream()

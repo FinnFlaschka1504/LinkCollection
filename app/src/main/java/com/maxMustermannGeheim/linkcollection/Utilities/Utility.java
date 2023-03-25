@@ -169,6 +169,8 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
@@ -553,7 +555,17 @@ public class Utility {
             imageUrlList.addAll(imageFromOpenGraph);
             imageUrlList.addAll(imagesFromText);
             imageUrlList.replaceAll(path -> path.startsWith("//") ? "https:" + path : path);
-            showSelectImageDialog(context, imageUrlList, onImageSelected);
+            String sourceUrlRoot = Optional.ofNullable(webView).map(webView1 -> {
+                try {
+                    return new URI(webView.getUrl()).getHost();
+                } catch (URISyntaxException e) {
+                    return null;
+                }
+            }).orElse(null);
+            if (sourceUrlRoot != null) {
+                imageUrlList.replaceAll(path -> path.startsWith("/") ? "https://" + sourceUrlRoot + path : path);
+            }
+            showSelectImageDialog(context, imageUrlList, sourceUrlRoot, onImageSelected);
 //            showDialog.run();
         };
 
@@ -652,7 +664,7 @@ public class Utility {
         }
     }
 
-    public static void showSelectImageDialog(Context context, CustomList<String> imageUrlList, GenericInterface<String> onImageSelected) {
+    public static void showSelectImageDialog(Context context, CustomList<String> imageUrlList, @Nullable String sourceUrlRoot, GenericInterface<String> onImageSelected) {
         CustomDialog.Builder(context)
                 .setTitle("Bild Auswählen")
                 .enableTitleBackButton()

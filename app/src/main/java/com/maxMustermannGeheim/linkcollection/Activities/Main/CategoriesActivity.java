@@ -75,7 +75,7 @@ import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
-import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
+import com.maxMustermannGeheim.linkcollection.Utilities.externalCode.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.ImageCropUtility;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -1162,7 +1162,7 @@ public class CategoriesActivity extends AppCompatActivity {
 
             if (v != null) {
                 v.setOnLongClickListener(v1 -> {
-                    advancedQueryHelper.showAdvancedSearchDialog();
+                    advancedQueryHelper.showHistoryDialog();
                     return true;
                 });
             }

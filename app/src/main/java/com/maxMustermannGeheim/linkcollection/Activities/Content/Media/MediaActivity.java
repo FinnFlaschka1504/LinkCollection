@@ -48,7 +48,6 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.FileProvider;
-import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -57,7 +56,6 @@ import androidx.viewpager.widget.ViewPager;
 import com.afollestad.dragselectrecyclerview.DragSelectReceiver;
 import com.afollestad.dragselectrecyclerview.DragSelectTouchListener;
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.request.RequestOptions;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomList;
@@ -79,8 +77,7 @@ import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomScrollGallary.CustomGlideImageLoader;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomScrollGallary.CustomVideoLoader;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
-import com.finn.androidUtilities.FastScrollRecyclerViewHelper;
-import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
+import com.maxMustermannGeheim.linkcollection.Utilities.externalCode.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.veinhorn.scrollgalleryview.HackyViewPager;
@@ -103,9 +100,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import me.zhanghai.android.fastscroll.FastScroller;
-import me.zhanghai.android.fastscroll.FastScrollerBuilder;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 

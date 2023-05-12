@@ -24,17 +24,16 @@ import androidx.core.content.FileProvider;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
-import com.android.volley.toolbox.JsonArrayRequest;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 import com.finn.androidUtilities.CustomDialog;
 import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomRecycler;
 import com.finn.androidUtilities.CustomUtility;
-import com.google.gson.JsonObject;
 import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.BuildConfig;
 import com.maxMustermannGeheim.linkcollection.R;
+import com.maxMustermannGeheim.linkcollection.Utilities.externalCode.ExternalCode;
 
 import org.json.JSONException;
 

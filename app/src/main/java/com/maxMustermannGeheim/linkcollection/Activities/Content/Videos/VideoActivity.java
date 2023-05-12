@@ -84,7 +84,7 @@ import com.finn.androidUtilities.CustomList;
 import com.finn.androidUtilities.CustomRecycler;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
-import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
+import com.maxMustermannGeheim.linkcollection.Utilities.externalCode.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.MinDimensionLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
@@ -2334,8 +2334,10 @@ public class VideoActivity extends AppCompatActivity {
                         Utility.showInternetDialog(this, title, internetDialogLongClick, true, false, onImagePathResult, null, onTitleResult, (webView, isThumbnails, onResult) -> {
                             if (isThumbnails) {
                                 List<String> urls = new ArrayList<>();
+                                ExternalCode.CodeEntry codeEntry = ExternalCode.getEntry(ExternalCode.ENTRY.GET_GOOGLE_SELECTED_IMAGE);
+                                String imgQuery = codeEntry.getString("query", "document.querySelector('.n4hgof img.iPVvYb').getAttribute('src');");
                                 webView.evaluateJavascript("(function() {\n" +
-                                        "    return document.querySelectorAll(\".BIB1wf .n3VNCb\")[0].getAttribute(\"src\")\n" +
+                                        "    return " + imgQuery + "\n" +
                                         "})();", value -> {
                                     if (CustomUtility.stringExists(value) && !value.startsWith("null"))
                                         urls.add(Utility.subString(value, 1, -1));
@@ -3280,7 +3282,7 @@ public class VideoActivity extends AppCompatActivity {
 
             if (v != null) {
                 v.setOnLongClickListener(v1 -> {
-                    advancedQueryHelper.showAdvancedSearchDialog();
+                    advancedQueryHelper.showHistoryDialog();
                     return true;
                 });
             }

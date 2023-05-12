@@ -1785,6 +1785,10 @@ public class Helpers {
             return this;
         }
 
+        public String getHistoryKey() {
+            return historyKey;
+        }
+
         public AdvancedQueryHelper<T> enableThrottle(int minDelayMillis) {
             requestThrottler = new CustomUtility.EventThrottler<Pair<String, CustomList<T>>>((eventThrottler, eventBuffer, event, time) -> {
                 clean().splitQuery(event[0].first).filter(event[0].second);
@@ -2116,6 +2120,10 @@ public class Helpers {
             }
         }
 
+        public boolean showHistoryDialog() {
+            return AdvancedQueryHelper.showHistoryDialog(context, historyKey, this);
+        }
+
         private static <T> boolean showHistoryDialog(AppCompatActivity context, String historyKey, AdvancedQueryHelper<T> helper) {
             SharedPreferences sharedPreferences = context.getSharedPreferences(ADVANCED_SEARCH_HISTORY, Context.MODE_PRIVATE);
             String historyString = sharedPreferences.getString(historyKey, null);
@@ -2166,6 +2174,11 @@ public class Helpers {
                                 customDialog.dismiss();
                             })
                             .generateRecyclerView())
+                    .enableTitleBackButton()
+                    .enableTitleRightButton(R.drawable.ic_settings_dialog, customDialog -> {
+                        customDialog.dismiss();
+                        helper.showAdvancedSearchDialog();
+                    })
                     .show();
             return true;
         }

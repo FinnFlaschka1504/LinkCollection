@@ -52,7 +52,7 @@ import com.maxMustermannGeheim.linkcollection.Daten.Shows.Show;
 import com.maxMustermannGeheim.linkcollection.Daten.Shows.ShowLabel;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
-import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
+import com.maxMustermannGeheim.linkcollection.Utilities.externalCode.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 

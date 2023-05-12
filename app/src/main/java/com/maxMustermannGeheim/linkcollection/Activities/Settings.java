@@ -80,7 +80,7 @@ import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomList;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
-import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
+import com.maxMustermannGeheim.linkcollection.Utilities.externalCode.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.SquareLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 import com.maxMustermannGeheim.linkcollection.Utilities.VersionControl;

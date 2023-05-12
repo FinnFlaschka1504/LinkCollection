@@ -71,7 +71,7 @@ import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.CustomAuto
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomAdapter.ImageAdapterItem;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomMenu;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
-import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
+import com.maxMustermannGeheim.linkcollection.Utilities.externalCode.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
 import com.maxMustermannGeheim.linkcollection.Utilities.MinDimensionLayout;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;

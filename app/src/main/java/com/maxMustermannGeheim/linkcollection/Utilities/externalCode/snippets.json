@@ -1,0 +1,40 @@
+{
+  "getImdbEpisodeDetails": {
+    "version": 2,
+    "name": "getImdbEpisodeDetails",
+    "code": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.87 Safari/537.36",
+      "getTextApp": "document.querySelector(\"[data-testid='hero-title-block__metadata']\").innerText",
+      "getTextWeb": "{\n    document.querySelectorAll(\"[data-testid='hero-title-block__metadata'] span\").forEach(element=>element.innerText = \"\");\n    return [...document.querySelector(\"[data-testid='hero-title-block__metadata']\").children].map(child=>child.innerText).join(\"\\n\");\n}",
+      "parseText": "{\n    let result = {};\n    for (let sub of text.split(\"\\n\")) {\n        if (/^((\\d{1,2})|(TV-(Y|G|Y7|PG|14|MA)))$/.test(sub))\n            result.ageRating = sub;\n        else if (/^(\\d+\\s?Std\\. ?)?(\\d{1,2}\\s?M(in\\.)?)?$/.test(sub)) {\n            let length = 0;\n            let hours = sub.match(/\\d+(?=\\s?Std\\.( \\d{1,2}\\s?M(in\\.)?)?)/);\n            if (hours && hours[0])\n                length += +hours[0] * 60;\n            let minutes = sub.match(/\\d{1,2}(?=\\s?M(in\\.)?)/);\n            if (minutes && minutes[0])\n                length += +minutes[0];\n            if (length > 0)\n                result.length = length;\n        }\n    }\n    return result;\n}"
+    }
+  },
+  "getNextEpisodeImdbId": {
+    "version": 1,
+    "name": "getNextEpisodeImdbId",
+    "code": {
+      "getIdApp": "document.querySelector(\"[data-testid='hero-subnav-bar-next-episode-button']\").href"
+    }
+  },
+  "getSeasonImdbIds": {
+    "version": 2,
+    "name": "getSeasonImdbIds",
+    "code": {
+      "getIdsApp": "[...document.querySelectorAll(\".eplist .image a\")].map(a => a.getAttribute(\"href\").split(\"/\")[2])"
+    }
+  },
+  "getWerStreamtEs": {
+    "version": 2,
+    "name": "getWerStreamtEs",
+    "code": {
+      "getProviderApp": "{\n    let results = [...document.querySelectorAll(\".content li:not(.ueJf)\")];\n    resObjList = [];\n    for (result of results) {\n        resObj = {};\n        resObj[\"id\"] = result.getAttribute(\"data-contentid\");\n        resObj[\"href\"] = result.querySelector(\"a\").href;\n        resObj[\"img\"] = result.querySelector(\"img\").src;\n        resObj[\"name\"] = result.querySelector(\"strong\").innerText;\n        resObj[\"provider\"] = JSON.parse(result.dataset.avastatus);\n        resObjList.push(resObj);\n    };\n    return resObjList\n}"
+    }
+  },
+  "getGoogleSelectedImage": {
+    "version": 1,
+    "name": "getGoogleSelectedImage",
+    "code": {
+      "query": "document.querySelector('.n4hgof img.iPVvYb').getAttribute('src');"
+    }
+  }
+}

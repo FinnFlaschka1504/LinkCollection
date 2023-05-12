@@ -1,4 +1,4 @@
-package com.maxMustermannGeheim.linkcollection.Utilities;
+package com.maxMustermannGeheim.linkcollection.Utilities.externalCode;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -30,6 +30,7 @@ public class ExternalCode {
         GET_NEXT_EPISODE_IMDB_ID("getNextEpisodeImdbId"),
         GET_SEASON_IMDB_IDS("getSeasonImdbIds"),
         GET_WER_STREAMT_ES("getWerStreamtEs"),
+        GET_GOOGLE_SELECTED_IMAGE("getGoogleSelectedImage"),
         ;
 
         String name;

@@ -50,9 +50,8 @@ import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tree;
 import com.maxMustermannGeheim.linkcollection.R;
 import com.maxMustermannGeheim.linkcollection.Utilities.ActivityResultHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Database;
-import com.maxMustermannGeheim.linkcollection.Utilities.ExternalCode;
+import com.maxMustermannGeheim.linkcollection.Utilities.externalCode.ExternalCode;
 import com.maxMustermannGeheim.linkcollection.Utilities.Helpers;
-import com.finn.androidUtilities.FastScrollRecyclerViewHelper;
 import com.maxMustermannGeheim.linkcollection.Utilities.Utility;
 
 import java.io.File;
@@ -64,9 +63,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import me.zhanghai.android.fastscroll.FastScroller;
-import me.zhanghai.android.fastscroll.FastScrollerBuilder;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
 

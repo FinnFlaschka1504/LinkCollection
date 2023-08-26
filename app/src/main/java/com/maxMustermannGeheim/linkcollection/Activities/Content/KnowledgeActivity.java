@@ -655,7 +655,7 @@ public class KnowledgeActivity extends AppCompatActivity {
                     view.findViewById(R.id.dialog_editOrAddKnowledge_editCategories).setOnClickListener(view1 ->
                             Utility.showEditItemDialog(this, editKnowledge[0].getCategoryIdList(), CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES, (customDialog1, selectedIds) -> {
                                 editKnowledge[0].setCategoryIdList(selectedIds);
-                                ((TextView) customDialog.findViewById(R.id.dialog_editOrAddJoke_categories)).setText(
+                                ((TextView) customDialog.findViewById(R.id.dialog_editOrAddKnowledge_categories)).setText(
                                         CategoriesActivity.joinCategoriesIds(selectedIds, CategoriesActivity.CATEGORIES.KNOWLEDGE_CATEGORIES));
 
                             }));
@@ -1465,13 +1465,14 @@ public class KnowledgeActivity extends AppCompatActivity {
                     dialog_sources_url.requestFocus();
                     Utility.changeWindowKeyboard(this, dialog_sources_url, true);
                 }, buttonId_add, false)
-                .addButton("Zurück", customDialog -> {
+                .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, customDialog -> {
                 })
                 .setPayload(sourcesText)
                 .disableScroll()
                 .setOnDialogDismiss(customDialog -> ((TextView) customDialog.getPayload()).setText(
                         knowledge.getSources().stream().map(strings -> strings.get(0)).collect(Collectors.joining(", "))
                 ))
+                .enableTitleBackButton()
                 .show();
         if (edit)
             sourcesDialog.findViewById(buttonId_add).setVisibility(View.GONE);

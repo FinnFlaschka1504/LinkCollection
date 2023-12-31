@@ -6,7 +6,7 @@ import java.util.UUID;
 
 public class ShowGenre extends ParentClass {
 
-    private int tmdbGenreId;
+    private Integer tmdbGenreId;
 
     public ShowGenre(String name) {
         uuid = "showGenre_" + UUID.randomUUID().toString();
@@ -16,11 +16,11 @@ public class ShowGenre extends ParentClass {
     public ShowGenre() {
     }
 
-    public int getTmdbGenreId() {
+    public Integer getTmdbGenreId() {
         return tmdbGenreId;
     }
 
-    public ShowGenre setTmdbGenreId(int tmdbGenreId) {
+    public ShowGenre setTmdbGenreId(Integer tmdbGenreId) {
         this.tmdbGenreId = tmdbGenreId;
         return this;
     }

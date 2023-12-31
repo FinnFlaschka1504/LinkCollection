@@ -2231,10 +2231,13 @@ public class ShowActivity extends AppCompatActivity {
                 for (int i = 0; i < genre_ids.length(); i++) {
                     integerList.add(genre_ids.getInt(i));
                 }
-                Map<Integer, String> idUuidMap = database.showGenreMap.values().stream().collect(Collectors.toMap(ShowGenre::getTmdbGenreId, ParentClass::getUuid));
 
-                CustomList uuidList = integerList.map((Function<Integer, Object>) idUuidMap::get).filter(Objects::nonNull, false);
-                show.setGenreIdList(uuidList);
+                List<String> genreIdList = integerList.stream().map(tmdbId -> database.showGenreMap.values().stream().filter(showGenre -> Objects.equals(showGenre.getTmdbGenreId(), tmdbId)).findFirst().orElse(null))
+                        .filter(Objects::nonNull)
+                        .map(com.finn.androidUtilities.ParentClass::getUuid)
+                        .collect(Collectors.toList());
+
+                show.setGenreIdList(genreIdList);
                 apiDetailRequest(this, show.getTmdbId(), show, customDialog::reloadView, false, false);
                 Utility.getImdbIdFromTmdbId(this, show.getTmdbId(), "show", s -> {
                     if (Utility.stringExists(s))

@@ -364,9 +364,7 @@ public class KnowledgeActivity extends AppCompatActivity {
     private List<Knowledge> filterList(ArrayList<Knowledge> allKnowledgeList) {
         CustomList<Knowledge> customList = new CustomList<>(allKnowledgeList);
 
-        if (!searchQuery.isEmpty()) {
-            advancedQueryHelper.filterFull(customList);
-        }
+        advancedQueryHelper.filterFull(customList);
         return sortList(customList);
     }
 

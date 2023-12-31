@@ -1734,9 +1734,9 @@ public class Utility {
         layout.findViewById(R.id.dialog_editViews_add).setOnClickListener(view -> {
             Runnable addView = () -> {
                 if (currentDate.equals(Utility.removeTime(new Date())))
-                    videoList.get(0).addDate(new Date(), true);
+                    videoList.get(0).addDate(new Date(), true, context);
                 else
-                    videoList.get(0).addDate(currentDate, false);
+                    videoList.get(0).addDate(currentDate, false, context);
                 calendarView.addEvent(new Event(context.getColor(R.color.colorDayNightContent)
                         , currentDate.getTime(), videoList.get(0)));
                 loadVideoList(calendarView.getEvents(currentDate), layout, customRecycler);
@@ -1883,7 +1883,7 @@ public class Utility {
         Show.Episode episode = episodeList.get(0);
         layout.findViewById(R.id.dialog_editViews_add).setOnClickListener(view -> {
             if (currentDate.equals(Utility.removeTime(new Date())))
-                episode.addDate(new Date(), true);
+                episode.addDate(new Date(), true, context);
             else {
                 Show.Episode previousEpisode = episode._getPrevious_ifLoaded();
                 if (previousEpisode != null) {
@@ -1892,13 +1892,13 @@ public class Utility {
                         CustomDialog.Builder(context)
                                 .setTitle("Zeitlich Einordnen?")
                                 .setText(String.format(Locale.getDefault(), "Die Vorherige Episode (S:%d/E:%d) hat bereits eine Ansicht an diesem Tag.\nSoll die neue dahinter eingeordnet werden? ", episode.getSeasonNumber(), episode.getEpisodeNumber()))
-                                .addButton(CustomDialog.BUTTON_TYPE.NO_BUTTON, customDialog -> episode.addDate(currentDate, false))
-                                .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog -> episode.addDate(new Date(previousDate.get().getTime() + 1000), false))
+                                .addButton(CustomDialog.BUTTON_TYPE.NO_BUTTON, customDialog -> episode.addDate(currentDate, false, context))
+                                .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog -> episode.addDate(new Date(previousDate.get().getTime() + 1000), false, context))
                                 .show();
                     } else
-                        episode.addDate(currentDate, false);
+                        episode.addDate(currentDate, false, context);
                 } else
-                    episode.addDate(currentDate, false);
+                    episode.addDate(currentDate, false, context);
             }
             calendarView.addEvent(new Event(context.getColor(R.color.colorDayNightContent)
                     , currentDate.getTime(), episode));
@@ -1928,11 +1928,10 @@ public class Utility {
                 "de"
         );
 //        CustomUtility.logD(null, "showEditTimeDialog: %", );
-        // region Test
+        int hourOffset = Settings.getSingleSetting_int(context, Settings.SETTING_MORE_HOUR_OFFSET);
         dateTimePicker.startAtTimeView();
         dateTimePicker.set24HoursMode(true);
-        dateTimePicker.setDefaultDateTime(Utility.shiftTime(new Date(event.getTimeInMillis()), Calendar.HOUR, 6));
-        // endregion
+        dateTimePicker.setDefaultDateTime(Utility.shiftTime(new Date(event.getTimeInMillis()), Calendar.HOUR, hourOffset));
         try {
             dateTimePicker.setSimpleDateMonthAndDayFormat(new SimpleDateFormat("dd MMMM", Locale.getDefault()));
         } catch (SwitchDateTimeDialogFragment.SimpleDateMonthAndDayFormatException ignored) {
@@ -1940,7 +1939,7 @@ public class Utility {
         dateTimePicker.setOnButtonClickListener(new SwitchDateTimeDialogFragment.OnButtonClickListener() {
             @Override
             public void onPositiveButtonClick(Date selectedDate) {
-                Date shiftedDate = Utility.shiftTime(selectedDate, Calendar.HOUR, -6);
+                Date shiftedDate = Utility.shiftTime(selectedDate, Calendar.HOUR, -hourOffset);
                 calendarView.removeEvent(event);
                 calendarView.addEvent(new Event(context.getColor(R.color.colorDayNightContent), shiftedDate.getTime(), event.getData()));
                 applyDate.run(shiftedDate);

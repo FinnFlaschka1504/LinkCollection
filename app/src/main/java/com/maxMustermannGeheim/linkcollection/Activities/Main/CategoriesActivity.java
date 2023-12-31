@@ -16,11 +16,14 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SearchView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -90,6 +93,7 @@ import org.json.JSONException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -97,6 +101,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity.SHARED_PREFERENCES_DATA;
@@ -107,6 +112,7 @@ public class CategoriesActivity extends AppCompatActivity {
     public static final String EXTRA_SEARCH = "EXTRA_SEARCH";
     private static final String ADVANCED_SEARCH_CRITERIA_DURATION = "du";
     private static final String ADVANCED_SEARCH_CRITERIA_COUNT = "c";
+    private static final String ADVANCED_SEARCH_CRITERIA_SORT = "s";
     @Language("RegExp")
     public static String pictureRegex = "(https?:|\\/)(([\\w$\\-_.+!*'(),/?=&@:%#]|(?<=\\S)\\s(?=\\S))+?)\\.(jpe?g|png|svg|gif)"; //"(https?:|\\/)(([^\\s\\\\<>{}]|(?<=\\S)\\s(?=\\S))+?)\\.(jpe?g|png|svg)";//"((https:)|/)[^\\n]+?\\.(?:jpe?g|png|svg)";
     //    public static String pictureRegex = "((https:)|/)([,+%&?=()/|.|\\w|\\s|-])+\\.(?:jpe?g|png|svg)";
@@ -314,7 +320,8 @@ public class CategoriesActivity extends AppCompatActivity {
                 .optionalModification(helper -> {
                     if (!category.getSearchIn().equals(VideoActivity.class))
                         return;
-                    helper.addCriteria(helper1 -> new Helpers.AdvancedQueryHelper.SearchCriteria<Pair<ParentClass, Integer>, Pair<Date, Date>>(VideoActivity.ADVANCED_SEARCH_CRITERIA_DATE, VideoActivity.ADVANCED_SEARCH_CRITERIA_DATE_REGEX)
+                    helper
+                            .addCriteria(helper1 -> new Helpers.AdvancedQueryHelper.SearchCriteria<Pair<ParentClass, Integer>, Pair<Date, Date>>(VideoActivity.ADVANCED_SEARCH_CRITERIA_DATE, VideoActivity.ADVANCED_SEARCH_CRITERIA_DATE_REGEX)
                                     .setParser(VideoActivity.getDateRangeParser())
                                     .setBuildPredicate(dateDatePair -> {
                                         Pair<Long, Long> dateMinMaxTime = Pair.create(dateDatePair.first.getTime(), dateDatePair.second.getTime());
@@ -378,7 +385,75 @@ public class CategoriesActivity extends AppCompatActivity {
                                     return String.format(Locale.getDefault(), "%s%s:-%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_COUNT, maxLength_str);
                                 return null;
                             };
-                        }));
+                        }))
+                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Pair<ParentClass, Integer>, Pair<SORT_TYPE, Boolean>>(ADVANCED_SEARCH_CRITERIA_SORT, "[^]:]+?(:r)?")
+                                .setParser((sub, matcher) -> {
+                                    try {
+                                        boolean reverse = false;
+                                        if (sub.endsWith(":r")) {
+                                            reverse = true;
+                                            sub = Utility.subString(sub, 0, -2);
+                                        }
+                                        return Pair.create(SORT_TYPE.valueOf(sub.toUpperCase()), reverse);
+                                    } catch (Exception ignored) {
+                                        return null;
+                                    }
+                                })
+                                .setExecuteOnResult((sortType_reverse, pairs, when) -> {
+                                    HashMap<SORT_TYPE, Integer> sortTypeMapper = new HashMap<>();
+                                    sortTypeMapper.put(SORT_TYPE.NAME, R.id.taskBar_category_sortByName);
+                                    sortTypeMapper.put(SORT_TYPE.COUNT, R.id.taskBar_category_sortByViews);
+                                    sortTypeMapper.put(SORT_TYPE.TIME, R.id.taskBar_category_sortByTime);
+
+                                    if (sortType_reverse == null) {
+                                        if (toolBarMenu != null) {
+                                            sortTypeMapper.values().forEach(id -> toolBarMenu.findItem(id).setEnabled(true));
+                                            toolBarMenu.findItem(R.id.taskBar_category_sortReverse).setEnabled(true);
+                                        }
+                                        return;
+                                    }
+                                    sort_type = sortType_reverse.first;
+                                    reverse = sortType_reverse.second;
+
+
+                                    if (toolBarMenu != null) {
+                                        toolBarMenu.findItem(sortTypeMapper.get(sort_type)).setChecked(true);
+                                        toolBarMenu.findItem(R.id.taskBar_category_sortReverse).setChecked(reverse);
+
+                                        toolBarMenu.findItem(R.id.taskBar_category_sortReverse).setEnabled(false);
+                                        sortTypeMapper.values().forEach(id -> toolBarMenu.findItem(id).setEnabled(false));
+                                    }
+                                }, Helpers.AdvancedQueryHelper.SearchCriteria.EXECUTE_ON_RESULT.ALWAYS)
+                                .setApplyDialog((customDialog, sortType_reverse, criteria) -> {
+                                    Spinner selectionSpinner = customDialog.findViewById(R.id.module_advancedSearch_sort_selection);
+                                    CheckBox reverseCheckbox = customDialog.findViewById(R.id.module_advancedSearch_sort_reverse);
+
+                                    List<String> sortTypes = Arrays.stream(SORT_TYPE.values()).map(Enum::name).collect(Collectors.toList());
+                                    sortTypes.add(0, "—");
+                                    ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, sortTypes);
+                                    selectionSpinner.setAdapter(adapter);
+
+                                    // apply
+                                    if (sortType_reverse != null) {
+                                        int index = sortTypes.indexOf(sortType_reverse.first.name());
+                                        selectionSpinner.setSelection(index);
+
+                                        reverseCheckbox.setChecked(sortType_reverse.second);
+                                    }
+
+                                    return customDialog1 -> {
+
+                                        int selectionPosition = selectionSpinner.getSelectedItemPosition();
+                                        if (selectionPosition == 0) {
+                                            return null;
+                                        }
+
+                                        boolean reversed = reverseCheckbox.isChecked();
+
+                                        return String.format(Locale.getDefault(), "%s:%s%s", ADVANCED_SEARCH_CRITERIA_SORT, sortTypes.get(selectionPosition), reversed ? ":r" : "");
+                                    };
+                                })
+                );
 
     }
 
@@ -431,8 +506,7 @@ public class CategoriesActivity extends AppCompatActivity {
 
     private List<Pair<ParentClass, Integer>> filterList(List<Pair<ParentClass, Integer>> datenObjektPairList) {
         com.finn.androidUtilities.CustomList<Pair<ParentClass, Integer>> filteredList = new com.finn.androidUtilities.CustomList<>(datenObjektPairList);
-        if (CustomUtility.stringExists(searchQuery))
-            advancedQueryHelper.filterFull(filteredList);
+        advancedQueryHelper.filterFull(filteredList);
         return filteredList;
     }
 
@@ -1314,6 +1388,7 @@ public class CategoriesActivity extends AppCompatActivity {
         else
             return s;
     }
+
     /**
      * <------------------------- Convenience -------------------------
      */

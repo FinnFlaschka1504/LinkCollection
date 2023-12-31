@@ -1,5 +1,8 @@
 package com.maxMustermannGeheim.linkcollection.Daten.Videos;
 
+import android.content.Context;
+
+import com.maxMustermannGeheim.linkcollection.Activities.Settings;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Image_I;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Ratable;
 import com.maxMustermannGeheim.linkcollection.Daten.ParentClass_Tmdb;
@@ -105,11 +108,12 @@ public class Video extends ParentClass_Ratable implements ParentClass_Image_I {
         return this;
     }
 
-    public boolean addDate(Date date, boolean checkTime) {
+    public boolean addDate(Date date, boolean checkTime, Context context) {
         boolean isBefore = false;
+        int hourOffset = Settings.getSingleSetting_int(context, Settings.SETTING_MORE_HOUR_OFFSET);
         if (checkTime) {
             Calendar limitTime = Calendar.getInstance();
-            limitTime.set(Calendar.HOUR_OF_DAY, 6);
+            limitTime.set(Calendar.HOUR_OF_DAY, hourOffset);
             Calendar givenDate = Calendar.getInstance();
             givenDate.setTime(date);
 
@@ -118,12 +122,12 @@ public class Video extends ParentClass_Ratable implements ParentClass_Image_I {
             givenDate = Calendar.getInstance();
             givenDate.setTime(date);
             givenDate.set(Calendar.MILLISECOND, 0);
-            givenDate.add(Calendar.HOUR, -6);
+            givenDate.add(Calendar.HOUR, -hourOffset);
             date = givenDate.getTime();
         }
 
         if (!checkTime && date.equals(Utility.removeTime(new Date())))
-            date = Utility.shiftTime(new Date(), Calendar.HOUR, -6);
+            date = Utility.shiftTime(new Date(), Calendar.HOUR, -hourOffset);
 
         this.dateList.add(date);
 

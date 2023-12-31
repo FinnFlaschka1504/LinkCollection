@@ -1596,6 +1596,8 @@ public class Helpers {
         @Language("RegExp")
         public static final String PARENT_CLASS_PATTERN = "([^|&\\[\\]]+?)([|&][^|&\\[\\]]+?)*";
         private static final Pattern advancedQueryPattern = Pattern.compile("\\{.*\\}");
+        @Language("RegExp")
+        public static final String FREE_TEXT_MATCHER = "[^]]+?";
         private SearchView searchView;
         public String fullQuery, advancedQuery, restQuery;
         private CustomList<SearchCriteria> criteriaList = new CustomList<>();
@@ -1664,7 +1666,7 @@ public class Helpers {
         }
 
         public AdvancedQueryHelper<T> addCriteria_defaultName(@Nullable @IdRes Integer editTextId, @Nullable @IdRes Integer negatedLayoutId, @NonNull Utility.DoubleGenericReturnInterface<AdvancedQueryHelper<T>, String, Predicate<T>> buildPredicate) {
-            SearchCriteria<T, String> criteria = new SearchCriteria<T, String>(ADVANCED_SEARCH_CRITERIA_NAME, "[^]]+?")
+            SearchCriteria<T, String> criteria = new SearchCriteria<T, String>(ADVANCED_SEARCH_CRITERIA_NAME, FREE_TEXT_MATCHER)
                     .setParser((s, matcher) -> s)
                     .setBuildPredicate(s -> buildPredicate.run(this, s));
             if (editTextId != null) {
@@ -1986,26 +1988,17 @@ public class Helpers {
         public AdvancedQueryHelper<T> filterAdvanced(CustomList<T> list) {
             CustomList<SearchCriteria> filteredCriteriaList = criteriaList.filter(SearchCriteria::has, false);
             filteredCriteriaList.forEach(SearchCriteria::buildPredicate);
-            // ToDo: kann optimiert werden? immer wieder einen Stream filtern?
+            criteriaList.forEach(searchCriteria -> searchCriteria.executeOnResult(list));
 //            CustomUtility.GenericInterface<Boolean> logTiming = CustomUtility.logTiming();
-            if (false) {
-                list.filter(t -> {
-                    for (SearchCriteria criteria : filteredCriteriaList) {
-                        boolean matchResult = criteria.matchObject(t) ^ criteria.isNegated();
-                        if (!matchResult)
-                            return false;
-                    }
-                    return true;
-                }, true);
-            } else {
-                Stream<T> stream = list.stream();
-                for (SearchCriteria criteria : filteredCriteriaList) {
-                    boolean negated = criteria.isNegated();
-                    stream = stream.filter(t -> criteria.matchObject(t) ^ negated);
-                }
-                list.replaceWith(stream.collect(Collectors.toList()));
+            Stream<T> stream = list.stream();
+            for (SearchCriteria criteria : filteredCriteriaList) {
+                if (criteria.predicate == null)
+                    continue;
+                boolean negated = criteria.isNegated();
+                stream = stream.filter(t -> criteria.matchObject(t) ^ negated);
             }
-//            logTiming.run(false);
+            list.replaceWith(stream.collect(Collectors.toList()));
+            //            logTiming.run(false);
             return this;
         }
 
@@ -2020,6 +2013,11 @@ public class Helpers {
         }
 
         public AdvancedQueryHelper<T> filterFull(CustomList<T> list) {
+            if (!CustomUtility.stringExists(getQuery())) {
+                clean();
+                criteriaList.forEach(searchCriteria -> searchCriteria.executeOnResult(list));
+                return this;
+            }
             if (requestThrottler != null) {
                 requestThrottler.call(Pair.create(getQuery(), list));
                 return this;
@@ -2131,6 +2129,9 @@ public class Helpers {
                 Toast.makeText(context, "Kein Verlauf", Toast.LENGTH_SHORT).show();
                 return false;
             }
+
+            helper.searchView.clearFocus();
+
             ArrayList<String> list = new Gson().fromJson(historyString, ArrayList.class);
             com.finn.androidUtilities.CustomDialog.Builder(context)
                     .setTitle("Verlauf")
@@ -2140,13 +2141,13 @@ public class Helpers {
                             .setObjectList(list)
                             .enableDivider(12)
                             .enableSwiping((customRecycler, objectList, direction, s, index) -> {
-                                if (direction == ItemTouchHelper.START) {
+                                if (direction == ItemTouchHelper.END) {
                                     if (s.startsWith("☆"))
                                         objectList.set(index, s.substring(2));
                                     else
                                         objectList.set(index, "☆ " + s);
                                     objectList.sort(CustomUtility.comparatorSimpleBool(s1 -> s1.startsWith("☆")));
-                                } else if (direction == ItemTouchHelper.END && s.startsWith("☆")) {
+                                } else if (direction == ItemTouchHelper.START && s.startsWith("☆")) {
                                     Toast.makeText(context, "Favoriten können nicht gelöscht werden", Toast.LENGTH_SHORT).show();
                                     objectList.add(index, s);
                                     customRecycler.reload();
@@ -2156,12 +2157,12 @@ public class Helpers {
                                 if (objectList.isEmpty())
                                     customDialog.dismiss();
                             }, true, true)
-                            .setSwipeBackgroundHelper(new CustomRecycler.SwipeBackgroundHelper<String>(R.drawable.ic_delete, Color.RED)
-                                    .enableBouncyThreshold(2, true, false)
+                            .setSwipeBackgroundHelper(new CustomRecycler.SwipeBackgroundHelper<String>(R.drawable.ic_star, context.getColor(R.color.colorYellow))
+                                    .enableBouncyThreshold(2, false, true)
                                     .setDynamicResources((swipeBackgroundHelper, episode) -> {
                                         swipeBackgroundHelper
-                                                .setIconResId_left(/*episode.isWatched() ? R.drawable.ic_notification_active :*/ R.drawable.ic_star)
-                                                .setFarEnoughColor_circle_left(context.getColor(R.color.colorYellow));
+                                                .setIconResId_left(R.drawable.ic_delete)
+                                                .setFarEnoughColor_circle_left(Color.RED);
                                     })
                             )
                             .setOnClickListener((customRecycler, itemView, s, index) -> {
@@ -2320,6 +2321,10 @@ public class Helpers {
             public Matcher matcher;
             private Utility.DoubleGenericReturnInterface<String, Matcher, Result> parser;
             private Utility.GenericReturnInterface<Result, Predicate<T>> buildPredicate;
+            private Pair<Utility.TripleGenericInterface<Result, List<T>, EXECUTE_ON_RESULT>, EXECUTE_ON_RESULT> executeOnResult;
+            public enum EXECUTE_ON_RESULT {
+                ALWAYS, HAS_SUB, NON_NULL
+            }
             public Predicate<T> predicate;
             private ApplyDialogInterface<T, Result> applyDialog;
             private CategoriesActivity.CATEGORIES category;
@@ -2341,6 +2346,11 @@ public class Helpers {
 
             public SearchCriteria<T, Result> setBuildPredicate(Utility.GenericReturnInterface<Result, Predicate<T>> buildPredicate) {
                 this.buildPredicate = buildPredicate;
+                return this;
+            }
+
+            public SearchCriteria<T, Result> setExecuteOnResult(Utility.TripleGenericInterface<Result, List<T>, EXECUTE_ON_RESULT> executeOnResult, EXECUTE_ON_RESULT when) {
+                this.executeOnResult = Pair.create(executeOnResult, when);
                 return this;
             }
 
@@ -2394,9 +2404,50 @@ public class Helpers {
                 return this;
             }
 
+            public void executeOnResult(CustomList<T> list) {
+                if (executeOnResult == null || parser == null) {
+                    return;
+                }
+
+                EXECUTE_ON_RESULT when = executeOnResult.second;
+                if (!CustomUtility.stringExists(sub)) {
+                    if (when == EXECUTE_ON_RESULT.ALWAYS) {
+                        executeOnResult.first.run(tempResult, list, EXECUTE_ON_RESULT.ALWAYS);
+                    } else {
+                        return;
+                    }
+                } else {
+                    if (tempResult == null) {
+                        tempResult = parser.run(sub, matcher);
+                    }
+                    if (tempResult == null) {
+                        if (when == EXECUTE_ON_RESULT.HAS_SUB || when == EXECUTE_ON_RESULT.ALWAYS) {
+                            executeOnResult.first.run(null, list, EXECUTE_ON_RESULT.HAS_SUB);
+                        } else {
+                            return;
+                        }
+                    } else {
+                        executeOnResult.first.run(tempResult, list, EXECUTE_ON_RESULT.NON_NULL);
+                    }
+                }
+
+//                switch (when) {
+//                    case ALWAYS:
+//                        executeOnResult.first.run(tempResult, list, );
+//                        break;
+//                }
+//                if (CustomUtility.stringExists(sub) && parser != null && executeOnResult != null) {
+//                    if (tempResult == null) {
+//                        tempResult = parser.run(sub, matcher);
+//                    }
+//                    executeOnResult.first.run(tempResult, list);
+//                }
+//                return;
+            }
+
             public boolean matchObject(T t) {
-                if (predicate == null)
-                    return true;
+//                if (predicate == null)
+//                    return true;
                 return predicate.test(t);
             }
 

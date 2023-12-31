@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
@@ -228,9 +229,7 @@ public class EpisodeActivity extends AppCompatActivity {
 
     /** ------------------------- Recycler -------------------------> */
     private CustomList<Show.Episode> filterList(CustomList<Show.Episode> episodeList) {
-        if (!searchQuery.isEmpty()) {
-            advancedQueryHelper.filterFull(episodeList);
-        }
+        advancedQueryHelper.filterFull(episodeList);
         return episodeList;
     }
 
@@ -411,9 +410,9 @@ public class EpisodeActivity extends AppCompatActivity {
                         return database.showMap.get(episode.getShowId()).getName().toLowerCase().contains(lowerRestQuery);
                     }, true);
                 })
-                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Show.Episode, Pair<Float, Float>>(VideoActivity.ADVANCED_SEARCH_CRITERIA_RATING, VideoActivity.ADVANCED_SEARCH_CRITERIA_RATING_REGEX)
+                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Show.Episode, CustomUtility.Triple<Float, Float, Integer[]>>(VideoActivity.ADVANCED_SEARCH_CRITERIA_RATING, VideoActivity.ADVANCED_SEARCH_CRITERIA_RATING_REGEX)
                         .setParser(VideoActivity.getRatingParser())
-                        .setBuildPredicate(ratingMinMax -> episode -> episode.getRating() >= ratingMinMax.first && episode.getRating() <= ratingMinMax.second)
+                        .setBuildPredicate(VideoActivity.getRatingPredicate())
                         .setApplyDialog(VideoActivity.getRatingApplyDialog()))
                 .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Show.Episode, Pair<Date, Date>>(VideoActivity.ADVANCED_SEARCH_CRITERIA_DATE, VideoActivity.ADVANCED_SEARCH_CRITERIA_DATE_REGEX)
                         .setParser(VideoActivity.getDateRangeParser())
@@ -899,6 +898,18 @@ public class EpisodeActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.task_bar_episode, menu);
 
         if (setToolbarTitle != null) setToolbarTitle.run();
+
+        new Handler().post(() -> {
+            final View v = findViewById(R.id.taskBar_episode_filter);
+
+            if (v != null) {
+                v.setOnLongClickListener(v1 -> {
+                    advancedQueryHelper.showHistoryDialog();
+                    return true;
+                });
+            }
+        });
+
         return true;
     }
 

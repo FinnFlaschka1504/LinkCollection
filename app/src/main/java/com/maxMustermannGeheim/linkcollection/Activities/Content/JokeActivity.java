@@ -303,9 +303,7 @@ public class JokeActivity extends AppCompatActivity {
     private List<Joke> filterList(ArrayList<Joke> allJokeList) {
         CustomList<Joke> customList = new CustomList<>(allJokeList);
 
-        if (!searchQuery.isEmpty()) {
-            advancedQueryHelper.filterFull(customList);
-        }
+        advancedQueryHelper.filterFull(customList);
         return sortList(customList);
 
 //        return sortList(allJokeList.stream().filter(joke -> Utility.containedInJoke(searchQuery, joke, filterTypeSet)).collect(Collectors.toList()));

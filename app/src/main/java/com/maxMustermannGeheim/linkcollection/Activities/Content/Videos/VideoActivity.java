@@ -119,6 +119,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
@@ -136,7 +137,7 @@ public class VideoActivity extends AppCompatActivity {
     public static final String ADVANCED_SEARCH_CRITERIA_DATE_REGEX = "(\\d{1,2}\\.\\d{1,2}\\.(\\d{4}|\\d{2}))(-\\d{1,2}\\.\\d{1,2}\\.(\\d{4}|\\d{2}))?";
     public static final String ADVANCED_SEARCH_CRITERIA_RATING = "r";
     @Language("RegExp")
-    public static final String ADVANCED_SEARCH_CRITERIA_RATING_REGEX = "(([0-4]((\\.|,)\\d{1,2})?)|5((\\.|,)00?)?)(-(([0-4]((\\5|\\7|(?<![,.]\\d{1,2}-\\d)[,.])\\d{1,2})?)|5((\\5|\\7|(?<![,.]\\d{1,2}-\\d)[,.])00?)?))?";
+    public static final String ADVANCED_SEARCH_CRITERIA_RATING_REGEX = "(([0-4]((\\.|,)\\d{1,2})?[udn]?)|5((\\.|,)00?)?[udn]?)(-(([0-4]((\\5|\\7|(?<![,.]\\d{1,2}-\\d)[,.])\\d{1,2})?[udn]?)|5((\\5|\\7|(?<![,.]\\d{1,2}-\\d)[,.])00?)?[udn]?))?";
     public static final String ADVANCED_SEARCH_CRITERIA_LENGTH = "l";
     @Language("RegExp")
     public static final String ADVANCED_SEARCH_CRITERIA_NUMBER_RANGE_REGEX = "(((\\d+)-?(\\d+)?)|((\\d+)?-?(\\d+)))";
@@ -489,9 +490,9 @@ public class VideoActivity extends AppCompatActivity {
                 .enableColoration()
                 .enableHistory("ADVANCED_QUERY_VIDEO")
                 .setDialogOptions(R.layout.dialog_advanced_search_video, null)
-                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Float, Float>>(ADVANCED_SEARCH_CRITERIA_RATING, ADVANCED_SEARCH_CRITERIA_RATING_REGEX)
+                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, CustomUtility.Triple<Float, Float, Integer[]>>(ADVANCED_SEARCH_CRITERIA_RATING, ADVANCED_SEARCH_CRITERIA_RATING_REGEX)
                         .setParser(getRatingParser())
-                        .setBuildPredicate(ratingMinMax -> video -> video.getRating() >= ratingMinMax.first && video.getRating() <= ratingMinMax.second)
+                        .setBuildPredicate(getRatingPredicate())
                         .setApplyDialog(getRatingApplyDialog()))
                 .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, Pair<Integer, Integer>>(ADVANCED_SEARCH_CRITERIA_LENGTH, "(((\\d+)-?(\\d+)?)|((\\d+)?-?(\\d+)))")
                         .setParser(getNumberRangeParser())
@@ -516,11 +517,11 @@ public class VideoActivity extends AppCompatActivity {
                 .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_ACTOR, CategoriesActivity.CATEGORIES.DARSTELLER, Video::getDarstellerList, context, R.id.dialog_advancedSearch_video_actor, R.id.dialog_advancedSearch_video_actor_connector, R.id.dialog_advancedSearch_video_editActor)
                 .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_STUDIO, CategoriesActivity.CATEGORIES.STUDIOS, Video::getStudioList, context, R.id.dialog_advancedSearch_video_studio, R.id.dialog_advancedSearch_video_studio_connector, R.id.dialog_advancedSearch_video_editStudio)
                 .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_GENRE, CategoriesActivity.CATEGORIES.GENRE, Video::getGenreList, context, R.id.dialog_advancedSearch_video_genre, R.id.dialog_advancedSearch_video_genre_connector, R.id.dialog_advancedSearch_video_editGenre)
-                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, String>(ADVANCED_SEARCH_CRITERIA_COLLECTION, "[^]]+?")
+                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, String>(ADVANCED_SEARCH_CRITERIA_COLLECTION, Helpers.AdvancedQueryHelper.FREE_TEXT_MATCHER)
                         .setCategory(CategoriesActivity.CATEGORIES.COLLECTION)
                         .setParser((sub, matcher) -> sub)
                         .setBuildPredicate(sub -> video -> Utility.containedInCollection(sub, video.getUuid(), true)))
-                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, String>(ADVANCED_SEARCH_CRITERIA_WATCH_LIST, "[^]]+?")
+                .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Video, String>(ADVANCED_SEARCH_CRITERIA_WATCH_LIST, Helpers.AdvancedQueryHelper.FREE_TEXT_MATCHER)
                         .setCategory(CategoriesActivity.CATEGORIES.WATCH_LIST)
                         .setParser((sub, matcher) -> sub)
                         .setBuildPredicate(sub -> video -> Utility.containedInWatchList(sub, video.getUuid(), true)))
@@ -628,20 +629,23 @@ public class VideoActivity extends AppCompatActivity {
         };
     }
 
-    public static <T> Helpers.AdvancedQueryHelper.SearchCriteria.ApplyDialogInterface<T, Pair<Float, Float>> getRatingApplyDialog() {
-        return (customDialog, ratingMinMax, criteria) -> {
+    public static <T> Helpers.AdvancedQueryHelper.SearchCriteria.ApplyDialogInterface<T, CustomUtility.Triple<Float, Float, Integer[]>> getRatingApplyDialog() {
+        return (customDialog, ratingMinMaxTendencies, criteria) -> {
             boolean[] negated = {false};
             boolean[] singleMode = {false};
             final int[] min = {0};
             final int[] max = {20};
+            final Integer[] tendencies = {null, null};
 
             // ---------------
 
             if (criteria.has()) {
-                min[0] = Math.round(ratingMinMax.first * 4);
-                max[0] = Math.round(ratingMinMax.second * 4);
-                singleMode[0] = ratingMinMax.first.equals(ratingMinMax.second);
+                min[0] = Math.round(ratingMinMaxTendencies.first * 4);
+                max[0] = Math.round(ratingMinMaxTendencies.second * 4);
+                singleMode[0] = ratingMinMaxTendencies.first.equals(ratingMinMaxTendencies.second);
                 negated[0] = criteria.isNegated();
+                tendencies[0] = ratingMinMaxTendencies.third[0];
+                tendencies[1] = ratingMinMaxTendencies.third[1];
             }
             Helpers.AdvancedQueryHelper.applyNegationButton(customDialog.findViewById(R.id.module_advancedSearch_rating_negationLayout), negated);
 
@@ -650,6 +654,21 @@ public class VideoActivity extends AppCompatActivity {
             TextView rangeText = customDialog.findViewById(R.id.module_advancedSearch_rating_range);
             RangeSeekBar rangeBar = customDialog.findViewById(R.id.module_advancedSearch_rating_rangeBar);
             SeekBar singleBar = customDialog.findViewById(R.id.module_advancedSearch_rating_singleBar);
+            Spinner tendencyLowSpinner = customDialog.findViewById(R.id.module_advancedSearch_rating_tendency_low);
+            Spinner tendencyHighSpinner = customDialog.findViewById(R.id.module_advancedSearch_rating_tendency_high);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(customDialog.getContext(), android.R.layout.simple_spinner_item, Arrays.asList("✖", "▲", "▼", "➤"));
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            tendencyLowSpinner.setAdapter(adapter);
+            tendencyHighSpinner.setAdapter(adapter);
+            tendencyHighSpinner.setVisibility(singleMode[0] ? View.INVISIBLE : View.VISIBLE);
+            CustomUtility.SwitchExpression<Integer, Integer> switchExpression = new CustomUtility.SwitchExpression<Integer, Integer>()
+                    .addCase(null, 0)
+                    .addCase(1, 1)
+                    .addCase(-1, 2)
+                    .addCase(0, 3);
+            tendencyLowSpinner.setSelection(switchExpression.evaluate(tendencies[0]));
+            tendencyHighSpinner.setSelection(switchExpression.evaluate(tendencies[1]));
+
             CustomUtility.GenericInterface<Pair<Integer, Integer>> setText = pair -> {
                 singleBar.setEnabled(singleMode[0]);
                 if (singleMode[0])
@@ -684,6 +703,7 @@ public class VideoActivity extends AppCompatActivity {
                 }
                 singleMode[0] = !singleMode[0];
                 rangeBar.setVisibility(singleMode[0] ? View.INVISIBLE : View.VISIBLE);
+                tendencyHighSpinner.setVisibility(singleMode[0] ? View.INVISIBLE : View.VISIBLE);
                 setText.run(Pair.create(rangeBar.getMinThumbValue(), rangeBar.getMaxThumbValue()));
             });
             singleBar.setProgress(min[0]);
@@ -713,13 +733,18 @@ public class VideoActivity extends AppCompatActivity {
             return customDialog1 -> {
                 min[0] = rangeBar.getMinThumbValue();
                 max[0] = rangeBar.getMaxThumbValue();
+                CustomUtility.SwitchExpression<Integer, String> spinnerToTendency = new CustomUtility.SwitchExpression<Integer, String>()
+                        .addCase(0, "")
+                        .addCase(1, "u")
+                        .addCase(2, "d")
+                        .addCase(3, "n");
 
                 if (min[0] != 0 || max[0] != 20) {
                     String ratingFilter;
                     if (singleMode[0])
-                        ratingFilter = String.format(Locale.getDefault(), "%s%s:%.2f", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_RATING, min[0] / 4d);
+                        ratingFilter = String.format(Locale.getDefault(), "%s%s:%.2f%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_RATING, min[0] / 4d, spinnerToTendency.evaluate(tendencyLowSpinner.getSelectedItemPosition()));
                     else
-                        ratingFilter = String.format(Locale.getDefault(), "%s%s:%.2f-%.2f", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_RATING, min[0] / 4d, max[0] / 4d);
+                        ratingFilter = String.format(Locale.getDefault(), "%s%s:%.2f%s-%.2f%s", negated[0] ? "!" : "", ADVANCED_SEARCH_CRITERIA_RATING, min[0] / 4d, spinnerToTendency.evaluate(tendencyLowSpinner.getSelectedItemPosition()), max[0] / 4d, spinnerToTendency.evaluate(tendencyHighSpinner.getSelectedItemPosition()));
 
                     return ratingFilter;
                 } else
@@ -729,15 +754,33 @@ public class VideoActivity extends AppCompatActivity {
     }
 
     @NonNull
-    public static Utility.DoubleGenericReturnInterface<String, Matcher, Pair<Float, Float>> getRatingParser() {
+    public static Utility.DoubleGenericReturnInterface<String, Matcher, CustomUtility.Triple<Float, Float, Integer[]>> getRatingParser() {
         return (sub, matcher) -> {
-            String[] range = sub.replaceAll(",", ".").split("-");
+            String[] range = sub.replaceAll(",", ".").replaceAll("[udn]", "").split("-");
+            String[] splitTendencies = sub.replaceAll("[\\d.,]", "").split("-", 2);
+            CustomUtility.SwitchExpression<String, Integer> switchExpression = new CustomUtility.SwitchExpression<String, Integer>()
+                    .addCase("u", 1)
+                    .addCase("d", -1)
+                    .addCase("n", 0)
+                    .addCase("", null);
+            Integer[] tendencies = {
+                    switchExpression.evaluate(splitTendencies[0]),
+                    switchExpression.evaluate(splitTendencies.length > 1 ? splitTendencies[1]: splitTendencies[0])
+            };
             float min = Float.parseFloat(range[0]);
             float max = Float.parseFloat(range.length < 2 ? range[0] : range[1]);
 
-            return Pair.create(min, max);
+            return CustomUtility.Triple.create(min, max, tendencies);
         };
     }
+
+    @NonNull
+    public static <T extends ParentClass_Ratable> Utility.GenericReturnInterface<CustomUtility.Triple<Float, Float, Integer[]>, Predicate<T>> getRatingPredicate() {
+        return ratingMinMaxTendencies -> ratable ->
+                (ratable.getRating() > ratingMinMaxTendencies.first || (Objects.equals(ratable.getRating(), ratingMinMaxTendencies.first) && (ratingMinMaxTendencies.third[0] == null || Optional.ofNullable(ratable.getRatingTendency()).orElse(0) >= ratingMinMaxTendencies.third[0]))) &&
+                        (ratable.getRating() < ratingMinMaxTendencies.second || (Objects.equals(ratable.getRating(), ratingMinMaxTendencies.second) && (ratingMinMaxTendencies.third[1] == null || Optional.ofNullable(ratable.getRatingTendency()).orElse(0) <= ratingMinMaxTendencies.third[1])));
+    }
+
 
     public static <T> Helpers.AdvancedQueryHelper.SearchCriteria.ApplyDialogInterface<T, Pair<Date, Date>> getApplyDialogDateRangeAndDuration(AppCompatActivity context, Helpers.AdvancedQueryHelper<T> helper) {
         return (customDialog, dateDatePair, durationCriteria) -> {
@@ -1099,13 +1142,7 @@ public class VideoActivity extends AppCompatActivity {
         } else if (mode.equals(MODE.UPCOMING)) {
             filteredVideoList = allVideoList.stream().filter(Video::isUpcoming).collect(Collectors.toCollection(CustomList::new));
         }
-        if (!searchQuery.trim().equals("")) {
-//            CustomUtility.logD(null, "filterList: ");
-//            CustomUtility.logTiming("CustomCode", null);
-            advancedQueryHelper.filterFull(filteredVideoList);
-//            CustomUtility.logTiming("CustomCode", false);
-        } else
-            advancedQueryHelper.clean();
+        advancedQueryHelper.filterFull(filteredVideoList);
         return filteredVideoList;
     }
 
@@ -1626,7 +1663,7 @@ public class VideoActivity extends AppCompatActivity {
                     view.findViewById(R.id.dialog_video_editViews).setOnClickListener(view1 -> showCalenderDialog(Arrays.asList(video), detailDialog));
                     view.findViewById(R.id.dialog_video_editViews).setOnLongClickListener(view1 -> {
                         Runnable addView = () -> {
-                            boolean before = video.addDate(new Date(), true);
+                            boolean before = video.addDate(new Date(), true, this);
                             Utility.showCenteredToast(this, "Ansicht Hinzugefügt" + (before ? "\n(Gestern)" : ""));
                             Database.saveAll();
                             setResult(RESULT_OK);
@@ -2149,7 +2186,7 @@ public class VideoActivity extends AppCompatActivity {
                         .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
                         .addButton(CustomDialog.BUTTON_TYPE.NO_BUTTON, customDialog1 -> saveVideo(customDialog, video, titel, url, checked[0], editVideo[0]))
                         .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, customDialog1 -> {
-                            boolean before = editVideo[0].addDate(new Date(), true);
+                            boolean before = editVideo[0].addDate(new Date(), true, this);
                             editVideo[0].setWatchLater(false);
                             checked[0] = false;
                             Utility.showCenteredToast(this, "Ansicht Hinzugefügt" + (before ? "\n(Gestern)" : ""));
@@ -2335,7 +2372,7 @@ public class VideoActivity extends AppCompatActivity {
                             if (isThumbnails) {
                                 List<String> urls = new ArrayList<>();
                                 ExternalCode.CodeEntry codeEntry = ExternalCode.getEntry(ExternalCode.ENTRY.GET_GOOGLE_SELECTED_IMAGE);
-                                String imgQuery = codeEntry.getString("query", "document.querySelector('.n4hgof img.iPVvYb').getAttribute('src');");
+                                String imgQuery = codeEntry.getString("query", "document.querySelector(\"[data-query] div.tvh9oe:not([aria-hidden='true']) div[data-ved][data-lnsmd]:has(img) img[src^='https://']\").getAttribute('src')");
                                 webView.evaluateJavascript("(function() {\n" +
                                         "    return " + imgQuery + "\n" +
                                         "})();", value -> {
@@ -2705,7 +2742,7 @@ public class VideoActivity extends AppCompatActivity {
                 finalVideo.setWatchLater(true);
             else if (neuesVideo) {
                 if (!(upcoming = finalVideo.isUpcoming()))
-                    addedYesterday = finalVideo.addDate(new Date(), true);
+                    addedYesterday = finalVideo.addDate(new Date(), true, this);
             }
 
             database.videoMap.put(finalVideo.getUuid(), finalVideo);

@@ -194,9 +194,7 @@ public class WatchListActivity extends AppCompatActivity {
 
     /**  ------------------------- Recycler ------------------------->  */
     private CustomList<WatchList> filterList(CustomList<WatchList> mediaEventList) {
-        if (!searchQuery.isEmpty()) {
-            advancedQueryHelper.filterFull(mediaEventList);
-        }
+        advancedQueryHelper.filterFull(mediaEventList);
         return mediaEventList;
     }
 

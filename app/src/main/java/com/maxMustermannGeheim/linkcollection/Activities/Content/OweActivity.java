@@ -346,9 +346,7 @@ public class OweActivity extends AppCompatActivity implements CalcDialog.CalcDia
 
         // ToDo: Auch in Advances Search aufnehmen
 
-        if (!searchQuery.isEmpty()) {
-            advancedQueryHelper.filterFull(customList);
-        }
+        advancedQueryHelper.filterFull(customList);
         return sortList(customList);
     }
 

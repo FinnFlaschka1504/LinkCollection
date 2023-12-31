@@ -252,7 +252,7 @@ public class ShowActivity extends AppCompatActivity {
                     .addCriteria_defaultName()
                     .enableColoration()
                     .addCriteria_ParentClass(ADVANCED_SEARCH_CRITERIA_GENRE, CategoriesActivity.CATEGORIES.SHOW_GENRES, Show::getGenreIdList)
-                    .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Show, SHOW_STATUS_FILTER>(ADVANCED_SEARCH_CRITERIA_FILTER, "[^]]+?")
+                    .addCriteria(helper -> new Helpers.AdvancedQueryHelper.SearchCriteria<Show, SHOW_STATUS_FILTER>(ADVANCED_SEARCH_CRITERIA_FILTER, Helpers.AdvancedQueryHelper.FREE_TEXT_MATCHER)
                             .setCategory(CategoriesActivity.CATEGORIES.SHOW)
                             .setParser((text, matcher) -> SHOW_STATUS_FILTER.getEnum(text))
                             .setBuildPredicate(filterEnum -> {
@@ -482,9 +482,7 @@ public class ShowActivity extends AppCompatActivity {
     }
 
     private CustomList<Show> filterList(CustomList<Show> showList) {
-        if (!searchQuery.isEmpty()) {
-            advancedQueryHelper.filterFull(showList);
-        }
+        advancedQueryHelper.filterFull(showList);
         return showList;
     }
 
@@ -1120,89 +1118,89 @@ public class ShowActivity extends AppCompatActivity {
                                     showLabels.add(showLabel);
                                     return showLabel;
                                 }, (customDialog1, parentClassCustomRecycler, showLabel) -> {
-                                    CustomDialog.Builder(this)
-                                            .setTitle("Label Bulk-Edit")
-                                            .setText(String.format(Locale.getDefault(), "*Label:* %s\n", showLabel.getName()) +
-                                                    EpisodeActivity.getAdvancedQueryShowHelperDialogText(show, true, true, false))
-                                            .enableTextFormatting()
-                                            .setView(customDialog2 -> {
-                                                LinearLayout linearLayout = new LinearLayout(this);
-                                                CustomUtility.setPadding(linearLayout, 16);
-                                                linearLayout.setOrientation(LinearLayout.HORIZONTAL);
-                                                TextView textView = new TextView(this);
-                                                textView.setText("Modus: ");
-                                                Spinner spinner = new Spinner(this);
-                                                ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, Arrays.asList("Hinzufügen", "Entfernen"));
-                                                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                                                spinner.setAdapter(adapter);
-                                                linearLayout.addView(textView);
-                                                linearLayout.addView(spinner);
-                                                return linearLayout;
-                                            })
-                                            .setEdit(new CustomDialog.EditBuilder()
-                                                    .setHint(show.getSeasonList().stream()
-                                                            .filter(season -> !season.getName().equals(Show.EMPTY_SEASON))
-                                                            .map(season -> String.format(Locale.getDefault(), "S%d: %dEs", season.getSeasonNumber(), season.getEpisodesCount()))
-                                                            .collect(Collectors.joining(", ")))
-                                                    .setRegEx(EpisodeActivity.ADVANCED_SEARCH_CRITERIA_SHOW_REGEX_SEASON_AND_EPISODE))
-                                            .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
-                                            .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, selectDialog -> {
-                                                Spinner spinner = (Spinner) ((LinearLayout) selectDialog.getView()).getChildAt(1);
-                                                boolean modeAdd = spinner.getSelectedItemPosition() == 0;
-
-                                                String query = String.format("%s(%s)", show.getName(), selectDialog.getEditText());
-                                                List<CustomUtility.Triple<Show, CustomUtility.Triple<Map<Integer, List<Integer>>, Map<Integer, List<Integer>>, String>, Pair<List<Pair<List<String>, List<String>>>, String>>> resTriple =
-                                                        EpisodeActivity.getShowParser().run(query, null);
-                                                Predicate<Show.Episode> predicate = EpisodeActivity.getShowPredicate().run(resTriple);
-                                                List<Show.Episode> episodes = show.getSeasonList().stream()
-                                                        .flatMap(season -> season.getEpisodeMap().values().stream())
-                                                        .filter(predicate)
-                                                        .filter(episode -> episode.getShowLabelIds().contains(showLabel.getUuid()) ^ modeAdd)
-                                                        .sorted(Comparator.comparing(episode -> episode.getAbsoluteEpisodeNumber(show)))
-                                                        .collect(Collectors.toList());
-                                                if (episodes.isEmpty()) {
-                                                    Toast.makeText(this, "Keine Episoden für die Eingaben gefunden", Toast.LENGTH_SHORT).show();
-                                                    return;
-                                                }
-                                                String selectedEpisodesString = episodes.stream()
-                                                        .map(episode -> String.format(Locale.getDefault(), "S%d;E%d (E%d): %s", episode.getSeasonNumber(), episode.getEpisodeNumber(), episode.getAbsoluteEpisodeNumber(show), CustomUtility.getEllipsedString(episode.getName(), 35)))
-                                                        .collect(Collectors.joining("\n"));
-                                                CustomDialog.Builder(this)
-                                                        .setTitle("Bulk-Edit Bestätigen")
-                                                        .setText(String.format(Locale.getDefault(), "Willst du wirklich das Label '%s' %s?: (%d %s)\n\n%s", showLabel.getName(),
-                                                                modeAdd ? "zu folgenden Episoden hinzufügen" : "von folgenden Episoden entfernen",
-                                                                episodes.size(),
-                                                                episodes.size() == 1 ? "Episode" : "Episoden",
-                                                                selectedEpisodesString))
-                                                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
-                                                        .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, confirmDialog -> {
-                                                            episodes.forEach(episode -> {
-                                                                if (modeAdd)
-                                                                    episode.getShowLabelIds().add(showLabel.getUuid());
-                                                                else
-                                                                    episode.getShowLabelIds().remove(showLabel.getUuid());
-                                                            });
-                                                            Database.saveAll(this, "Bulk-Edit erfolgreich", null, "Fehler beim Bearbeiten", selectDialog::dismiss);
-                                                        })
-                                                        .show();
-                                            }, false)
-                                            .disableLastAddedButton()
-                                            .show();
-                                }, (selectDialog, customRecycler1, parentClass) -> {
+                                    showSeenEpisodesForShow(show, Pair.create(null, showLabel.getName()));
+                                }, (selectDialog, customRecycler1, showLabel) -> {
                                     CustomDialog.Builder(this)
                                             .setTitle("Aktion")
-                                                    .addButton("Bearbeiten", customDialog1 -> {
-                                                        CategoriesActivity.showEditCategoryDialog(this, CategoriesActivity.CATEGORIES.SHOW_LABEL, parentClass, parentClass1 -> {
-                                                            selectDialog.dismiss();
-                                                        }, null, null, null, parentClass1 -> {
-                                                            selectDialog.dismiss();
-                                                            show.getSeasonList().stream().flatMap(season -> season.getEpisodeMap().values().stream()).forEach(episode1 -> episode1.getShowLabelIds().remove(parentClass.getUuid()));
-                                                            show.getShowLabels().remove(((ShowLabel) parentClass));
-                                                            Database.saveAll(this, "Gelöscht", null, "Löschen fehlgeschlagen");
-                                                        }, s -> show.getShowLabels().stream().filter(showLabel -> showLabel.getName().equalsIgnoreCase(s)).findFirst().orElse(null));
-                                                    })
-                                            .addButton("In EpisodenAktivität öffnen", customDialog1 -> {
-                                                showSeenEpisodesForShow(show, Pair.create(null, parentClass.getName()));
+                                            .addButton("Bearbeiten", customDialog1 -> {
+                                                CategoriesActivity.showEditCategoryDialog(this, CategoriesActivity.CATEGORIES.SHOW_LABEL, showLabel, parentClass1 -> {
+                                                    selectDialog.dismiss();
+                                                }, null, null, null, parentClass1 -> {
+                                                    selectDialog.dismiss();
+                                                    show.getSeasonList().stream().flatMap(season -> season.getEpisodeMap().values().stream()).forEach(episode1 -> episode1.getShowLabelIds().remove(showLabel.getUuid()));
+                                                    show.getShowLabels().remove(((ShowLabel) showLabel));
+                                                    Database.saveAll(this, "Gelöscht", null, "Löschen fehlgeschlagen");
+                                                }, s -> show.getShowLabels().stream().filter(showLabel1 -> showLabel1.getName().equalsIgnoreCase(s)).findFirst().orElse(null));
+                                            })
+                                            .addButton("Bulk Edit", customDialog1 -> {
+                                                CustomDialog.Builder(this)
+                                                        .setTitle("Label Bulk-Edit")
+                                                        .setText(String.format(Locale.getDefault(), "*Label:* %s\n", showLabel.getName()) +
+                                                                EpisodeActivity.getAdvancedQueryShowHelperDialogText(show, true, true, false))
+                                                        .enableTextFormatting()
+                                                        .setView(customDialog2 -> {
+                                                            LinearLayout linearLayout = new LinearLayout(this);
+                                                            CustomUtility.setPadding(linearLayout, 16);
+                                                            linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+                                                            TextView textView = new TextView(this);
+                                                            textView.setText("Modus: ");
+                                                            Spinner spinner = new Spinner(this);
+                                                            ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, Arrays.asList("Hinzufügen", "Entfernen"));
+                                                            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                                                            spinner.setAdapter(adapter);
+                                                            linearLayout.addView(textView);
+                                                            linearLayout.addView(spinner);
+                                                            return linearLayout;
+                                                        })
+                                                        .setEdit(new CustomDialog.EditBuilder()
+                                                                .setHint(show.getSeasonList().stream()
+                                                                        .filter(season -> !season.getName().equals(Show.EMPTY_SEASON))
+                                                                        .map(season -> String.format(Locale.getDefault(), "S%d: %dEs", season.getSeasonNumber(), season.getEpisodesCount()))
+                                                                        .collect(Collectors.joining(", ")))
+                                                                .setRegEx(EpisodeActivity.ADVANCED_SEARCH_CRITERIA_SHOW_REGEX_SEASON_AND_EPISODE))
+                                                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.OK_CANCEL)
+                                                        .addButton(CustomDialog.BUTTON_TYPE.OK_BUTTON, bulkEditDialog -> {
+                                                            Spinner spinner = (Spinner) ((LinearLayout) bulkEditDialog.getView()).getChildAt(1);
+                                                            boolean modeAdd = spinner.getSelectedItemPosition() == 0;
+
+                                                            String query = String.format("%s(%s)", show.getName(), bulkEditDialog.getEditText());
+                                                            List<CustomUtility.Triple<Show, CustomUtility.Triple<Map<Integer, List<Integer>>, Map<Integer, List<Integer>>, String>, Pair<List<Pair<List<String>, List<String>>>, String>>> resTriple =
+                                                                    EpisodeActivity.getShowParser().run(query, null);
+                                                            Predicate<Show.Episode> predicate = EpisodeActivity.getShowPredicate().run(resTriple);
+                                                            List<Show.Episode> episodes = show.getSeasonList().stream()
+                                                                    .flatMap(season -> season.getEpisodeMap().values().stream())
+                                                                    .filter(predicate)
+                                                                    .filter(episode -> episode.getShowLabelIds().contains(showLabel.getUuid()) ^ modeAdd)
+                                                                    .sorted(Comparator.comparing(episode -> episode.getAbsoluteEpisodeNumber(show)))
+                                                                    .collect(Collectors.toList());
+                                                            if (episodes.isEmpty()) {
+                                                                Toast.makeText(this, "Keine Episoden für die Eingaben gefunden", Toast.LENGTH_SHORT).show();
+                                                                return;
+                                                            }
+                                                            String selectedEpisodesString = episodes.stream()
+                                                                    .map(episode -> String.format(Locale.getDefault(), "S%d;E%d (E%d): %s", episode.getSeasonNumber(), episode.getEpisodeNumber(), episode.getAbsoluteEpisodeNumber(show), CustomUtility.getEllipsedString(episode.getName(), 35)))
+                                                                    .collect(Collectors.joining("\n"));
+                                                            CustomDialog.Builder(this)
+                                                                    .setTitle("Bulk-Edit Bestätigen")
+                                                                    .setText(String.format(Locale.getDefault(), "Willst du wirklich das Label '%s' %s?: (%d %s)\n\n%s", showLabel.getName(),
+                                                                            modeAdd ? "zu folgenden Episoden hinzufügen" : "von folgenden Episoden entfernen",
+                                                                            episodes.size(),
+                                                                            episodes.size() == 1 ? "Episode" : "Episoden",
+                                                                            selectedEpisodesString))
+                                                                    .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.YES_NO)
+                                                                    .addButton(CustomDialog.BUTTON_TYPE.YES_BUTTON, confirmDialog -> {
+                                                                        episodes.forEach(episode -> {
+                                                                            if (modeAdd)
+                                                                                episode.getShowLabelIds().add(showLabel.getUuid());
+                                                                            else
+                                                                                episode.getShowLabelIds().remove(showLabel.getUuid());
+                                                                        });
+                                                                        Database.saveAll(this, "Bulk-Edit erfolgreich", null, "Fehler beim Bearbeiten", bulkEditDialog::dismiss);
+                                                                    })
+                                                                    .show();
+                                                        }, false)
+                                                        .disableLastAddedButton()
+                                                        .show();
                                             })
                                             .disableButtonAllCaps()
                                             .enableStackButtons()
@@ -1530,7 +1528,7 @@ public class ShowActivity extends AppCompatActivity {
             Show.Episode episode = selectedEpisode[0];
             episode.setWatched(true);
             season.getEpisodeMap().put("E:" + episode.getEpisodeNumber(), episode);
-            boolean before = episode.addDate(new Date(), true);
+            boolean before = episode.addDate(new Date(), true, this);
             Utility.showCenteredToast(this, "Ansicht hinzugefügt" + (before ? "\nAutomatisch für gestern hinzugefügt" : ""));
             Show show = database.showMap.get(episode.getShowId());
             show.setAlreadyAiredList(show.getAlreadyAiredList().stream().filter(episode1 -> episode.getTmdbId() != episode1.getTmdbId()).collect(Collectors.toList()));
@@ -1724,6 +1722,25 @@ public class ShowActivity extends AppCompatActivity {
                 .setTitle(editEpisode.getName())
                 .setView(R.layout.dialog_detail_episode)
                 .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                .addOptionalModifications(customDialog -> {
+                    if (episode.isWatched() || episode.getDateList().isEmpty()) {
+                        return;
+                    }
+                    customDialog
+                            .addButton("Ansicht", customDialog1 -> {
+                                editEpisode.setWatched(true);
+                                boolean before = editEpisode.addDate(new Date(), true, context);
+                                Utility.showCenteredToast(context, "Ansicht hinzugefügt" + (before ? "\nAutomatisch für gestern hinzugefügt" : ""));
+                                Show show = database.showMap.get(editEpisode.getShowId());
+                                show.getAlreadyAiredList().removeIf(episode1 -> episode.getTmdbId() != episode1.getTmdbId());
+
+                                // execute save
+                                customDialog1.getButtonByType(CustomDialog.BUTTON_TYPE.SAVE_BUTTON).click();
+                            })
+                            .addIconDecorationToLastAddedButton(R.drawable.ic_add, CustomDialog.IconDecorationPosition.LEFT)
+                            .addConfirmationDialogToLastAddedButton("Ansicht Hinzufügen", "Möchtest du wirklich eine neue Ansicht zu der Episode hinzufügen? Alle vorgenommenen Änderungen werden ebenfalls gespeichert.")
+                            .alignPreviousButtonsLeft();
+                })
                 .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog -> {
                     episode.setRating(editEpisode.getRating());
                     if (episode.hasRating())
@@ -1733,13 +1750,14 @@ public class ShowActivity extends AppCompatActivity {
                     episode.setAgeRating(editEpisode.getAgeRating());
                     episode.setImdbId(editEpisode.getImdbId());
                     episode.setShowLabelIds(editEpisode.getShowLabelIds());
+                    episode.setWatched(editEpisode.isWatched());
 
                     if (!episode.isWatched() && episode.getDateList().isEmpty()) {
                         Show show = database.showMap.get(editEpisode.getShowId());
                         Show.Season season = show.getSeasonList().get(editEpisode.getSeasonNumber());
                         episode.setWatched(true);
                         season.getEpisodeMap().put("E:" + episode.getEpisodeNumber(), episode);
-                        boolean before = episode.addDate(new Date(), true);
+                        boolean before = episode.addDate(new Date(), true, context);
                         Utility.showCenteredToast(context, "Ansicht hinzugefügt" + (before ? "\nAutomatisch für gestern hinzugefügt" : ""));
                         show.getAlreadyAiredList().removeIf(episode1 -> episode.getTmdbId() != episode1.getTmdbId());
                     }
@@ -1751,7 +1769,7 @@ public class ShowActivity extends AppCompatActivity {
                         Toast.makeText(context, "Episode gespeichert", Toast.LENGTH_SHORT).show();
                     });
                 })
-                .disableLastAddedButton()
+//                .disableLastAddedButton()
                 .setSetViewContent((customDialog, view, reload) -> {
                     Show show = database.showMap.get(episode.getShowId());
                     if (show == null) {
@@ -1998,7 +2016,7 @@ public class ShowActivity extends AppCompatActivity {
                         });
                     }
 
-                    ;
+                    updateActionButton.run(customDialog);
                 })
                 .enableDoubleClickOutsideToDismiss(customDialog -> hasChanges.run())
                 .addOnDialogShown(customDialog -> {

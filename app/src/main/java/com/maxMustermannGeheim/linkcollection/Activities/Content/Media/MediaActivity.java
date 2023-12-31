@@ -346,9 +346,7 @@ public class MediaActivity extends AppCompatActivity {
 
     //  ------------------------- Recycler ------------------------->
     private CustomList<MultiSelectHelper.Selectable<Media>> filterList(CustomList<MultiSelectHelper.Selectable<Media>> selectableMediaList) {
-        if (!searchQuery.isEmpty()) {
-            advancedQueryHelper.filterFull(selectableMediaList);
-        }
+        advancedQueryHelper.filterFull(selectableMediaList);
         return selectableMediaList;
     }
 

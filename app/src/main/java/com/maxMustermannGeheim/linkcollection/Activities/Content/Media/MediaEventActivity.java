@@ -230,9 +230,7 @@ public class MediaEventActivity extends AppCompatActivity {
      * ------------------------- Recycler ------------------------->
      */
     private CustomList<MediaEvent> filterList(CustomList<MediaEvent> mediaEventList) {
-        if (!searchQuery.isEmpty()) {
-            advancedQueryHelper.filterFull(mediaEventList);
-        }
+        advancedQueryHelper.filterFull(mediaEventList);
         return mediaEventList;
     }
 

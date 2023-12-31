@@ -57,6 +57,7 @@ import com.maxMustermannGeheim.linkcollection.Activities.Content.Videos.VideoAct
 import com.maxMustermannGeheim.linkcollection.Activities.Main.CategoriesActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.DialogActivity;
 import com.maxMustermannGeheim.linkcollection.Activities.Main.MainActivity;
+import com.maxMustermannGeheim.linkcollection.Activities.Main.SpaceFragment;
 import com.maxMustermannGeheim.linkcollection.BuildConfig;
 import com.maxMustermannGeheim.linkcollection.Utilities.CustomCode;
 import com.maxMustermannGeheim.linkcollection.Daten.Jokes.Joke;
@@ -89,8 +90,10 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
@@ -144,6 +147,8 @@ public class Settings extends AppCompatActivity {
     public static final String SETTING_SPACE_ENCRYPTED_ = "SETTING_SPACE_ENCRYPTED_";
     public static final String SETTING_SPACE_ENCRYPTION_PASSWORD = "SETTING_SPACE_ENCRYPTION_PASSWORD";
     public static final String SETTING_SPACE_ENCRYPTION_DEFAULT_PASSWORD = "passwort";
+
+    public static final String SETTING_MORE_HOUR_OFFSET = "SETTING_MORE_HOUR_OFFSET";
 
     public static final String LAST_VERSION = "LAST_VERSION";
     public static final String UPDATE_FILE_NAME = "UPDATE_FILE_NAME";
@@ -210,6 +215,7 @@ public class Settings extends AppCompatActivity {
         settingsMap.put(SETTING_VIDEO_WARN_EMPTY_URL, "true");
         settingsMap.put(SETTING_VIDEO_CATEGORY_SHOW_TIME, "false");
         settingsMap.put(SETTING_SHOW_EPISODE_PREVIEW, "1");
+        settingsMap.put(SETTING_MORE_HOUR_OFFSET, "6");
     }
 
     public static boolean changeSetting(String key, String newValue) {
@@ -923,7 +929,7 @@ public class Settings extends AppCompatActivity {
     }
 
     private void setListeners() {
-        SharedPreferences mySPR_daten = getSharedPreferences(MainActivity.SHARED_PREFERENCES_DATA, MODE_PRIVATE);
+        SharedPreferences mySPR_daten = getSharedPreferences(SHARED_PREFERENCES_DATA, MODE_PRIVATE);
 
         Runnable changeCode = () -> {
             CustomDialog.Builder(this)
@@ -1393,6 +1399,71 @@ public class Settings extends AppCompatActivity {
                                         .show();
                             });
 
+                            view.findViewById(R.id.dialogSettingsMore_general_hourOffset).setOnClickListener(v2 -> {
+                                CustomDialog.Builder(this)
+                                        .setTitle("Stunden Offset Ändern")
+                                        .setText("*WARNUNG*\nZum Ändern dieser Einstellung werden alle bereits vollendeten Ansichten Angepasst, was nur sehr selten getan werden sollte.")
+                                        .enableTextFormatting()
+                                        .standardEdit("Stunden Offset", getSingleSetting(this, SETTING_MORE_HOUR_OFFSET))
+                                        .setButtonConfiguration(CustomDialog.BUTTON_CONFIGURATION.SAVE_CANCEL)
+                                        .addButton(CustomDialog.BUTTON_TYPE.SAVE_BUTTON, customDialog1 -> {
+                                            int oldOffset = getSingleSetting_int(this, SETTING_MORE_HOUR_OFFSET);
+                                            String newOffsetStr = customDialog1.getEditText();
+                                            int offsetDiff = Integer.parseInt(newOffsetStr) - oldOffset;
+                                            changeSetting(SETTING_MORE_HOUR_OFFSET, newOffsetStr);
+
+//                                            List<Pair<String, Date>> edgeCases = new ArrayList<>(); // 19.09.2019
+
+                                            CustomUtility.GenericReturnInterface<List<Date>, List<Date>> applyOffsetChanges = dates -> {
+                                                return dates.stream()
+                                                        .map(date -> {
+                                                            if (date.getHours() == 0 && date.getMinutes() == 0 && date.getSeconds() == 0) {
+                                                                return date;
+                                                            }
+                                                            return Utility.shiftTime(date, Calendar.HOUR, -offsetDiff);
+                                                        })
+                                                        .collect(Collectors.toList());
+                                            };
+
+                                            database.videoMap.values().forEach(video -> {
+                                                List<Date> newDates = applyOffsetChanges.run(video.getDateList());
+//                                                for (Date date : video.getDateList()) {
+//                                                    if (date.getHours() < offsetDiff) {
+//                                                        edgeCases.add(Pair.create("Video:" + video.getName(), date));
+//                                                    }
+//                                                }
+                                                video.setDateList(newDates);
+                                            });
+
+                                            database.showMap.values().forEach(show -> {
+                                                show.getSeasonList().forEach(season -> {
+                                                    season.getEpisodeMap().values().forEach(episode -> {
+                                                        List<Date> newDates = applyOffsetChanges.run(episode.getDateList());
+//                                                        for (Date date : episode.getDateList()) {
+//                                                            if (date.getHours() < offsetDiff) {
+//                                                                edgeCases.add(Pair.create(String.format(Locale.getDefault(), "Show:%s:%d:%s", show.getName(), season.getSeasonNumber(), episode.getName()), date));
+//                                                            }
+//                                                        }
+                                                        episode.setDateList(newDates);
+                                                    });
+                                                });
+                                            });
+
+//                                            SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm dd.MM.yyyy", Locale.getDefault());
+//                                            String edgeCasesStr = edgeCases.stream().map(pair -> pair.first + " | " + dateFormat.format(pair.second)).collect(Collectors.joining("\n"));
+//
+//                                            CustomDialog.Builder(this)
+//                                                    .setTitle("Edge Cases")
+//                                                    .setText(edgeCasesStr)
+//                                                    .show();
+
+                                            Database.saveAll(true);
+
+                                            Toast.makeText(this, "Offset angepasst", Toast.LENGTH_SHORT).show();
+                                        })
+                                        .show();
+                            });
+
                             Switch enableHighlightsSwitch = view.findViewById(R.id.dialogSettingsMore_general_enableHighlights);
                             enableHighlightsSwitch.setOnCheckedChangeListener((v2, checked) -> {
                                 final Helpers.HighlightClickListenerHelper highlightHelper = new Helpers.HighlightClickListenerHelper(Settings.this);
@@ -1547,7 +1618,12 @@ public class Settings extends AppCompatActivity {
         public void setLayout() {
             // fragment.getView() gibt manchmal null
             // ToDo: kann null sein
-            setLayout.runSetLayout(this, fragment.getView());
+            View view = fragment.getView();
+            if (view == null) {
+                setFragment(new SpaceFragment(getFragmentLayoutId()));
+            } else {
+                setLayout.runSetLayout(this, view);
+            }
         }
 
         public Space setSetLayout(SetLayout setLayout) {

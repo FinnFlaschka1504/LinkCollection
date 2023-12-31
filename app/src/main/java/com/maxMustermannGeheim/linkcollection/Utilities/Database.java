@@ -624,7 +624,7 @@ public class Database {
 
     private static boolean hasChanges() {
 //        if (true)
-//            return true;
+//            return false;
         Log.d(TAG, "hasChanges: ");
         final boolean[] result = {false};
         for (Map.Entry<String, Content> contentEntry : contentMap.entrySet()) {

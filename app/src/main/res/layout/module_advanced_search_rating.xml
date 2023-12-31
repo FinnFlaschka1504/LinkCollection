@@ -36,18 +36,34 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:gravity="center_vertical"
         android:orientation="horizontal">
+
+        <Spinner
+            android:id="@+id/module_advancedSearch_rating_tendency_low"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@null" />
 
         <TextView
             android:id="@+id/module_advancedSearch_rating_range"
             style="@style/TextButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
             android:layout_weight="1"
             android:textAlignment="center"
             android:textSize="20sp"
             tools:text="1.25 ☆ – 4.5 ☆" />
+
+        <Spinner
+            android:id="@+id/module_advancedSearch_rating_tendency_high"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:background="@null" />
+
     </LinearLayout>
 
     <FrameLayout

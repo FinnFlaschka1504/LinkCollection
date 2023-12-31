@@ -31,10 +31,10 @@
     }
   },
   "getGoogleSelectedImage": {
-    "version": 1,
+    "version": 3,
     "name": "getGoogleSelectedImage",
     "code": {
-      "query": "document.querySelector('.n4hgof img.iPVvYb').getAttribute('src');"
+      "query": "document.querySelector(\"[data-query] div.tvh9oe:not([aria-hidden='true']) div[data-ved][data-lnsmd]:has(img) img[src^='https://']\").getAttribute('src')"
     }
   }
 }
